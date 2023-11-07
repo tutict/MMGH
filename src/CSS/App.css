@@ -1,0 +1,49 @@
+.middle{
+    position: relative;
+    top: 20%;
+}
+.middle-button{
+    position: relative;
+    top: 0;
+    left: 23%;
+}
+.left{
+    position: relative;
+}
+.right{
+    position: relative;
+}
+.content-background {
+    --background: url('../../public/2_lucy_4k_20ee5.jpg') no-repeat center center / cover;
+}
+.glass-effect {
+    border-radius: 5%;
+    width: 320px;
+    backdrop-filter: blur(8px);
+    background-color: rgba(255, 255, 255, 0.1);
+
+}
+ion-menu::part(backdrop) {
+    background-color: rgba(2, 200, 255, 0.6);
+}
+
+ion-menu::part(container) {
+    border-radius: 0 20px 20px 0;
+
+    box-shadow: 4px 0px 16px black;
+}
+.back-menu-top{
+    position: fixed;
+    top: 4%;
+    right:8%;
+}
+.menu-text{
+    height: 100%;
+}
+.menu-text-me{
+    position: fixed;
+    right: 40%;
+}
+IonPage{
+    z-index: 0;
+}

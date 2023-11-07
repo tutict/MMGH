@@ -1,0 +1,23 @@
+svg{
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 1.5s;
+}
+@keyframes colorChange {
+    0% {fill: black}
+    100% {fill: red}
+}
+.hua.red{
+    animation: colorChange 3s forwards;
+}
+@keyframes rotateAntiClockwise {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(-360deg);
+    }
+}
+.rotate {
+    animation: rotateAntiClockwise 3s linear infinite;
+}
