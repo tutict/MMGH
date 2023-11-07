@@ -11,6 +11,7 @@ const ParticlesComponent = (props) => {
         // 使用空的选项对象将加载默认选项，这些默认选项是静态的粒子，没有背景，半径为3px，透明度为100%，颜色为白色
         // 所有的选项可以在这里找到：https://particles.js.org/docs/interfaces/Options_Interfaces_IOptions.IOptions.html
         return {
+            fpsLimit: 120,
             fullScreen: {
                 enable: true, // 启用此功能将使画布填满整个屏幕，这是默认启用的
                 zIndex: 0, // 当启用 fullScreen 时使用的 z-index 值，默认为0

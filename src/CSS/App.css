@@ -14,7 +14,7 @@
     position: relative;
 }
 .content-background {
-    --background: url('../../public/2_lucy_4k_20ee5.jpg') no-repeat center center / cover;
+    --background: url('../../public/wallhaven-zyxvqy.jpg') no-repeat center center / cover;
 }
 .glass-effect {
     border-radius: 5%;
@@ -30,7 +30,7 @@ ion-menu::part(backdrop) {
 ion-menu::part(container) {
     border-radius: 0 20px 20px 0;
 
-    box-shadow: 4px 0px 16px black;
+    box-shadow: 4px 0 16px black;
 }
 .back-menu-top{
     position: fixed;

@@ -3,7 +3,7 @@ import Menu from "./Menu";
 import '../CSS/menu.css';
 import {
     IonButton, IonContent, IonGrid,
-    IonModal, IonRow, IonText,
+    IonModal,  IonText,
 } from '@ionic/react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Filesystem, Directory } from '@capacitor/filesystem';

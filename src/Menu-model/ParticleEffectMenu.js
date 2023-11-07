@@ -1,6 +1,5 @@
 import Particles from "react-tsparticles";
 import { loadSlim } from "tsparticles-slim"; // loads tsparticles-slim
-import { loadFull } from "tsparticles"; // loads tsparticles
 import {useCallback, useMemo} from "react";
 
 // tsParticles 仓库：https://github.com/matteobruni/tsparticles
@@ -29,10 +28,10 @@ const ParticlesMenu = (props) => {
                 },
             },
             particles: {
+                color:{
+                    value: "#000000",
+                },
                 number:{
-                    color:{
-                        value: "black",
-                    },
                     density:{
                         enable: true,
                         area: 800,
@@ -41,6 +40,7 @@ const ParticlesMenu = (props) => {
                     max: 150,
                 },
                 links: {
+                    color: "#000000", // 粒子连接线的颜色
                     enable: true, // 启用此功能将连接粒子
                     distance: 80, // 连接粒子的最大距离
                 },
@@ -60,7 +60,7 @@ const ParticlesMenu = (props) => {
 
     // 使用 useCallback 不是必须的，但由于这个回调可以被记忆，所以推荐使用
     const particlesInit = useCallback((engine) => {
-        loadFull(engine);
+        loadSlim(engine);
         // 在这个示例中，精简版本就足够了，选择你更喜欢的版本，精简版本体积更小，但没有所有的插件和鼠标轨迹功能
     }, []);
 

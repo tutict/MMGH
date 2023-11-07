@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { IonContent, IonGrid, IonRow, IonCol, IonImg, IonButton, IonModal } from '@ionic/react';
 import '../CSS/menu.css'
+import Menu from "./Menu";
 import ParticlesMenu from "./ParticleEffectMenu";
 
 const Album: React.FC = () => {
@@ -25,7 +26,9 @@ const Album: React.FC = () => {
     };
 
     return (
-        <IonContent>
+        <IonContent >
+            <Menu />
+            <ParticlesMenu />
             <IonGrid>
                 <IonRow>
                     {photos.map((photo, index) => (
