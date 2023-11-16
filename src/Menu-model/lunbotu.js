@@ -1,11 +1,24 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { IonContent, IonPage, IonButton, IonImg } from '@ionic/react';
+import { IonContent, IonPage, IonButton, IonImg, IonButtons } from '@ionic/react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import '../CSS/menu.css';
+import { Autoplay, Pagination, Navigation } from 'swiper/modules';
 
-const  Lunbotu = () => {
+// Import Swiper styles
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
+
+const Lunbotu = () => {
     const [images, setImages] = useState([]);
+    const swiperRef = useRef(null);
+
+    useEffect(() => {
+        if (swiperRef.current && images.length) {
+            swiperRef.current.update(); // Updating Swiper instance
+            swiperRef.current.autoplay.start(); // Starting autoplay
+        }
+    }, [images]);
 
     const selectImage = async () => {
         try {
@@ -15,9 +28,7 @@ const  Lunbotu = () => {
                 quality: 100
             });
 
-            const newImageUrl = photo.webPath; // 从设备相册中选择的图片的路径
-
-            // 更新 images 状态，添加新的图片 URL
+            const newImageUrl = photo.webPath;
             setImages(oldImages => [...oldImages, newImageUrl]);
         } catch (error) {
             console.error('Error accessing photos', error);
@@ -28,8 +39,14 @@ const  Lunbotu = () => {
         <IonPage>
             <IonContent fullscreen>
                 <Swiper
+                    ref={swiperRef}
+                    modules={[Autoplay, Pagination, Navigation]}
                     spaceBetween={50}
                     slidesPerView={1}
+                    autoplay={{ delay: 2000, disableOnInteraction: false }}
+                    loop
+                    pagination={{ clickable: true }}
+                    className="mySwiper"
                 >
                     {images.map((image, index) => (
                         <SwiperSlide key={index}>
@@ -37,7 +54,11 @@ const  Lunbotu = () => {
                         </SwiperSlide>
                     ))}
                 </Swiper>
-                <IonButton onClick={selectImage}>Select Image</IonButton>
+                <IonButtons>
+                    <IonButton className="bottom-button" fill="outline" onClick={selectImage}>
+                        Select Image
+                    </IonButton>
+                </IonButtons>
             </IonContent>
         </IonPage>
     );
