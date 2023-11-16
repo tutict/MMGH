@@ -36,9 +36,9 @@ const Album = () => {
                         ))}
                     </IonRow>
                 </IonGrid>
-                <div className="fixed-button-container">
-                    <IonButton fill="outline" style={{ width: '100px' }} onClick={ selectPhoto }>选择图片</IonButton>
-                </div>
+            <div className="fixed-button-container">
+                    <IonButton fill="outline"  onClick={ selectPhoto }>选择图片</IonButton>
+            </div>
             <IonModal isOpen={!!photoToView} onDidDismiss={() => setPhotoToView(null)} >
                 <IonImg src={photoToView} style={{ width: '100%', height: '100%' }} />
             </IonModal>
