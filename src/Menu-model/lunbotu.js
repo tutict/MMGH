@@ -1,24 +1,49 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { IonContent, IonPage, IonButton, IonImg, IonButtons } from '@ionic/react';
+import { IonContent, IonPage, IonButton, IonImg} from '@ionic/react';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, Pagination, Navigation } from 'swiper/modules';
+import { A11y, Scrollbar, Autoplay, Pagination, Navigation } from 'swiper/modules';
+import Menu from "./Menu";
 
 // Import Swiper styles
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
+import 'swiper/css/scrollbar';
 
 const Lunbotu = () => {
     const [images, setImages] = useState([]);
     const swiperRef = useRef(null);
+    const [currentBackground, setCurrentBackground] = useState('');
+
 
     useEffect(() => {
-        if (swiperRef.current && images.length) {
-            swiperRef.current.update(); // Updating Swiper instance
-            swiperRef.current.autoplay.start(); // Starting autoplay
+        // 检查是否有两张或更多图片
+        if (swiperRef.current && images.length >= 2) {
+            swiperRef.current.update(); // 更新 Swiper 实例
+            swiperRef.current.autoplay.start(); // 启动自动播放
         }
+
+        const updateBackground = () => {
+            if(swiperRef.current && images.length > 0) {
+                const currentIndex = swiperRef.current.activeIndex;
+                const currentImageUrl = images[currentIndex % images.length];
+                setCurrentBackground(currentImageUrl);
+            }
+        };
+
+        if (swiperRef.current) {
+            swiperRef.current.on('slideChange', updateBackground);
+        };
+
+        return () => {
+            if (swiperRef.current) {
+                swiperRef.current.off('slideChange', updateBackground);
+            }
+        };
+
     }, [images]);
+
 
     const selectImage = async () => {
         try {
@@ -37,15 +62,17 @@ const Lunbotu = () => {
 
     return (
         <IonPage>
-            <IonContent fullscreen>
+            <IonContent fullscreen className="background-glass">
+                <div className="blur-background" style={{ backgroundImage: `url(${currentBackground})` }} />
+                <Menu/>
                 <Swiper
-                    ref={swiperRef}
-                    modules={[Autoplay, Pagination, Navigation]}
+                    onSwiper={(swiper) => {
+                        swiperRef.current = swiper;
+                    }}
+                    modules={[ A11y, Navigation, Scrollbar, Autoplay, Pagination, Navigation]}
                     spaceBetween={50}
                     slidesPerView={1}
-                    autoplay={{ delay: 2000, disableOnInteraction: false }}
-                    loop
-                    pagination={{ clickable: true }}
+                    autoplay={{ delay: 3000, disableOnInteraction: false }}
                     className="mySwiper"
                 >
                     {images.map((image, index) => (
@@ -54,11 +81,9 @@ const Lunbotu = () => {
                         </SwiperSlide>
                     ))}
                 </Swiper>
-                <IonButtons>
                     <IonButton className="bottom-button" fill="outline" onClick={selectImage}>
                         Select Image
                     </IonButton>
-                </IonButtons>
             </IonContent>
         </IonPage>
     );
