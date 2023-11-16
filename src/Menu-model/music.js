@@ -1,63 +1,52 @@
 import React, { useState, useRef } from 'react';
-import {
-    IonContent,
-    IonHeader,
-    IonPage,
-    IonTitle,
-    IonToolbar,
-    IonButton,
-    IonIcon
-} from '@ionic/react';
-import { playCircle, pauseCircle } from 'ionicons/icons';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButton, IonIcon, IonInput } from '@ionic/react';
+import { play as playIcon, pause as pauseIcon, musicalNotes } from 'ionicons/icons';
+import { useFilesystem, base64FromPath } from '@capacitor-community/react-hooks/filesystem';
 
-const MusicPlayer: React.FC = () => {
+const MusicPlayer = () => {
     const [isPlaying, setIsPlaying] = useState(false);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [songPath, setSongPath] = useState('');
+    const audioRef = useRef(new Audio());
+    const { readFile } = useFilesystem();
 
-    const tracks = [
-        'https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_700KB.mp3',
-        'https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_1MG.mp3',
-        // ... add more tracks
-    ];
-
-    const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-
-    const playPauseHandler = () => {
-        if (audioRef.current) {
-            if (isPlaying) {
-                audioRef.current.pause();
-            } else {
-                audioRef.current.play();
-            }
-            setIsPlaying(!isPlaying);
+    const handleSongSelection = async (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const base64 = await readFile({ path: file.path });
+            const audioUrl = `data:audio/mp3;base64,${base64.data}`;
+            audioRef.current.src = audioUrl;
+            setSongPath(audioUrl);
         }
     };
 
-    const nextTrackHandler = () => {
-        setCurrentTrackIndex((prevIndex) => (prevIndex + 1) % tracks.length);
-    };
-
-    const prevTrackHandler = () => {
-        setCurrentTrackIndex(
-            (prevIndex) => (prevIndex - 1 + tracks.length) % tracks.length
-        );
+    const togglePlayPause = () => {
+        if (!songPath) return;
+        const prevValue = isPlaying;
+        setIsPlaying(!prevValue);
+        if (!prevValue) {
+            audioRef.current.play();
+        } else {
+            audioRef.current.pause();
+        }
     };
 
     return (
         <IonPage>
             <IonHeader>
                 <IonToolbar>
-                    <IonTitle>Music Player</IonTitle>
+                    <IonTitle>音乐播放器</IonTitle>
                 </IonToolbar>
             </IonHeader>
-
             <IonContent className="ion-padding">
-                <audio ref={audioRef} src={tracks[currentTrackIndex]} />
-                <IonButton onClick={prevTrackHandler}>Previous</IonButton>
-                <IonButton onClick={playPauseHandler}>
-                    <IonIcon icon={isPlaying ? pauseCircle : playCircle} />
+                <IonButton fill="clear" onClick={() => document.getElementById('fileInput').click()}>
+                    <IonIcon icon={musicalNotes} />&nbsp;
+                    选择歌曲
                 </IonButton>
-                <IonButton onClick={nextTrackHandler}>Next</IonButton>
+                <input type="file" id="fileInput" accept="audio/*" hidden onChange={handleSongSelection} />
+                <IonButton onClick={togglePlayPause}>
+                    <IonIcon icon={isPlaying ? pauseIcon : playIcon} />
+                    {isPlaying ? '暂停' : '播放'}
+                </IonButton>
             </IonContent>
         </IonPage>
     );
