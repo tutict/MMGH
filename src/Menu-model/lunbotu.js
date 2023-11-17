@@ -5,8 +5,8 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { A11y, Scrollbar, Autoplay, Pagination, Navigation } from 'swiper/modules';
 import Menu from "./Menu";
 
-// Import Swiper styles
 import 'swiper/css';
+import 'aplayer-react/dist/index.css'
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import 'swiper/css/scrollbar';
@@ -73,6 +73,7 @@ const Lunbotu = () => {
                     spaceBetween={50}
                     slidesPerView={1}
                     autoplay={{ delay: 3000, disableOnInteraction: false }}
+                    speed={200}
                     className="mySwiper"
                 >
                     {images.map((image, index) => (

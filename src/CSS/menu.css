@@ -58,7 +58,7 @@
     top: 8%;
     width: 60%;
     height: 65%;
-    object-fit: contain;
+    object-fit: cover;
     align-items: center;
     justify-content: center;
     border-radius: 15px;
@@ -85,4 +85,30 @@
     background-position: center;
     filter: blur(5px);/* 调整模糊程度 */
     z-index: -1; /* 确保背景在内容下方 */
+}
+
+.music-content .aplayer{
+    position: fixed;
+    background: rgba(0, 0, 0, 0.4) !important;
+    color: aliceblue;
+    bottom: 0;
+    font-style: italic;
+    width: 70%;
+    box-shadow: 0 4px 8px rgba(0,0,0,1);
+}
+
+.music-menu {
+    position: fixed;
+    font-family:
+            Arial,
+            Helvetica,
+            sans-serif;
+    margin: 5px;
+    background: rgba(0, 0, 0, 0.4) !important;
+    height: 100%;
+    right: 0;
+    bottom: 0;
+    width: 30%;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,1);
 }
