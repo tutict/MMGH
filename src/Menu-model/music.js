@@ -1,21 +1,45 @@
 import React, { useState, useRef } from 'react';
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButton, IonIcon, IonInput } from '@ionic/react';
+import { IonContent, IonPage, IonButton, IonIcon } from '@ionic/react';
 import { play as playIcon, pause as pauseIcon, musicalNotes } from 'ionicons/icons';
-import { useFilesystem, base64FromPath } from '@capacitor-community/react-hooks/filesystem';
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import Menu from "./Menu";
+
+const ffmpeg = new FFmpeg({ log: true });
 
 const MusicPlayer = () => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [songPath, setSongPath] = useState('');
     const audioRef = useRef(new Audio());
-    const { readFile } = useFilesystem();
 
     const handleSongSelection = async (event) => {
         const file = event.target.files[0];
         if (file) {
-            const base64 = await readFile({ path: file.path });
-            const audioUrl = `data:audio/mp3;base64,${base64.data}`;
-            audioRef.current.src = audioUrl;
-            setSongPath(audioUrl);
+            // 检查 ffmpeg 是否已加载
+            if (!ffmpeg.loaded) {
+                await ffmpeg.load();
+            }
+
+            // 获取文件的格式
+            const fileType = file.type.split('/')[1];
+
+            // 如果文件是 MP3 格式，则跳过转换步骤
+            if (fileType === 'mp3') {
+                setSongPath(file.url);
+            } else {
+                // 将文件写入 ffmpeg 文件系统
+                ffmpeg.FS('writeFile', file.name, await file.arrayBuffer());
+
+                // 运行 ffmpeg 命令转换音频
+                // 例如：转换为 128kbps 的 MP3
+                await ffmpeg.run('-i', file.name, '-b:a', '128k', 'output.mp3');
+
+                // 从 ffmpeg 文件系统中读取输出文件
+                const data = ffmpeg.FS('readFile', 'output.mp3');
+
+                // 创建 Blob URL
+                const audioUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'audio/mp3' }));
+                setSongPath(audioUrl);
+            }
         }
     };
 
@@ -32,12 +56,8 @@ const MusicPlayer = () => {
 
     return (
         <IonPage>
-            <IonHeader>
-                <IonToolbar>
-                    <IonTitle>音乐播放器</IonTitle>
-                </IonToolbar>
-            </IonHeader>
-            <IonContent className="ion-padding">
+            <IonContent className="content-background-menu ion-padding">
+                <Menu />
                 <IonButton fill="clear" onClick={() => document.getElementById('fileInput').click()}>
                     <IonIcon icon={musicalNotes} />&nbsp;
                     选择歌曲

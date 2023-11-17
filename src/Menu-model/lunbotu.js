@@ -34,7 +34,7 @@ const Lunbotu = () => {
 
         if (swiperRef.current) {
             swiperRef.current.on('slideChange', updateBackground);
-        };
+        }
 
         return () => {
             if (swiperRef.current) {
