@@ -112,3 +112,13 @@
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0,0,0,1);
 }
+
+.audioVisual-box {
+    position: fixed;
+    left: 5%;
+    top: 20%;
+    width: 60%;
+    height: 50%;
+    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.4) !important;
+}

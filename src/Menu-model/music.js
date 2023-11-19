@@ -4,6 +4,7 @@ import {musicalNotes, trashBin} from 'ionicons/icons';
 import Menu from "./Menu";
 import { APlayer } from "aplayer-react";
 import "../CSS/menu.css"
+import AudioVisualizer from "./AudioVisualizer";
 
 const MusicPlayer = () => {
     const [audioUrl, setAudioUrl] = useState(''); // 新增状态
@@ -34,6 +35,9 @@ const MusicPlayer = () => {
         <IonPage>
             <IonContent className="content-background-menu ion-padding">
                 <Menu />
+                <div className="audioVisual-box">
+                    <AudioVisualizer audioSrc= {songName} />
+                </div>
                 <IonList className="music-menu">
                     <IonButton fill="clear" onClick={() => document.getElementById('fileInput').click()}>
                         <IonIcon icon={musicalNotes} />&nbsp;
