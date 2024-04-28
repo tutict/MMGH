@@ -36,7 +36,7 @@ const MusicPlayer = () => {
             <IonContent className="content-background-menu ion-padding">
                 <Menu />
                 <div className="audioVisual-box">
-                    <AudioVisualizer audioSrc= {songName} />
+                    <AudioVisualizer audioSrc= {audioUrl} />
                 </div>
                 <IonList className="music-menu">
                     <IonButton fill="clear" onClick={() => document.getElementById('fileInput').click()}>
@@ -64,7 +64,6 @@ const MusicPlayer = () => {
                     url: audioUrl,
                     name: songName
                 }}
-                         autoPlay
                 />
                 </div>
             </IonContent>

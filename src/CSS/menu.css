@@ -121,4 +121,5 @@
     height: 50%;
     border-radius: 15px;
     background: rgba(0, 0, 0, 0.4) !important;
+    z-index: 0;
 }

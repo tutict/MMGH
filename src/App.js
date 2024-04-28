@@ -90,7 +90,7 @@ function App() {
                                             <IonIcon icon={chevronDownCircle}></IonIcon>
                                         </IonFabButton>
                                         <IonFabList side="bottom">
-                                            <IonFabButton onClick={toggleModal} >
+                                            <IonFabButton class="little-button" onClick={toggleModal} >
                                                 <IonIcon icon={ellipse} ></IonIcon>
                                                 <IonToast
                                                     isOpen={showParticles}
@@ -105,7 +105,7 @@ function App() {
                                                     ]}
                                                 ></IonToast>
                                             </IonFabButton>
-                                            <IonFabButton onClick={handleButoonClick}>
+                                            <IonFabButton class="little-button" onClick={handleButoonClick}>
                                                 <IonIcon icon={chatbubbles}></IonIcon>
                                             </IonFabButton>
                                         </IonFabList>
