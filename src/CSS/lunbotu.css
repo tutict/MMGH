@@ -1,20 +1,58 @@
 /* 设置Swiper容器的样式 */
 .swiper-container {
-    width: 100%;
-    height: auto;
+    width: 55%; /* 设置宽度为视口宽度的70% */
+    height: 55vh; /* 设置高度为视口高度的50% */
+    margin: auto; /* 在较小屏幕上水平居中 */
+    overflow: hidden; /* 防止内容溢出 */
+    left: 50%;
+    top: 40%;
+    transform: translate(-50%, -50%);
+    position: absolute;
+}
+
+/* 使用媒体查询为小屏幕设备设置样式 */
+@media (max-width: 768px) {
+    .swiper-container {
+        width: 90%; /* 在小屏幕上增加宽度 */
+        height: 30vh; /* 在小屏幕上减少高度 */
+    }
+
+    .bottom-button {
+        position: absolute; /* 绝对定位相对于其最近的相对定位的父元素 */
+        bottom: 200px;
+        height: 50px;
+        width: 20%;
+        left: 50%;
+        transform: translateX(-50%); /* 使按钮水平居中 */
+        display: flex; /* 使用 Flexbox 布局 */
+        align-items: center; /* 垂直居中 */
+        justify-content: center; /* 水平居中 */
+    }
 }
 
 /* 设置Swiper Slide的样式 */
-.swiper-slide {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
+.swiper-slide-forme {
+    display: flex; /* 使用 Flexbox 布局 */
+    justify-content: center; /* 水平居中 */
+    align-items: center; /* 垂直居中 */
+    text-align: center; /* 如果有文本，也居中对齐 */
 }
 
 /* 设置图片样式 */
-.swiper-slide img {
-    width: auto;
+.swiper-slide-img {
+    width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.bottom-button {
+    position: absolute; /* 绝对定位相对于其最近的相对定位的父元素 */
+    bottom: 100px;
+    height: 50px;
+    width: 20%;
+    left: 50%;
+    transform: translateX(-50%); /* 使按钮水平居中 */
+    display: flex; /* 使用 Flexbox 布局 */
+    align-items: center; /* 垂直居中 */
+    justify-content: center; /* 水平居中 */
 }

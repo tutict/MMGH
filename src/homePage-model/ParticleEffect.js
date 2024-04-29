@@ -1,5 +1,4 @@
 import Particles from "react-tsparticles";
-import { loadSlim } from "tsparticles-slim"; // loads tsparticles-slim
 import { loadFull } from "tsparticles"; // loads tsparticles
 import {useCallback, useMemo} from "react";
 
@@ -42,8 +41,8 @@ const ParticlesComponent = (props) => {
                         enable: true,
                         area: 800,
                     },
-                    value: 50,
-                    max: 150,
+                    value: 30,
+                    max: 100,
                 },
                 links: {
                     enable: true, // 启用此功能将连接粒子

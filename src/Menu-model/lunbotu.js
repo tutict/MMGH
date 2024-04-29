@@ -10,16 +10,20 @@ import '../CSS/lunbotu.css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import 'swiper/css/scrollbar';
+import fristPhoto from '../assets/20230908134324.jpg';
 
 const Lunbotu = () => {
-    const [images, setImages] = useState([]);
+    const defaultImages = [
+       fristPhoto,
+    ];
+    const [images, setImages] = useState(defaultImages);
     const swiperRef = useRef(null);
-    const [currentBackground, setCurrentBackground] = useState('');
+    const [currentBackground, setCurrentBackground] = useState(defaultImages);
 
 
     useEffect(() => {
         // 检查是否有两张或更多图片
-        if (swiperRef.current && images.length >= 2) {
+        if (swiperRef.current && images.length >= 1) {
             swiperRef.current.update(); // 更新 Swiper 实例
             swiperRef.current.autoplay.start(); // 启动自动播放
         }
@@ -32,12 +36,12 @@ const Lunbotu = () => {
             }
         };
 
-        if (swiperRef.current) {
+        if (swiperRef.current && images.length >= 1) {
             swiperRef.current.on('slideChange', updateBackground);
         }
 
         return () => {
-            if (swiperRef.current) {
+            if (swiperRef.current && images.length >= 1) {
                 swiperRef.current.off('slideChange', updateBackground);
             }
         };
@@ -74,11 +78,11 @@ const Lunbotu = () => {
                     slidesPerView={1}
                     autoplay={{ delay: 3000, disableOnInteraction: false }}
                     speed={200}
-                    className="mySwiper"
+                    className="mySwiper swiper-container"
                     style={{ '--swiper-aspect-ratio': '16:9' }}
                 >
                     {images.map((image, index) => (
-                        <SwiperSlide key={index}>
+                        <SwiperSlide className="swiper-slide-forme" key={index}>
                             <IonImg src={image} className="swiper-slide-image"/>
                         </SwiperSlide>
                     ))}
