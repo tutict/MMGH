@@ -3,6 +3,7 @@ import {IonContent, IonPage, IonButton, IonIcon, IonLabel, IonAvatar, IonItem, I
 import {musicalNotes, trashBin} from 'ionicons/icons';
 import Menu from "./Menu";
 import { APlayer } from "aplayer-react";
+import "aplayer/dist/APlayer.min.css";
 import "../CSS/menu.css"
 import AudioVisualizer from "./AudioVisualizer";
 

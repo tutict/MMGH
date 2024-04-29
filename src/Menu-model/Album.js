@@ -24,6 +24,13 @@ const Album = () => {
         setPhotoToView(photo);
     };
 
+    // 设置图片容器的尺寸和保持比例的CSS样式
+    const photoStyle = {
+        width: '100px', // 根据需要设置宽度
+        height: '100px', // 根据需要设置高度
+        objectFit: 'cover', // 保持图片比例
+    };
+
     return (
         <IonContent class="content-background-menu">
             <Menu />
@@ -31,7 +38,7 @@ const Album = () => {
                     <IonRow>
                         {photos.map((photo, index) => (
                             <IonCol size="2" key={index}>
-                                <IonImg src={photo} onClick={() => viewPhoto(photo)} />
+                                <IonImg src={photo} style={photoStyle} onClick={() => viewPhoto(photo)} />
                             </IonCol>
                         ))}
                     </IonRow>
@@ -40,7 +47,7 @@ const Album = () => {
                     <IonButton fill="outline"  onClick={ selectPhoto }>选择图片</IonButton>
             </div>
             <IonModal isOpen={!!photoToView} onDidDismiss={() => setPhotoToView(null)} >
-                <IonImg src={photoToView} style={{ width: '100%', height: '100%' }} />
+                    <IonImg src={photoToView} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </IonModal>
         </IonContent>
     );

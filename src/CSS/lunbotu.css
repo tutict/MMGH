@@ -1,0 +1,20 @@
+/* 设置Swiper容器的样式 */
+.swiper-container {
+    width: 100%;
+    height: auto;
+}
+
+/* 设置Swiper Slide的样式 */
+.swiper-slide {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+/* 设置图片样式 */
+.swiper-slide img {
+    width: auto;
+    height: 100%;
+    object-fit: cover;
+}

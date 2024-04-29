@@ -54,6 +54,8 @@ ion-menu::part(container) {
     position: fixed;
     right: 40%;
 }
+
+/* IonPage的显示层为零 */
 IonPage{
     z-index: 0;
 }

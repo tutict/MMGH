@@ -6,7 +6,7 @@ import { A11y, Scrollbar, Autoplay, Pagination, Navigation } from 'swiper/module
 import Menu from "./Menu";
 
 import 'swiper/css';
-import 'aplayer-react/dist/index.css'
+import '../CSS/lunbotu.css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import 'swiper/css/scrollbar';
@@ -75,10 +75,11 @@ const Lunbotu = () => {
                     autoplay={{ delay: 3000, disableOnInteraction: false }}
                     speed={200}
                     className="mySwiper"
+                    style={{ '--swiper-aspect-ratio': '16:9' }}
                 >
                     {images.map((image, index) => (
                         <SwiperSlide key={index}>
-                            <IonImg src={image} />
+                            <IonImg src={image} className="swiper-slide-image"/>
                         </SwiperSlide>
                     ))}
                 </Swiper>

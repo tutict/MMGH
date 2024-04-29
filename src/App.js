@@ -144,7 +144,7 @@ function App() {
 
                     <IonContent>
                         <IonList inset={true}>
-                            <IonSearchbar showClearButton="always" value="Always Show"></IonSearchbar>
+                            <IonSearchbar showClearButton="always" value="输入你想搜索的内容"></IonSearchbar>
                             <NavigationItem to="/page1" color="danger" label="拍照" />
                             <NavigationItem to="/page2" color="tertiary" label="轮播图" />
                             <NavigationItem to="/page3" color="success" label="时间" />
