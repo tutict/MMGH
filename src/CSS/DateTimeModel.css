@@ -1,0 +1,47 @@
+/* styles.css */
+.small-modal {
+    border-radius: 20px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
+    max-width: 90%; /* 或者根据您的设计调整这个值 */
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    position: absolute;
+    width: 450px;
+    height: 58%;
+}
+
+.modal-button-left {
+   margin-left: 55px;
+}
+
+.modal-button-right {
+    margin-left: 10px;
+}
+
+/*字体*/
+.modal-content {
+    margin-top: 80px;
+    margin-left: 40px;
+}
+
+/* 当屏幕宽度小于768px时，进一步缩小模态框尺寸 */
+@media (max-width: 768px) {
+    .modal-content {
+        margin-top: 20px;
+        margin-left: 8px;
+    }
+
+    .small-modal {
+        width: 70%;
+        height: 60%;
+    }
+
+    .modal-button-left {
+        margin-left: 15px;
+    }
+
+    .modal-button-right {
+        margin-left: 10px;
+    }
+}
