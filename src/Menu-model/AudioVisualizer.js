@@ -1,6 +1,5 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import '../CSS/menu.css';
 
 const AudioVisualizer = ({ audioSrc }) => {
     const mountRef = useRef(null);
@@ -8,10 +7,24 @@ const AudioVisualizer = ({ audioSrc }) => {
     const audioContextRef = useRef(null);
     const analyserRef = useRef(null);
     const dataArrayRef = useRef(null);
+    const sceneRef = useRef(null);
+    const cameraRef = useRef(null);
+    const rendererRef = useRef(null);
+
+    const handleResize = () => {
+        const width = mountRef.current.offsetWidth;
+        const height = mountRef.current.offsetHeight;
+        if (cameraRef.current && rendererRef.current) {
+            cameraRef.current.aspect = width / height;
+            cameraRef.current.updateProjectionMatrix();
+            rendererRef.current.setSize(width, height);
+        }
+    };
 
     useEffect(() => {
-        // 创建新的Audio实例
+        // 创建新的 Audio 实例并加载音频
         audioRef.current = new Audio(audioSrc);
+        audioRef.current.crossOrigin = "anonymous"; // 防止跨域问题
         audioRef.current.load();
 
         // 初始化音频上下文和分析器
@@ -25,115 +38,86 @@ const AudioVisualizer = ({ audioSrc }) => {
         source.connect(analyserRef.current);
         analyserRef.current.connect(audioContextRef.current.destination);
 
-        const playAudio = () => {
-            audioRef.current.play().catch(e => console.error('Error playing audio:', e));
-        };
-        audioRef.current.addEventListener('canplaythrough', playAudio);
+        // 初始化 THREE.js 场景、相机和渲染器
+        sceneRef.current = new THREE.Scene();
+        cameraRef.current = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        cameraRef.current.position.z = 3;
 
-        // 初始化THREE.js场景和动画循环
-        const container = document.querySelector('.audioVisual-box');
-        const width = container.offsetWidth;
-        const height = container.offsetHeight;
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-        camera.position.set(20, -50, 120);
+        rendererRef.current = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        mountRef.current.appendChild(rendererRef.current.domElement);
+        rendererRef.current.setSize(window.innerWidth, window.innerHeight);
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true });
-        renderer.setSize(width, height);
-        container.appendChild(renderer.domElement);
-
-        // 创建心形和粒子系统
-        // 创建心形和粒子系统
-        const heartShape = new THREE.Shape();
-        heartShape.moveTo(25, -25); // 起点调整为负值
-        heartShape.bezierCurveTo(25, -25, 20, 0, 0, 0);
-        heartShape.bezierCurveTo(-30, 0, -30, -35, -30, -35); // 控制点和结束点调整为负值
-        heartShape.bezierCurveTo(-30, -55, -10, -77, 25, -95); // 控制点和结束点调整为负值
-        heartShape.bezierCurveTo(60, -77, 80, -55, 80, -35); // 控制点和结束点调整为负值
-        heartShape.bezierCurveTo(80, -35, 80, 0, 50, 0);
-        heartShape.bezierCurveTo(35, 0, 25, -25, 25, -25); // 控制点调整为负值
-
-
-        const points = heartShape.getPoints(1000);
+        // 创建简单的点粒子几何体和材质
         const particlesGeometry = new THREE.BufferGeometry();
-        const posArray = new Float32Array(points.length * 3);
-        const colorsArray = new Float32Array(points.length * 3);
+        const positions = new Float32Array(2000); // 假设有2000个粒子
+        const colors = new Float32Array(2000);
+        for (let i = 0; i < positions.length; i += 3) {
+            const x = (Math.random() - 0.5) * 1.5; // 随机位置
+            const y = (Math.random() - 0.5) * 1.5;
+            const z = (Math.random() - 0.5) * 1.5;
+            positions[i] = x;
+            positions[i + 1] = y;
+            positions[i + 2] = z;
 
-        const offset = 8;
+            // 随机颜色
+            colors[i] = Math.random();
+            colors[i + 1] = Math.random();
+            colors[i + 2] = Math.random();
+        }
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-        points.forEach((point, i) => {
-            const index = i * 3;
-            posArray[index] = point.x + (Math.random() - 0.5) * offset;
-            posArray[index + 1] = point.y + (Math.random() - 0.5) * offset;
-            posArray[index + 2] = (Math.random() - 0.5) * offset; // Z坐标也加上偏移
+        const particlesMaterial = new THREE.PointsMaterial({ size: 0.02, vertexColors: true });
+        const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+        sceneRef.current.add(particles);
 
-            // 设置颜色为红色
-            colorsArray[index] = 1;    // R
-            colorsArray[index + 1] = 0; // G
-            colorsArray[index + 2] = 0; // B
-        });
-
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
-
-        const particlesMaterial = new THREE.PointsMaterial({ size: 0.5, vertexColors: true });
-        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particlesMesh);
-
+        // 设置动画循环
         const animate = () => {
             requestAnimationFrame(animate);
 
-            if (audioRef.current.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+            if (audioRef.current.readyState >= 2) { // 确保音频已加载
                 analyserRef.current.getByteFrequencyData(dataArrayRef.current);
 
-                const positions = particlesGeometry.attributes.position.array;
-                const colors = particlesGeometry.attributes.color.array;
+                // 假设您的 particlesGeometry.attributes.position.count 是 2000
+                for (let i = 0; i < particlesGeometry.attributes.position.count; i++) {
+                    const frequencyIndex = dataArrayRef.current[i];
+                    const intensity = frequencyIndex / 255;
 
-                const particleCount = positions.length / 3;
-                const dataLength = dataArrayRef.current.length;
+                    // 更新粒子位置，根据频率强度计算 Y 值
+                    const x = particlesGeometry.attributes.position.array[i * 3];
+                    const y = intensity * 1.5; // Y值根据频率强度计算
+                    const z = particlesGeometry.attributes.position.array[i * 3 + 2];
 
-                for (let i = 0; i < particleCount; i++) {
-                    const index = i * 3;
-                    const frequencyIndex = Math.floor(dataLength * i / particleCount);
-                    const intensity = dataArrayRef.current[frequencyIndex] / 128.0; // 音频强度
-
-                    positions[index + 1] = posArray[index + 1] + intensity * 5.0; // 在Y轴上移动粒子
-
-                    colors[index] = intensity; // R
-                    colors[index + 1] = 0; // G
-                    colors[index + 2] = 1 - intensity; // B
+                    // 直接更新 positions 数组
+                    positions[i * 3] = x;
+                    positions[i * 3 + 1] = y;
+                    positions[i * 3 + 2] = z;
                 }
 
+                // 更新 BufferAttribute 通知 Three.js 属性已更改
                 particlesGeometry.attributes.position.needsUpdate = true;
-                particlesGeometry.attributes.color.needsUpdate = true;
             }
 
-            renderer.render(scene, camera);
+            rendererRef.current.render(sceneRef.current, cameraRef.current);
         };
         animate();
 
-        // 窗口调整大小事件处理
-        const handleResize = () => {
-            const newWidth = container.offsetWidth;
-            const newHeight = container.offsetHeight;
-            renderer.setSize(newWidth, newHeight);
-            camera.aspect = newWidth / newHeight;
-            camera.updateProjectionMatrix();
-        };
-
+        // 监听窗口调整大小事件
         window.addEventListener('resize', handleResize);
 
-        const cleanup = () => {
-            if (container.firstChild) {
-                container.removeChild(container.firstChild);
-            }
+        // 组件卸载时的清理逻辑
+        return () => {
+            audioRef.current.pause();
             if (audioContextRef.current) {
+                audioContextRef.current.suspend(); // 挂起音频上下文，防止自动播放
                 audioContextRef.current.close();
             }
+            window.removeEventListener('resize', handleResize);
+            if (rendererRef.current) {
+                rendererRef.current.domElement.parentNode.removeChild(rendererRef.current.domElement);
+            }
         };
-
-        return cleanup;
-    }, [audioSrc]);
+    }, [audioSrc]); // 仅当 audioSrc 更改时重新运行
 
     return <div ref={mountRef} style={{ width: '100%', height: '100%' }}></div>;
 };

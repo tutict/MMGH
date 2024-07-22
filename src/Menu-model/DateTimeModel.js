@@ -15,6 +15,34 @@ const DateTimeModal = ({ isOpen, onDismiss, onConfirm }) => {
 
     // 状态来存储用户选择的日期和时间
     const [selectedDateTime, setSelectedDateTime] = useState(currentDateTime());
+    const [clickCount, setClickCount] = useState(0); // 新增点击次数状态
+
+    useEffect(() => {
+        const handleBodyClick = (event) => {
+            // 假设模态框的元素有一个特定的类名，例如 "my-modal"
+            const modalElement = document.querySelector('.small-modal');
+
+            // 更新点击次数
+            setClickCount(count => count + 1);
+
+            // 检查点击事件的目标是否是模态框元素或其子元素
+            if (modalElement && !modalElement.contains(event.target)) {
+
+                if(clickCount === 1) {
+
+                    // 如果点击目标不是模态框或其子元素，关闭模态框
+                    onDismiss();
+                    setClickCount(0);
+                }
+            }
+        };
+
+        // 添加点击事件监听器
+        document.body.addEventListener('click', handleBodyClick);
+
+        // 清理函数，移除事件监听器
+        return () => document.body.removeEventListener('click', handleBodyClick);
+    }, [onDismiss, clickCount]); // 仅在 onDismiss 变化时重新运行 effect
 
     useEffect(() => {
         // 每分钟更新北京时间
@@ -35,9 +63,8 @@ const DateTimeModal = ({ isOpen, onDismiss, onConfirm }) => {
         <IonModal
             isOpen={isOpen}
             cssClass="small-modal"
-            onDidDismiss={onDismiss} // 当模态框关闭时触发
-            backdropDismiss={true} // 允许点击背景来关闭模态框
             selectedDate={currentDateTime}
+            backdropDismiss={true}
         >
             <IonContent>
                 <IonDatetime
