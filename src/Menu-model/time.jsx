@@ -4,7 +4,7 @@ import '../CSS/menu.css';
 import Menu from "./Menu";
 import DateTimeModel from "./DateTimeModel";
 
-const Clock: React.FC = () => {
+const Clock = () => {
     const [time, setTime] = useState(new Date());
     const [alarmTime, setAlarmTime] = useState('');
     const [showModel, setShowModel] = useState(false);

@@ -153,7 +153,7 @@ function App() {
                             <NavigationItem to="/" color="medium" label="返回主页" />
                         </IonList>
                         <IonNote color="medium" class="menu-text-me">
-                            by 黄广龙
+                            by hgl
                         </IonNote>
                     </IonContent>
                 </IonMenu>

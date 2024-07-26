@@ -12,7 +12,7 @@ import { defineCustomElements } from '@ionic/pwa-elements/loader';
 
 defineCustomElements(window);
 
-const TakePhoto: React.FC = () => {
+const TakePhoto = () => {
     const [photo, setPhoto] = useState('');
     const [photoBase64, setPhotoBase64] = useState(''); // 新状态变量
     const [showModal, setShowModal] = useState(false);
