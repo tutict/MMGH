@@ -1,23 +1,71 @@
-svg{
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 1.5s;
+.rose {
+  display: block;
+  margin: 0 auto;
+  border-radius: 28px;
+  padding: 1rem;
+  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 60%),
+    linear-gradient(140deg, rgba(20, 20, 38, 0.9), rgba(40, 22, 45, 0.85));
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+  transition: transform 0.8s ease, box-shadow 0.8s ease;
 }
-@keyframes colorChange {
-    0% {fill: black}
-    100% {fill: red}
+
+.rose:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65);
 }
-.hua.red{
-    animation: colorChange 3s forwards;
+
+.hua {
+  fill: var(--rose-color, #f64f59);
+  filter: drop-shadow(0 15px 18px rgba(0, 0, 0, 0.35));
+  transition: fill 1.2s ease;
 }
-@keyframes rotateAntiClockwise {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(-360deg);
-    }
+
+.hua.red {
+  --rose-color: #f64f59;
+  animation: bloomColor 3s forwards;
 }
+
+.hua.pink {
+  --rose-color: #ffa6c1;
+}
+
+.hua.gold {
+  --rose-color: #ffe585;
+}
+
+.hua.blue {
+  --rose-color: #7ad7ff;
+}
+
+@keyframes bloomColor {
+  0% {
+    fill: #0f0f0f;
+  }
+
+  100% {
+    fill: var(--rose-color, #f64f59);
+  }
+}
+
 .rotate {
-    animation: rotateAntiClockwise 3s linear infinite;
+  animation: rotateAntiClockwise 12s linear infinite;
+}
+
+@keyframes rotateAntiClockwise {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rose,
+  .rotate {
+    animation: none;
+    transition: none;
+  }
 }

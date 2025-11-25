@@ -1,94 +1,359 @@
-/* 确保 html 和 body 元素占据整个视口 */
-html, body {
-    height: 100%;
-    width: 100%;
-    margin: 0; /* 移除默认的 margin */
-    padding: 0; /* 移除默认的 padding */
+html,
+body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .content-background-menu {
-    --background: url('../../public/wallhaven-d6o77l.jpg') no-repeat center center / cover;
+  --background: url("../../public/wallhaven-d6o77l.jpg") no-repeat center center /
+    cover;
+  position: relative;
+  min-height: 100%;
+  color: #f4f6ff;
 }
-.glass-effect-menu {
-    border-radius: 5%;
-    height: 200px;
-    width: 320px;
-    backdrop-filter: blur(8px);
-    background-color: rgba(255, 255, 255, 0.1);
-    position: relative;
+
+.menu-toolbar {
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.menu-title {
+  font-size: 1.1rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.glass-panel {
+  border-radius: 24px;
+  padding: 1.5rem;
+  background: rgba(20, 24, 38, 0.58);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(16px);
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.panel-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-bottom: 0.4rem;
+}
+
+.panel-hint {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
+}
+
+/* Album */
+.album-wrapper {
+  min-height: 320px;
+}
+
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.85rem;
+}
+
+.album-tile {
+  border: none;
+  padding: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  background: rgba(255, 255, 255, 0.08);
+  height: 120px;
+}
+
+.album-tile ion-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.album-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.album-tile:hover ion-img {
+  transform: scale(1.08);
+}
+
+.album-empty {
+  min-height: 220px;
+  border-radius: 18px;
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.album-fab {
+  position: fixed;
+  right: 5%;
+  bottom: 5%;
+  z-index: 10;
+}
+
+.album-modal {
+  --width: min(90vw, 720px);
+  --height: min(80vh, 520px);
+  --border-radius: 24px;
+}
+
+.album-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  height: 100%;
+}
+
+.album-modal-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 18px;
+  background: #000;
+}
+
+/* Carousel */
+.carousel-page {
+  --background: transparent;
+  min-height: 100%;
+  position: relative;
+}
+
+.carousel-backdrop,
+.carousel-blur-layer {
+  position: fixed;
+  inset: 0;
+}
+
+.carousel-backdrop {
+  background-size: cover;
+  background-position: center;
+  filter: blur(6px);
+  z-index: -2;
+}
+
+.carousel-blur-layer {
+  background: rgba(10, 10, 20, 0.75);
+  z-index: -1;
+}
+
+.carousel-shell {
+  margin-top: 2rem;
+}
+
+.carousel-swiper {
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+}
+
+.carousel-slide ion-img {
+  width: 100%;
+  height: clamp(260px, 50vh, 480px);
+  object-fit: cover;
+}
+
+.carousel-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Clock */
+.clock-wrapper h1 {
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  margin: 0;
+}
+
+.clock-alarm-info {
+  margin-top: 1rem;
+  font-size: 1.1rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Camera */
+.camera-preview {
+  margin-top: 1rem;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.camera-preview img {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  max-height: 420px;
+}
+
+.camera-placeholder {
+  min-height: 240px;
+  border-radius: 20px;
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Music layout */
+.music-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 420px);
+  gap: 1.25rem;
+}
+
+.music-visualizer {
+  min-height: 320px;
+}
+
+.music-visualizer-canvas,
+.audio-visualizer {
+  width: 100%;
+  height: clamp(240px, 38vh, 420px);
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+.music-visualizer-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, rgba(20, 14, 31, 0.9), rgba(32, 18, 55, 0.9));
+}
+
+.music-sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.music-playlist {
+  background: transparent;
+}
+
+.music-playlist-item {
+  --background: transparent;
+  border-radius: 16px;
+  margin-bottom: 0.5rem;
+}
+
+.music-playlist-item--active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.music-playlist-empty {
+  border-radius: 18px;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  padding: 1rem;
+  text-align: center;
+}
+
+.music-cover-fallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent);
+  display: grid;
+  place-content: center;
+}
+
+.music-player-placeholder {
+  border-radius: 18px;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.music-player {
+  margin-top: 1.25rem;
+}
+
+.audio-visualizer {
+  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.06), transparent 40%);
+}
+
+.album-fab ion-button,
+.clock-action,
+.carousel-actions ion-button {
+  --background: linear-gradient(120deg, #7f5af0, #ff5470);
+  --box-shadow: 0 10px 25px rgba(127, 90, 240, 0.45);
+}
+
+@media (max-width: 960px) {
+  .music-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .glass-panel {
+    padding: 1.1rem;
+  }
+
+  .album-grid {
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  }
+
+  .album-fab {
+    position: static;
+    margin-top: 1rem;
     display: flex;
     justify-content: center;
-    align-items: center;
-}
-
-.my-custom-class .modal-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-}
-
-/* 为了确保模态内容也居中，添加以下 CSS */
-.my-custom-class .modal-content {
-    width: 50%; /* 设置模态的宽度为屏幕宽度的一半 */
-    max-width: 400px; /* 也可以设置一个最大宽度 */
-    margin: auto;
-    /* 如果需要，也可以在这里添加 padding 或者其他样式 */
-}
-
-.fixed-button-container {
-    position: fixed; /* 固定定位 */
-    bottom: 0;
-    left: 45%;
-    width: 100%;     /* 宽度100% */
-    padding: 10px;   /* 一些内边距 */
-    box-sizing: border-box; /* 防止内边距影响宽度 */
-    align-items: center;
-    justify-content: center;
-}
-
-.fixed-button-container {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    padding: 10px;
-    box-sizing: border-box;
-}
-
-/* 使图片填充容器并且居中显示 */
-.ion-img {
-    object-fit: cover;
-    width: 100%;
-    height: 100%;
-}
-
-.mySwiper{
-    top: 8%;
-    width: 60%;
-    height: 65%;
-    object-fit: cover;
-    align-items: center;
-    justify-content: center;
-    border-radius: 15px;
-    box-shadow: 0 4px 8px rgba(0,0,0,1);
-}
-
-
-.blur-background {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-size: cover;
-    background-position: center;
-    filter: blur(2px);/* 调整模糊程度 */
-    z-index: -1; /* 确保背景在内容下方 */
-}
-
-
-
-.ion-content {
-    position: relative;
-    z-index: 0;
+  }
 }

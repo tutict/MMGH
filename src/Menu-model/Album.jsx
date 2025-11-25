@@ -1,56 +1,127 @@
-import React, { useState } from 'react';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { IonContent, IonGrid, IonRow, IonCol, IonImg, IonButton, IonModal, IonPage } from '@ionic/react';
-import '../CSS/menu.css';
+import React, { useCallback, useMemo, useState } from "react";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
+import {
+  IonButton,
+  IonContent,
+  IonIcon,
+  IonImg,
+  IonModal,
+  IonPage,
+  IonSpinner,
+  IonText,
+} from "@ionic/react";
+import { imagesOutline } from "ionicons/icons";
+import "../CSS/menu.css";
 import Menu from "./Menu";
 
 const Album = () => {
-    const [photos, setPhotos] = useState([]);
-    const [photoToView, setPhotoToView] = useState(null);
+  const [photos, setPhotos] = useState([]);
+  const [photoToView, setPhotoToView] = useState(null);
+  const [isPicking, setIsPicking] = useState(false);
 
-    const selectPhoto = async () => {
-        const image = await Camera.getPhoto({
-            resultType: CameraResultType.Uri,
-            source: CameraSource.Photos,
-            quality: 100
-        });
+  const hasPhotos = photos.length > 0;
 
-        if (image.webPath) {
-            setPhotos([image.webPath, ...photos]);
-        }
-    };
+  const galleryInstructions = useMemo(
+    () =>
+      hasPhotos
+        ? "点击任何缩略图即可放大预览"
+        : "相册暂时为空，挑选一张喜欢的照片开始吧",
+    [hasPhotos]
+  );
 
-    const viewPhoto = (photo) => {
-        setPhotoToView(photo);
-    };
+  const selectPhoto = useCallback(async () => {
+    setIsPicking(true);
+    try {
+      const image = await Camera.getPhoto({
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Photos,
+        quality: 90,
+      });
 
-    // 设置图片容器的尺寸和保持比例的CSS样式
-    const photoStyle = {
-        width: '100px', // 根据需要设置宽度
-        height: '100px', // 根据需要设置高度
-        objectFit: 'cover', // 保持图片比例
-    };
+      if (image.webPath) {
+        setPhotos((prev) => [image.webPath, ...prev]);
+      }
+    } catch (error) {
+      console.warn("Failed to import photo", error);
+    } finally {
+      setIsPicking(false);
+    }
+  }, []);
 
-    return (
-        <IonContent class="content-background-menu">
-            <Menu />
-                <IonGrid>
-                    <IonRow>
-                        {photos.map((photo, index) => (
-                            <IonCol size="2" key={index}>
-                                <IonImg src={photo} style={photoStyle} onClick={() => viewPhoto(photo)} />
-                            </IonCol>
-                        ))}
-                    </IonRow>
-                </IonGrid>
-            <div className="fixed-button-container">
-                    <IonButton fill="outline"  onClick={ selectPhoto }>选择图片</IonButton>
+  return (
+    <IonPage>
+      <IonContent className="content-background-menu ion-padding">
+        <Menu />
+        <section className="album-wrapper glass-panel">
+          <header className="panel-header">
+            <div>
+              <p className="panel-eyebrow">回忆相册</p>
+              <h1>轻触即可放大浏览</h1>
             </div>
-            <IonModal isOpen={!!photoToView} onDidDismiss={() => setPhotoToView(null)} >
-                    <IonImg src={photoToView} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            </IonModal>
-        </IonContent>
-    );
+            <IonText className="panel-hint">{galleryInstructions}</IonText>
+          </header>
+
+          {hasPhotos ? (
+            <div className="album-grid">
+              {photos.map((photo, index) => (
+                <button
+                  key={`${photo}-${index}`}
+                  type="button"
+                  className="album-tile"
+                  onClick={() => setPhotoToView(photo)}
+                  aria-label="预览照片"
+                >
+                  <IonImg src={photo} alt="相册图片" />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="album-empty" role="status">
+              <IonIcon icon={imagesOutline} size="large" />
+              <p>暂无照片</p>
+              <span>导入一张喜欢的照片，填满这个空间。</span>
+            </div>
+          )}
+        </section>
+
+        <div className="album-fab">
+          <IonButton
+            shape="round"
+            size="large"
+            onClick={selectPhoto}
+            disabled={isPicking}
+          >
+            {isPicking ? (
+              <>
+                <IonSpinner name="crescent" slot="start" />
+                正在导入
+              </>
+            ) : (
+              <>
+                <IonIcon icon={imagesOutline} slot="start" />
+                选择照片
+              </>
+            )}
+          </IonButton>
+        </div>
+
+        <IonModal
+          isOpen={!!photoToView}
+          onDidDismiss={() => setPhotoToView(null)}
+          cssClass="album-modal"
+        >
+          <div className="album-modal-content">
+            <IonImg
+              src={photoToView ?? undefined}
+              alt="查看大图"
+              className="album-modal-image"
+            />
+            <IonButton onClick={() => setPhotoToView(null)}>关闭</IonButton>
+          </div>
+        </IonModal>
+      </IonContent>
+    </IonPage>
+  );
 };
 
 export default Album;

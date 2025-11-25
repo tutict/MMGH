@@ -1,80 +1,111 @@
-import React, { useState, useEffect } from 'react';
-import { IonButton, IonContent, IonGrid, IonRow } from '@ionic/react';
-import '../CSS/menu.css';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { IonButton, IonContent, IonIcon, IonPage } from "@ionic/react";
+import { alarmOutline } from "ionicons/icons";
+import "../CSS/menu.css";
 import Menu from "./Menu";
 import DateTimeModel from "./DateTimeModel";
 
 const Clock = () => {
-    const [time, setTime] = useState(new Date());
-    const [alarmTime, setAlarmTime] = useState('');
-    const [showModel, setShowModel] = useState(false);
+  const [time, setTime] = useState(new Date());
+  const [alarmTime, setAlarmTime] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [isRinging, setIsRinging] = useState(false);
 
-    useEffect(() => {
-        const timerID = setInterval(() => tick(), 1000);
+  useEffect(() => {
+    const timerID = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timerID);
+  }, []);
 
-        // 检查是否到达了设定的闹钟时间，如果是，则触发通知
-        checkForAlarm();
+  useEffect(() => {
+    if (!alarmTime) {
+      return;
+    }
+    const currentTime = time.toTimeString().substring(0, 5);
+    const alarmTimeFormatted = new Date(alarmTime).toTimeString().substring(0, 5);
 
-        return () => {
-            clearInterval(timerID);
-        };
-    }, [time, alarmTime]);
+    if (currentTime === alarmTimeFormatted && !isRinging) {
+      setIsRinging(true);
+      playAudio();
+      setTimeout(() => {
+        setIsRinging(false);
+        setAlarmTime("");
+      }, 60000);
+      alert("闹钟时间到啦！");
+    }
+  }, [alarmTime, isRinging, time]);
 
-    const tick = () => {
-        setTime(new Date());
-    };
+  const playAudio = useCallback(() => {
+    const audio = new Audio("/é—¹é’Ÿ2-å“”å£°_çˆ±ç»™ç½‘_aigei_com.mp3");
+    audio.autoplay = true;
+    audio.play().catch((err) => console.error("播放失败", err));
+  }, []);
 
-    const playAudio = () => {
-        const audio = new Audio('/闹钟2-哔声_爱给网_aigei_com.mp3');
-        audio.autoplay = true;
-        audio.play().catch((err) => console.error("播放失败",err));
-    };
+  const formattedTime = useMemo(
+    () => time.toLocaleTimeString("zh-CN", { hour12: false }),
+    [time]
+  );
 
-    const checkForAlarm = () => {
-        // 如果当前时间等于闹钟时间，则触发一些事件，例如震动或声音
-        if (alarmTime) {
-            const currentTime = time.toTimeString().substring(0, 5);
-            const alarmTimeFormatted = new Date(alarmTime).toTimeString().substring(0, 5);
+  const formattedDate = useMemo(
+    () =>
+      time.toLocaleDateString("zh-CN", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      }),
+    [time]
+  );
 
-            // 如果当前时间等于闹钟时间
-            if (currentTime === alarmTimeFormatted) {
-                // 触发事件，例如震动
+  return (
+    <IonPage>
+      <IonContent className="content-background-menu ion-padding">
+        <Menu />
+        <section className="clock-wrapper glass-panel">
+          <header className="panel-header">
+            <div>
+              <p className="panel-eyebrow">现在时间</p>
+              <h1>{formattedTime}</h1>
+            </div>
+            <IonButton
+              shape="round"
+              onClick={() => setShowModal(true)}
+              className="clock-action"
+            >
+              <IonIcon icon={alarmOutline} slot="start" />
+              设置闹钟
+            </IonButton>
+          </header>
+          <p className="panel-hint">{formattedDate}</p>
 
-                // 播放声音或其他操作
+          <div className="clock-alarm-info">
+            {alarmTime ? (
+              <>
+                <span>下一次提醒</span>
+                <strong>
+                  {new Date(alarmTime).toLocaleTimeString("zh-CN", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </strong>
+              </>
+            ) : (
+              <span>暂未设置闹钟</span>
+            )}
+          </div>
+        </section>
 
-                playAudio();
-
-                alert('闹钟响了！');
-                // 然后清除闹钟，或者根据你的应用逻辑处理
-                setAlarmTime('');
-            }
-        }
-    };
-
-    return (
-        <IonContent class="content-background-menu">
-            <Menu />
-            <IonGrid class="glass-effect-menu middle">
-                <IonRow>
-                    <h1>{time.toLocaleTimeString()}</h1>
-                </IonRow>
-                <IonRow>
-                    <IonButton onClick={() => setShowModel(true)}>设置闹钟</IonButton>
-                </IonRow>
-            </IonGrid>
-
-            {/* 模态对话框 */}
-            <DateTimeModel
-                isOpen={showModel}
-                onDismiss={() => setShowModel(false)}
-                onConfirm={(newDate) => {
-                    setAlarmTime(newDate); // 在此处设置新的警报时间
-                    setShowModel(false);   // 关闭模态对话框
-                }}
-                selectedDate={alarmTime}
-            />
-        </IonContent>
-    );
+        <DateTimeModel
+          isOpen={showModal}
+          onDismiss={() => setShowModal(false)}
+          onConfirm={(newDate) => {
+            setAlarmTime(newDate);
+            setShowModal(false);
+            setIsRinging(false);
+          }}
+          selectedDate={alarmTime}
+        />
+      </IonContent>
+    </IonPage>
+  );
 };
 
 export default Clock;

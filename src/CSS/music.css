@@ -1,48 +1,23 @@
-.music-content .aplayer{
-    position: fixed;
-    background: rgba(0, 0, 0, 0.4) !important;
-    color: aliceblue;
-    bottom: 0;
-    font-style: italic;
-    width: 70%;
-    box-shadow: 0 4px 8px rgba(0,0,0,1);
+.music-player .aplayer {
+  background: rgba(12, 16, 28, 0.9) !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 30px rgba(0, 0, 0, 0.45);
+  color: #f5f6ff;
 }
 
-.music-menu {
-    position: fixed;
-    font-family:
-            Arial,
-            Helvetica,
-            sans-serif;
-    margin: 5px;
-    background: rgba(0, 0, 0, 0.4) !important;
-    height: 100%;
-    right: 0;
-    bottom: 0;
-    width: 30%;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0,0,0,1);
+.music-player .aplayer .aplayer-body {
+  background: transparent;
 }
 
-.audioVisual-box {
-    position: fixed;
-    left: 5%;
-    top: 20%;
-    width: 60%;
-    height: 50%;
-    border-radius: 15px;
-    background: rgba(0, 0, 0, 0.4);
-    z-index: 0;
-    display: flex; /* 使用flexbox布局 */
-    justify-content: center; /* 水平居中 */
-    align-items: center; /* 垂直居中 */
+.music-player .aplayer .aplayer-info {
+  border-top: none;
 }
 
-/* 确保AudioVisualizer组件的容器也使用flex布局 */
-.audioVisualizer-container {
-    width: 100%; /* 或者指定一个特定的宽度 */
-    height: 100%; /* 或者指定一个特定的高度 */
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.music-player .aplayer .aplayer-list {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.music-player .aplayer .aplayer-list ol li.aplayer-list-light {
+  background: rgba(255, 255, 255, 0.04);
 }

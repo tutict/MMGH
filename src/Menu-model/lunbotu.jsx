@@ -1,98 +1,111 @@
-import React, {useEffect, useRef, useState} from 'react';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { IonContent, IonPage, IonButton, IonImg} from '@ionic/react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { A11y, Scrollbar, Autoplay, Pagination, Navigation } from 'swiper/modules';
-import Menu from "./Menu";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
+import { IonButton, IonContent, IonIcon, IonImg, IonPage, IonText } from "@ionic/react";
+import { cameraOutline } from "ionicons/icons";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, A11y, Navigation, Pagination, Scrollbar } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/pagination";
+import "swiper/css/navigation";
+import "swiper/css/scrollbar";
 
-import 'swiper/css';
-import '../CSS/lunbotu.css';
-import 'swiper/css/pagination';
-import 'swiper/css/navigation';
-import 'swiper/css/scrollbar';
-import fristPhoto from '../assets/20230908134324.jpg';
+import Menu from "./Menu";
+import "../CSS/lunbotu.css";
+import "../CSS/menu.css";
+import firstPhoto from "../assets/20230908134324.jpg";
 
 const Lunbotu = () => {
-    const defaultImages = [
-       fristPhoto,
-    ];
-    const [images, setImages] = useState(defaultImages);
-    const swiperRef = useRef(null);
-    const [currentBackground, setCurrentBackground] = useState(defaultImages);
+  const [images, setImages] = useState([firstPhoto]);
+  const [currentBackground, setCurrentBackground] = useState(firstPhoto);
+  const swiperRef = useRef(null);
 
+  const updateBackground = useCallback(() => {
+    if (!swiperRef.current || images.length === 0) {
+      return;
+    }
 
-    useEffect(() => {
-        // 检查是否有两张或更多图片
-        if (swiperRef.current && images.length >= 1) {
-            swiperRef.current.update(); // 更新 Swiper 实例
-            swiperRef.current.autoplay.start(); // 启动自动播放
-        }
+    const index = swiperRef.current.realIndex ?? swiperRef.current.activeIndex;
+    setCurrentBackground(images[index % images.length]);
+  }, [images]);
 
-        const updateBackground = () => {
-            if(swiperRef.current && images.length > 0) {
-                const currentIndex = swiperRef.current.activeIndex;
-                const currentImageUrl = images[currentIndex % images.length];
-                setCurrentBackground(currentImageUrl);
-            }
-        };
+  useEffect(() => {
+    if (swiperRef.current) {
+      updateBackground();
+      swiperRef.current.autoplay?.start?.();
+      swiperRef.current.on("slideChange", updateBackground);
+    }
 
-        if (swiperRef.current && images.length >= 1) {
-            swiperRef.current.on('slideChange', updateBackground);
-        }
-
-        return () => {
-            if (swiperRef.current && images.length >= 1) {
-                swiperRef.current.off('slideChange', updateBackground);
-            }
-        };
-
-    }, [images]);
-
-
-    const selectImage = async () => {
-        try {
-            const photo = await Camera.getPhoto({
-                resultType: CameraResultType.Uri,
-                source: CameraSource.Photos,
-                quality: 100
-            });
-
-            const newImageUrl = photo.webPath;
-            setImages(oldImages => [...oldImages, newImageUrl]);
-        } catch (error) {
-            console.error('Error accessing photos', error);
-        }
+    return () => {
+      swiperRef.current?.off?.("slideChange", updateBackground);
     };
+  }, [images, updateBackground]);
 
-    return (
-        <IonPage>
-            <IonContent fullscreen className="background-glass">
-                <div className="blur-background" style={{ backgroundImage: `url(${currentBackground})` }} />
-                <Menu/>
-                <Swiper
-                    onSwiper={(swiper) => {
-                        swiperRef.current = swiper;
-                    }}
-                    modules={[ A11y, Navigation, Scrollbar, Autoplay, Pagination, Navigation]}
-                    spaceBetween={50}
-                    slidesPerView={1}
-                    autoplay={{ delay: 3000, disableOnInteraction: false }}
-                    speed={200}
-                    className="mySwiper swiper-container"
-                    style={{ '--swiper-aspect-ratio': '16:9' }}
-                >
-                    {images.map((image, index) => (
-                        <SwiperSlide className="swiper-slide-forme" key={index}>
-                            <IonImg src={image} className="swiper-slide-image"/>
-                        </SwiperSlide>
-                    ))}
-                </Swiper>
-                    <IonButton className="bottom-button" fill="outline" onClick={selectImage}>
-                        Select Image
-                    </IonButton>
-            </IonContent>
-        </IonPage>
-    );
+  const selectImage = async () => {
+    try {
+      const photo = await Camera.getPhoto({
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Photos,
+        quality: 100,
+      });
+
+      if (photo?.webPath) {
+        setImages((prev) => [...prev, photo.webPath]);
+      }
+    } catch (error) {
+      console.error("Error accessing photos", error);
+    }
+  };
+
+  return (
+    <IonPage>
+      <IonContent className="content-background-menu carousel-page">
+        <div
+          className="carousel-backdrop"
+          style={{ backgroundImage: `url(${currentBackground})` }}
+        />
+        <div className="carousel-blur-layer" />
+        <Menu />
+
+        <section className="carousel-shell glass-panel">
+          <header className="panel-header">
+            <div>
+              <p className="panel-eyebrow">梦幻轮播</p>
+              <h1>随心切换的回忆墙</h1>
+            </div>
+            <IonText className="panel-hint">
+              {images.length} 张图片 · 支持自动播放
+            </IonText>
+          </header>
+
+          <Swiper
+            modules={[Autoplay, A11y, Navigation, Pagination, Scrollbar]}
+            onSwiper={(swiper) => {
+              swiperRef.current = swiper;
+            }}
+            spaceBetween={30}
+            slidesPerView={1}
+            autoplay={{ delay: 4000, disableOnInteraction: false }}
+            pagination={{ clickable: true }}
+            navigation
+            className="carousel-swiper"
+          >
+            {images.map((image, index) => (
+              <SwiperSlide key={`${image}-${index}`} className="carousel-slide">
+                <IonImg src={image} alt={`轮播图片 ${index + 1}`} />
+              </SwiperSlide>
+            ))}
+          </Swiper>
+
+          <div className="carousel-actions">
+            <IonButton shape="round" onClick={selectImage}>
+              <IonIcon icon={cameraOutline} slot="start" />
+              导入图片
+            </IonButton>
+          </div>
+        </section>
+      </IonContent>
+    </IonPage>
+  );
 };
 
 export default Lunbotu;

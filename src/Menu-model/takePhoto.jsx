@@ -1,114 +1,140 @@
-import React, { useState } from 'react';
-import Menu from "./Menu";
-import '../CSS/menu.css';
+import React, { useState } from "react";
 import {
-    IonButton, IonContent, IonGrid,
-    IonModal,  IonText,
-} from '@ionic/react';
-import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+  IonButton,
+  IonContent,
+  IonIcon,
+  IonModal,
+  IonPage,
+  IonText,
+} from "@ionic/react";
+import { cameraOutline } from "ionicons/icons";
+import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
+import { Filesystem, Directory } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
-import { defineCustomElements } from '@ionic/pwa-elements/loader';
+import { defineCustomElements } from "@ionic/pwa-elements/loader";
+
+import Menu from "./Menu";
+import "../CSS/menu.css";
 
 defineCustomElements(window);
 
 const TakePhoto = () => {
-    const [photo, setPhoto] = useState('');
-    const [photoBase64, setPhotoBase64] = useState(''); // 新状态变量
-    const [showModal, setShowModal] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [photoBase64, setPhotoBase64] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
 
-    // Convert the image blob to a base64 data url
-    const convertBlobToBase64 = (blob) => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = () => reject(new Error('Problem reading input file.'));
-        reader.onload = () => {
-            if (typeof reader.result === 'string') {
-                const base64String = reader.result.split(',')[1];
-                if (base64String) {
-                    resolve(base64String);
-                } else {
-                    reject(new Error('Could not extract base64 string.'));
-                }
-            } else {
-                reject(new Error('Reader result is not a string.'));
-            }
-        };
-        reader.readAsDataURL(blob);
+  const convertBlobToBase64 = (blob) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("Problem reading input file."));
+      reader.onload = () => {
+        if (typeof reader.result === "string") {
+          const base64String = reader.result.split(",")[1];
+          if (base64String) {
+            resolve(base64String);
+          } else {
+            reject(new Error("Could not extract base64 string."));
+          }
+        } else {
+          reject(new Error("Reader result is not a string."));
+        }
+      };
+      reader.readAsDataURL(blob);
     });
 
-    const savePhoto = async (photoBlob) => {
-        try {
-            // 将照片Blob对象转换为base64格式的字符串
-            const base64Data = await convertBlobToBase64(photoBlob);
-            setPhotoBase64(base64Data); // 设置 Base64 编码的图片数据
+  const savePhoto = async (photoBlob) => {
+    const base64Data = await convertBlobToBase64(photoBlob);
+    setPhotoBase64(base64Data);
 
-            // 生成文件名，使用时间戳确保唯一性
-            const fileName = new Date().getTime() + '.jpeg';
+    const fileName = `${Date.now()}.jpeg`;
+    const savedFile = await Filesystem.writeFile({
+      path: fileName,
+      data: base64Data,
+      directory: Directory.Data,
+    });
 
-            // 将base64的照片数据写入到文件系统
-            const savedFile = await Filesystem.writeFile({
-                path: fileName,
-                data: base64Data,
-                directory: Directory.Data,
-            });
+    const webviewPath = Capacitor.convertFileSrc(savedFile.uri);
+    setPhotoPreview(webviewPath);
 
-            // 获取保存后的文件URI
-            const fileUri = savedFile.uri;
-
-            // 使用Capacitor的API转换本地文件URI为WebView可以访问的URL
-            const webviewPath = Capacitor.convertFileSrc(fileUri);
-
-            // 设置照片的状态为Webview路径
-            setPhoto(webviewPath);
-
-            return {
-                filepath: fileName, // 原始文件路径
-                webviewPath: webviewPath, // WebView可访问的URL
-            };
-        } catch (error) {
-            console.error('保存照片时出错', error);
-            throw error; // 重新抛出错误，以便在调用函数中进行处理
-        }
+    return {
+      filepath: fileName,
+      webviewPath,
     };
+  };
 
+  const takePhoto = async () => {
+    setIsCapturing(true);
+    try {
+      const cameraPhoto = await Camera.getPhoto({
+        quality: 90,
+        source: CameraSource.Camera,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+      });
 
-    const takePhoto = async () => {
-        try {
-            const cameraPhoto = await Camera.getPhoto({
-                quality: 100,
-                source: CameraSource.Camera,
-                allowEditing: false,
-                resultType: CameraResultType.Uri
-            });
+      if (cameraPhoto.webPath) {
+        const response = await fetch(cameraPhoto.webPath);
+        const blob = await response.blob();
+        const savedImageFile = await savePhoto(blob);
+        setPhotoPreview(savedImageFile.webviewPath);
+        setShowModal(true);
+      }
+    } catch (error) {
+      console.error("Error taking photo", error);
+    } finally {
+      setIsCapturing(false);
+    }
+  };
 
-            if (cameraPhoto.webPath) {
-                // 从webPath获取Blob
-                const response = await fetch(cameraPhoto.webPath);
-                const blob = await response.blob();
-                // 保存照片并设置状态
-                const savedImageFile = await savePhoto(blob);
-                setPhoto(savedImageFile.webviewPath);
-                setShowModal(true);
-            }
-        } catch (error) {
-            console.error("Error taking photo", error);
-        }
-    };
+  return (
+    <IonPage>
+      <IonContent className="content-background-menu ion-padding">
+        <Menu />
+        <section className="camera-wrapper glass-panel">
+          <header className="panel-header">
+            <div>
+              <p className="panel-eyebrow">即刻留影</p>
+              <h1>捕捉此刻的光影</h1>
+            </div>
+            <IonButton
+              shape="round"
+              disabled={isCapturing}
+              onClick={takePhoto}
+            >
+              <IonIcon icon={cameraOutline} slot="start" />
+              {isCapturing ? "拍摄中..." : "拍照"}
+            </IonButton>
+          </header>
+          <p className="panel-hint">
+            已保存的照片会出现在下方，方便再次查看。
+          </p>
 
-    return (
-        <IonContent class="content-background-menu">
-            <Menu />
-            <IonGrid class="glass-effect-menu middle">
-                    <IonButton expand="full" onClick={takePhoto}>Take Photo</IonButton>
-                    <IonText>拍个照吧🐶</IonText>
-                <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
-                    {/* 使用状态变量来渲染图片 */}
-                    <img src={`data:image/jpeg;base64,${photoBase64}`} alt="Captured photo" />
-                    <IonButton onClick={() => setShowModal(false)}>Close</IonButton>
-                </IonModal>
-            </IonGrid>
-        </IonContent>
-    );
+          {photoPreview ? (
+            <div className="camera-preview" role="img" aria-label="最新照片">
+              <img src={photoPreview} alt="最新拍摄" />
+            </div>
+          ) : (
+            <div className="camera-placeholder">
+              <IonIcon icon={cameraOutline} size="large" />
+              <IonText>目前还没有照片，点击上方按钮试试。</IonText>
+            </div>
+          )}
+        </section>
+
+        <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
+          <div className="album-modal-content">
+            <img
+              src={`data:image/jpeg;base64,${photoBase64}`}
+              alt="Captured photo"
+              className="album-modal-image"
+            />
+            <IonButton onClick={() => setShowModal(false)}>关闭</IonButton>
+          </div>
+        </IonModal>
+      </IonContent>
+    </IonPage>
+  );
 };
 
 export default TakePhoto;
