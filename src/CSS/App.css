@@ -34,10 +34,6 @@
   --status-on-border: rgba(255, 149, 173, 0.65);
   --status-off-bg: rgba(0, 0, 0, 0.04);
   --status-off-border: rgba(0, 0, 0, 0.15);
-  --menu-backdrop: rgba(255, 255, 255, 0.65);
-  --menu-panel-bg: rgba(255, 255, 255, 0.88);
-  --menu-divider: rgba(35, 25, 45, 0.12);
-  --menu-text: rgba(37, 31, 41, 0.7);
 }
 
 .content-background::before {
@@ -264,7 +260,7 @@
 .menu-content {
   padding: 1.5rem;
   background: var(--menu-panel-bg);
-  color: var(--text-primary);
+  color: #f7faff;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -274,15 +270,30 @@
   backdrop-filter: blur(24px);
 }
 
-.menu-hero {
+.menu-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.menu-panel {
   border-radius: 20px;
   border: 1px solid var(--menu-divider);
   padding: 1rem;
+  background: rgba(10, 12, 19, 0.82);
+  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(20px);
+}
+
+.content-background.theme-light .menu-panel {
+  background: rgba(12, 16, 27, 0.9);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.menu-hero {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.18);
-  backdrop-filter: blur(18px);
 }
 
 .menu-hero__badge {
@@ -313,6 +324,58 @@
   line-height: 1.5;
 }
 
+.menu-hero__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+
+.menu-hero__stat {
+  padding: 0.65rem 0.8rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--menu-divider);
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  text-transform: none;
+}
+
+.content-background.theme-light .menu-hero__stat {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.menu-hero__stat strong {
+  font-size: 1.2rem;
+}
+
+.menu-search-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.menu-tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.menu-chip {
+  --background: rgba(255, 255, 255, 0.12);
+  --color: var(--text-primary);
+  --border-color: transparent;
+  --ripple-color: rgba(255, 255, 255, 0.2);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+}
+
+.content-background.theme-light .menu-chip {
+  --background: rgba(0, 0, 0, 0.08);
+  --color: rgba(0, 0, 0, 0.7);
+}
+
 .menu-search {
   margin-bottom: 0;
 }
@@ -322,13 +385,48 @@
   padding: 0;
 }
 
+.menu-grid,
 .menu-link-grid {
   background: transparent;
-  padding: 0;
   display: grid;
   gap: 0.9rem;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   --background: transparent;
+}
+
+.menu-link-grid {
+  padding: 0;
+}
+
+.menu-quick-actions {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.menu-quick-card {
+  border-radius: 18px;
+  border: 1px solid var(--menu-divider);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.15);
+}
+
+.menu-quick-card h4 {
+  margin: 0.25rem 0 0;
+}
+
+.menu-quick-card small {
+  color: var(--menu-text);
+}
+
+.content-background.theme-light .menu-quick-card {
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .menu-tip-card {
@@ -351,24 +449,37 @@
   gap: 0.75rem;
 }
 
-.content-background.theme-dark .menu-content {
+.menu-footer-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.menu-footer-copy span {
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  color: var(--menu-text);
+}
+
+.menu-footer-copy h4 {
+  margin: 0 0 0.35rem;
+}
+
+.menu-footer-copy p {
+  margin: 0;
+  color: var(--menu-text);
+  line-height: 1.4;
+}
+
+/* Menu surfaces remain dark in both themes */
+.content-background.theme-dark .menu-content,
+.content-background.theme-light .menu-content {
   background: linear-gradient(180deg, rgba(19, 21, 32, 0.95), rgba(6, 7, 12, 0.95));
   border-right: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.content-background.theme-light .menu-content {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(245, 247, 252, 0.96));
-  border-right: 1px solid rgba(0, 0, 0, 0.04);
-}
-
-.content-background.theme-dark .menu-hero {
-  background: rgba(10, 12, 19, 0.78);
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
-.content-background.theme-light .menu-hero {
-  background: rgba(255, 255, 255, 0.93);
-  border-color: rgba(0, 0, 0, 0.08);
 }
 
 .content-background.theme-dark .menu-tip-card {

@@ -8,10 +8,10 @@ import {
   IonApp,
   IonButton,
   IonButtons,
+  IonChip,
   IonContent,
   IonHeader,
   IonIcon,
-  IonList,
   IonMenu,
   IonMenuToggle,
   IonNote,
@@ -29,6 +29,7 @@ import {
   chatbubbles,
   chevronDownCircle,
   ellipse,
+  moon,
 } from "ionicons/icons";
 
 import RoseSvg from "./homePage-model/RoseSvg";
@@ -65,13 +66,17 @@ function App() {
 
   const makeRed = () => {
     setColorClass("red");
-    showToast("花瓣悄悄染上心动的暖红");
+    showToast("花瓣悄悄染上心动的暖红。");
   };
 
   const toggleRotation = () => {
     setShouldRotate((prev) => {
       const next = !prev;
-      showToast(next ? "玫瑰旋转，像我们的星河" : "玫瑰静静等待下一次心动");
+      showToast(
+        next
+          ? "珊瑚开始旋转，像我们的小银河。"
+          : "珊瑚慢慢停下，等待下一次心动。"
+      );
       return next;
     });
   };
@@ -79,7 +84,7 @@ function App() {
   const toggleParticles = () => {
     setShowParticles((prev) => {
       const next = !prev;
-      showToast(next ? "星屑为你亮起" : "星屑轻轻熄灭");
+      showToast(next ? "星尘为你亮起。" : "星尘轻轻熄灭。");
       return next;
     });
   };
@@ -87,7 +92,9 @@ function App() {
   const toggleDanmu = () => {
     setShowDanmu((prev) => {
       const next = !prev;
-      showToast(next ? "心事弹幕展开，快写下想说的话" : "心事轻落，弹幕暂别");
+      showToast(
+        next ? "心事弹幕展开，快写下一句悄悄话。" : "心事安静落下，弹幕暂时折叠。"
+      );
       return next;
     });
   };
@@ -95,7 +102,11 @@ function App() {
   const toggleThemeMode = () => {
     setTheme((prev) => {
       const next = prev === "night" ? "dawn" : "night";
-      showToast(next === "dawn" ? "晨曦模式为你亮起" : "夜色模式轻覆四周");
+      showToast(
+        next === "dawn"
+          ? "晨曦模式为你点亮整个庭院。"
+          : "夜色模式轻轻落在四周。"
+      );
       return next;
     });
   };
@@ -111,12 +122,12 @@ function App() {
         value: showParticles ? "守护中" : "待唤醒",
       },
       {
-        label: "玫瑰心跳",
-        value: shouldRotate ? "旋转中" : "静静盛放",
+        label: "珊瑚心跳",
+        value: shouldRotate ? "旋转中" : "静待中",
       },
       {
         label: "心事弹幕",
-        value: showDanmu ? "星海飞行" : "温柔收藏",
+        value: showDanmu ? "星海飞行" : "温柔收纳",
       },
     ],
     [showParticles, shouldRotate, showDanmu]
@@ -130,13 +141,13 @@ function App() {
       to: "/page1",
       color: "danger",
       label: "拍照",
-      subtitle: "把此刻的心动收进胶卷",
+      subtitle: "把此刻心动收进胶卷",
     },
     {
       to: "/page2",
       color: "tertiary",
-      label: "轮播图",
-      subtitle: "给我们的回忆一段流动的光影",
+      label: "轮播",
+      subtitle: "回放我们流动的光影",
     },
     {
       to: "/page3",
@@ -148,19 +159,53 @@ function App() {
       to: "/page4",
       color: "warning",
       label: "相册",
-      subtitle: "汇集我们想说的浪漫瞬间",
+      subtitle: "收集那些浪漫的瞬间",
     },
     {
       to: "/page5",
       color: "primary",
       label: "音乐",
-      subtitle: "换上一首歌，换一种心情",
+      subtitle: "换上一首歌，换一个心情",
     },
     {
       to: "/",
       color: "medium",
       label: "返回主页",
-      subtitle: "回到玫瑰庭院，再次出发",
+      subtitle: "回到珊瑚庭院，再次出发",
+    },
+  ];
+
+  const menuStats = [
+    {
+      label: "旅程节点",
+      value: MENU_LINKS.length.toString().padStart(2, "0"),
+    },
+    {
+      label: "当前主题",
+      value: isLightTheme ? "晨曦模式" : "夜色模式",
+    },
+    {
+      label: "互动状态",
+      value: showDanmu ? "弹幕已开" : "弹幕待启",
+    },
+  ];
+
+  const MENU_TAGS = ["心动分部", "胶片日记", "星河音乐", "才兴投影", "弹幕贴纸"];
+
+  const quickActions = [
+    {
+      title: "主题格调",
+      description: "晨曦/夜色二选一",
+      action: toggleThemeMode,
+      cta: themeToggleLabel,
+      icon: moon,
+    },
+    {
+      title: "弹幕互动",
+      description: "写下一句想说的话",
+      action: toggleDanmu,
+      cta: showDanmu ? "收起弹幕" : "开启弹幕",
+      icon: chatbubbles,
     },
   ];
 
@@ -204,14 +249,14 @@ function App() {
               <section className="hero-panel glass-panel">
                 <div className="hero-copy">
                   <p className="panel-eyebrow">写给未来的你</p>
-                  <h1>等你来到这里，我把星河与玫瑰都交给你</h1>
+                  <h1>等你来到这里，我把星河与珊瑚都交给你</h1>
                   <p className="hero-description">
-                    在这片数字庭院里，我偷偷排练我们未到来的故事。玫瑰替我旋转，粒子替我发光，当你按下开启的那刻，所有温柔都会自动播放。
+                    在这片数字庭院里，我排练着我们未到来的故事。珊瑚替我旋转，颗粒替我发光，当你按下开启的那刻，所有温柔都会自动播放。
                   </p>
                   <div className="hero-actions">
-                    <IonButton onClick={makeRed}>玫瑰变红</IonButton>
+                    <IonButton onClick={makeRed}>珊瑚变红</IonButton>
                     <IonButton fill="outline" onClick={toggleRotation}>
-                      {shouldRotate ? "停止旋转" : "玫瑰旋转"}
+                      {shouldRotate ? "停止旋转" : "珊瑚旋转"}
                     </IonButton>
                     <IonButton fill="clear" color="light" onClick={toggleThemeMode}>
                       {themeToggleLabel}
@@ -234,7 +279,7 @@ function App() {
                     />
                   </div>
                   <p className="hero-visual-caption">
-                    右侧菜单里藏着拍照、轮播、音乐等小宇宙，都是写给未来女朋友的彩蛋。
+                    右侧菜单里藏着拍照、轮播、音乐等小宇宙，都是写给未来女友的彩蛋。
                   </p>
                 </div>
               </section>
@@ -243,8 +288,8 @@ function App() {
                 <article className="control-card glass-panel">
                   <div className="control-card__head">
                     <div>
-                      <h2>星屑护卫</h2>
-                      <p>流星绕着玫瑰，像我想为你围成的宇宙。</p>
+                      <h2>星尘护卫</h2>
+                      <p>流星绕着珊瑚，像我想为你围起的宇宙。</p>
                     </div>
                     <span
                       className={`status-pill ${
@@ -268,7 +313,7 @@ function App() {
                   <div className="control-card__head">
                     <div>
                       <h2>心事弹幕</h2>
-                      <p>把悄悄话写给未来的自己，也写给我。</p>
+                      <p>把想说的话写给未来的自己，也写给我。</p>
                     </div>
                     <span
                       className={`status-pill ${
@@ -284,7 +329,7 @@ function App() {
                     onClick={toggleDanmu}
                   >
                     <IonIcon icon={chatbubbles} slot="start" />
-                    {showDanmu ? "收起呢喃" : "展开呢喃"}
+                    {showDanmu ? "收起留言" : "展开留言"}
                   </IonButton>
                 </article>
 
@@ -292,7 +337,7 @@ function App() {
                   <div className="control-card__head">
                     <div>
                       <h2>光影模式</h2>
-                      <p>夜色与晨曦我都留好，看你想走哪段旅程。</p>
+                      <p>夜色与晨曦我都留好，等你挑选旅程。</p>
                     </div>
                     <span className="status-pill is-on">
                       {isLightTheme ? "晨曦" : "夜色"}
@@ -321,83 +366,128 @@ function App() {
                     {menuButtonLabel}
                   </IonButton>
                 </article>
+              </section>
+
+              {showDanmu && (
+                <section className="danmu-panel glass-panel">
+                  <div className="danmu-panel__head">
+                    <h3>弹幕互动区</h3>
+                    <IonButton fill="clear" size="small" onClick={toggleDanmu}>
+                      隐藏
+                    </IonButton>
+                  </div>
+                  <Danmu />
                 </section>
+              )}
+            </div>
+          ) : (
+            <IonRouterOutlet id="main-content">
+              <Switch>
+                <Route path="/page1" component={TakePhoto} exact />
+                <Route path="/page2" component={MySwiper} exact />
+                <Route path="/page3" component={Clock} exact />
+                <Route path="/page4" component={Album} exact />
+                <Route path="/page5" component={MusicPlayer} exact />
+              </Switch>
+            </IonRouterOutlet>
+          )}
+        </IonPage>
 
-                {showDanmu && (
-                  <section className="danmu-panel glass-panel">
-                    <div className="danmu-panel__head">
-                      <h3>弹幕互动区</h3>
-                      <IonButton fill="clear" size="small" onClick={toggleDanmu}>
-                        隐藏
-                      </IonButton>
+        <IonMenu
+          menuId="first"
+          contentId="main-content"
+          onIonDidOpen={() => setMenuOpen(true)}
+          onIonDidClose={() => setMenuOpen(false)}
+        >
+          <IonHeader>
+            <IonToolbar className="menu-toolbar">
+              <IonTitle>菜单选项</IonTitle>
+              <IonButtons slot="end">
+                <IonMenuToggle>
+                  <IonButton fill="clear" className="back-menu-top">
+                    <IonIcon icon={arrowBack} slot="start" />
+                    关闭
+                  </IonButton>
+                </IonMenuToggle>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+
+          <IonContent className="menu-content">
+            <div className="menu-shell">
+              <section className="menu-hero menu-panel">
+                <div className="menu-hero__head">
+                  <span className="menu-hero__badge">旅程精选</span>
+                  <h3>给未来的你寻找一份心情</h3>
+                  <p>
+                    拍照、散步、听歌……每一道选项都是对未来的轻声邀请，按下它们，平凡的时光就会被重新镀上一层温度。
+                  </p>
+                </div>
+                <div className="menu-hero__stats">
+                  {menuStats.map((stat) => (
+                    <div className="menu-hero__stat" key={stat.label}>
+                      <strong>{stat.value}</strong>
+                      <span>{stat.label}</span>
                     </div>
-                    <Danmu />
-                  </section>
-                )}
-              </div>
-            ) : (
-              <IonRouterOutlet id="main-content">
-                <Switch>
-                  <Route path="/page1" component={TakePhoto} exact />
-                  <Route path="/page2" component={MySwiper} exact />
-                  <Route path="/page3" component={Clock} exact />
-                  <Route path="/page4" component={Album} exact />
-                  <Route path="/page5" component={MusicPlayer} exact />
-                </Switch>
-              </IonRouterOutlet>
-            )}
-          </IonPage>
+                  ))}
+                </div>
+                <div className="menu-search-block">
+                  <IonSearchbar
+                    showClearButton="always"
+                    placeholder="输入想去的地方，或一个情绪密码"
+                    className="menu-search"
+                  />
+                  <div className="menu-tag-cloud">
+                    {MENU_TAGS.map((tag) => (
+                      <IonChip key={tag} outline className="menu-chip">
+                        #{tag}
+                      </IonChip>
+                    ))}
+                  </div>
+                </div>
+              </section>
 
-          <IonMenu
-              menuId="first"
-              contentId="main-content"
-          >
-              <IonHeader>
-                  <IonToolbar className="menu-toolbar">
-                      <IonTitle>菜单选项</IonTitle>
-                      <IonButtons slot="end">
-                          <IonMenuToggle>
-                              <IonButton fill="clear" className="back-menu-top">
-                                  <IonIcon icon={arrowBack} slot="start" />
-                                  关闭
-                              </IonButton>
-                          </IonMenuToggle>
-                      </IonButtons>
-                  </IonToolbar>
-              </IonHeader>
+              <section className="menu-quick-actions menu-panel">
+                {quickActions.map((item) => (
+                  <article className="menu-quick-card" key={item.title}>
+                    <div>
+                      <IonIcon icon={item.icon} />
+                      <small>{item.description}</small>
+                      <h4>{item.title}</h4>
+                    </div>
+                    <IonButton fill="clear" size="small" onClick={item.action}>
+                      {item.cta}
+                    </IonButton>
+                  </article>
+                ))}
+              </section>
 
-                      <IonContent className="menu-content">
-          <div className="menu-shell">
-            <div className="menu-hero">
-              <span className="menu-hero__badge">旅程精选</span>
-              <h3>给未来的你挑一个旅程</h3>
-              <p>拍照、散步、听歌……每一道选项都替你提前装进心里。</p>
-              <IonSearchbar
-                showClearButton="always"
-                placeholder="输入你想搜索的内容"
-                className="menu-search"
-              />
+              <section className="menu-grid menu-panel">
+                {MENU_LINKS.map((link) => (
+                  <IonMenuToggle key={link.label} autoHide={false}>
+                    <NavigationItem {...link} />
+                  </IonMenuToggle>
+                ))}
+              </section>
+
+              <section className="menu-footer-card menu-panel">
+                <div className="menu-footer-copy">
+                  <span>今日提示</span>
+                  <h4>写一句留给未来的心事</h4>
+                  <p>
+                    期盼那些会被再次翻阅的片段，它们会因为你的字句而更加珍贵。
+                  </p>
+                </div>
+                <IonButton fill="outline" onClick={toggleDanmu}>
+                  {showDanmu ? "收起弹幕" : "立刻写下"}
+                </IonButton>
+              </section>
+              <IonNote color="medium" className="menu-note">
+                写给未来的你 · by HGL
+              </IonNote>
             </div>
-            <div className="menu-grid">
-              {MENU_LINKS.map((link) => (
-                <NavigationItem key={link.label} {...link} />
-              ))}
-            </div>
-            <div className="menu-footer-card">
-              <div className="menu-footer-copy">
-                <h4>今日提示</h4>
-                <p>写几句弹幕给未来的自己，它们会永远在星海里闪烁。</p>
-              </div>
-              <IonButton fill="clear" size="small" onClick={toggleDanmu}>
-                开启弹幕
-              </IonButton>
-            </div>
-            <IonNote color="medium" className="menu-note">
-              写给未来的你 · by HGL
-            </IonNote>
-          </div>
-        </IonContent>
-          </IonMenu>
+          </IonContent>
+        </IonMenu>
 
         <IonToast
           isOpen={toastConfig.open}
