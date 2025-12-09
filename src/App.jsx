@@ -75,7 +75,7 @@ function App() {
       showToast(
         next
           ? "珊瑚开始旋转，像我们的小银河。"
-          : "珊瑚慢慢停下，等待下一次心动。"
+          : "珊瑚慢慢停下，等待下一次心动。",
       );
       return next;
     });
@@ -93,7 +93,9 @@ function App() {
     setShowDanmu((prev) => {
       const next = !prev;
       showToast(
-        next ? "心事弹幕展开，快写下一句悄悄话。" : "心事安静落下，弹幕暂时折叠。"
+        next
+          ? "心事弹幕展开，快写下一句悄悄话。"
+          : "心事安静落下，弹幕暂时折叠。",
       );
       return next;
     });
@@ -105,7 +107,7 @@ function App() {
       showToast(
         next === "dawn"
           ? "晨曦模式为你点亮整个庭院。"
-          : "夜色模式轻轻落在四周。"
+          : "夜色模式轻轻落在四周。",
       );
       return next;
     });
@@ -130,7 +132,7 @@ function App() {
         value: showDanmu ? "星海飞行" : "温柔收纳",
       },
     ],
-    [showParticles, shouldRotate, showDanmu]
+    [showParticles, shouldRotate, showDanmu],
   );
 
   const themeToggleLabel = isLightTheme ? "切换到夜色" : "切换到晨曦";
@@ -190,7 +192,13 @@ function App() {
     },
   ];
 
-  const MENU_TAGS = ["心动分部", "胶片日记", "星河音乐", "才兴投影", "弹幕贴纸"];
+  const MENU_TAGS = [
+    "心动分部",
+    "胶片日记",
+    "星河音乐",
+    "才兴投影",
+    "弹幕贴纸",
+  ];
 
   const quickActions = [
     {
@@ -258,7 +266,11 @@ function App() {
                     <IonButton fill="outline" onClick={toggleRotation}>
                       {shouldRotate ? "停止旋转" : "珊瑚旋转"}
                     </IonButton>
-                    <IonButton fill="clear" color="light" onClick={toggleThemeMode}>
+                    <IonButton
+                      fill="clear"
+                      color="light"
+                      onClick={toggleThemeMode}
+                    >
                       {themeToggleLabel}
                     </IonButton>
                   </div>
@@ -323,11 +335,7 @@ function App() {
                       {showDanmu ? "ON" : "OFF"}
                     </span>
                   </div>
-                  <IonButton
-                    fill="outline"
-                    color="light"
-                    onClick={toggleDanmu}
-                  >
+                  <IonButton fill="outline" color="light" onClick={toggleDanmu}>
                     <IonIcon icon={chatbubbles} slot="start" />
                     {showDanmu ? "收起留言" : "展开留言"}
                   </IonButton>
@@ -399,94 +407,98 @@ function App() {
           onIonDidOpen={() => setMenuOpen(true)}
           onIonDidClose={() => setMenuOpen(false)}
         >
-          <IonHeader>
-            <IonToolbar className="menu-toolbar">
-              <IonTitle>菜单选项</IonTitle>
-              <IonButtons slot="end">
-                <IonMenuToggle>
-                  <IonButton fill="clear" className="back-menu-top">
-                    <IonIcon icon={arrowBack} slot="start" />
-                    关闭
-                  </IonButton>
-                </IonMenuToggle>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+            <IonHeader>
+              <IonToolbar className="menu-toolbar">
+                <IonTitle>菜单选项</IonTitle>
+                <IonButtons slot="end">
+                  <IonMenuToggle>
+                    <IonButton fill="clear" className="back-menu-top">
+                      <IonIcon icon={arrowBack} slot="start" />
+                      关闭
+                    </IonButton>
+                  </IonMenuToggle>
+                </IonButtons>
+              </IonToolbar>
+            </IonHeader>
 
-          <IonContent className="menu-content">
-            <div className="menu-shell">
-              <section className="menu-hero menu-panel">
-                <div className="menu-hero__head">
-                  <span className="menu-hero__badge">旅程精选</span>
-                  <h3>给未来的你寻找一份心情</h3>
-                  <p>
-                    拍照、散步、听歌……每一道选项都是对未来的轻声邀请，按下它们，平凡的时光就会被重新镀上一层温度。
-                  </p>
-                </div>
-                <div className="menu-hero__stats">
-                  {menuStats.map((stat) => (
-                    <div className="menu-hero__stat" key={stat.label}>
-                      <strong>{stat.value}</strong>
-                      <span>{stat.label}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="menu-search-block">
-                  <IonSearchbar
-                    showClearButton="always"
-                    placeholder="输入想去的地方，或一个情绪密码"
-                    className="menu-search"
-                  />
-                  <div className="menu-tag-cloud">
-                    {MENU_TAGS.map((tag) => (
-                      <IonChip key={tag} outline className="menu-chip">
-                        #{tag}
-                      </IonChip>
+            <IonContent className="menu-content">
+              <div className="menu-shell">
+                <section className="menu-hero menu-panel">
+                  <div className="menu-hero__head">
+                    <span className="menu-hero__badge">旅程精选</span>
+                    <h3>给未来的你寻找一份心情</h3>
+                    <p>
+                      拍照、散步、听歌……每一道选项都是对未来的轻声邀请，按下它们，平凡的时光就会被重新镀上一层温度。
+                    </p>
+                  </div>
+                  <div className="menu-hero__stats">
+                    {menuStats.map((stat) => (
+                      <div className="menu-hero__stat" key={stat.label}>
+                        <strong>{stat.value}</strong>
+                        <span>{stat.label}</span>
+                      </div>
                     ))}
                   </div>
-                </div>
-              </section>
-
-              <section className="menu-quick-actions menu-panel">
-                {quickActions.map((item) => (
-                  <article className="menu-quick-card" key={item.title}>
-                    <div>
-                      <IonIcon icon={item.icon} />
-                      <small>{item.description}</small>
-                      <h4>{item.title}</h4>
+                  <div className="menu-search-block">
+                    <IonSearchbar
+                      showClearButton="always"
+                      placeholder="输入想去的地方，或一个情绪密码"
+                      className="menu-search"
+                    />
+                    <div className="menu-tag-cloud">
+                      {MENU_TAGS.map((tag) => (
+                        <IonChip key={tag} outline className="menu-chip">
+                          #{tag}
+                        </IonChip>
+                      ))}
                     </div>
-                    <IonButton fill="clear" size="small" onClick={item.action}>
-                      {item.cta}
-                    </IonButton>
-                  </article>
-                ))}
-              </section>
+                  </div>
+                </section>
 
-              <section className="menu-grid menu-panel">
-                {MENU_LINKS.map((link) => (
-                  <IonMenuToggle key={link.label} autoHide={false}>
-                    <NavigationItem {...link} />
-                  </IonMenuToggle>
-                ))}
-              </section>
+                <section className="menu-quick-actions menu-panel">
+                  {quickActions.map((item) => (
+                    <article className="menu-quick-card" key={item.title}>
+                      <div>
+                        <IonIcon icon={item.icon} />
+                        <small>{item.description}</small>
+                        <h4>{item.title}</h4>
+                      </div>
+                      <IonButton
+                        fill="clear"
+                        size="small"
+                        onClick={item.action}
+                      >
+                        {item.cta}
+                      </IonButton>
+                    </article>
+                  ))}
+                </section>
 
-              <section className="menu-footer-card menu-panel">
-                <div className="menu-footer-copy">
-                  <span>今日提示</span>
-                  <h4>写一句留给未来的心事</h4>
-                  <p>
-                    期盼那些会被再次翻阅的片段，它们会因为你的字句而更加珍贵。
-                  </p>
-                </div>
-                <IonButton fill="outline" onClick={toggleDanmu}>
-                  {showDanmu ? "收起弹幕" : "立刻写下"}
-                </IonButton>
-              </section>
-              <IonNote color="medium" className="menu-note">
-                写给未来的你 · by HGL
-              </IonNote>
-            </div>
-          </IonContent>
+                <section className="menu-grid menu-panel">
+                  {MENU_LINKS.map((link) => (
+                    <IonMenuToggle key={link.label} autoHide={false}>
+                      <NavigationItem {...link} />
+                    </IonMenuToggle>
+                  ))}
+                </section>
+
+                <section className="menu-footer-card menu-panel">
+                  <div className="menu-footer-copy">
+                    <span>今日提示</span>
+                    <h4>写一句留给未来的心事</h4>
+                    <p>
+                      期盼那些会被再次翻阅的片段，它们会因为你的字句而更加珍贵。
+                    </p>
+                  </div>
+                  <IonButton fill="outline" onClick={toggleDanmu}>
+                    {showDanmu ? "收起弹幕" : "立刻写下"}
+                  </IonButton>
+                </section>
+                <IonNote color="medium" className="menu-note">
+                  写给未来的你 · by HGL
+                </IonNote>
+              </div>
+            </IonContent>
         </IonMenu>
 
         <IonToast
