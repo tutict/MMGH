@@ -12,6 +12,7 @@ const RoseSvg = ({
   const svgClasses = ["rose", shouldRotate ? "rotate" : "", className]
     .filter(Boolean)
     .join(" ");
+  const svgStyle = { maxWidth: "100%", height: "auto" };
 
   return (
     <svg
@@ -20,6 +21,8 @@ const RoseSvg = ({
       viewBox="0 0 1024 1024"
       width={size}
       height={size}
+      preserveAspectRatio="xMidYMid meet"
+      style={svgStyle}
       role="img"
       aria-label={title}
     >

@@ -1,13 +1,23 @@
 .rose {
   display: block;
   margin: 0 auto;
-  border-radius: 28px;
-  padding: 1rem;
-  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 60%),
-    linear-gradient(140deg, rgba(20, 20, 38, 0.9), rgba(40, 22, 45, 0.85));
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.55);
+  max-width: 100%;
+  height: auto;
+  border-radius: 26px;
+  padding: clamp(0.65rem, 2vw, 1rem);
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.18), transparent 60%),
+    linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--panel-bg, rgba(20, 20, 38, 0.9)) 80%, #0b0c12 20%),
+      color-mix(in srgb, var(--panel-bg, rgba(40, 22, 45, 0.85)) 70%, #1a1c26 30%)
+    );
+  border: 1px solid var(--panel-border, rgba(255, 255, 255, 0.12));
+  box-shadow: var(--panel-shadow, 0 18px 40px rgba(0, 0, 0, 0.45));
+  backdrop-filter: blur(18px) saturate(140%);
+  transform-origin: center;
   cursor: pointer;
-  transition: transform 0.8s ease, box-shadow 0.8s ease;
+  transition: transform 0.8s ease, box-shadow 0.8s ease, background 0.8s ease;
 }
 
 .rose:hover {
@@ -17,8 +27,8 @@
 
 .hua {
   fill: var(--rose-color, #f64f59);
-  filter: drop-shadow(0 15px 18px rgba(0, 0, 0, 0.35));
-  transition: fill 1.2s ease;
+  filter: drop-shadow(0 18px 22px rgba(0, 0, 0, 0.35));
+  transition: fill 1.2s ease, filter 0.8s ease;
 }
 
 .hua.red {
@@ -67,5 +77,23 @@
   .rotate {
     animation: none;
     transition: none;
+  }
+}
+
+.content-background.theme-light .rose {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.6), transparent 65%),
+    linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--panel-bg, rgba(255, 255, 255, 0.9)) 80%, #ffffff 20%),
+      color-mix(in srgb, var(--panel-bg, rgba(248, 248, 252, 0.85)) 70%, #e9ecf2 30%)
+    );
+  box-shadow: var(--panel-shadow, 0 16px 28px rgba(0, 0, 0, 0.12));
+}
+
+@media (max-width: 640px) {
+  .rose {
+    border-radius: 20px;
+    padding: 0.5rem;
   }
 }

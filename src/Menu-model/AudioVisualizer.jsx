@@ -1,119 +1,240 @@
 import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 
-const AudioVisualizer = ({ audioSrc }) => {
+const AudioVisualizer = ({ audioSrc, audioElement }) => {
   const mountRef = useRef(null);
-  const audioRef = useRef(new Audio(audioSrc));
+  const audioRef = useRef(null);
   const audioContextRef = useRef(null);
   const analyserRef = useRef(null);
   const dataArrayRef = useRef(null);
+  const sourceRef = useRef(null);
+  const currentAudioElementRef = useRef(null);
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const rendererRef = useRef(null);
-
-  const handleResize = () => {
-    if (!mountRef.current) {
-      return;
-    }
-
-    const width = mountRef.current.offsetWidth;
-    const height = mountRef.current.offsetHeight || width;
-
-    if (cameraRef.current && rendererRef.current) {
-      cameraRef.current.aspect = width / height;
-      cameraRef.current.updateProjectionMatrix();
-      rendererRef.current.setSize(width, height);
-    }
-  };
+  const particlesRef = useRef(null);
+  const basePositionsRef = useRef(null);
+  const rafRef = useRef(null);
+  const resizeObserverRef = useRef(null);
 
   useEffect(() => {
-    audioRef.current = new Audio(audioSrc);
-    audioRef.current.crossOrigin = "anonymous";
-    audioRef.current.load();
+    if (!mountRef.current) {
+      return undefined;
+    }
 
-    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-    analyserRef.current = audioContextRef.current.createAnalyser();
-    analyserRef.current.fftSize = 256;
-    dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
+    const scene = new THREE.Scene();
+    sceneRef.current = scene;
 
-    const source = audioContextRef.current.createMediaElementSource(audioRef.current);
-    source.connect(analyserRef.current);
-    analyserRef.current.connect(audioContextRef.current.destination);
+    const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 100);
+    camera.position.z = 3;
+    cameraRef.current = camera;
 
-    sceneRef.current = new THREE.Scene();
-    cameraRef.current = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
-    cameraRef.current.position.z = 3;
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      powerPreference: "high-performance",
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    rendererRef.current = renderer;
+    mountRef.current.appendChild(renderer.domElement);
 
-    rendererRef.current = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    rendererRef.current.setSize(window.innerWidth, window.innerHeight);
-    mountRef.current?.appendChild(rendererRef.current.domElement);
+    const particleCount = 1200;
+    const positions = new Float32Array(particleCount * 3);
+    const basePositions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+
+    for (let i = 0; i < particleCount; i += 1) {
+      const idx = i * 3;
+      const x = (Math.random() - 0.5) * 1.6;
+      const y = (Math.random() - 0.5) * 1.2;
+      const z = (Math.random() - 0.5) * 1.6;
+
+      positions[idx] = x;
+      positions[idx + 1] = y;
+      positions[idx + 2] = z;
+
+      basePositions[idx] = x;
+      basePositions[idx + 1] = y;
+      basePositions[idx + 2] = z;
+
+      colors[idx] = 0.6 + Math.random() * 0.4;
+      colors[idx + 1] = 0.6 + Math.random() * 0.4;
+      colors[idx + 2] = 0.8 + Math.random() * 0.2;
+    }
+
+    basePositionsRef.current = basePositions;
 
     const particlesGeometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(2000);
-    const colors = new Float32Array(2000);
-    for (let i = 0; i < positions.length; i += 3) {
-      positions[i] = (Math.random() - 0.5) * 1.5;
-      positions[i + 1] = (Math.random() - 0.5) * 1.5;
-      positions[i + 2] = (Math.random() - 0.5) * 1.5;
-
-      colors[i] = Math.random();
-      colors[i + 1] = Math.random();
-      colors[i + 2] = Math.random();
-    }
-    particlesGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    particlesGeometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    particlesGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(positions, 3)
+    );
+    particlesGeometry.setAttribute(
+      "color",
+      new THREE.BufferAttribute(colors, 3)
+    );
 
     const particlesMaterial = new THREE.PointsMaterial({
       size: 0.02,
       vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
     });
+
     const particles = new THREE.Points(particlesGeometry, particlesMaterial);
-    sceneRef.current.add(particles);
+    particlesRef.current = particles;
+    scene.add(particles);
 
-    const animate = () => {
-      requestAnimationFrame(animate);
-
-      if (audioRef.current.readyState >= 2) {
-        analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-
-        for (let i = 0; i < particlesGeometry.attributes.position.count; i++) {
-          const frequencyIndex = dataArrayRef.current[i];
-          const intensity = frequencyIndex / 255;
-          const x = particlesGeometry.attributes.position.array[i * 3];
-          const z = particlesGeometry.attributes.position.array[i * 3 + 2];
-
-          positions[i * 3] = x;
-          positions[i * 3 + 1] = intensity * 1.5;
-          positions[i * 3 + 2] = z;
-        }
-
-        particlesGeometry.attributes.position.needsUpdate = true;
+    const handleResize = () => {
+      if (!mountRef.current || !rendererRef.current || !cameraRef.current) {
+        return;
       }
-
-      rendererRef.current.render(sceneRef.current, cameraRef.current);
+      const width = mountRef.current.offsetWidth || 1;
+      const height = mountRef.current.offsetHeight || width;
+      rendererRef.current.setSize(width, height);
+      cameraRef.current.aspect = width / height;
+      cameraRef.current.updateProjectionMatrix();
     };
-    animate();
 
     handleResize();
-    window.addEventListener("resize", handleResize);
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(mountRef.current);
+    resizeObserverRef.current = resizeObserver;
+
+    const animate = () => {
+      rafRef.current = requestAnimationFrame(animate);
+
+      const analyser = analyserRef.current;
+      const dataArray = dataArrayRef.current;
+      const geometry = particles.geometry;
+      const geometryPositions = geometry.attributes.position.array;
+      const basePositions = basePositionsRef.current;
+      const count = geometry.attributes.position.count;
+
+      if (analyser && dataArray) {
+        analyser.getByteFrequencyData(dataArray);
+        const dataLength = dataArray.length;
+        const lowBins = Math.min(12, dataLength);
+        let lowSum = 0;
+        for (let i = 0; i < lowBins; i += 1) {
+          lowSum += dataArray[i];
+        }
+        const lowEnergy = lowSum / (lowBins * 255);
+
+        for (let i = 0; i < count; i += 1) {
+          const freqIndex = dataArray[i % dataLength] / 255;
+          const boosted = Math.min(1, freqIndex * 0.85 + lowEnergy * 0.8);
+          const intensity = Math.pow(boosted, 0.75);
+          const baseIdx = i * 3 + 1;
+          geometryPositions[baseIdx] =
+            basePositions[baseIdx] + intensity * 1.35;
+        }
+
+        geometry.attributes.position.needsUpdate = true;
+      }
+
+      particles.rotation.y += 0.0015;
+      particles.rotation.x += 0.0008;
+      renderer.render(scene, camera);
+    };
+
+    animate();
 
     return () => {
-      audioRef.current.pause();
-      if (audioContextRef.current) {
-        audioContextRef.current.suspend();
-        audioContextRef.current.close();
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
       }
-      window.removeEventListener("resize", handleResize);
+
+      resizeObserverRef.current?.disconnect();
+
+      particlesGeometry.dispose();
+      particlesMaterial.dispose();
+
       if (rendererRef.current?.domElement?.parentNode) {
-        rendererRef.current.domElement.parentNode.removeChild(rendererRef.current.domElement);
+        rendererRef.current.domElement.parentNode.removeChild(
+          rendererRef.current.domElement
+        );
+      }
+
+      rendererRef.current?.dispose();
+      scene.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    const externalAudio = audioElement ?? null;
+    let createdAudio = null;
+    let activeAudio = externalAudio;
+
+    if (!activeAudio && audioSrc) {
+      createdAudio = new Audio(audioSrc);
+      createdAudio.crossOrigin = "anonymous";
+      createdAudio.preload = "auto";
+      activeAudio = createdAudio;
+    }
+
+    if (!activeAudio) {
+      if (audioRef.current && audioRef.current !== externalAudio) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      audioRef.current = null;
+      return undefined;
+    }
+
+    activeAudio.crossOrigin = "anonymous";
+    audioRef.current = activeAudio;
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext ||
+        window.webkitAudioContext)();
+      analyserRef.current = audioContextRef.current.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      analyserRef.current.smoothingTimeConstant = 0.55;
+      analyserRef.current.minDecibels = -90;
+      analyserRef.current.maxDecibels = -10;
+      dataArrayRef.current = new Uint8Array(
+        analyserRef.current.frequencyBinCount
+      );
+    }
+
+    if (currentAudioElementRef.current !== activeAudio) {
+      sourceRef.current?.disconnect();
+      sourceRef.current = audioContextRef.current.createMediaElementSource(
+        activeAudio
+      );
+      sourceRef.current.connect(analyserRef.current);
+      analyserRef.current.connect(audioContextRef.current.destination);
+      currentAudioElementRef.current = activeAudio;
+    }
+
+    const resumeOnPlay = () => {
+      if (audioContextRef.current?.state === "suspended") {
+        audioContextRef.current.resume();
       }
     };
-  }, [audioSrc]);
+    activeAudio.addEventListener("play", resumeOnPlay);
+
+    if (createdAudio) {
+      createdAudio.load();
+    }
+
+    return () => {
+      activeAudio.removeEventListener("play", resumeOnPlay);
+      if (createdAudio) {
+        createdAudio.pause();
+        createdAudio.src = "";
+      }
+    };
+  }, [audioSrc, audioElement]);
+
+  useEffect(() => {
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
+    };
+  }, []);
 
   return <div ref={mountRef} className="audio-visualizer" />;
 };

@@ -1,9 +1,9 @@
-import "./CSS/App.css";
+﻿import "./CSS/App.css";
 import "@ionic/react/css/core.css";
 import "@ionic/react/css/normalize.css";
 import "@ionic/react/css/structure.css";
 import "@ionic/react/css/typography.css";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   IonApp,
   IonButton,
@@ -44,10 +44,12 @@ import NavigationItem from "./Menu-model/NavigationItem";
 import Menu from "./Menu-model/Menu";
 
 import { setupIonicReact } from "@ionic/react";
+import { useI18n } from "./i18n";
 
 setupIonicReact();
 
 function App() {
+  const { t } = useI18n();
   const [colorClass, setColorClass] = useState("");
   const [shouldRotate, setShouldRotate] = useState(false);
   const [showParticles, setShowParticles] = useState(true);
@@ -56,9 +58,24 @@ function App() {
   const [toastConfig, setToastConfig] = useState({ open: false, message: "" });
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const [sidebarCollapse, setSidebarCollapse] = useState({
+    intro: false,
+    actions: false,
+    links: false,
+    footer: false,
+  });
+
+  const toggleSidebarSection = (key) => {
+    setSidebarCollapse((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   const location = useLocation();
   const isHomePage = location.pathname === "/";
   const isLightTheme = theme === "dawn";
+  useEffect(() => {
+    document.body.classList.toggle("theme-light", isLightTheme);
+    document.body.classList.toggle("theme-dark", !isLightTheme);
+  }, [isLightTheme]);
 
   const showToast = (message) => {
     setToastConfig({ open: true, message });
@@ -66,16 +83,14 @@ function App() {
 
   const makeRed = () => {
     setColorClass("red");
-    showToast("花瓣悄悄染上心动的暖红。");
+    showToast(t("app.toast.red"));
   };
 
   const toggleRotation = () => {
     setShouldRotate((prev) => {
       const next = !prev;
       showToast(
-        next
-          ? "珊瑚开始旋转，像我们的小银河。"
-          : "珊瑚慢慢停下，等待下一次心动。",
+        next ? t("app.toast.rotateOn") : t("app.toast.rotateOff")
       );
       return next;
     });
@@ -84,7 +99,9 @@ function App() {
   const toggleParticles = () => {
     setShowParticles((prev) => {
       const next = !prev;
-      showToast(next ? "星尘为你亮起。" : "星尘轻轻熄灭。");
+      showToast(
+        next ? t("app.toast.particlesOn") : t("app.toast.particlesOff")
+      );
       return next;
     });
   };
@@ -92,11 +109,7 @@ function App() {
   const toggleDanmu = () => {
     setShowDanmu((prev) => {
       const next = !prev;
-      showToast(
-        next
-          ? "心事弹幕展开，快写下一句悄悄话。"
-          : "心事安静落下，弹幕暂时折叠。",
-      );
+      showToast(next ? t("app.toast.danmuOn") : t("app.toast.danmuOff"));
       return next;
     });
   };
@@ -106,8 +119,8 @@ function App() {
       const next = prev === "night" ? "dawn" : "night";
       showToast(
         next === "dawn"
-          ? "晨曦模式为你点亮整个庭院。"
-          : "夜色模式轻轻落在四周。",
+          ? t("app.toast.themeDawn")
+          : t("app.toast.themeNight")
       );
       return next;
     });
@@ -120,99 +133,119 @@ function App() {
   const heroStats = useMemo(
     () => [
       {
-        label: "流光特效",
-        value: showParticles ? "守护中" : "待唤醒",
+        label: t("app.stats.particles"),
+        value: showParticles
+          ? t("app.stats.onGuard")
+          : t("app.stats.offGuard"),
       },
       {
-        label: "珊瑚心跳",
-        value: shouldRotate ? "旋转中" : "静待中",
+        label: t("app.stats.heartbeat"),
+        value: shouldRotate ? t("app.stats.rotating") : t("app.stats.idle"),
       },
       {
-        label: "心事弹幕",
-        value: showDanmu ? "星海飞行" : "温柔收纳",
+        label: t("app.stats.danmu"),
+        value: showDanmu ? t("app.stats.danmuOn") : t("app.stats.danmuOff"),
       },
     ],
-    [showParticles, shouldRotate, showDanmu],
+    [showParticles, shouldRotate, showDanmu, t]
   );
 
-  const themeToggleLabel = isLightTheme ? "切换到夜色" : "切换到晨曦";
-  const menuButtonLabel = menuOpen ? "隐藏菜单" : "打开菜单";
+  const themeToggleLabel = isLightTheme
+    ? t("app.actions.toggleThemeToNight")
+    : t("app.actions.toggleThemeToDawn");
+  const menuButtonLabel = menuOpen
+    ? t("app.menu.toggle.close")
+    : t("app.menu.toggle.open");
 
   const MENU_LINKS = [
     {
+      id: "photo",
       to: "/page1",
       color: "danger",
-      label: "拍照",
-      subtitle: "把此刻心动收进胶卷",
+      label: t("app.menu.link.photo.label"),
+      subtitle: t("app.menu.link.photo.subtitle"),
     },
     {
+      id: "carousel",
       to: "/page2",
       color: "tertiary",
-      label: "轮播",
-      subtitle: "回放我们流动的光影",
+      label: t("app.menu.link.carousel.label"),
+      subtitle: t("app.menu.link.carousel.subtitle"),
     },
     {
+      id: "time",
       to: "/page3",
       color: "success",
-      label: "时间",
-      subtitle: "让日常每一秒都被好好记录",
+      label: t("app.menu.link.time.label"),
+      subtitle: t("app.menu.link.time.subtitle"),
     },
     {
+      id: "album",
       to: "/page4",
       color: "warning",
-      label: "相册",
-      subtitle: "收集那些浪漫的瞬间",
+      label: t("app.menu.link.album.label"),
+      subtitle: t("app.menu.link.album.subtitle"),
     },
     {
+      id: "music",
       to: "/page5",
       color: "primary",
-      label: "音乐",
-      subtitle: "换上一首歌，换一个心情",
+      label: t("app.menu.link.music.label"),
+      subtitle: t("app.menu.link.music.subtitle"),
     },
     {
+      id: "home",
       to: "/",
       color: "medium",
-      label: "返回主页",
-      subtitle: "回到珊瑚庭院，再次出发",
+      label: t("app.menu.link.home.label"),
+      subtitle: t("app.menu.link.home.subtitle"),
     },
   ];
 
   const menuStats = [
     {
-      label: "旅程节点",
+      label: t("app.menu.stats.nodes"),
       value: MENU_LINKS.length.toString().padStart(2, "0"),
     },
     {
-      label: "当前主题",
-      value: isLightTheme ? "晨曦模式" : "夜色模式",
+      label: t("app.menu.stats.theme"),
+      value: isLightTheme
+        ? t("app.menu.stats.theme.dawn")
+        : t("app.menu.stats.theme.night"),
     },
     {
-      label: "互动状态",
-      value: showDanmu ? "弹幕已开" : "弹幕待启",
+      label: t("app.menu.stats.danmu"),
+      value: showDanmu
+        ? t("app.menu.stats.danmu.on")
+        : t("app.menu.stats.danmu.off"),
     },
   ];
 
   const MENU_TAGS = [
-    "心动分部",
-    "胶片日记",
-    "星河音乐",
-    "才兴投影",
-    "弹幕贴纸",
+    t("app.menu.tag.0"),
+    t("app.menu.tag.1"),
+    t("app.menu.tag.2"),
+    t("app.menu.tag.3"),
+    t("app.menu.tag.4"),
   ];
 
   const quickActions = [
     {
-      title: "主题格调",
-      description: "晨曦/夜色二选一",
+      id: "theme",
+      title: t("app.menu.quickActions.theme.title"),
+      description: t("app.menu.quickActions.theme.desc"),
       action: toggleThemeMode,
       cta: themeToggleLabel,
       icon: moon,
     },
     {
-      title: "弹幕互动",
-      description: "写下一句想说的话",
+      id: "danmu",
+      title: t("app.menu.quickActions.danmu.title"),
+      description: t("app.menu.quickActions.danmu.desc"),
       action: toggleDanmu,
-      cta: showDanmu ? "收起弹幕" : "开启弹幕",
+      cta: showDanmu
+        ? t("app.menu.quickActions.danmu.ctaOn")
+        : t("app.menu.quickActions.danmu.ctaOff"),
       icon: chatbubbles,
     },
   ];
@@ -225,12 +258,16 @@ function App() {
         }`}
       >
         {isHomePage && showParticles ? (
-          <ParticlesComponent id="homepage-particles" />
+          <ParticlesComponent
+            id="homepage-particles"
+            color={isLightTheme ? "rgba(28, 28, 30, 0.8)" : "#f5f7ff"}
+            linkColor={isLightTheme ? "rgba(28, 28, 30, 0.45)" : "rgba(245, 247, 255, 0.6)"}
+          />
         ) : null}
 
         <IonPage id="main-content">
           {isHomePage ? (
-            <div className="home-shell">
+            <div className="home-shell route-transition">
               <div className="home-header">
                 <Menu />
                 <div className="home-header-actions">
@@ -256,15 +293,17 @@ function App() {
 
               <section className="hero-panel glass-panel">
                 <div className="hero-copy">
-                  <p className="panel-eyebrow">写给未来的你</p>
-                  <h1>等你来到这里，我把星河与珊瑚都交给你</h1>
-                  <p className="hero-description">
-                    在这片数字庭院里，我排练着我们未到来的故事。珊瑚替我旋转，颗粒替我发光，当你按下开启的那刻，所有温柔都会自动播放。
-                  </p>
+                  <p className="panel-eyebrow">{t("app.hero.eyebrow")}</p>
+                  <h1>{t("app.hero.title")}</h1>
+                  <p className="hero-description">{t("app.hero.desc")}</p>
                   <div className="hero-actions">
-                    <IonButton onClick={makeRed}>珊瑚变红</IonButton>
+                    <IonButton onClick={makeRed}>
+                      {t("app.actions.makeRed")}
+                    </IonButton>
                     <IonButton fill="outline" onClick={toggleRotation}>
-                      {shouldRotate ? "停止旋转" : "珊瑚旋转"}
+                      {shouldRotate
+                        ? t("app.actions.rotateOff")
+                        : t("app.actions.rotateOn")}
                     </IonButton>
                     <IonButton
                       fill="clear"
@@ -285,13 +324,10 @@ function App() {
                 </div>
                 <div className="hero-visual">
                   <div className="rose-stage">
-                    <RoseSvg
-                      colorClass={colorClass}
-                      shouldRotate={shouldRotate}
-                    />
+                    <RoseSvg colorClass={colorClass} shouldRotate={shouldRotate} />
                   </div>
                   <p className="hero-visual-caption">
-                    右侧菜单里藏着拍照、轮播、音乐等小宇宙，都是写给未来女友的彩蛋。
+                    {t("app.hero.visualCaption")}
                   </p>
                 </div>
               </section>
@@ -300,15 +336,17 @@ function App() {
                 <article className="control-card glass-panel">
                   <div className="control-card__head">
                     <div>
-                      <h2>星尘护卫</h2>
-                      <p>流星绕着珊瑚，像我想为你围起的宇宙。</p>
+                      <h2>{t("app.control.particles.title")}</h2>
+                      <p>{t("app.control.particles.desc")}</p>
                     </div>
                     <span
                       className={`status-pill ${
                         showParticles ? "is-on" : "is-off"
                       }`}
                     >
-                      {showParticles ? "ON" : "OFF"}
+                      {showParticles
+                        ? t("app.control.status.on")
+                        : t("app.control.status.off")}
                     </span>
                   </div>
                   <IonButton
@@ -317,38 +355,46 @@ function App() {
                     onClick={toggleParticles}
                   >
                     <IonIcon icon={chevronDownCircle} slot="start" />
-                    {showParticles ? "轻按熄灯" : "轻按点亮"}
+                    {showParticles
+                      ? t("app.control.particles.buttonOn")
+                      : t("app.control.particles.buttonOff")}
                   </IonButton>
                 </article>
 
                 <article className="control-card glass-panel">
                   <div className="control-card__head">
                     <div>
-                      <h2>心事弹幕</h2>
-                      <p>把想说的话写给未来的自己，也写给我。</p>
+                      <h2>{t("app.control.danmu.title")}</h2>
+                      <p>{t("app.control.danmu.desc")}</p>
                     </div>
                     <span
                       className={`status-pill ${
                         showDanmu ? "is-on" : "is-off"
                       }`}
                     >
-                      {showDanmu ? "ON" : "OFF"}
+                      {showDanmu
+                        ? t("app.control.status.on")
+                        : t("app.control.status.off")}
                     </span>
                   </div>
                   <IonButton fill="outline" color="light" onClick={toggleDanmu}>
                     <IonIcon icon={chatbubbles} slot="start" />
-                    {showDanmu ? "收起留言" : "展开留言"}
+                    {showDanmu
+                      ? t("app.control.danmu.buttonOn")
+                      : t("app.control.danmu.buttonOff")}
                   </IonButton>
                 </article>
 
                 <article className="control-card glass-panel">
                   <div className="control-card__head">
                     <div>
-                      <h2>光影模式</h2>
-                      <p>夜色与晨曦我都留好，等你挑选旅程。</p>
+                      <h2>{t("app.control.theme.title")}</h2>
+                      <p>{t("app.control.theme.desc")}</p>
                     </div>
                     <span className="status-pill is-on">
-                      {isLightTheme ? "晨曦" : "夜色"}
+                      {isLightTheme
+                        ? t("app.actions.toggleTheme.dawn")
+                        : t("app.actions.toggleTheme.night")}
                     </span>
                   </div>
                   <IonButton
@@ -364,10 +410,12 @@ function App() {
                 <article className="control-card glass-panel">
                   <div className="control-card__head">
                     <div>
-                      <h2>功能面板</h2>
-                      <p>拍照、轮播、音乐……都是为你准备的彩蛋。</p>
+                      <h2>{t("app.control.menu.title")}</h2>
+                      <p>{t("app.control.menu.desc")}</p>
                     </div>
-                    <span className="status-pill is-on">MENU</span>
+                    <span className="status-pill is-on">
+                      {t("app.control.menu.badge")}
+                    </span>
                   </div>
                   <IonButton onClick={toggleMenuDrawer}>
                     <IonIcon icon={ellipse} slot="start" />
@@ -379,9 +427,9 @@ function App() {
               {showDanmu && (
                 <section className="danmu-panel glass-panel">
                   <div className="danmu-panel__head">
-                    <h3>弹幕互动区</h3>
+                    <h3>{t("app.danmu.title")}</h3>
                     <IonButton fill="clear" size="small" onClick={toggleDanmu}>
-                      隐藏
+                      {t("app.danmu.hide")}
                     </IonButton>
                   </div>
                   <Danmu />
@@ -389,7 +437,7 @@ function App() {
               )}
             </div>
           ) : (
-            <IonRouterOutlet id="main-content">
+            <IonRouterOutlet id="app-routes" animated={false}>
               <Switch>
                 <Route path="/page1" component={TakePhoto} exact />
                 <Route path="/page2" component={MySwiper} exact />
@@ -403,102 +451,204 @@ function App() {
 
         <IonMenu
           menuId="first"
+          type="overlay"
           contentId="main-content"
-          onIonDidOpen={() => setMenuOpen(true)}
+          className={`menu-root ${isLightTheme ? "theme-light" : "theme-dark"}${
+            menuOpen ? " menu-open" : ""
+          }`}
+          onIonWillOpen={() => setMenuOpen(true)}
           onIonDidClose={() => setMenuOpen(false)}
         >
-            <IonHeader>
-              <IonToolbar className="menu-toolbar">
-                <IonTitle>菜单选项</IonTitle>
-                <IonButtons slot="end">
-                  <IonMenuToggle>
-                    <IonButton fill="clear" className="back-menu-top">
-                      <IonIcon icon={arrowBack} slot="start" />
-                      关闭
-                    </IonButton>
-                  </IonMenuToggle>
-                </IonButtons>
-              </IonToolbar>
-            </IonHeader>
+          <IonHeader>
+            <IonToolbar className="menu-toolbar sidebar-toolbar">
+              <IonTitle className="sidebar-title">{t("app.menu.title")}</IonTitle>
+              <IonButtons slot="end">
+                <IonMenuToggle>
+                  <IonButton fill="clear" className="back-menu-top sidebar-close">
+                    <IonIcon icon={arrowBack} slot="start" />
+                    {t("app.menu.close")}
+                  </IonButton>
+                </IonMenuToggle>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
 
-            <IonContent className="menu-content">
-              <div className="menu-shell">
-                <section className="menu-hero menu-panel">
-                  <div className="menu-hero__head">
-                    <span className="menu-hero__badge">旅程精选</span>
-                    <h3>给未来的你寻找一份心情</h3>
-                    <p>
-                      拍照、散步、听歌……每一道选项都是对未来的轻声邀请，按下它们，平凡的时光就会被重新镀上一层温度。
-                    </p>
+          <IonContent className="menu-content sidebar-content">
+            <div className="sidebar-shell">
+              <section className="sidebar-card sidebar-intro">
+                <button
+                  type="button"
+                  className="sidebar-section-header"
+                  onClick={() => toggleSidebarSection("intro")}
+                  aria-expanded={!sidebarCollapse.intro}
+                  aria-controls="sidebar-intro-body"
+                >
+                  <span className="sidebar-section-title">
+                    {t("app.menu.section.intro")}
+                  </span>
+                  <IonIcon
+                    icon={chevronDownCircle}
+                    className={
+                      "sidebar-section-icon" +
+                      (sidebarCollapse.intro ? " is-collapsed" : "")
+                    }
+                  />
+                </button>
+                <div
+                  id="sidebar-intro-body"
+                  className={
+                    "sidebar-section-body" +
+                    (sidebarCollapse.intro ? " is-collapsed" : "")
+                  }
+                >
+                  <div className="sidebar-intro__copy">
+                    <span className="sidebar-badge">{t("app.menu.badge")}</span>
+                    <h3>{t("app.menu.intro.title")}</h3>
+                    <p>{t("app.menu.intro.desc")}</p>
                   </div>
-                  <div className="menu-hero__stats">
+                  <div className="sidebar-stats">
                     {menuStats.map((stat) => (
-                      <div className="menu-hero__stat" key={stat.label}>
+                      <div className="sidebar-stat" key={stat.label}>
                         <strong>{stat.value}</strong>
                         <span>{stat.label}</span>
                       </div>
                     ))}
                   </div>
-                  <div className="menu-search-block">
+                  <div className="sidebar-search">
                     <IonSearchbar
                       showClearButton="always"
-                      placeholder="输入想去的地方，或一个情绪密码"
-                      className="menu-search"
+                      placeholder={t("app.menu.search.placeholder")}
+                      className="sidebar-searchbar"
                     />
-                    <div className="menu-tag-cloud">
+                    <div className="sidebar-tags">
                       {MENU_TAGS.map((tag) => (
-                        <IonChip key={tag} outline className="menu-chip">
+                        <IonChip key={tag} outline className="sidebar-tag">
                           #{tag}
                         </IonChip>
                       ))}
                     </div>
                   </div>
-                </section>
+                </div>
+              </section>
 
-                <section className="menu-quick-actions menu-panel">
+              <section className="sidebar-card sidebar-actions">
+                <button
+                  type="button"
+                  className="sidebar-section-header"
+                  onClick={() => toggleSidebarSection("actions")}
+                  aria-expanded={!sidebarCollapse.actions}
+                  aria-controls="sidebar-actions-body"
+                >
+                  <span className="sidebar-section-title">
+                    {t("app.menu.section.actions")}
+                  </span>
+                  <IonIcon
+                    icon={chevronDownCircle}
+                    className={
+                      "sidebar-section-icon" +
+                      (sidebarCollapse.actions ? " is-collapsed" : "")
+                    }
+                  />
+                </button>
+                <div
+                  id="sidebar-actions-body"
+                  className={
+                    "sidebar-section-body" +
+                    (sidebarCollapse.actions ? " is-collapsed" : "")
+                  }
+                >
                   {quickActions.map((item) => (
-                    <article className="menu-quick-card" key={item.title}>
+                    <article className="sidebar-action-card" key={item.id}>
                       <div>
                         <IonIcon icon={item.icon} />
                         <small>{item.description}</small>
                         <h4>{item.title}</h4>
                       </div>
-                      <IonButton
-                        fill="clear"
-                        size="small"
-                        onClick={item.action}
-                      >
+                      <IonButton fill="clear" size="small" onClick={item.action}>
                         {item.cta}
                       </IonButton>
                     </article>
                   ))}
-                </section>
+                </div>
+              </section>
 
-                <section className="menu-grid menu-panel">
+              <section className="sidebar-card sidebar-links">
+                <button
+                  type="button"
+                  className="sidebar-section-header"
+                  onClick={() => toggleSidebarSection("links")}
+                  aria-expanded={!sidebarCollapse.links}
+                  aria-controls="sidebar-links-body"
+                >
+                  <span className="sidebar-section-title">
+                    {t("app.menu.section.links")}
+                  </span>
+                  <IonIcon
+                    icon={chevronDownCircle}
+                    className={
+                      "sidebar-section-icon" +
+                      (sidebarCollapse.links ? " is-collapsed" : "")
+                    }
+                  />
+                </button>
+                <div
+                  id="sidebar-links-body"
+                  className={
+                    "sidebar-section-body" +
+                    (sidebarCollapse.links ? " is-collapsed" : "")
+                  }
+                >
                   {MENU_LINKS.map((link) => (
-                    <IonMenuToggle key={link.label} autoHide={false}>
+                    <IonMenuToggle key={link.id} autoHide={false}>
                       <NavigationItem {...link} />
                     </IonMenuToggle>
                   ))}
-                </section>
+                </div>
+              </section>
 
-                <section className="menu-footer-card menu-panel">
-                  <div className="menu-footer-copy">
-                    <span>今日提示</span>
-                    <h4>写一句留给未来的心事</h4>
-                    <p>
-                      期盼那些会被再次翻阅的片段，它们会因为你的字句而更加珍贵。
-                    </p>
+              <section className="sidebar-footer-card">
+                <button
+                  type="button"
+                  className="sidebar-section-header"
+                  onClick={() => toggleSidebarSection("footer")}
+                  aria-expanded={!sidebarCollapse.footer}
+                  aria-controls="sidebar-footer-body"
+                >
+                  <span className="sidebar-section-title">
+                    {t("app.menu.section.footer")}
+                  </span>
+                  <IonIcon
+                    icon={chevronDownCircle}
+                    className={
+                      "sidebar-section-icon" +
+                      (sidebarCollapse.footer ? " is-collapsed" : "")
+                    }
+                  />
+                </button>
+                <div
+                  id="sidebar-footer-body"
+                  className={
+                    "sidebar-section-body" +
+                    (sidebarCollapse.footer ? " is-collapsed" : "")
+                  }
+                >
+                  <div className="sidebar-footer-copy">
+                    <span>{t("app.menu.footer.label")}</span>
+                    <h4>{t("app.menu.footer.title")}</h4>
+                    <p>{t("app.menu.footer.desc")}</p>
                   </div>
                   <IonButton fill="outline" onClick={toggleDanmu}>
-                    {showDanmu ? "收起弹幕" : "立刻写下"}
+                    {showDanmu
+                      ? t("app.menu.footer.ctaOn")
+                      : t("app.menu.footer.ctaOff")}
                   </IonButton>
-                </section>
-                <IonNote color="medium" className="menu-note">
-                  写给未来的你 · by HGL
-                </IonNote>
-              </div>
-            </IonContent>
+                </div>
+              </section>
+              <IonNote color="medium" className="menu-note">
+                {t("app.menu.note")}
+              </IonNote>
+            </div>
+          </IonContent>
         </IonMenu>
 
         <IonToast

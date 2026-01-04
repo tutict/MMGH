@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   IonAvatar,
   IonButton,
@@ -13,19 +13,55 @@ import {
 import { cloudUploadOutline, musicalNotes, trashBin } from "ionicons/icons";
 import { APlayer } from "aplayer-react";
 import "aplayer/dist/APlayer.min.css";
+import "../CSS/menu.css";
 import "../CSS/music.css";
 import Menu from "./Menu";
 import AudioVisualizer from "./AudioVisualizer";
+import { useI18n } from "../i18n";
 
 const MusicPlayer = () => {
+  const { t } = useI18n();
   const [playlist, setPlaylist] = useState([]);
   const [currentTrackId, setCurrentTrackId] = useState(null);
   const fileInputRef = useRef(null);
+  const playerContainerRef = useRef(null);
+  const playerAudioRef = useRef(null);
+  const [playerAudioEl, setPlayerAudioEl] = useState(null);
 
   const currentTrack = useMemo(
     () => playlist.find((song) => song.id === currentTrackId),
     [currentTrackId, playlist]
   );
+
+  useEffect(() => {
+    if (!currentTrack) {
+      setPlayerAudioEl(null);
+      playerAudioRef.current = null;
+      return undefined;
+    }
+
+    const container = playerContainerRef.current;
+    if (!container) {
+      return undefined;
+    }
+
+    const syncAudioElement = () => {
+      const audio = container.querySelector("audio");
+      if (audio && playerAudioRef.current !== audio) {
+        playerAudioRef.current = audio;
+        setPlayerAudioEl(audio);
+      }
+    };
+
+    syncAudioElement();
+
+    const observer = new MutationObserver(syncAudioElement);
+    observer.observe(container, { childList: true, subtree: true });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [currentTrackId, currentTrack]);
 
   const handleFileChange = (event) => {
     const file = event.target.files?.[0];
@@ -37,7 +73,7 @@ const MusicPlayer = () => {
     const newSong = {
       id: Date.now(),
       name: file.name,
-      artist: "Unknown Artist",
+      artist: t("music.unknownArtist"),
       url,
       cover: "",
     };
@@ -55,129 +91,171 @@ const MusicPlayer = () => {
 
   return (
     <IonPage>
-      <IonContent className="content-background-menu ion-padding">
-        <Menu />
+      <IonContent className="content-background-menu ion-padding spotify-music-page">
+        <div className="page-shell">
+          <Menu />
 
-        <section className="music-layout">
-          <div className="music-visualizer glass-panel">
+          <section className="music-layout spotify-layout">
+            <div className="music-visualizer glass-panel spotify-panel">
+              <header className="panel-header">
+                <div>
+                  <p className="panel-eyebrow">{t("music.panel.visualizer.eyebrow")}</p>
+                  <h1>{t("music.panel.visualizer.title")}</h1>
+                </div>
+                <IonText className="panel-hint">
+                  {currentTrack
+                    ? currentTrack.name
+                    : t("music.panel.visualizer.hint.empty")}
+                </IonText>
+              </header>
+              <div className="spotify-hero">
+                <div className="spotify-hero-cover">
+                  {currentTrack?.cover ? (
+                    <img src={currentTrack.cover} alt={t("music.cover.alt")} />
+                  ) : (
+                    <div className="spotify-cover-fallback">
+                      <IonIcon icon={musicalNotes} />
+                    </div>
+                  )}
+                </div>
+                <div className="spotify-hero-meta">
+                  <span className="spotify-hero-eyebrow">
+                    {t("music.hero.nowPlaying")}
+                  </span>
+                  <h3>
+                    {currentTrack ? currentTrack.name : t("music.hero.none")}
+                  </h3>
+                  <p>
+                    {currentTrack
+                      ? currentTrack.artist
+                      : t("music.hero.noneDesc")}
+                  </p>
+                </div>
+              </div>
+              <div className="music-visualizer-canvas">
+                <AudioVisualizer
+                  audioSrc={currentTrack?.url ?? ""}
+                  audioElement={playerAudioEl}
+                />
+                {!currentTrack && (
+                  <div className="music-visualizer-placeholder">
+                    <IonIcon icon={musicalNotes} size="large" />
+                    <p>{t("music.panel.visualizer.placeholder")}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <aside className="music-sidebar glass-panel spotify-panel">
+              <div className="music-sidebar-header">
+                <div>
+                  <p className="panel-eyebrow">{t("music.playlist.eyebrow")}</p>
+                  <h2>{t("music.playlist.title")}</h2>
+                  <IonText className="spotify-playlist-count">
+                    {t("music.playlist.count", { count: playlist.length })}
+                  </IonText>
+                </div>
+                <IonButton
+                  className="spotify-upload-button"
+                  color="light"
+                  fill="clear"
+                  onClick={() => fileInputRef.current?.click()}
+                  aria-label={t("music.playlist.upload")}
+                >
+                  <IonIcon icon={cloudUploadOutline} slot="start" />
+                  {t("music.playlist.upload")}
+                </IonButton>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/*"
+                  hidden
+                  onChange={handleFileChange}
+                />
+              </div>
+
+              <IonList className="music-playlist spotify-playlist">
+                {playlist.length === 0 && (
+                  <div className="music-playlist-empty" role="status">
+                    <p>{t("music.playlist.empty.title")}</p>
+                    <span>{t("music.playlist.empty.desc")}</span>
+                  </div>
+                )}
+                {playlist.map((song) => (
+                  <IonItem
+                    key={song.id}
+                    button
+                    detail={false}
+                    className={`music-playlist-item ${
+                      song.id === currentTrackId ? "music-playlist-item--active" : ""
+                    }`}
+                    onClick={() => setCurrentTrackId(song.id)}
+                  >
+                    <IonAvatar slot="start" className="spotify-avatar">
+                      {song.cover ? (
+                        <img src={song.cover} alt={t("music.cover.alt")} />
+                      ) : (
+                        <div className="music-cover-fallback">
+                          <IonIcon icon={musicalNotes} />
+                        </div>
+                      )}
+                    </IonAvatar>
+                    <IonLabel>
+                      <h3>{song.name}</h3>
+                      <p>{song.artist}</p>
+                    </IonLabel>
+                    <IonButton
+                      fill="clear"
+                      slot="end"
+                      color="medium"
+                      className="spotify-delete-button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        deleteSong(song.id);
+                      }}
+                      aria-label={t("music.playlist.delete")}
+                    >
+                      <IonIcon icon={trashBin} />
+                    </IonButton>
+                  </IonItem>
+                ))}
+              </IonList>
+            </aside>
+          </section>
+
+          <section className="music-player glass-panel spotify-panel spotify-player">
             <header className="panel-header">
               <div>
-                <p className="panel-eyebrow">声波舞台</p>
-                <h1>实时音频可视化</h1>
+                <p className="panel-eyebrow">{t("music.player.eyebrow")}</p>
+                <h2>{currentTrack ? currentTrack.name : t("music.player.waiting")}</h2>
               </div>
               <IonText className="panel-hint">
-                {currentTrack ? currentTrack.name : "请选择音频文件"}
+                {currentTrack
+                  ? currentTrack.artist
+                  : t("music.player.hint.empty")}
               </IonText>
             </header>
-            <div className="music-visualizer-canvas">
-              <AudioVisualizer audioSrc={currentTrack?.url ?? ""} />
-              {!currentTrack && (
-                <div className="music-visualizer-placeholder">
-                  <IonIcon icon={musicalNotes} size="large" />
-                  <p>加载一首歌，看看声波的舞动</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <aside className="music-sidebar glass-panel">
-            <div className="music-sidebar-header">
-              <div>
-                <p className="panel-eyebrow">播放列表</p>
-                <h2>本地曲库</h2>
+            {currentTrack ? (
+              <div ref={playerContainerRef}>
+                <APlayer
+                  key={currentTrack.id}
+                  audio={{
+                    url: currentTrack.url,
+                    name: currentTrack.name,
+                    artist: currentTrack.artist,
+                  }}
+                  theme="#1db954"
+                  autoplay={false}
+                />
               </div>
-              <IonButton
-                color="light"
-                fill="clear"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <IonIcon icon={cloudUploadOutline} slot="start" />
-                导入
-              </IonButton>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="audio/*"
-                hidden
-                onChange={handleFileChange}
-              />
-            </div>
-
-            <IonList className="music-playlist">
-              {playlist.length === 0 && (
-                <div className="music-playlist-empty" role="status">
-                  <p>播放列表为空</p>
-                  <span>点击右上角按钮导入本地音频文件。</span>
-                </div>
-              )}
-              {playlist.map((song) => (
-                <IonItem
-                  key={song.id}
-                  button
-                  detail={false}
-                  className={`music-playlist-item ${
-                    song.id === currentTrackId ? "music-playlist-item--active" : ""
-                  }`}
-                  onClick={() => setCurrentTrackId(song.id)}
-                >
-                  <IonAvatar slot="start">
-                    {song.cover ? (
-                      <img src={song.cover} alt="封面" />
-                    ) : (
-                      <div className="music-cover-fallback">
-                        <IonIcon icon={musicalNotes} />
-                      </div>
-                    )}
-                  </IonAvatar>
-                  <IonLabel>
-                    <h3>{song.name}</h3>
-                    <p>{song.artist}</p>
-                  </IonLabel>
-                  <IonButton
-                    fill="clear"
-                    slot="end"
-                    color="medium"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      deleteSong(song.id);
-                    }}
-                  >
-                    <IonIcon icon={trashBin} />
-                  </IonButton>
-                </IonItem>
-              ))}
-            </IonList>
-          </aside>
-        </section>
-
-        <section className="music-player glass-panel">
-          <header className="panel-header">
-            <div>
-              <p className="panel-eyebrow">播放器</p>
-              <h2>{currentTrack ? currentTrack.name : "等待播放"}</h2>
-            </div>
-            <IonText className="panel-hint">
-              {currentTrack ? currentTrack.artist : "导入曲目即可开始播放"}
-            </IonText>
-          </header>
-          {currentTrack ? (
-            <APlayer
-              key={currentTrack.id}
-              audio={{
-                url: currentTrack.url,
-                name: currentTrack.name,
-                artist: currentTrack.artist,
-              }}
-              theme="#f9fbff"
-              autoplay={false}
-            />
-          ) : (
-            <div className="music-player-placeholder">
-              <IonIcon icon={musicalNotes} size="large" />
-              <p>暂无播放内容</p>
-            </div>
-          )}
-        </section>
+            ) : (
+              <div className="music-player-placeholder">
+                <IonIcon icon={musicalNotes} size="large" />
+                <p>{t("music.player.empty")}</p>
+              </div>
+            )}
+          </section>
+        </div>
       </IonContent>
     </IonPage>
   );

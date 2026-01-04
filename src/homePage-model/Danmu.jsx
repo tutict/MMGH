@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useRef, useState } from "react";
 import BulletScreen from "rc-bullets";
 import { IonButton, IonButtons, IonInput, IonRow, IonText } from "@ionic/react";
 import "../CSS/Danmu.css";
+import { useI18n } from "../i18n";
 
 const BULLET_OPTIONS = {
   duration: 40,
@@ -10,6 +11,7 @@ const BULLET_OPTIONS = {
 };
 
 const Danmu = () => {
+  const { t } = useI18n();
   const [bullet, setBullet] = useState("");
   const [error, setError] = useState("");
   const screenContainerRef = useRef(null);
@@ -45,7 +47,7 @@ const Danmu = () => {
     const message = bullet.trim();
 
     if (!message) {
-      setError("请输入弹幕内容");
+      setError(t("danmu.error.empty"));
       return;
     }
 
@@ -61,7 +63,7 @@ const Danmu = () => {
     });
 
     setBullet("");
-  }, [bullet]);
+  }, [bullet, t]);
 
   const handleKeyUp = useCallback(
     (event) => {
@@ -81,7 +83,7 @@ const Danmu = () => {
         <IonInput
           className="danmu-input"
           value={bullet}
-          placeholder="请输入弹幕内容..."
+          placeholder={t("danmu.placeholder")}
           clearOnEdit={false}
           enterkeyhint="send"
           inputmode="text"
@@ -90,7 +92,7 @@ const Danmu = () => {
         />
         <IonButtons>
           <IonButton onClick={pushBullet} disabled={isSendDisabled}>
-            发送
+            {t("danmu.send")}
           </IonButton>
         </IonButtons>
       </IonRow>

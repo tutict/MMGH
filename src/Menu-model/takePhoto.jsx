@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   IonButton,
   IonContent,
@@ -15,14 +15,16 @@ import { defineCustomElements } from "@ionic/pwa-elements/loader";
 
 import Menu from "./Menu";
 import "../CSS/menu.css";
+import { useI18n } from "../i18n";
 
 defineCustomElements(window);
 
 const TakePhoto = () => {
+  const { t } = useI18n();
   const [photoPreview, setPhotoPreview] = useState("");
-  const [photoBase64, setPhotoBase64] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const convertBlobToBase64 = (blob) =>
     new Promise((resolve, reject) => {
@@ -43,11 +45,12 @@ const TakePhoto = () => {
       reader.readAsDataURL(blob);
     });
 
-  const savePhoto = async (photoBlob) => {
-    const base64Data = await convertBlobToBase64(photoBlob);
-    setPhotoBase64(base64Data);
+  const savePhoto = async (photoWebPath) => {
+    const response = await fetch(photoWebPath);
+    const blob = await response.blob();
+    const base64Data = await convertBlobToBase64(blob);
 
-    const fileName = `${Date.now()}.jpeg`;
+    const fileName = `photo-${Date.now()}.jpeg`;
     const savedFile = await Filesystem.writeFile({
       path: fileName,
       data: base64Data,
@@ -64,7 +67,12 @@ const TakePhoto = () => {
   };
 
   const takePhoto = async () => {
+    if (isCapturing) {
+      return;
+    }
+
     setIsCapturing(true);
+    setErrorMessage("");
     try {
       const cameraPhoto = await Camera.getPhoto({
         quality: 90,
@@ -74,14 +82,14 @@ const TakePhoto = () => {
       });
 
       if (cameraPhoto.webPath) {
-        const response = await fetch(cameraPhoto.webPath);
-        const blob = await response.blob();
-        const savedImageFile = await savePhoto(blob);
-        setPhotoPreview(savedImageFile.webviewPath);
+        await savePhoto(cameraPhoto.webPath);
         setShowModal(true);
+      } else {
+        setErrorMessage(t("photo.error.noPath"));
       }
     } catch (error) {
       console.error("Error taking photo", error);
+      setErrorMessage(t("photo.error.captureFailed"));
     } finally {
       setIsCapturing(false);
     }
@@ -90,46 +98,56 @@ const TakePhoto = () => {
   return (
     <IonPage>
       <IonContent className="content-background-menu ion-padding">
-        <Menu />
-        <section className="camera-wrapper glass-panel">
-          <header className="panel-header">
-            <div>
-              <p className="panel-eyebrow">即刻留影</p>
-              <h1>捕捉此刻的光影</h1>
-            </div>
-            <IonButton
-              shape="round"
-              disabled={isCapturing}
-              onClick={takePhoto}
-            >
-              <IonIcon icon={cameraOutline} slot="start" />
-              {isCapturing ? "拍摄中..." : "拍照"}
-            </IonButton>
-          </header>
-          <p className="panel-hint">
-            已保存的照片会出现在下方，方便再次查看。
-          </p>
+        <div className="page-shell">
+          <Menu />
+          <section className="camera-wrapper glass-panel">
+            <header className="panel-header">
+              <div>
+                <p className="panel-eyebrow">{t("photo.eyebrow")}</p>
+                <h1>{t("photo.title")}</h1>
+              </div>
+              <IonButton
+                shape="round"
+                disabled={isCapturing}
+                onClick={takePhoto}
+              >
+                <IonIcon icon={cameraOutline} slot="start" />
+                {isCapturing
+                  ? t("photo.button.capturing")
+                  : t("photo.button.take")}
+              </IonButton>
+            </header>
+            <p className="panel-hint">{t("photo.hint")}</p>
 
-          {photoPreview ? (
-            <div className="camera-preview" role="img" aria-label="最新照片">
-              <img src={photoPreview} alt="最新拍摄" />
-            </div>
-          ) : (
-            <div className="camera-placeholder">
-              <IonIcon icon={cameraOutline} size="large" />
-              <IonText>目前还没有照片，点击上方按钮试试。</IonText>
-            </div>
-          )}
-        </section>
+            {errorMessage && (
+              <IonText color="danger">
+                <p>{errorMessage}</p>
+              </IonText>
+            )}
+
+            {photoPreview ? (
+              <div className="camera-preview" role="img" aria-label={t("photo.preview.aria")}>
+                <img src={photoPreview} alt={t("photo.preview.alt")} />
+              </div>
+            ) : (
+              <div className="camera-placeholder">
+                <IonIcon icon={cameraOutline} size="large" />
+                <IonText>{t("photo.empty")}</IonText>
+              </div>
+            )}
+          </section>
+        </div>
 
         <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
           <div className="album-modal-content">
             <img
-              src={`data:image/jpeg;base64,${photoBase64}`}
-              alt="Captured photo"
+              src={photoPreview}
+              alt={t("photo.modal.alt")}
               className="album-modal-image"
             />
-            <IonButton onClick={() => setShowModal(false)}>关闭</IonButton>
+            <IonButton onClick={() => setShowModal(false)}>
+              {t("photo.modal.close")}
+            </IonButton>
           </div>
         </IonModal>
       </IonContent>

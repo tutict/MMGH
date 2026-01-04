@@ -1,6 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { IonButton, IonContent, IonDatetime, IonModal } from "@ionic/react";
+﻿import React, { useEffect, useState } from "react";
+import {
+  IonButton,
+  IonContent,
+  IonDatetime,
+  IonModal,
+  IonText,
+} from "@ionic/react";
 import "../CSS/DateTimeModel.css";
+import { useI18n } from "../i18n";
 
 const getCurrentDateTime = () => {
   const now = new Date();
@@ -8,17 +15,16 @@ const getCurrentDateTime = () => {
   return now.toISOString();
 };
 
-const DateTimeModal = ({ isOpen, onDismiss, onConfirm }) => {
+const DateTimeModal = ({ isOpen, onDismiss, onConfirm, locale, selectedDate }) => {
+  const { t } = useI18n();
   const [selectedDateTime, setSelectedDateTime] = useState(getCurrentDateTime());
 
   useEffect(() => {
-    setSelectedDateTime(getCurrentDateTime());
-    const intervalId = setInterval(() => {
-      setSelectedDateTime(getCurrentDateTime());
-    }, 60000);
-
-    return () => clearInterval(intervalId);
-  }, []);
+    if (!isOpen) {
+      return;
+    }
+    setSelectedDateTime(selectedDate || getCurrentDateTime());
+  }, [isOpen, selectedDate]);
 
   const handleDateTimeChange = (event) => {
     setSelectedDateTime(event.detail.value);
@@ -28,22 +34,29 @@ const DateTimeModal = ({ isOpen, onDismiss, onConfirm }) => {
     <IonModal
       isOpen={isOpen}
       cssClass="small-modal"
-      backdropDismiss
+      backdropDismiss={false}
+      keepContentsMounted
       onDidDismiss={onDismiss}
     >
       <IonContent className="modal-body">
+        <div className="modal-header">
+          <IonButton fill="clear" onClick={onDismiss}>
+            {t("datetime.cancel")}
+          </IonButton>
+          <IonText className="modal-title">{t("datetime.title")}</IonText>
+          <IonButton fill="clear" onClick={() => onConfirm(selectedDateTime)}>
+            {t("datetime.done")}
+          </IonButton>
+        </div>
         <IonDatetime
           presentation="time"
+          preferWheel
+          hourCycle="h23"
           value={selectedDateTime}
           onIonChange={handleDateTimeChange}
           className="modal-content"
+          locale={locale}
         />
-        <div className="modal-actions">
-          <IonButton fill="outline" onClick={onDismiss}>
-            取消
-          </IonButton>
-          <IonButton onClick={() => onConfirm(selectedDateTime)}>确认</IonButton>
-        </div>
       </IonContent>
     </IonModal>
   );
