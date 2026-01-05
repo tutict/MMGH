@@ -49,6 +49,9 @@
   "scripts": {
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "dev": "vite",
+    "dev:tauri": "tauri dev",
+    "dev:ionic": "vite --mode ionic",
+    "dev:ionic-backend": "cargo run --bin mygh-ionic --manifest-path src-tauri/Cargo.toml",
     "build": "vite build",
     "serve": "vite preview"
   },

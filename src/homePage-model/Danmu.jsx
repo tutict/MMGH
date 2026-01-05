@@ -3,6 +3,7 @@ import BulletScreen from "rc-bullets";
 import { IonButton, IonButtons, IonInput, IonRow, IonText } from "@ionic/react";
 import "../CSS/Danmu.css";
 import { useI18n } from "../i18n";
+import { addNote, listNotes } from "../storage/notes";
 
 const BULLET_OPTIONS = {
   duration: 40,
@@ -27,6 +28,23 @@ const Danmu = () => {
       BULLET_OPTIONS
     );
 
+    listNotes({ limit: 6 })
+      .then((items) => {
+        const notes = Array.isArray(items) ? items : [];
+        const recent = notes.slice().reverse();
+        recent.forEach((note, index) => {
+          setTimeout(() => {
+            bulletScreenRef.current?.push({
+              msg: note.content,
+              size: "large",
+              color: "#ffffff",
+              backgroundColor: "rgba(20, 20, 20, 0.65)",
+            });
+          }, 200 * index);
+        });
+      })
+      .catch(() => null);
+
     return () => {
       bulletScreenRef.current?.destroy?.();
       bulletScreenRef.current = null;
@@ -43,7 +61,7 @@ const Danmu = () => {
     [error]
   );
 
-  const pushBullet = useCallback(() => {
+  const pushBullet = useCallback(async () => {
     const message = bullet.trim();
 
     if (!message) {
@@ -53,6 +71,12 @@ const Danmu = () => {
 
     if (!bulletScreenRef.current) {
       return;
+    }
+
+    try {
+      await addNote({ content: message });
+    } catch (err) {
+      console.error("Failed to save note", err);
     }
 
     bulletScreenRef.current.push({

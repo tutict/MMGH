@@ -40,6 +40,7 @@ import MySwiper from "./Menu-model/lunbotu";
 import Clock from "./Menu-model/time";
 import Album from "./Menu-model/Album";
 import MusicPlayer from "./Menu-model/music";
+import DanmuNotes from "./Menu-model/DanmuNotes";
 import NavigationItem from "./Menu-model/NavigationItem";
 import Menu from "./Menu-model/Menu";
 
@@ -192,6 +193,13 @@ function App() {
       color: "primary",
       label: t("app.menu.link.music.label"),
       subtitle: t("app.menu.link.music.subtitle"),
+    },
+    {
+      id: "danmu",
+      to: "/page6",
+      color: "tertiary",
+      label: t("app.menu.link.danmu.label"),
+      subtitle: t("app.menu.link.danmu.subtitle"),
     },
     {
       id: "home",
@@ -444,6 +452,7 @@ function App() {
                 <Route path="/page3" component={Clock} exact />
                 <Route path="/page4" component={Album} exact />
                 <Route path="/page5" component={MusicPlayer} exact />
+                <Route path="/page6" component={DanmuNotes} exact />
               </Switch>
             </IonRouterOutlet>
           )}
