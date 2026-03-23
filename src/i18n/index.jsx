@@ -15,12 +15,52 @@ const DICTS = {
 };
 
 const DEFAULT_LANG = "zh-CN";
+const LANG_STORAGE_KEY = "mmgh-lang";
 
 const I18nContext = createContext({
   lang: DEFAULT_LANG,
   setLang: () => {},
   t: (key) => key,
 });
+
+const normalizeLang = (value) => {
+  if (!value) {
+    return DEFAULT_LANG;
+  }
+
+  if (DICTS[value]) {
+    return value;
+  }
+
+  const base = String(value).toLowerCase();
+  if (base.startsWith("zh")) {
+    return "zh-CN";
+  }
+  if (base.startsWith("en")) {
+    return "en-US";
+  }
+
+  return DEFAULT_LANG;
+};
+
+const getInitialLang = (initialLang) => {
+  if (initialLang) {
+    return normalizeLang(initialLang);
+  }
+
+  if (typeof window !== "undefined") {
+    const savedLang = window.localStorage.getItem(LANG_STORAGE_KEY);
+    if (savedLang) {
+      return normalizeLang(savedLang);
+    }
+  }
+
+  if (typeof navigator !== "undefined") {
+    return normalizeLang(navigator.language || navigator.languages?.[0]);
+  }
+
+  return DEFAULT_LANG;
+};
 
 const formatMessage = (message, vars) => {
   if (!vars) {
@@ -33,11 +73,14 @@ const formatMessage = (message, vars) => {
 };
 
 export const I18nProvider = ({ children, initialLang }) => {
-  const [lang, setLang] = useState(initialLang || DEFAULT_LANG);
+  const [lang, setLang] = useState(() => getInitialLang(initialLang));
 
   useEffect(() => {
     if (typeof document !== "undefined") {
       document.documentElement.lang = lang;
+    }
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(LANG_STORAGE_KEY, lang);
     }
   }, [lang]);
 

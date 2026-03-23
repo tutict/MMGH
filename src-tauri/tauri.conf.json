@@ -1,9 +1,9 @@
 {
   "build": {
     "distDir": "../dist",
-    "devPath": "http://localhost:4000",
-    "beforeDevCommand": "",
-    "beforeBuildCommand": ""
+    "devPath": "http://127.0.0.1:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
   },
   "ctx": {},
   "tauri": {
@@ -13,7 +13,7 @@
     "bundle": {
       "active": true,
       "targets": "all",
-      "identifier": "com.tauri.dev",
+      "identifier": "com.mmgh.agent",
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
@@ -25,8 +25,8 @@
       "externalBin": [],
       "copyright": "",
       "category": "DeveloperTool",
-      "shortDescription": "",
-      "longDescription": "",
+      "shortDescription": "Desktop agent workspace powered by Rust and Tauri.",
+      "longDescription": "MMGH Agent Deck is a Rust-first desktop agent workspace with persistent sessions, execution traces and an OpenAI-compatible gateway.",
       "deb": {
         "depends": [],
         "useBootstrapper": false
@@ -42,9 +42,9 @@
       "all": true
     },
     "window": {
-      "title": "MYGH",
-      "width": 800,
-      "height": 600,
+      "title": "MMGH Agent Deck",
+      "width": 1520,
+      "height": 920,
       "resizable": true,
       "fullscreen": false
     },

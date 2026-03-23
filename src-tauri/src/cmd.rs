@@ -3,36 +3,151 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 #[serde(tag = "cmd", rename_all = "camelCase")]
 pub enum Cmd {
-  // your custom commands
-  // multiple arguments are allowed
-  // note that rename_all = "camelCase": you need to use "myCustomCommand" on JS
-  MyCustomCommand { argument: String },
-  ListNotes {
-    query: Option<String>,
-    limit: Option<u32>,
+  Bootstrap {
     callback: String,
     error: String,
   },
-  AddNote {
+  OpenSession {
+    session_id: i64,
+    callback: String,
+    error: String,
+  },
+  CreateSession {
     title: Option<String>,
-    content: String,
-    mood: Option<String>,
-    tags: Option<Vec<String>>,
     callback: String,
     error: String,
   },
-  UpdateNote {
-    id: i64,
+  DeleteSession {
+    session_id: i64,
+    callback: String,
+    error: String,
+  },
+  SaveSettings {
+    settings: AgentSettingsInput,
+    active_session_id: Option<i64>,
+    callback: String,
+    error: String,
+  },
+  OpenKnowledgeNote {
+    note_id: i64,
+    active_session_id: Option<i64>,
+    callback: String,
+    error: String,
+  },
+  CreateKnowledgeNote {
     title: Option<String>,
-    content: String,
-    mood: Option<String>,
-    tags: Option<Vec<String>>,
+    active_session_id: Option<i64>,
     callback: String,
     error: String,
   },
-  DeleteNote {
-    id: i64,
+  SaveKnowledgeNote {
+    note: KnowledgeNoteInput,
+    active_session_id: Option<i64>,
     callback: String,
     error: String,
   },
+  DeleteKnowledgeNote {
+    note_id: i64,
+    active_session_id: Option<i64>,
+    callback: String,
+    error: String,
+  },
+  CreateReminder {
+    title: Option<String>,
+    active_session_id: Option<i64>,
+    callback: String,
+    error: String,
+  },
+  SaveReminder {
+    reminder: ReminderInput,
+    active_session_id: Option<i64>,
+    callback: String,
+    error: String,
+  },
+  DeleteReminder {
+    reminder_id: i64,
+    active_session_id: Option<i64>,
+    callback: String,
+    error: String,
+  },
+  OpenSkill {
+    skill_id: i64,
+    active_session_id: Option<i64>,
+    callback: String,
+    error: String,
+  },
+  CreateSkill {
+    name: Option<String>,
+    active_session_id: Option<i64>,
+    callback: String,
+    error: String,
+  },
+  SaveSkill {
+    skill: SkillInput,
+    active_session_id: Option<i64>,
+    callback: String,
+    error: String,
+  },
+  DeleteSkill {
+    skill_id: i64,
+    active_session_id: Option<i64>,
+    callback: String,
+    error: String,
+  },
+  SaveSessionSkills {
+    session_id: i64,
+    skill_ids: Vec<i64>,
+    active_session_id: Option<i64>,
+    callback: String,
+    error: String,
+  },
+  RunAgent {
+    session_id: i64,
+    prompt: String,
+    callback: String,
+    error: String,
+  },
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AgentSettingsInput {
+  pub provider_name: String,
+  pub base_url: String,
+  pub api_key: String,
+  pub model: String,
+  pub system_prompt: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KnowledgeNoteInput {
+  pub id: i64,
+  pub icon: String,
+  pub title: String,
+  pub body: String,
+  pub tags: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReminderInput {
+  pub id: i64,
+  pub title: String,
+  pub detail: String,
+  pub due_at: Option<i64>,
+  pub severity: String,
+  pub status: String,
+  pub linked_note_id: Option<i64>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillInput {
+  pub id: i64,
+  pub name: String,
+  pub description: String,
+  pub instructions: String,
+  pub trigger_hint: String,
+  pub enabled: bool,
 }

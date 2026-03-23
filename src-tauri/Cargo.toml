@@ -1,8 +1,8 @@
 [package]
 name = "mygh"
 version = "0.1.0"
-description = "A Tauri App"
-authors = [ "you" ]
+description = "MMGH Agent Desktop"
+authors = [ "Codex" ]
 license = ""
 repository = ""
 default-run = "mygh"
@@ -16,8 +16,7 @@ tauri = { version = "0.11" }
 anyhow = "1.0"
 once_cell = "1.19"
 rusqlite = { version = "0.30", features = [ "bundled" ] }
-serde_urlencoded = "0.7"
-tiny_http = "0.12"
+reqwest = { version = "0.12", default-features = false, features = [ "blocking", "json", "rustls-tls" ] }
 
 [patch.crates-io]
 ntapi = { path = "vendor/ntapi-0.3.7" }
@@ -33,7 +32,3 @@ no-server = [ "tauri/no-server" ]
 [[bin]]
 name = "mygh"
 path = "src/main.rs"
-
-[[bin]]
-name = "mygh-ionic"
-path = "src/ionic_server.rs"

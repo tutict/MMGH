@@ -1,21 +1,36 @@
-# It means make my grilfriend happy
-给未来对象写的小项目（React + Ionic + Tauri）
+# MMGH Agent Deck
 
-## 架构
-- 默认桌面：Ionic/React 前端 + Tauri（Rust）后端
-- 备用方案：Ionic 前端 + Rust 本地 HTTP 后端（`mygh-ionic`）
+一个基于 `Rust + Tauri + React` 的桌面 agent 工作台，目标是把原来的小工具项目改造成更接近 OpenClaw 风格的 agent 应用骨架。
 
-## 开发方式
-桌面（Tauri）：
-```
+## 当前结构
+
+- `src-tauri/`: Rust 运行时，负责会话持久化、执行轨迹、设置管理和 OpenAI 兼容接口调用
+- `src/`: React 桌面工作台，包含会话侧栏、消息区、执行轨迹和 provider 设置
+- `src-tauri/sql/schema.sql`: SQLite 数据结构
+
+## 开发
+
+```bash
+npm install
 npm run dev:tauri
 ```
 
-Ionic + Rust 后端（备用）：
-```
-npm run dev:ionic-backend
-npm run dev:ionic
+纯前端预览：
+
+```bash
+npm run dev:web
 ```
 
-`.env.ionic` 已内置本地后端地址（默认 `http://127.0.0.1:4781`）。
+## 打包
 
+```bash
+npm run build
+cargo build --manifest-path src-tauri/Cargo.toml
+```
+
+如果要接入真实模型，请在应用右侧设置里填写：
+
+- `Base URL`
+- `API Key`
+- `Model`
+- `System Prompt`
