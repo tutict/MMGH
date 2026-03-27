@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { IonButton, IonContent, IonIcon, IonImg, IonPage, IonText } from "@ionic/react";
 import { cameraOutline } from "ionicons/icons";

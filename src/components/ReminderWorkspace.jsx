@@ -50,23 +50,46 @@ function ReminderWorkspace({
     () => groupReminders(filteredReminders, clockNow, t),
     [clockNow, filteredReminders, t]
   );
+  const openCount = useMemo(
+    () => reminders.filter((item) => item.status !== "done").length,
+    [reminders]
+  );
+  const dueTodayCount = groups.find((group) => group.key === "today")?.items.length || 0;
+  const doneCount = groups.find((group) => group.key === "done")?.items.length || 0;
 
   return (
     <section className="reminder-panel panel-surface">
       <div className="reminder-sidebar">
-        <div className="section-head reminder-sidebar__head">
-          <div>
-            <span className="eyebrow">{t("app.reminders.eyebrow")}</span>
-            <h3>{t("app.reminders.title")}</h3>
+        <div className="reminder-sidebar__intro">
+          <div className="section-head reminder-sidebar__head">
+            <div>
+              <span className="eyebrow">{t("app.reminders.eyebrow")}</span>
+              <h3>{t("app.reminders.title")}</h3>
+            </div>
+            <button
+              type="button"
+              className="solid-button"
+              onClick={handleCreateReminder}
+              disabled={busy !== "" || loading}
+            >
+              {t("app.reminders.newReminder")}
+            </button>
           </div>
-          <button
-            type="button"
-            className="solid-button"
-            onClick={handleCreateReminder}
-            disabled={busy !== "" || loading}
-          >
-            {t("app.reminders.newReminder")}
-          </button>
+
+          <div className="reminder-sidebar__summary">
+            <article className="reminder-summary-card">
+              <span>{t("app.view.reminders.badge.open")}</span>
+              <strong>{openCount}</strong>
+            </article>
+            <article className="reminder-summary-card">
+              <span>{t("app.view.reminders.badge.due")}</span>
+              <strong>{dueTodayCount}</strong>
+            </article>
+            <article className="reminder-summary-card">
+              <span>{t("app.reminders.status.done")}</span>
+              <strong>{doneCount}</strong>
+            </article>
+          </div>
         </div>
 
         <div className="reminder-clock-card">
@@ -162,6 +185,14 @@ function ReminderWorkspace({
 
         {reminderDraft.id ? (
           <div className="reminder-editor__form">
+            <div className="reminder-editor__hero">
+              <div className={`reminder-editor__hero-priority priority-${reminderDraft.severity}`} />
+              <div className="reminder-editor__hero-copy">
+                <span className="eyebrow">{t("app.reminders.editor.eyebrow")}</span>
+                <strong>{reminderDraft.title || t("app.reminders.newReminder")}</strong>
+                <p>{t("app.reminders.editor.description")}</p>
+              </div>
+            </div>
             <label className="settings-form__row">
               <span>{t("app.reminders.form.title")}</span>
               <input

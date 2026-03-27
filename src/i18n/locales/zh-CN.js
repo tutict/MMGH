@@ -30,7 +30,7 @@ const zhCN = {
   "app.stats.skills": "技能",
   "app.hero.views": "视图",
   "app.hero.appearance": "外观",
-  "app.hero.settingsHint": "先在这里保存 provider 信息，再把 Agent 接到远端模型网关。",
+  "app.hero.settingsHint": "先在这里保存 provider 信息，再让 Agent 接到远端模型网关。",
   "app.nav.eyebrow": "导航",
   "app.nav.title": "工作区",
   "app.nav.group.workspace": "核心",
@@ -40,10 +40,10 @@ const zhCN = {
   "app.nav.sessions.title": "会话库",
   "app.nav.sessions.expand": "展开会话库",
   "app.nav.sessions.collapse": "收起会话库",
-  "app.nav.sessions.summary": "会话库中共 {count} 个会话",
+  "app.nav.sessions.summary": "会话库中共有 {count} 个会话",
 
   "app.mode.agent": "Agent",
-  "app.mode.knowledge": "知识库",
+  "app.mode.knowledge": "知识",
   "app.mode.gallery": "图库",
   "app.mode.music": "音乐",
   "app.mode.weather": "天气",
@@ -52,7 +52,7 @@ const zhCN = {
   "app.mode.settings": "设置",
 
   "app.session.defaultTitle": "新任务",
-  "app.session.newPlaceholder": "新的任务标题",
+  "app.session.newPlaceholder": "新任务标题",
   "app.session.create": "创建会话",
   "app.session.delete": "删除会话",
   "app.session.deleteConfirm": "确认删除这个会话？",
@@ -88,7 +88,7 @@ const zhCN = {
   "app.view.gallery.badge.favorites": "收藏",
   "app.view.gallery.badge.filter": "筛选",
 
-  "app.view.music.eyebrow": "播放器工作区",
+  "app.view.music.eyebrow": "播放工作区",
   "app.view.music.title": "音乐播放器",
   "app.view.music.description": "独立的播放工作区，保留频谱可视化、队列和回复联动控制。",
   "app.view.music.badge.tracks": "曲目",
@@ -96,8 +96,8 @@ const zhCN = {
   "app.view.music.badge.mode": "模式",
 
   "app.view.weather.eyebrow": "液态天气",
-  "app.view.weather.title": "天气甲板",
-  "app.view.weather.description": "一个带液态玻璃层次、3D 悬停形变和 GNOME 风格城市摘要的天气页面。",
+  "app.view.weather.title": "天气面板",
+  "app.view.weather.description": "带有液态玻璃层次、悬停形变和城市摘要的天气页面。",
   "app.view.weather.badge.city": "城市",
   "app.view.weather.badge.condition": "天气",
   "app.view.weather.badge.temperature": "温度",
@@ -129,11 +129,18 @@ const zhCN = {
   "app.agent.mount.title": "已挂载技能",
   "app.agent.mount.emptyTitle": "暂无挂载技能",
   "app.agent.mount.emptyDescription": "可以在技能页把可复用的低权限技能挂到当前会话。",
+  "app.agent.recommend.eyebrow": "建议挂载",
+  "app.agent.recommend.title": "推荐技能",
+  "app.agent.recommend.emptyTitle": "暂时还没有推荐",
+  "app.agent.recommend.emptyDescription":
+    "等当前对话方向更明确后，运行时会推荐更适合挂载的技能。",
   "app.agent.message.operator": "操作员",
   "app.agent.message.agent": "Agent",
-  "app.agent.composer.placeholder": "给 Agent 发送消息。例如：使用我的本地笔记作为上下文，并引用匹配到的页面。",
-  "app.agent.composer.providerConfigured": "下一条消息会走 Rust 模型网关。",
-  "app.agent.composer.providerPending": "当前还没有配置 provider，下一条消息会停留在本地预览模式。",
+  "app.agent.composer.placeholder":
+    "给 Agent 发送消息。例如：使用我的本地笔记作为上下文，并引用匹配到的页面。",
+  "app.agent.composer.providerConfigured": "下一条消息会通过 Rust 模型网关发送。",
+  "app.agent.composer.providerPending":
+    "当前还没有配置 provider，下一条消息会停留在本地预览模式。",
   "app.agent.history.eyebrow": "历史",
   "app.agent.history.title": "会话历史",
   "app.agent.history.total": "共 {count} 个",
@@ -146,10 +153,12 @@ const zhCN = {
   "app.knowledge.noTags": "无标签",
   "app.knowledge.defaultTitle": "未命名笔记",
   "app.knowledge.tags": "标签，使用逗号分隔",
-  "app.knowledge.bodyPlaceholder": "在这里写下内容，保存稳定事实、研究摘录、可复用提示词或产品知识。",
+  "app.knowledge.bodyPlaceholder":
+    "在这里写下内容，保存稳定事实、研究摘录、可复用提示词或产品知识。",
   "app.knowledge.deleteConfirm": "确认删除这条笔记？",
   "app.knowledge.editor.eyebrow": "知识库",
-  "app.knowledge.editor.description": "把本地笔记当作稳定上下文、研究资料、提示词和小型私有文档来使用。",
+  "app.knowledge.editor.description":
+    "把本地笔记当作稳定上下文、研究资料、提示词和小型私有文档来使用。",
   "app.knowledge.savePage": "保存页面",
 
   "app.gallery.eyebrow": "图库",
@@ -232,14 +241,15 @@ const zhCN = {
   "app.weather.condition.bright": "晴朗",
   "app.weather.condition.partlyCloudy": "多云间晴",
   "app.weather.condition.cloudy": "阴天",
-  "app.weather.condition.rain": "雨带经过",
+  "app.weather.condition.rain": "降雨",
   "app.weather.condition.mist": "薄雾",
   "app.weather.condition.wind": "大风",
   "app.weather.condition.snow": "降雪",
   "app.weather.condition.storm": "雷暴",
   "app.weather.condition.loading": "加载中",
-  "app.weather.summary.current": "当前{condition}，湿度 {humidity}% ，风速 {wind} km/h ，降雨概率 {precipitation}%。",
-  "app.weather.summary.pending": "天气数据正在路上，接口返回后这里会切成实时状态。",
+  "app.weather.summary.current":
+    "当前{condition}，湿度 {humidity}% ，风速 {wind} km/h ，降雨概率 {precipitation}%。",
+  "app.weather.summary.pending": "天气数据正在路上，接口返回后这里会切换为实时状态。",
   "app.weather.city.shanghai.name": "上海",
   "app.weather.city.shanghai.region": "中国",
   "app.weather.city.tokyo.name": "东京",
@@ -314,12 +324,13 @@ const zhCN = {
   "app.skills.noTriggerHint": "没有触发提示",
   "app.skills.updatedAt": "更新于 {date}",
   "app.skills.currentSession": "当前会话",
-  "app.skills.attached": "这个技能已经挂载到当前会话，下一次运行时会参与。",
-  "app.skills.notAttached": "这个技能可以复用，但目前还没有挂载到当前会话。",
+  "app.skills.attached": "这个技能已挂载到当前会话，会在下一次运行时参与。",
+  "app.skills.notAttached": "这个技能可复用，但目前还没有挂载到当前会话。",
   "app.skills.deleteConfirm": "确认删除这个技能？",
   "app.skills.save": "保存技能",
   "app.skills.editor.eyebrow": "低权限提示技能",
-  "app.skills.editor.description": "这些技能只会塑造 Agent 的行为，不会授予更高的执行权限或广泛工具访问。",
+  "app.skills.editor.description":
+    "这些技能只会塑造 Agent 的行为，不会授予更高的执行权限或更广的工具访问。",
   "app.skills.form.name": "名称",
   "app.skills.form.namePlaceholder": "技能名称",
   "app.skills.form.triggerHint": "触发提示",
@@ -330,7 +341,8 @@ const zhCN = {
   "app.skills.form.description": "描述",
   "app.skills.form.descriptionPlaceholder": "描述这个技能会如何改变助手行为。",
   "app.skills.form.instructions": "指令",
-  "app.skills.form.instructionsPlaceholder": "写下可复用的指令块。例如：总是先检查本地笔记、总结来源、避免破坏性操作。",
+  "app.skills.form.instructionsPlaceholder":
+    "写下可复用的指令块。例如：总是先检查本地笔记、总结来源、避免破坏性操作。",
   "app.skills.filter.all": "全部",
   "app.skills.filter.enabled": "启用中",
   "app.skills.filter.mounted": "已挂载",
@@ -348,64 +360,147 @@ const zhCN = {
   "app.skills.meta.category": "分类",
   "app.skills.meta.updated": "最近更新",
   "app.skills.profile.eyebrow": "技能档案",
-  "app.skills.toggle.enabledHelp": "保持技能存在于工作区里，但不强制每次运行都参与。",
-  "app.skills.toggle.mountedHelp": "挂载后的技能会在下一次 Agent 运行时注入到当前会话。",
-  "app.skills.forge.eyebrow": "AI Skill Forge",
+  "app.skills.toggle.enabledHelp": "让技能保留在工作区库里，但不强制注入每次运行。",
+  "app.skills.toggle.mountedHelp": "挂载后的技能会在下一次 Agent 运行时注入当前会话。",
+  "app.skills.forge.eyebrow": "AI 技能工坊",
   "app.skills.forge.title": "描述你想要的技能",
   "app.skills.forge.status.ai": "AI 生成",
   "app.skills.forge.status.local": "本地草稿模式",
-  "app.skills.forge.description.ai": "使用你当前配置的兼容模型，把自然语言需求直接生成为一个可复用技能。",
-  "app.skills.forge.description.local": "当前还没有配置模型 provider，所以会退回到本地草稿生成。",
-  "app.skills.forge.placeholder": "例如：创建一个技能，让 Agent 先检查本地 React 组件，再总结 UI 风险，并避免大范围重构。",
+  "app.skills.forge.description.ai":
+    "使用你已配置的兼容模型，把自然语言需求生成成可复用技能。",
+  "app.skills.forge.description.local":
+    "当前没有配置模型 provider，因此生成会退回为本地草稿构建。",
+  "app.skills.forge.placeholder":
+    "例如：创建一个技能，让 Agent 先检查本地 React 组件，总结 UI 风险，并避免大范围重构。",
   "app.skills.forge.generate": "生成新技能",
-  "app.skills.forge.rewrite": "重写当前技能",
+  "app.skills.forge.rewrite": "重写当前",
   "app.skills.forge.generating": "生成中...",
   "app.skills.forge.generatedName": "生成技能",
-  "app.skills.forge.localDescription": "基于以下需求生成的本地草稿：{prompt}",
-  "app.skills.forge.localTrigger": "适合在这类请求下启用：{prompt}",
-  "app.skills.forge.localInstructions": "把下面这个目标解释成一个可复用的低权限技能，并在执行时向这个方向偏置：{prompt}\n\n优先显式规划，让假设可见，除非操作员明确要求，否则避免破坏性操作。",
+  "app.skills.forge.localDescription": "根据以下需求生成的本地草稿：{prompt}",
+  "app.skills.forge.localTrigger": "当任务涉及以下内容时使用：{prompt}",
+  "app.skills.forge.localInstructions":
+    "将以下目标解释成一个可复用的低权限技能，并据此调整你的执行方式：{prompt}\n\n优先显式规划，清楚说明假设，除非操作者明确要求，否则避免破坏性操作。",
   "app.skills.forge.requestFailed": "技能生成请求失败。",
   "app.skills.forge.emptyResponse": "模型返回了空的技能草稿。",
-  "app.skills.forge.createFailed": "创建生成后的技能失败。",
-  "app.skills.sessionMount.title": "当前会话挂载",
-  "app.skills.sessionMount.description": "这里参考了 QClaw 那种“会话只挂一小组可复用技能”的管理方式。",
-  "app.skills.sessionMount.emptyTitle": "当前还没有挂载技能",
-  "app.skills.sessionMount.emptyDescription": "可以先安装一个模板技能，或者把已有技能挂到当前会话。",
+  "app.skills.forge.createFailed": "创建生成技能失败。",
+  "app.skills.history.eyebrow": "版本记录",
+  "app.skills.history.title": "版本历史",
+  "app.skills.history.count": "{count} 个版本",
+  "app.skills.history.description":
+    "每次保存、AI 重写和恢复时，都会在本地留下一份快照，方便你回滚。",
+  "app.skills.history.savedAt": "保存于 {date}",
+  "app.skills.history.loadDraft": "载入编辑器",
+  "app.skills.history.restore": "直接恢复",
+  "app.skills.history.emptyTitle": "还没有历史版本",
+  "app.skills.history.emptyDescription":
+    "先保存或重写这个 skill，就会开始累积本地版本记录。",
+  "app.skills.history.selectTitle": "先选中一个 skill",
+  "app.skills.history.selectDescription":
+    "打开一个 skill 后，可以在这里查看之前的版本并恢复。",
+  "app.skills.history.reason.manualSave": "手动保存",
+  "app.skills.history.reason.aiRewrite": "AI 重写",
+  "app.skills.history.reason.restore": "恢复前备份",
+  "app.skills.sessionMount.title": "挂载到当前会话",
+  "app.skills.sessionMount.description":
+    "这里复刻了 QClaw 风格的流程：一个会话只挂载少量可复用技能。",
+  "app.skills.sessionMount.recommendedEyebrow": "会话建议",
+  "app.skills.sessionMount.recommendedTitle": "适合当前对话的技能",
+  "app.skills.sessionMount.recommendedAction": "立即挂载",
+  "app.skills.sessionMount.emptyTitle": "还没有挂载技能",
+  "app.skills.sessionMount.emptyDescription":
+    "先安装一个模板技能，或从工作区技能里选一个挂载到当前会话。",
   "app.skills.catalog.eyebrow": "Starter Hub",
   "app.skills.catalog.title": "发现模板技能",
-  "app.skills.catalog.description": "这是一个受 QClaw / ClawHub 启发的模板货架。先安装，再在本地按你的方式改。",
+  "app.skills.catalog.description":
+    "一个受 QClaw 和 ClawHub 启发的模板技能货架。先安装，再在本地调整。",
   "app.skills.catalog.count": "{count} 个模板",
   "app.skills.catalog.search": "搜索模板技能",
   "app.skills.catalog.install": "安装",
   "app.skills.catalog.installing": "安装中...",
   "app.skills.catalog.openInstalled": "打开已安装",
-  "app.skills.catalog.triggerHint": "适合用于：{trigger}",
-  "app.skills.catalog.emptyTitle": "没有匹配到模板",
-  "app.skills.catalog.emptyDescription": "换个关键词，或者直接从零创建一个自定义技能。",
+  "app.skills.catalog.triggerHint": "最适合在以下场景使用：{trigger}",
+  "app.skills.catalog.emptyTitle": "没有匹配到模板技能",
+  "app.skills.catalog.emptyDescription": "试试更宽泛的搜索词，或者直接从零创建自定义技能。",
   "app.skills.filteredEmpty.title": "没有匹配到技能",
-  "app.skills.filteredEmpty.description": "可以调整筛选、清空搜索，或者从模板库安装一个技能。",
+  "app.skills.filteredEmpty.description": "换个筛选条件、清空搜索，或者从模板中心安装一个。",
   "app.skills.emptyState.title": "还没有选中技能",
-  "app.skills.emptyState.description": "先创建一个可复用的低权限技能，再把它挂到当前会话。",
+  "app.skills.emptyState.description": "先创建一个可复用的低权限技能，再挂载到当前会话。",
   "app.skills.templates.noteRecall.name": "笔记召回",
-  "app.skills.templates.noteRecall.description": "让 Agent 更倾向于先读本地笔记、稳定事实和已有上下文。",
+  "app.skills.templates.noteRecall.description":
+    "让 Agent 更倾向于优先使用本地笔记、稳定事实和已记录上下文。",
   "app.skills.templates.noteRecall.trigger": "用户需要本地笔记、私有文档或稳定项目知识作为上下文时",
-  "app.skills.templates.noteRecall.instructions": "回答前先判断本地笔记里是否已经有稳定上下文。优先使用笔记中的持久事实，不要用新猜测替代；如果笔记可能不完整或已经过期，要明确指出。",
+  "app.skills.templates.noteRecall.instructions":
+    "回答前先判断本地笔记里是否已经有稳定上下文。优先使用笔记中的持久事实，不要用新的猜测替代；如果笔记可能不完整或已过期，要明确指出。",
+  "app.skills.templates.knowledgeLibrarian.name": "知识整理员",
+  "app.skills.templates.knowledgeLibrarian.description":
+    "把易散失的对话整理成清晰笔记、摘要和可复用知识条目。",
+  "app.skills.templates.knowledgeLibrarian.trigger":
+    "用户希望提炼事实、沉淀讨论结果，或把对话整理成可复用笔记时",
+  "app.skills.templates.knowledgeLibrarian.instructions":
+    "把当前对话整理为持久事实、待确认问题和下一步动作。给出适合 Knowledge Vault 的标题、简短摘要和标签建议。不要补造对话或本地笔记里没有出现的事实。",
+  "app.skills.templates.reminderRadar.name": "提醒雷达",
+  "app.skills.templates.reminderRadar.description":
+    "在规划过程中持续暴露即将到期的事项、跟进点和可转成提醒的动作。",
+  "app.skills.templates.reminderRadar.trigger":
+    "任务涉及截止时间、待跟进事项、待办、排期，或用户明确说“提醒我”时",
+  "app.skills.templates.reminderRadar.instructions":
+    "先检查是否存在逾期或即将到期的事项，再补充新的计划。把松散请求整理成具备负责人、时间和预期结果的提醒候选。除非操作者明确要求，不要声称提醒已经被保存。",
+  "app.skills.templates.weatherBrief.name": "天气简报",
+  "app.skills.templates.weatherBrief.description":
+    "基于可见天气上下文做摘要，并让天气相关建议始终建立在真实数据上。",
+  "app.skills.templates.weatherBrief.trigger":
+    "用户询问天气页、比较城市天气，或需要和当前天气相关的出行与穿搭建议时",
+  "app.skills.templates.weatherBrief.instructions":
+    "如果会话上下文或用户输入里已经给出具体天气数据，就先清晰总结，再连接到当前请求。如果没有实时天气数据，就请用户打开 Weather 页或贴出当前城市卡片。不要编造实况天气。",
+  "app.skills.templates.musicCompanion.name": "音乐伴听",
+  "app.skills.templates.musicCompanion.description":
+    "把情绪、回复节奏和曲目信息转成播放建议、歌单排序或伴听文案。",
+  "app.skills.templates.musicCompanion.trigger":
+    "用户需要歌单建议、氛围匹配、曲目顺序调整，或回复联动音乐建议时",
+  "app.skills.templates.musicCompanion.instructions":
+    "只使用会话或运行时上下文里已经出现的曲名、歌手、歌词和播放状态。给出排序、衔接、氛围匹配和播放建议。不要假装自己听到了音频，也不要在没有提供歌词时声称看过歌词。",
+  "app.skills.templates.galleryCurator.name": "画廊策展",
+  "app.skills.templates.galleryCurator.description":
+    "把图库内容整理成主题、说明文字、标签和更易检索的回忆集合。",
+  "app.skills.templates.galleryCurator.trigger":
+    "用户希望整理照片、编写说明、建立合集，或清理图库结构时",
+  "app.skills.templates.galleryCurator.instructions":
+    "依据文件名、文字描述和用户意图，提出合集主题、收藏候选、说明文字和便于检索的标签。除非图片本身真的提供给了 Agent，否则不要声称自己看过像素内容。",
+  "app.skills.templates.settingsSteward.name": "设置管家",
+  "app.skills.templates.settingsSteward.description":
+    "让 provider、缓存和运行时设置修改更明确、更克制、也更可回退。",
+  "app.skills.templates.settingsSteward.trigger":
+    "任务涉及 provider 配置、缓存清理、system prompt、运行时开关或其他设置项时",
+  "app.skills.templates.settingsSteward.instructions":
+    "先复述预期设置变更，再说明影响范围和可逆性，优先做最小安全改动。遇到清缓存或重置状态这类动作时先提醒风险；在必要字段不完整前，不要假装 provider 设置已经可用。",
   "app.skills.templates.releaseGuard.name": "发布守卫",
-  "app.skills.templates.releaseGuard.description": "在高风险修改、迁移、删除和生产影响任务前强制放慢节奏。",
-  "app.skills.templates.releaseGuard.trigger": "任务涉及部署、迁移、鉴权、计费或破坏性文件变更时",
-  "app.skills.templates.releaseGuard.instructions": "把高风险修改当作一个 review gate。先说明回滚影响、迁移风险和测试缺口，再改代码或配置。优先选择可回退的改动和明确的验证步骤。",
+  "app.skills.templates.releaseGuard.description":
+    "在高风险修改、迁移、删除和生产影响任务前强制放慢节奏。",
+  "app.skills.templates.releaseGuard.trigger":
+    "任务涉及部署、迁移、鉴权、计费或破坏性文件变更时",
+  "app.skills.templates.releaseGuard.instructions":
+    "把高风险修改当作一个 review gate。先说明回滚影响、迁移风险和测试缺口，再改代码或配置。优先选择可回退的改动和明确的验证步骤。",
   "app.skills.templates.uiPolish.name": "界面打磨",
-  "app.skills.templates.uiPolish.description": "推动 Agent 输出更有层次、更不模板化的前端结果。",
-  "app.skills.templates.uiPolish.trigger": "任务会改动用户可见布局、交互设计或视觉表现时",
-  "app.skills.templates.uiPolish.instructions": "优先追求清晰层级、明确结构和更强的视觉节奏。避免通用化面板堆砌。让动画有意义、间距一致，并明确移动端表现。",
+  "app.skills.templates.uiPolish.description":
+    "推动 Agent 输出更有层次、更不模板化的前端结构。",
+  "app.skills.templates.uiPolish.trigger":
+    "任务会改动用户可见布局、交互设计或视觉表现时",
+  "app.skills.templates.uiPolish.instructions":
+    "优先追求清晰层级、明确结构和更强的视觉节奏。避免通用卡片堆砌。让动画有意义、间距一致，并明确移动端表现。",
   "app.skills.templates.researchMode.name": "研究模式",
-  "app.skills.templates.researchMode.description": "让回答更依赖来源验证、更清楚地区分已验证和推断。",
-  "app.skills.templates.researchMode.trigger": "任务需要查文档、核验信息、给出处或跨来源比较时",
-  "app.skills.templates.researchMode.instructions": "优先使用一手来源，区分已验证内容和推断内容，在下结论前先总结未解决的缺口。证据不足或信息时效性强时，不要过度自信。",
+  "app.skills.templates.researchMode.description":
+    "让回答更依赖来源验证，并更清楚地区分已验证内容和推断内容。",
+  "app.skills.templates.researchMode.trigger":
+    "任务需要查文档、核验信息、给出处或跨来源比较时",
+  "app.skills.templates.researchMode.instructions":
+    "优先使用一手来源，区分已经验证的信息和推断信息，在得出结论前先总结未解决的缺口。证据不足或时效性强时，不要过度自信。",
   "app.skills.templates.taskRouter.name": "任务路由",
-  "app.skills.templates.taskRouter.description": "改善复杂任务的拆解、下一步规划和执行顺序。",
-  "app.skills.templates.taskRouter.trigger": "请求范围较大、多步骤，或者很可能同时包含实现与验证时",
-  "app.skills.templates.taskRouter.instructions": "先拆出最小关键路径，把旁支工作和主线工作分开，并按阻塞关系安排顺序。凡是会影响后续执行的假设，都要先显式说清楚。",
+  "app.skills.templates.taskRouter.description":
+    "改善复杂任务的拆解、下一步规划和执行顺序。",
+  "app.skills.templates.taskRouter.trigger":
+    "请求范围较大、多步骤，或很可能同时包含实现与验证时",
+  "app.skills.templates.taskRouter.instructions":
+    "先拆出最小关键路径，把旁支工作和主线工作分开，并按阻塞关系安排顺序。凡是会影响后续执行的假设，都要先显式说明。",
 
   "app.music.builtin.replyPulse.title": "Reply Pulse",
   "app.music.builtin.neonOrbit.title": "Neon Orbit",
@@ -440,7 +535,8 @@ const zhCN = {
   "app.music.miniPlayer.eyebrow": "正在播放",
   "app.music.miniPlayer.progress": "播放进度",
   "app.music.panelTitle": "云音乐播放面板",
-  "app.music.panelDescription": "按网易云音乐的层次重做，把封面氛围、播放控制、频谱粒子和曲库收进同一个面板。",
+  "app.music.panelDescription":
+    "按网易云音乐的层次重做，把封面氛围、播放控制、频谱粒子和曲库收进同一个面板。",
   "app.music.heroTitle": "沉浸式播放舞台",
   "app.music.heroDescription": "声音甲板和频谱粒子保持合体，不再拆成两个模块。",
   "app.music.progressLabel": "播放进度",
@@ -459,6 +555,16 @@ const zhCN = {
   "app.music.mode.shuffle": "随机播放",
   "app.music.lyricsTitle": "歌词",
   "app.music.lyricsHint": "歌词会随播放进度高亮推进，模拟网易云音乐的沉浸式歌词舞台。",
+  "app.music.lyrics.search": "在线搜索",
+  "app.music.lyrics.upload": "上传 LRC",
+  "app.music.lyrics.status.loading": "正在搜索",
+  "app.music.lyrics.status.manual": "手动覆盖",
+  "app.music.lyrics.status.cached": "本地缓存",
+  "app.music.lyrics.status.fallback": "默认占位",
+  "app.music.lyrics.status.notFound": "未找到歌词",
+  "app.music.lyrics.status.error": "搜索失败",
+  "app.music.lyrics.fallback.line1": "暂时还没有匹配到在线歌词",
+  "app.music.lyrics.fallback.line2": "可以点击在线搜索，或直接上传 LRC 手动覆盖。",
   "app.music.libraryToggle": "曲库",
 
   "app.runtime.eyebrow": "运行时",
@@ -481,7 +587,11 @@ const zhCN = {
   "app.inspector.group.activity.title": "执行轨迹",
   "app.inspector.group.quick.eyebrow": "快捷控制",
   "app.inspector.group.quick.title": "快捷入口",
-  "app.inspector.resize": "调整右侧栏宽度",
+  "app.inspector.toggle": "运行时面板",
+  "app.inspector.summary": "能力、音乐、追踪和快捷控制。",
+  "app.inspector.open": "打开运行时面板",
+  "app.inspector.close": "关闭运行时面板",
+  "app.inspector.resize": "调整右侧边栏宽度",
   "app.settings.eyebrow": "网关",
   "app.settings.title": "Provider 设置",
   "app.settings.providerName": "Provider 名称",
@@ -494,31 +604,39 @@ const zhCN = {
   "app.settings.quick.title": "快捷入口",
   "app.settings.page.eyebrow": "系统设置",
   "app.settings.page.title": "模型网关与缓存控制",
-  "app.settings.page.description": "把兼容模型的调用入口、默认提示词，以及图库、天气、技能历史等本地缓存统一放到一个页面管理。",
+  "app.settings.page.description":
+    "把兼容模型的调用入口、默认提示词，以及图库、天气、技能历史等本地缓存统一放到一个页面管理。",
   "app.settings.page.railDescription": "打开完整设置页，编辑 provider 信息并清理不同缓存分组。",
   "app.settings.page.open": "打开设置",
   "app.settings.cache.eyebrow": "缓存中心",
   "app.settings.cache.title": "本地缓存管理",
-  "app.settings.cache.description": "这里的动作只会清理浏览器侧缓存。会话、笔记、提醒和已安装技能不会被删除。",
+  "app.settings.cache.description":
+    "这里的动作只会清理浏览器侧缓存。会话、笔记、提醒和已安装技能不会被删除。",
   "app.settings.cache.media.title": "媒体缓存",
-  "app.settings.cache.media.description": "清空图库导入内容和旧相册页照片缓存，让图片相关页面从干净状态重新开始。",
+  "app.settings.cache.media.description":
+    "清空图库导入内容和旧相册照片缓存，让媒体相关页面从干净状态重新开始。",
   "app.settings.cache.weather.title": "天气缓存",
-  "app.settings.cache.weather.description": "重置保存的天气城市、最近搜索和城市使用记录，恢复到默认列表。",
+  "app.settings.cache.weather.description":
+    "重置保存的天气城市、最近搜索和城市使用记录，恢复到默认列表。",
   "app.settings.cache.skillHistory.title": "技能历史缓存",
-  "app.settings.cache.skillHistory.description": "删除本地保存的技能版本快照，但不会删除当前已经安装的技能。",
+  "app.settings.cache.skillHistory.description":
+    "删除本地保存的技能版本快照，但不会删除当前已经安装的技能。",
   "app.settings.cache.all.title": "全部辅助缓存",
-  "app.settings.cache.all.description": "一次性清空所有非关键缓存，下次交互时再按默认状态重新生成。",
+  "app.settings.cache.all.description":
+    "一次性清空所有非关键缓存，下次交互时再按默认状态重新生成。",
   "app.settings.cache.clear": "清理缓存",
   "app.settings.cache.clearAll": "全部清理",
   "app.settings.cache.entryCount": "{count} 条记录",
   "app.settings.cache.groupCount": "{count} 组",
   "app.settings.cache.countLabel": "缓存 {count}",
   "app.settings.cache.all.countLabel": "完整重置",
-  "app.settings.cache.safeNote": "这里不会删除工作区核心数据。如果你要重置会话或笔记，那应该是单独的破坏性操作。",
+  "app.settings.cache.safeNote":
+    "这里不会删除工作区核心数据。如果你要重置会话或笔记，那应该是单独的破坏性操作。",
   "app.settings.cache.confirm.media": "确定要清空图库和旧相册照片缓存吗？",
   "app.settings.cache.confirm.weather": "确定要清空已保存天气城市和天气搜索缓存吗？",
   "app.settings.cache.confirm.skillHistory": "确定要清空本地技能版本历史缓存吗？",
-  "app.settings.cache.confirm.all": "确定现在清空全部辅助缓存吗？会话、笔记、提醒和技能会被保留。",
+  "app.settings.cache.confirm.all":
+    "确定现在清空全部辅助缓存吗？会话、笔记、提醒和技能会被保留。",
 
   "app.capability.runtime.title": "Rust Runtime",
   "app.capability.runtime.description": "桌面模式下由 Rust 负责持久化、规划和模型调用。",
@@ -529,7 +647,7 @@ const zhCN = {
   "app.capability.knowledge.title": "Knowledge Vault",
   "app.capability.knowledge.description": "本地笔记会作为稳定知识库使用。",
   "app.capability.reminders.title": "Reminder Center",
-  "app.capability.reminders.description": "基于时间的笔记和待办会常驻在桌面上。",
+  "app.capability.reminders.description": "基于时间的笔记和待办会常驻在桌面中。",
   "app.capability.skills.title": "Custom Skills",
   "app.capability.skills.description": "仅具备低权限执行能力的可复用提示技能。",
   "app.capability.desktop.title": "Tauri Shell",
@@ -566,7 +684,8 @@ const zhCN = {
   "album.instructions.empty": "相册暂时还是空的，先导入一张照片吧。",
   "album.instructions.hasPhotos": "可以双指缩放网格，点击任意照片进入大图浏览。",
   "album.hero.latest": "最近一帧",
-  "album.hero.description": "把最近导入的照片铺成一面带温度的联络表墙，按天整理，而不是冷冰冰的文件列表。",
+  "album.hero.description":
+    "把最近导入的照片铺成一面有温度的联络表墙，按天整理，而不是冷冰冰的文件列表。",
   "album.stats.total": "照片",
   "album.stats.days": "日期",
   "album.stats.month": "本月",
@@ -589,7 +708,7 @@ const zhCN = {
 
   "carousel.eyebrow": "梦境轮播",
   "carousel.title": "随着心情切换的回忆墙",
-  "carousel.meta": "{count} 张图片 · 支持自动播放",
+  "carousel.meta": "{count} 张图片 • 支持自动播放",
   "carousel.slide.alt": "轮播图片 {index}",
   "carousel.import": "导入图片",
 
@@ -637,33 +756,6 @@ const zhCN = {
   "time.alarm.edit": "修改",
   "time.alarm.set": "设置",
   "time.alert.ring": "闹钟时间到了",
-  "app.skills.history.eyebrow": "\u7248\u672c\u8bb0\u5f55",
-  "app.skills.history.title": "\u7248\u672c\u5386\u53f2",
-  "app.skills.history.count": "{count} \u4e2a\u7248\u672c",
-  "app.skills.history.description":
-    "\u6bcf\u6b21\u4fdd\u5b58\u3001AI \u91cd\u5199\u6216\u76f4\u63a5\u6062\u590d\u65f6\uff0c\u90fd\u4f1a\u5728\u672c\u5730\u7559\u4e0b\u4e00\u4e2a\u5feb\u7167\uff0c\u65b9\u4fbf\u56de\u6eda\u3002",
-  "app.skills.history.savedAt": "\u4fdd\u5b58\u4e8e {date}",
-  "app.skills.history.loadDraft": "\u8f7d\u5165\u7f16\u8f91\u5668",
-  "app.skills.history.restore": "\u76f4\u63a5\u6062\u590d",
-  "app.skills.history.emptyTitle": "\u8fd8\u6ca1\u6709\u5386\u53f2\u7248\u672c",
-  "app.skills.history.emptyDescription":
-    "\u5148\u4fdd\u5b58\u6216\u91cd\u5199\u8fd9\u4e2a skill\uff0c\u5c31\u4f1a\u5f00\u59cb\u7d2f\u79ef\u672c\u5730\u7248\u672c\u8bb0\u5f55\u3002",
-  "app.skills.history.selectTitle": "\u5148\u9009\u4e2d\u4e00\u4e2a skill",
-  "app.skills.history.selectDescription":
-    "\u6253\u5f00\u4e00\u4e2a skill \u540e\uff0c\u53ef\u4ee5\u5728\u8fd9\u91cc\u67e5\u770b\u4e4b\u524d\u7684\u7248\u672c\u5e76\u6062\u590d\u3002",
-  "app.skills.history.reason.manualSave": "\u624b\u52a8\u4fdd\u5b58",
-  "app.skills.history.reason.aiRewrite": "AI \u91cd\u5199",
-  "app.skills.history.reason.restore": "\u6062\u590d\u524d\u5907\u4efd",
-  "app.music.lyrics.search": "\u5728\u7ebf\u641c\u7d22",
-  "app.music.lyrics.upload": "\u4e0a\u4f20 LRC",
-  "app.music.lyrics.status.loading": "\u6b63\u5728\u641c\u7d22",
-  "app.music.lyrics.status.manual": "\u624b\u52a8\u8986\u76d6",
-  "app.music.lyrics.status.cached": "\u672c\u5730\u7f13\u5b58",
-  "app.music.lyrics.status.fallback": "\u9ed8\u8ba4\u5360\u4f4d",
-  "app.music.lyrics.status.notFound": "\u672a\u627e\u5230\u6b4c\u8bcd",
-  "app.music.lyrics.status.error": "\u641c\u7d22\u5931\u8d25",
-  "app.music.lyrics.fallback.line1": "\u6682\u65f6\u8fd8\u6ca1\u6709\u5339\u914d\u5230\u5728\u7ebf\u6b4c\u8bcd",
-  "app.music.lyrics.fallback.line2": "\u53ef\u4ee5\u70b9\u51fb\u5728\u7ebf\u641c\u7d22\uff0c\u6216\u76f4\u63a5\u4e0a\u4f20 LRC \u624b\u52a8\u8986\u76d6\u3002",
 };
 
 export default zhCN;

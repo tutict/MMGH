@@ -13,6 +13,96 @@ use crate::cmd::{AgentSettingsInput, KnowledgeNoteInput, ReminderInput, SkillInp
 static DB_CONN: Lazy<Mutex<Option<Connection>>> = Lazy::new(|| Mutex::new(None));
 const SETTINGS_KEY: &str = "agent_settings_v1";
 const SESSION_SKILL_MIGRATION_KEY: &str = "session_skill_mount_migration_v1";
+const STARTER_SKILL_SEED_MIGRATION_KEY: &str = "starter_skill_seed_migration_v1";
+
+#[derive(Debug, Clone, Copy)]
+struct StarterSkillSeed {
+  name: &'static str,
+  description: &'static str,
+  instructions: &'static str,
+  trigger_hint: &'static str,
+  legacy_names: &'static [&'static str],
+}
+
+static STARTER_SKILL_SEEDS: &[StarterSkillSeed] = &[
+  StarterSkillSeed {
+    name: "Note Recall",
+    description: "Bias the agent toward local notes, durable facts, and previously captured context.",
+    instructions: "Before answering, check whether the local note set likely contains stable context. Prefer durable facts from notes over fresh guesses, and call out when the notes appear incomplete or stale.",
+    trigger_hint: "Use when the operator asks for context from local notes, private docs, or stable project knowledge.",
+    legacy_names: &["Local note recall"],
+  },
+  StarterSkillSeed {
+    name: "Knowledge Librarian",
+    description: "Turn volatile chat into clean notes, reusable summaries, and durable knowledge entries.",
+    instructions: "Distill the conversation into durable facts, open questions, and next actions. Suggest a note title, a compact summary, and a tag set that would fit the Knowledge Vault. Do not invent facts that were not present in the conversation or local notes.",
+    trigger_hint: "Use when the operator wants to extract facts, consolidate a discussion, or turn output into a reusable knowledge note.",
+    legacy_names: &[],
+  },
+  StarterSkillSeed {
+    name: "Reminder Radar",
+    description: "Keep due items, follow-ups, and reminder-worthy actions visible during planning.",
+    instructions: "Surface overdue or due-soon items before proposing brand new work. Turn loose asks into actionable reminder candidates with owner, deadline, and expected outcome when possible. Do not claim a reminder was saved unless the operator explicitly asks for that step.",
+    trigger_hint: "Use when the task mentions deadlines, follow-ups, to-dos, scheduling, or asks to remember something later.",
+    legacy_names: &[],
+  },
+  StarterSkillSeed {
+    name: "Weather Brief",
+    description: "Summarize visible weather context and keep weather-related advice grounded in actual data.",
+    instructions: "If concrete weather data is present in the session context or the operator provides it, summarize it clearly and connect it to the request. If live weather data is missing, ask the operator to open the Weather workspace or paste the visible city snapshot. Never invent current conditions.",
+    trigger_hint: "Use when the operator asks about the weather board, compares cities, or wants packing and travel advice tied to current conditions.",
+    legacy_names: &[],
+  },
+  StarterSkillSeed {
+    name: "Music Companion",
+    description: "Turn mood, reply rhythm, and track context into playlist or playback suggestions.",
+    instructions: "Use only the track names, artists, lyrics, or playback state that appear in the conversation or visible runtime context. Suggest ordering, transitions, mood fit, and playback notes. Do not claim you can hear audio or read lyrics unless that content was provided.",
+    trigger_hint: "Use when the operator asks for playlist ideas, mood matching, track ordering, or reply-synced music suggestions.",
+    legacy_names: &[],
+  },
+  StarterSkillSeed {
+    name: "Gallery Curator",
+    description: "Organize gallery items into themes, captions, tags, and memory-friendly collections.",
+    instructions: "Use the filenames, descriptions, and user-provided context to suggest albums, favorite candidates, captions, and retrieval-friendly tags. Do not claim to inspect image pixels unless the images themselves are provided to the agent.",
+    trigger_hint: "Use when the operator wants to group photos, write captions, build collections, or clean up a gallery.",
+    legacy_names: &[],
+  },
+  StarterSkillSeed {
+    name: "Settings Steward",
+    description: "Keep provider, cache, and runtime settings changes deliberate, explicit, and reversible.",
+    instructions: "Restate the intended settings change, call out impact and reversibility, and prefer the smallest safe update. Warn before cache-clearing or state-reset actions, and never pretend a provider setting works until the required fields are present.",
+    trigger_hint: "Use when the task touches provider config, cache clearing, system prompts, runtime toggles, or other settings work.",
+    legacy_names: &[],
+  },
+  StarterSkillSeed {
+    name: "Release Guard",
+    description: "Slow the agent down around risky edits, migrations, deletions, and production-impacting changes.",
+    instructions: "Treat risky changes as a review gate. Surface rollback impact, migration risks, and testing gaps before modifying code or config. Favor reversible edits and explicit verification steps.",
+    trigger_hint: "Use when the task touches deployment, migrations, auth, billing, or destructive file changes.",
+    legacy_names: &[],
+  },
+  StarterSkillSeed {
+    name: "UI Polish",
+    description: "Push the agent toward sharper layout, stronger hierarchy, and less generic frontend output.",
+    instructions: "Aim for deliberate interface structure, clear hierarchy, and stronger visual rhythm. Avoid generic dashboard filler. Keep motion purposeful, spacing consistent, and mobile behavior explicit.",
+    trigger_hint: "Use when the task changes user-facing layout, interaction design, or visual presentation.",
+    legacy_names: &[],
+  },
+  StarterSkillSeed {
+    name: "Research Mode",
+    description: "Optimize for source-backed answers, validation, and clear uncertainty handling.",
+    instructions: "Prioritize primary sources, note what is verified versus inferred, and summarize unresolved gaps before concluding. Avoid confident claims when evidence is thin or time-sensitive.",
+    trigger_hint: "Use when the task needs documentation checks, verification, citations, or comparison across sources.",
+    legacy_names: &[],
+  },
+  StarterSkillSeed {
+    name: "Task Router",
+    description: "Improve decomposition, next-step planning, and execution ordering for bigger tasks.",
+    instructions: "Break the task into a minimal critical path, keep side work clearly separated, and sequence execution so blockers are resolved before polish work. State assumptions when they affect downstream steps.",
+    trigger_hint: "Use when the request is broad, multi-step, or likely to branch into implementation plus verification.",
+    legacy_names: &[],
+  },
+];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -81,6 +171,7 @@ pub struct SessionDetail {
   pub activity: Vec<ActivityItem>,
   pub mounted_skill_ids: Vec<i64>,
   pub mounted_skills: Vec<SkillSummary>,
+  pub recommended_skills: Vec<SkillSummary>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -129,6 +220,7 @@ pub struct SkillSummary {
   pub name: String,
   pub summary: String,
   pub trigger_hint: String,
+  pub recommendation_reason: Option<String>,
   pub enabled: bool,
   pub permission_level: String,
   pub updated_at: i64,
@@ -318,6 +410,17 @@ pub fn session_enabled_skills(session_id: i64) -> Result<Vec<SkillDetail>> {
 
 pub fn load_settings() -> Result<AgentSettings> {
   with_connection(load_settings_in)
+}
+
+pub fn resolve_settings_override(input: Option<AgentSettingsInput>) -> Result<AgentSettings> {
+  match input {
+    Some(value) => Ok(normalize_settings(value)),
+    None => load_settings(),
+  }
+}
+
+pub fn recent_note_details(limit: usize) -> Result<Vec<KnowledgeNoteDetail>> {
+  with_connection(|conn| list_note_details_in(conn, limit))
 }
 
 pub fn workspace_snapshot(preferred_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
@@ -523,45 +626,110 @@ fn run_post_init_migrations_in(conn: &Connection) -> Result<()> {
     )
     .optional()?;
 
-  if migration_done.is_some() {
-    return Ok(());
-  }
-
-  let mut enabled_skill_ids = Vec::new();
-  let mut skills_stmt = conn.prepare("SELECT id FROM skills WHERE enabled = 1 ORDER BY id ASC")?;
-  let skill_rows = skills_stmt.query_map([], |row| row.get::<_, i64>(0))?;
-  for row in skill_rows {
-    enabled_skill_ids.push(row?);
-  }
-
-  let has_session_skills: bool = conn
-    .query_row(
-      "SELECT EXISTS(SELECT 1 FROM session_skills LIMIT 1)",
-      [],
-      |row| row.get::<_, i64>(0),
-    )
-    .map(|value| value != 0)?;
-
-  if !has_session_skills && !enabled_skill_ids.is_empty() {
-    let mut session_ids = Vec::new();
-    let mut session_stmt = conn.prepare("SELECT id FROM sessions ORDER BY id ASC")?;
-    let session_rows = session_stmt.query_map([], |row| row.get::<_, i64>(0))?;
-    for row in session_rows {
-      session_ids.push(row?);
+  if migration_done.is_none() {
+    let mut enabled_skill_ids = Vec::new();
+    let mut skills_stmt = conn.prepare("SELECT id FROM skills WHERE enabled = 1 ORDER BY id ASC")?;
+    let skill_rows = skills_stmt.query_map([], |row| row.get::<_, i64>(0))?;
+    for row in skill_rows {
+      enabled_skill_ids.push(row?);
     }
 
-    for session_id in session_ids {
-      save_session_skills_in(conn, session_id, enabled_skill_ids.clone())?;
+    let has_session_skills: bool = conn
+      .query_row(
+        "SELECT EXISTS(SELECT 1 FROM session_skills LIMIT 1)",
+        [],
+        |row| row.get::<_, i64>(0),
+      )
+      .map(|value| value != 0)?;
+
+    if !has_session_skills && !enabled_skill_ids.is_empty() {
+      let mut session_ids = Vec::new();
+      let mut session_stmt = conn.prepare("SELECT id FROM sessions ORDER BY id ASC")?;
+      let session_rows = session_stmt.query_map([], |row| row.get::<_, i64>(0))?;
+      for row in session_rows {
+        session_ids.push(row?);
+      }
+
+      for session_id in session_ids {
+        save_session_skills_in(conn, session_id, enabled_skill_ids.clone())?;
+      }
     }
+
+    conn.execute(
+      "INSERT INTO settings (key, value) VALUES (?1, ?2)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+      params![SESSION_SKILL_MIGRATION_KEY, "done"],
+    )?;
   }
 
-  conn.execute(
-    "INSERT INTO settings (key, value) VALUES (?1, ?2)
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-    params![SESSION_SKILL_MIGRATION_KEY, "done"],
-  )?;
+  seed_starter_skill_catalog_in(conn)?;
 
   Ok(())
+}
+
+fn seed_starter_skill_catalog_in(conn: &Connection) -> Result<()> {
+  let migration_done: Option<String> = conn
+    .query_row(
+      "SELECT value FROM settings WHERE key = ?1",
+      params![STARTER_SKILL_SEED_MIGRATION_KEY],
+      |row| row.get(0),
+    )
+    .optional()?;
+
+  if migration_done.is_none() {
+    ensure_starter_skills_in(conn)?;
+    conn.execute(
+      "INSERT INTO settings (key, value) VALUES (?1, ?2)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+      params![STARTER_SKILL_SEED_MIGRATION_KEY, "done"],
+    )?;
+  }
+
+  Ok(())
+}
+
+fn ensure_starter_skills_in(conn: &Connection) -> Result<()> {
+  for seed in STARTER_SKILL_SEEDS {
+    if find_skill_id_by_names(conn, seed).is_some() {
+      continue;
+    }
+    insert_starter_skill_in(conn, seed)?;
+  }
+  Ok(())
+}
+
+fn find_skill_id_by_names(conn: &Connection, seed: &StarterSkillSeed) -> Option<i64> {
+  std::iter::once(seed.name)
+    .chain(seed.legacy_names.iter().copied())
+    .find_map(|name| {
+      conn
+        .query_row(
+          "SELECT id FROM skills WHERE name = ?1 ORDER BY id ASC LIMIT 1",
+          params![name],
+          |row| row.get::<_, i64>(0),
+        )
+        .optional()
+        .ok()
+        .flatten()
+    })
+}
+
+fn insert_starter_skill_in(conn: &Connection, seed: &StarterSkillSeed) -> Result<i64> {
+  let now = now_millis();
+  conn.execute(
+    "INSERT INTO skills (name, description, instructions, trigger_hint, enabled, permission_level, created_at, updated_at)
+     VALUES (?1, ?2, ?3, ?4, 1, 'low', ?5, ?6)",
+    params![
+      seed.name,
+      seed.description,
+      seed.instructions,
+      seed.trigger_hint,
+      now,
+      now
+    ],
+  )?;
+
+  Ok(conn.last_insert_rowid())
 }
 
 fn ensure_seed_session_in(conn: &Connection) -> Result<i64> {
@@ -605,7 +773,11 @@ fn ensure_seed_skill_in(conn: &Connection) -> Result<i64> {
 
   match existing {
     Some(id) => Ok(id),
-    None => create_skill_in(conn, Some("Local note recall".to_string())),
+    None => {
+      ensure_starter_skills_in(conn)?;
+      find_skill_id_by_names(conn, &STARTER_SKILL_SEEDS[0])
+        .context("failed to seed starter skills")
+    }
   }
 }
 
@@ -854,7 +1026,7 @@ fn save_session_skills_in(conn: &Connection, session_id: i64, skill_ids: Vec<i64
   for skill_id in unique_ids {
     let exists = conn
       .query_row(
-        "SELECT EXISTS(SELECT 1 FROM skills WHERE id = ?1)",
+        "SELECT EXISTS(SELECT 1 FROM skills WHERE id = ?1 AND enabled = 1)",
         params![skill_id],
         |row| row.get::<_, i64>(0),
       )
@@ -970,6 +1142,36 @@ fn list_notes_in(conn: &Connection) -> Result<Vec<KnowledgeNoteSummary>> {
   Ok(notes)
 }
 
+fn list_note_details_in(conn: &Connection, limit: usize) -> Result<Vec<KnowledgeNoteDetail>> {
+  let mut stmt = conn.prepare(
+    "SELECT id, icon, title, body, tags, created_at, updated_at
+     FROM notes
+     ORDER BY updated_at DESC, id DESC
+     LIMIT ?1",
+  )?;
+  let rows = stmt.query_map(params![limit as i64], |row| {
+    let body: String = row.get(3)?;
+    let tags_json: String = row.get(4)?;
+    Ok(KnowledgeNoteDetail {
+      id: row.get(0)?,
+      icon: row.get(1)?,
+      title: row.get(2)?,
+      summary: preview_text(&body, 120),
+      body,
+      tags: decode_tags(tags_json),
+      created_at: row.get(5)?,
+      updated_at: row.get(6)?,
+    })
+  })?;
+
+  let mut notes = Vec::new();
+  for row in rows {
+    notes.push(row?);
+  }
+
+  Ok(notes)
+}
+
 fn list_reminders_in(conn: &Connection) -> Result<Vec<ReminderItem>> {
   let mut stmt = conn.prepare(
     "SELECT id, title, detail, due_at, severity, status, linked_note_id, created_at, updated_at
@@ -1013,6 +1215,7 @@ fn list_skills_in(conn: &Connection) -> Result<Vec<SkillSummary>> {
       name: row.get(1)?,
       summary: preview_text(&description, 120),
       trigger_hint: row.get(3)?,
+      recommendation_reason: None,
       enabled: row.get::<_, i64>(4)? != 0,
       permission_level: row.get(5)?,
       updated_at: row.get(6)?,
@@ -1065,10 +1268,12 @@ fn list_session_enabled_skills_in(conn: &Connection, session_id: i64) -> Result<
 
 fn list_session_skill_ids_in(conn: &Connection, session_id: i64) -> Result<Vec<i64>> {
   let mut stmt = conn.prepare(
-    "SELECT skill_id
-     FROM session_skills
-     WHERE session_id = ?1
-     ORDER BY created_at ASC, skill_id ASC",
+    "SELECT ss.skill_id
+     FROM session_skills ss
+     INNER JOIN skills s ON s.id = ss.skill_id
+     WHERE ss.session_id = ?1
+       AND s.enabled = 1
+     ORDER BY ss.created_at ASC, ss.skill_id ASC",
   )?;
   let rows = stmt.query_map(params![session_id], |row| row.get::<_, i64>(0))?;
 
@@ -1086,6 +1291,7 @@ fn list_session_skills_in(conn: &Connection, session_id: i64) -> Result<Vec<Skil
      FROM skills s
      INNER JOIN session_skills ss ON ss.skill_id = s.id
      WHERE ss.session_id = ?1
+       AND s.enabled = 1
      ORDER BY ss.created_at ASC, s.id ASC",
   )?;
   let rows = stmt.query_map(params![session_id], |row| {
@@ -1095,6 +1301,7 @@ fn list_session_skills_in(conn: &Connection, session_id: i64) -> Result<Vec<Skil
       name: row.get(1)?,
       summary: preview_text(&description, 120),
       trigger_hint: row.get(3)?,
+      recommendation_reason: None,
       enabled: row.get::<_, i64>(4)? != 0,
       permission_level: row.get(5)?,
       updated_at: row.get(6)?,
@@ -1208,6 +1415,7 @@ fn build_session_detail_in(conn: &Connection, session_id: i64) -> Result<Session
   }
   let mounted_skill_ids = list_session_skill_ids_in(conn, session_id)?;
   let mounted_skills = list_session_skills_in(conn, session_id)?;
+  let recommended_skills = recommend_session_skills_in(conn, session_id, &mounted_skill_ids, 4)?;
 
   Ok(SessionDetail {
     session,
@@ -1215,7 +1423,261 @@ fn build_session_detail_in(conn: &Connection, session_id: i64) -> Result<Session
     activity,
     mounted_skill_ids,
     mounted_skills,
+    recommended_skills,
   })
+}
+
+fn recommend_session_skills_in(
+  conn: &Connection,
+  session_id: i64,
+  mounted_skill_ids: &[i64],
+  limit: usize,
+) -> Result<Vec<SkillSummary>> {
+  let session_summary = conn
+    .query_row(
+      "SELECT title FROM sessions WHERE id = ?1",
+      params![session_id],
+      |row| row.get::<_, String>(0),
+    )
+    .optional()?
+    .unwrap_or_default();
+
+  let mut stmt = conn.prepare(
+    "SELECT content
+     FROM messages
+     WHERE session_id = ?1
+     ORDER BY created_at DESC, id DESC
+     LIMIT 10",
+  )?;
+  let rows = stmt.query_map(params![session_id], |row| row.get::<_, String>(0))?;
+  let mut message_fragments = Vec::new();
+  for row in rows {
+    message_fragments.push(row?);
+  }
+  message_fragments.reverse();
+
+  let session_text = format!("{} {}", session_summary, message_fragments.join(" "));
+  let session_haystack = session_text.to_lowercase();
+  let keywords = extract_recommendation_keywords(&session_haystack);
+  let skills = list_skills_in(conn)?;
+
+  let mut ranked = skills
+    .into_iter()
+    .filter(|skill| skill.enabled && !mounted_skill_ids.contains(&skill.id))
+    .map(|mut skill| {
+      let (score, reason) = score_skill_recommendation(&skill, &session_haystack, &keywords);
+      skill.recommendation_reason = reason;
+      (score, skill)
+    })
+    .filter(|(score, _)| *score > 0)
+    .collect::<Vec<_>>();
+
+  ranked.sort_by(|left, right| {
+    right
+      .0
+      .cmp(&left.0)
+      .then_with(|| right.1.enabled.cmp(&left.1.enabled))
+      .then_with(|| right.1.updated_at.cmp(&left.1.updated_at))
+  });
+
+  Ok(ranked.into_iter().take(limit).map(|(_, skill)| skill).collect())
+}
+
+fn extract_recommendation_keywords(text: &str) -> Vec<String> {
+  let mut keywords = text
+    .split(|ch: char| !ch.is_alphanumeric() && !is_cjk_character(ch))
+    .map(str::trim)
+    .filter(|part| part.chars().count() >= 2)
+    .map(str::to_string)
+    .collect::<Vec<_>>();
+
+  keywords.sort();
+  keywords.dedup();
+  keywords
+}
+
+fn score_skill_recommendation(
+  skill: &SkillSummary,
+  session_haystack: &str,
+  keywords: &[String],
+) -> (i64, Option<String>) {
+  let searchable = format!(
+    "{} {} {}",
+    skill.name.to_lowercase(),
+    skill.summary.to_lowercase(),
+    skill.trigger_hint.to_lowercase()
+  );
+
+  let mut score = if skill.enabled { 2 } else { 0 };
+  let mut matched_terms = Vec::new();
+
+  for keyword in keywords {
+    if searchable.contains(keyword) {
+      score += 2;
+      matched_terms.push(keyword.clone());
+    }
+    if skill.name.to_lowercase().contains(keyword) {
+      score += 3;
+      matched_terms.push(keyword.clone());
+    }
+  }
+
+  score += score_skill_recommendation_from_intent(skill, session_haystack, &mut matched_terms);
+  matched_terms.sort();
+  matched_terms.dedup();
+
+  (
+    score,
+    build_skill_recommendation_reason(session_haystack, &matched_terms),
+  )
+}
+
+fn score_skill_recommendation_from_intent(
+  skill: &SkillSummary,
+  session_haystack: &str,
+  matched_terms: &mut Vec<String>,
+) -> i64 {
+  let skill_name = skill.name.to_lowercase();
+  let mut capture_match = |patterns: &[&str]| {
+    let found = patterns
+      .iter()
+      .filter(|pattern| session_haystack.contains(**pattern))
+      .map(|pattern| pattern.to_string())
+      .collect::<Vec<_>>();
+    if !found.is_empty() {
+      matched_terms.extend(found);
+      true
+    } else {
+      false
+    }
+  };
+
+  if skill_name.contains("note recall")
+    || skill_name.contains("local note recall")
+    || skill_name.contains("笔记召回")
+  {
+    return if capture_match(&["note", "notes", "knowledge", "context", "文档", "笔记", "知识"]) {
+      8
+    } else {
+      0
+    };
+  }
+
+  if skill_name.contains("knowledge librarian") || skill_name.contains("知识整理员") {
+    return if capture_match(&["summary", "summarize", "整理", "归档", "note", "沉淀", "知识库"]) {
+      8
+    } else {
+      0
+    };
+  }
+
+  if skill_name.contains("reminder radar") || skill_name.contains("提醒雷达") {
+    return if capture_match(&["todo", "deadline", "follow-up", "follow up", "remind", "待办", "截止", "提醒"]) {
+      8
+    } else {
+      0
+    };
+  }
+
+  if skill_name.contains("weather brief") || skill_name.contains("天气简报") {
+    return if capture_match(&["weather", "forecast", "temperature", "rain", "travel", "天气", "降雨", "温度", "出行"]) {
+      8
+    } else {
+      0
+    };
+  }
+
+  if skill_name.contains("music companion") || skill_name.contains("音乐伴听") {
+    return if capture_match(&["music", "playlist", "song", "track", "mood", "音乐", "歌单", "曲目", "氛围"]) {
+      8
+    } else {
+      0
+    };
+  }
+
+  if skill_name.contains("gallery curator") || skill_name.contains("画廊策展") {
+    return if capture_match(&["gallery", "album", "photo", "image", "caption", "图库", "相册", "照片", "图片"]) {
+      8
+    } else {
+      0
+    };
+  }
+
+  if skill_name.contains("settings steward") || skill_name.contains("设置管家") {
+    return if capture_match(&["setting", "provider", "api key", "cache", "配置", "设置", "缓存", "网关"]) {
+      8
+    } else {
+      0
+    };
+  }
+
+  if skill_name.contains("release guard") || skill_name.contains("发布守卫") {
+    return if capture_match(&["deploy", "migration", "auth", "billing", "delete", "发布", "迁移", "鉴权", "删除"]) {
+      7
+    } else {
+      0
+    };
+  }
+
+  if skill_name.contains("ui polish") || skill_name.contains("界面打磨") {
+    return if capture_match(&["ui", "layout", "css", "frontend", "design", "界面", "布局", "前端", "样式"]) {
+      7
+    } else {
+      0
+    };
+  }
+
+  if skill_name.contains("research mode") || skill_name.contains("研究模式") {
+    return if capture_match(&["research", "source", "docs", "verify", "citation", "文档", "核验", "出处", "来源"]) {
+      7
+    } else {
+      0
+    };
+  }
+
+  if skill_name.contains("task router") || skill_name.contains("任务路由") {
+    return if capture_match(&["plan", "steps", "multi-step", "complex", "规划", "步骤", "复杂", "拆解"]) {
+      6
+    } else {
+      0
+    };
+  }
+
+  0
+}
+
+fn build_skill_recommendation_reason(
+  session_haystack: &str,
+  matched_terms: &[String],
+) -> Option<String> {
+  if matched_terms.is_empty() {
+    return None;
+  }
+
+  let reason_terms = matched_terms
+    .iter()
+    .take(3)
+    .map(|term| term.trim())
+    .filter(|term| !term.is_empty())
+    .collect::<Vec<_>>();
+
+  if reason_terms.is_empty() {
+    return None;
+  }
+
+  let is_zh = session_haystack.chars().any(is_cjk_character);
+  Some(if is_zh {
+    format!("匹配到当前会话里的关键词：{}。", reason_terms.join(" / "))
+  } else {
+    format!("Matched session topics: {}.", reason_terms.join(" / "))
+  })
+}
+
+fn is_cjk_character(ch: char) -> bool {
+  matches!(
+    ch as u32,
+    0x4E00..=0x9FFF | 0x3400..=0x4DBF | 0xF900..=0xFAFF
+  )
 }
 
 fn build_note_detail_in(conn: &Connection, note_id: i64) -> Result<KnowledgeNoteDetail> {

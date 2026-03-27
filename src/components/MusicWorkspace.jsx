@@ -18,7 +18,7 @@ const COSMIC_DUST_PARTICLES = Array.from({ length: 110 }, (_, index) => {
   };
 });
 
-const TRACK_LYRICS = {
+const LEGACY_TRACK_LYRICS = {
   "builtin-reply-pulse": [
     { time: 0, text: "Reply pulse in the midnight glow", subtext: "深夜里，回复的脉冲开始点亮屏幕" },
     { time: 14, text: "City lights drift into the low end", subtext: "城市灯火沉进低频，气氛慢慢下坠" },
@@ -40,6 +40,7 @@ const TRACK_LYRICS = {
     { time: 111, text: "Orbit lights are still awake", subtext: "直到最后，轨道上的灯仍然清醒" },
   ],
 };
+void LEGACY_TRACK_LYRICS;
 
 const PLAY_MODE_META = {
   loop: {
@@ -54,6 +55,29 @@ const PLAY_MODE_META = {
     labelKey: "app.music.mode.shuffle",
     shortLabel: "SHUF",
   },
+};
+
+const TRACK_LYRICS = {
+  "builtin-reply-pulse": [
+    { time: 0, text: "Reply pulse in the midnight glow", subtext: "深夜里，回复的脉冲点亮了整块屏幕。" },
+    { time: 14, text: "City lights drift into the low end", subtext: "城市灯火沉进低频，空气也跟着慢慢下坠。" },
+    { time: 28, text: "Every signal circles back to you", subtext: "每一道讯号兜了一圈，最后还是落回你这里。" },
+    { time: 43, text: "Static melts into a warmer hue", subtext: "噪声慢慢化开，夜色也染上了一层暖光。" },
+    { time: 58, text: "Heartbeat syncing with the afterglow", subtext: "心跳和余晖重新对拍，节奏贴着耳边推进。" },
+    { time: 73, text: "Hold the line while the chorus blooms", subtext: "副歌还没完全打开之前，先把这条连线握紧。" },
+    { time: 88, text: "Neon echoes move through empty rooms", subtext: "霓虹回声穿过安静房间，把空白都照亮。" },
+    { time: 104, text: "Stay awake, the waveform knows", subtext: "别急着睡，波形已经记住了这一刻的温度。" },
+  ],
+  "builtin-neon-orbit": [
+    { time: 0, text: "Orbit lights are carving blue halos", subtext: "轨道霓虹一圈圈划开，冷蓝光环还在扩散。" },
+    { time: 16, text: "A silver kick drums through the dark", subtext: "银色鼓点敲进暗处，把轮廓一层层震醒。" },
+    { time: 31, text: "Gravity bends around the chorus", subtext: "引力沿着副歌边缘悄悄弯折，节拍开始失重。" },
+    { time: 47, text: "The skyline shivers into sparks", subtext: "天际线轻轻一颤，碎成细小又明亮的火花。" },
+    { time: 63, text: "Spin slower, then break into the drop", subtext: "先把转速压低一点，再一头坠进下一次下落。" },
+    { time: 79, text: "Cold air glows inside the reverb", subtext: "残响里连冷空气都在发光，像夜色回潮。" },
+    { time: 95, text: "We keep floating past the last stop", subtext: "我们越过最后一站，还在失重里继续漂流。" },
+    { time: 111, text: "Orbit lights are still awake", subtext: "直到最后，轨道尽头的灯也没有熄掉。" },
+  ],
 };
 
 function MusicWorkspace({
@@ -96,7 +120,12 @@ function MusicWorkspace({
   const animationFrameRef = React.useRef(0);
   const pulseLevelRef = React.useRef(0.2);
   const lastPulseCommitRef = React.useRef(0);
-  const [isLibraryOpen, setIsLibraryOpen] = React.useState(false);
+  const [isLibraryOpen, setIsLibraryOpen] = React.useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.innerWidth > MOBILE_LIBRARY_BREAKPOINT &&
+      localizedTracks.length > 0
+  );
   const [particleCount, setParticleCount] = React.useState(() =>
     typeof window === "undefined" ? 80 : resolveParticleBudget(window)
   );
@@ -122,6 +151,9 @@ function MusicWorkspace({
   const currentTrackLabel = selectedTrack?.title || t("app.music.noTrack");
   const currentArtistLabel = selectedTrack?.artist || t("app.music.noArtist");
   const progressValue = Math.min(currentTime, duration || 0);
+  const syncStateLabel = autoPlayOnReply
+    ? t("app.music.replySyncOn")
+    : t("app.music.manualMode");
   const sourceLabel =
     typeof selectedTrackId === "string" && selectedTrackId.startsWith("upload-")
       ? t("app.music.sourceUpload")
@@ -267,10 +299,31 @@ function MusicWorkspace({
 
         <div className="music-room__main">
           <header className="music-room__header">
-            <div className="music-room__headline">
-              <span className="eyebrow">{t("app.music.eyebrow")}</span>
-              <h2>{t("app.music.panelTitle")}</h2>
-              <p>{t("app.music.panelDescription")}</p>
+            <div className="music-room__header-shell">
+              <div className="music-room__headline">
+                <span className="eyebrow">{t("app.music.eyebrow")}</span>
+                <h2>{t("app.music.panelTitle")}</h2>
+                <p>{t("app.music.panelDescription")}</p>
+              </div>
+
+              <div className="music-room__status-strip">
+                <div className="music-room__status-item">
+                  <span>{t("app.music.statsLibrary")}</span>
+                  <strong>{t("app.music.trackCount", { count: localizedTracks.length })}</strong>
+                </div>
+                <div className="music-room__status-item">
+                  <span>{t("app.music.statsSource")}</span>
+                  <strong>{sourceLabel}</strong>
+                </div>
+                <div className="music-room__status-item">
+                  <span>{t("app.music.playMode")}</span>
+                  <strong>{t(playModeMeta.labelKey)}</strong>
+                </div>
+                <div className="music-room__status-item">
+                  <span>{t("app.sound.autoPlay")}</span>
+                  <strong>{syncStateLabel}</strong>
+                </div>
+              </div>
             </div>
 
             <div className="music-room__meta">
@@ -359,11 +412,16 @@ function MusicWorkspace({
                 </div>
               </div>
 
-                <div className="music-room__lyrics">
+              <div className="music-room__lyrics">
                 <div className="music-room__lyrics-header">
                   <div className="music-room__lyrics-title">
                     <span>{t("app.music.lyricsTitle")}</span>
                     <strong>{currentTrackLabel}</strong>
+                    <p>
+                      {lyricsStatus === "manual"
+                        ? t("app.music.uploadHint")
+                        : t("app.music.lyricsHint")}
+                    </p>
                   </div>
                   <div className="music-room__lyrics-tools">
                     <span className={`music-room__lyrics-source is-${lyricsStatus}`}>{lyricsStatusLabel}</span>

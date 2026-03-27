@@ -138,6 +138,11 @@ const enUS = {
   "app.agent.mount.emptyTitle": "No mounted skills",
   "app.agent.mount.emptyDescription":
     "Attach reusable low-permission skills to this session from the skills page.",
+  "app.agent.recommend.eyebrow": "Suggested Mounts",
+  "app.agent.recommend.title": "Recommended skills",
+  "app.agent.recommend.emptyTitle": "No recommendations yet",
+  "app.agent.recommend.emptyDescription":
+    "Once the conversation has a clearer direction, the runtime will suggest useful skills to mount.",
   "app.agent.message.operator": "Operator",
   "app.agent.message.agent": "Agent",
   "app.agent.composer.placeholder":
@@ -419,6 +424,9 @@ const enUS = {
   "app.skills.sessionMount.title": "Mounted on this session",
   "app.skills.sessionMount.description":
     "This mirrors the QClaw-style flow where a session mounts a small set of reusable skills.",
+  "app.skills.sessionMount.recommendedEyebrow": "Session suggestions",
+  "app.skills.sessionMount.recommendedTitle": "Recommended for this conversation",
+  "app.skills.sessionMount.recommendedAction": "Mount now",
   "app.skills.sessionMount.emptyTitle": "No mounted skills yet",
   "app.skills.sessionMount.emptyDescription":
     "Install a starter skill or mount one of your existing workspace skills.",
@@ -448,6 +456,48 @@ const enUS = {
     "the operator asks for context from local notes, private docs, or stable project knowledge",
   "app.skills.templates.noteRecall.instructions":
     "Before answering, check whether the local note set likely contains stable context. Prefer durable facts from notes over fresh guesses, and call out when the notes appear incomplete or stale.",
+  "app.skills.templates.knowledgeLibrarian.name": "Knowledge Librarian",
+  "app.skills.templates.knowledgeLibrarian.description":
+    "Turns volatile chat into clean notes, summaries, and durable knowledge entries.",
+  "app.skills.templates.knowledgeLibrarian.trigger":
+    "the operator wants to extract facts, consolidate output, or turn a discussion into a reusable note",
+  "app.skills.templates.knowledgeLibrarian.instructions":
+    "Distill the conversation into durable facts, open questions, and next actions. Suggest a note title, a compact summary, and a tag set that fits the Knowledge Vault. Do not invent facts that were not present in the conversation or local notes.",
+  "app.skills.templates.reminderRadar.name": "Reminder Radar",
+  "app.skills.templates.reminderRadar.description":
+    "Keeps due items, follow-ups, and reminder-worthy actions visible during planning.",
+  "app.skills.templates.reminderRadar.trigger":
+    "the task mentions deadlines, follow-ups, to-dos, scheduling, or asks to remember something later",
+  "app.skills.templates.reminderRadar.instructions":
+    "Surface overdue or due-soon items before proposing brand new work. Turn loose asks into actionable reminder candidates with owner, deadline, and expected outcome when possible. Do not claim a reminder was saved unless the operator explicitly asks for that step.",
+  "app.skills.templates.weatherBrief.name": "Weather Brief",
+  "app.skills.templates.weatherBrief.description":
+    "Summarizes visible weather context and keeps weather advice grounded in actual data.",
+  "app.skills.templates.weatherBrief.trigger":
+    "the operator asks about the weather board, compares cities, or wants travel and packing advice tied to current conditions",
+  "app.skills.templates.weatherBrief.instructions":
+    "If concrete weather data is present in the session context or the operator provides it, summarize it clearly and connect it to the request. If live weather data is missing, ask the operator to open the Weather workspace or paste the visible city snapshot. Never invent current conditions.",
+  "app.skills.templates.musicCompanion.name": "Music Companion",
+  "app.skills.templates.musicCompanion.description":
+    "Turns mood, reply rhythm, and track context into playlist or playback suggestions.",
+  "app.skills.templates.musicCompanion.trigger":
+    "the operator asks for playlist ideas, mood matching, track ordering, or reply-synced music suggestions",
+  "app.skills.templates.musicCompanion.instructions":
+    "Use only the track names, artists, lyrics, or playback state that appear in the conversation or runtime context. Suggest ordering, transitions, mood fit, and playback notes. Do not claim you can hear audio or read lyrics unless that content was provided.",
+  "app.skills.templates.galleryCurator.name": "Gallery Curator",
+  "app.skills.templates.galleryCurator.description":
+    "Organizes gallery items into themes, captions, tags, and memory-friendly collections.",
+  "app.skills.templates.galleryCurator.trigger":
+    "the operator wants to group photos, write captions, build collections, or clean up a gallery",
+  "app.skills.templates.galleryCurator.instructions":
+    "Use the filenames, descriptions, and user-provided context to suggest albums, favorite candidates, captions, and retrieval-friendly tags. Do not claim to inspect image pixels unless the images themselves are provided.",
+  "app.skills.templates.settingsSteward.name": "Settings Steward",
+  "app.skills.templates.settingsSteward.description":
+    "Keeps provider, cache, and runtime settings changes deliberate, explicit, and reversible.",
+  "app.skills.templates.settingsSteward.trigger":
+    "the task touches provider config, cache clearing, system prompts, runtime toggles, or other settings work",
+  "app.skills.templates.settingsSteward.instructions":
+    "Restate the intended settings change, call out impact and reversibility, and prefer the smallest safe update. Warn before cache-clearing or state-reset actions, and never pretend a provider setting works until the required fields are present.",
   "app.skills.templates.releaseGuard.name": "Release Guard",
   "app.skills.templates.releaseGuard.description":
     "Slow the agent down around risky edits, migrations, deletions, and production-impacting changes.",

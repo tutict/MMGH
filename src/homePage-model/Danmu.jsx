@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import BulletScreen from "rc-bullets";
 import { IonButton, IonButtons, IonInput, IonRow, IonText } from "@ionic/react";
 import "../CSS/Danmu.css";

@@ -42,6 +42,10 @@ function GalleryWorkspace({
         .includes(needle);
     });
   }, [galleryFilter, galleryItems, gallerySearch]);
+  const favoriteCount = useMemo(
+    () => filteredGalleryItems.filter((item) => item.favorite).length,
+    [filteredGalleryItems]
+  );
 
   const groupedGalleryItems = useMemo(() => {
     const groups = new Map();
@@ -60,20 +64,34 @@ function GalleryWorkspace({
     }));
   }, [filteredGalleryItems]);
 
+  const latestImage = filteredGalleryItems[0] || galleryItems[0] || null;
   const activeImage =
     galleryItems.find((item) => item.id === galleryViewerId) || filteredGalleryItems[0] || null;
 
   return (
     <section className="gallery-panel panel-surface">
       <div className="gallery-toolbar">
-        <div className="section-head">
+        <div className="section-head gallery-toolbar__head">
           <div>
             <span className="eyebrow">{t("app.gallery.eyebrow")}</span>
             <h3>{t("app.gallery.title")}</h3>
           </div>
           <span className="section-note">
-            {t("app.gallery.imageCount", { count: filteredGalleryItems.length })}
+            {t("app.gallery.imageCount", { count: filteredGalleryItems.length })} /{" "}
+            {t(`app.gallery.filter.${galleryFilter}`)}
           </span>
+        </div>
+
+        <div className="gallery-toolbar__summary">
+          <span className="gallery-toolbar__pill">{t(`app.gallery.filter.${galleryFilter}`)}</span>
+          <span className="gallery-toolbar__pill">
+            {t("app.gallery.filter.favorites")} {favoriteCount}
+          </span>
+          {latestImage ? (
+            <span className="gallery-toolbar__pill">
+              {formatGalleryTime(latestImage.createdAt, lang)}
+            </span>
+          ) : null}
         </div>
 
         <div className="gallery-toolbar__actions">
@@ -118,25 +136,36 @@ function GalleryWorkspace({
           groupedGalleryItems.map((group) => (
             <section key={group.key} className="gallery-group">
               <div className="gallery-group__head">
-                <span className="eyebrow">{group.label}</span>
+                <div className="gallery-group__intro">
+                  <span className="eyebrow">{group.label}</span>
+                  <strong>{group.items[0]?.name}</strong>
+                </div>
                 <span className="section-note">
                   {t("app.gallery.shotCount", { count: group.items.length })}
                 </span>
               </div>
               <div className="gallery-grid">
                 {group.items.map((item) => (
-                  <article key={item.id} className="gallery-card">
+                  <article
+                    key={item.id}
+                    className={`gallery-card ${item.favorite ? "is-favorite" : ""}`}
+                  >
                     <button
                       type="button"
                       className="gallery-card__image"
                       onClick={() => openGalleryViewer(item.id)}
                     >
                       <img src={item.src} alt={item.name} />
+                      <span className="gallery-card__badge">
+                        {item.favorite
+                          ? t("app.gallery.favoriteImage")
+                          : t("app.gallery.libraryImage")}
+                      </span>
                     </button>
                     <div className="gallery-card__meta">
-                      <div>
+                      <div className="gallery-card__copy">
                         <strong>{item.name}</strong>
-                        <p>{formatGalleryTime(item.createdAt, lang)}</p>
+                        <p>{item.caption || formatGalleryTime(item.createdAt, lang)}</p>
                       </div>
                       <div className="gallery-card__actions">
                         <button
@@ -201,12 +230,32 @@ function GalleryWorkspace({
               <img src={activeImage.src} alt={activeImage.name} />
             </div>
             <div className="gallery-viewer__foot">
-              <span>{formatGalleryTime(activeImage.createdAt, lang)}</span>
-              <span>
-                {activeImage.favorite
-                  ? t("app.gallery.favoriteImage")
-                  : t("app.gallery.libraryImage")}
-              </span>
+              <div className="gallery-viewer__detail">
+                <span>{formatGalleryTime(activeImage.createdAt, lang)}</span>
+                <strong>
+                  {activeImage.favorite
+                    ? t("app.gallery.favoriteImage")
+                    : t("app.gallery.libraryImage")}
+                </strong>
+              </div>
+              <div className="gallery-card__actions gallery-viewer__actions">
+                <button
+                  type="button"
+                  className={`chip-button ${activeImage.favorite ? "is-active" : ""}`}
+                  onClick={() => handleToggleFavoriteGalleryItem(activeImage.id)}
+                >
+                  {activeImage.favorite
+                    ? t("app.gallery.favorited")
+                    : t("app.gallery.favorite")}
+                </button>
+                <button
+                  type="button"
+                  className="chip-button danger"
+                  onClick={() => handleDeleteGalleryItem(activeImage.id)}
+                >
+                  {t("app.gallery.remove")}
+                </button>
+              </div>
             </div>
           </div>
         </div>

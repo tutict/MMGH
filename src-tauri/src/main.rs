@@ -236,6 +236,22 @@ fn main() {
               )
               .map_err(|err| err.to_string())?;
             }
+            ForgeSkill {
+              prompt,
+              lang,
+              existing_skill,
+              settings,
+              callback,
+              error,
+            } => {
+              tauri::execute_promise_sync(
+                webview,
+                move || Ok(agent::forge_skill(prompt, lang, existing_skill, settings)?),
+                callback,
+                error,
+              )
+              .map_err(|err| err.to_string())?;
+            }
             RunAgent {
               session_id,
               prompt,

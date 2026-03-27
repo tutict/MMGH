@@ -14,6 +14,7 @@ import {
   openSkill,
   openSession,
   runAgent,
+  forgeSkill,
   saveSessionSkills,
   saveReminder,
   saveSkill,
@@ -119,6 +120,7 @@ function App() {
   const [newSessionTitle, setNewSessionTitle] = useState("");
   const [isSessionLibraryCollapsed, setIsSessionLibraryCollapsed] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [activeInspectorTab, setActiveInspectorTab] = useState("runtime");
   const [collapsedSessionGroups, setCollapsedSessionGroups] = useState({});
   const [collapsedSessionPreviews, setCollapsedSessionPreviews] = useState({});
@@ -249,13 +251,14 @@ function App() {
 
   useEffect(
     () => {
-      if (!isInspectorOpen) {
+      if (!isInspectorOpen && !isMobileNavOpen) {
         return undefined;
       }
 
       const handleKeyDown = (event) => {
         if (event.key === "Escape") {
           setIsInspectorOpen(false);
+          setIsMobileNavOpen(false);
         }
       };
 
@@ -278,8 +281,12 @@ function App() {
         }
       };
     },
-    [isInspectorOpen]
+    [isInspectorOpen, isMobileNavOpen]
   );
+
+  useEffect(() => {
+    setIsMobileNavOpen(false);
+  }, [currentView]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -352,6 +359,7 @@ function App() {
   const activeSkillId = workspace?.activeSkillId;
   const activeSessionSkillIds = activeSession?.mountedSkillIds || [];
   const activeSessionSkills = activeSession?.mountedSkills || [];
+  const activeSessionRecommendedSkills = activeSession?.recommendedSkills || [];
   const selectedTrackSource = tracks.find((track) => track.id === selectedTrackId) || tracks[0] || null;
   const selectedTrack =
     localizedTracks.find((track) => track.id === selectedTrackId) || localizedTracks[0] || null;
@@ -829,6 +837,19 @@ function App() {
       weatherLocations.length,
     ]
   );
+  const allNavigationItems = useMemo(
+    () => navigationGroups.flatMap((group) => group.items),
+    [navigationGroups]
+  );
+  const mobileDockItems = useMemo(
+    () =>
+      ["agent", "knowledge", "music", "weather"]
+        .map((id) => allNavigationItems.find((item) => item.id === id))
+        .filter(Boolean),
+    [allNavigationItems]
+  );
+  const activeNavItem =
+    allNavigationItems.find((item) => item.id === currentView) || allNavigationItems[0] || null;
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -1015,6 +1036,7 @@ function App() {
 
   async function handleOpenSession(sessionId) {
     if (!sessionId || sessionId === activeSessionId) {
+      setIsMobileNavOpen(false);
       return;
     }
     setBusy("open");
@@ -1022,6 +1044,7 @@ function App() {
     try {
       const snapshot = await openSession(sessionId);
       setWorkspace(snapshot);
+      setIsMobileNavOpen(false);
     } catch (err) {
       setError(normalizeError(err));
     } finally {
@@ -1964,6 +1987,14 @@ function App() {
     setIsInspectorOpen(true);
   }
 
+  function handleSelectView(viewId) {
+    if (!viewId) {
+      return;
+    }
+    setCurrentView(viewId);
+    setIsMobileNavOpen(false);
+  }
+
   function handleToggleInspector(tab = "runtime") {
     if (isInspectorOpen) {
       setIsInspectorOpen(false);
@@ -1973,256 +2004,307 @@ function App() {
     openInspector(tab);
   }
 
-  return (
-    <div className={`agent-app theme-${theme} ${showMiniPlayer ? "agent-app--with-mini-player" : ""}`}>
-      <div className="agent-app__glow agent-app__glow--one" />
-      <div className="agent-app__glow agent-app__glow--two" />
-
-      <aside className="session-rail panel-surface">
-        <div className="session-rail__body">
-          <div className="rail-brand rail-brand--compact">
-            <div className="rail-brand__head">
-              <div>
-                <span className="rail-brand__tag">{t("app.brand.tag")}</span>
-                <h1>MMGH Agent</h1>
-                <p>{t("app.brand.description")}</p>
-              </div>
-              <span className="rail-brand__view-tag">
-                {viewMeta[currentView].eyebrow}
-              </span>
-            </div>
-
-            <div className="rail-summary-strip">
-              <article className="rail-summary-pill">
-                <span>{t("app.stats.sessions")}</span>
-                <strong>{String(sessionList.length).padStart(2, "0")}</strong>
-              </article>
-              <article className="rail-summary-pill">
-                <span>{t("app.stats.notes")}</span>
-                <strong>{String(noteList.length).padStart(2, "0")}</strong>
-              </article>
-              <article className="rail-summary-pill">
-                <span>{t("app.stats.skills")}</span>
-                <strong>{String(skillList.length).padStart(2, "0")}</strong>
-              </article>
-            </div>
+  const railContent = (
+    <div className="session-rail__body">
+      <div className="rail-brand rail-brand--compact">
+        <div className="rail-brand__head">
+          <div>
+            <span className="rail-brand__tag">{t("app.brand.tag")}</span>
+            <h1>MMGH Agent</h1>
+            <p>{t("app.brand.description")}</p>
           </div>
+          <span className="rail-brand__view-tag">{viewMeta[currentView].eyebrow}</span>
+        </div>
 
-          <section className="rail-section rail-section--navigation">
-            <div className="rail-section__head">
-              <span className="eyebrow">{t("app.nav.eyebrow")}</span>
-              <strong>{t("app.nav.title")}</strong>
-            </div>
-            <div className="rail-nav rail-nav--compact">
-              {navigationGroups.map((group) => (
-                <section
-                  key={group.id}
-                  className={`rail-nav-group ${
-                    group.items.some((item) => item.id === currentView) ? "is-active" : ""
-                  }`}
-                >
-                  <div className="rail-nav-group__label">
-                    <span className="rail-nav-group__icon" aria-hidden="true">
-                      <PanelIcon type={getNavGroupIconType(group.id)} />
-                    </span>
-                    <span>{group.label}</span>
-                  </div>
-                  <div className="rail-nav-list">
-                    {group.items.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        className={`rail-nav-item ${currentView === item.id ? "is-active" : ""}`}
-                        onClick={() => setCurrentView(item.id)}
-                      >
-                        <div className="rail-nav-item__head">
-                          <div className="rail-nav-item__title">
-                            <span className="rail-nav-item__icon" aria-hidden="true">
-                              <PanelIcon type={getNavIconType(item.id)} />
-                            </span>
-                            <strong>{item.label}</strong>
-                          </div>
-                          <span className="rail-nav-item__badge">{item.badge}</span>
-                        </div>
-                        <span className="rail-nav-item__meta">{item.meta}</span>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          </section>
+        <div className="rail-summary-strip">
+          <article className="rail-summary-pill">
+            <span>{t("app.stats.sessions")}</span>
+            <strong>{String(sessionList.length).padStart(2, "0")}</strong>
+          </article>
+          <article className="rail-summary-pill">
+            <span>{t("app.stats.notes")}</span>
+            <strong>{String(noteList.length).padStart(2, "0")}</strong>
+          </article>
+          <article className="rail-summary-pill">
+            <span>{t("app.stats.skills")}</span>
+            <strong>{String(skillList.length).padStart(2, "0")}</strong>
+          </article>
+        </div>
+      </div>
 
-          <section className="rail-section rail-section--sessions">
-            <div className="rail-section__head rail-section__head--split">
-              <div>
-                <span className="eyebrow">{t("app.nav.sessions.eyebrow")}</span>
-                <strong>{t("app.nav.sessions.title")}</strong>
+      <section className="rail-section rail-section--navigation">
+        <div className="rail-section__head">
+          <span className="eyebrow">{t("app.nav.eyebrow")}</span>
+          <strong>{t("app.nav.title")}</strong>
+        </div>
+        <div className="rail-nav rail-nav--compact">
+          {navigationGroups.map((group) => (
+            <section
+              key={group.id}
+              className={`rail-nav-group ${
+                group.items.some((item) => item.id === currentView) ? "is-active" : ""
+              }`}
+            >
+              <div className="rail-nav-group__label">
+                <span className="rail-nav-group__icon" aria-hidden="true">
+                  <PanelIcon type={getNavGroupIconType(group.id)} />
+                </span>
+                <span>{group.label}</span>
               </div>
+              <div className="rail-nav-list">
+                {group.items.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`rail-nav-item ${currentView === item.id ? "is-active" : ""}`}
+                    onClick={() => handleSelectView(item.id)}
+                  >
+                    <div className="rail-nav-item__head">
+                      <div className="rail-nav-item__title">
+                        <span className="rail-nav-item__icon" aria-hidden="true">
+                          <PanelIcon type={getNavIconType(item.id)} />
+                        </span>
+                        <strong>{item.label}</strong>
+                      </div>
+                      <span className="rail-nav-item__badge">{item.badge}</span>
+                    </div>
+                    <span className="rail-nav-item__meta">{item.meta}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </section>
+
+      <section className="rail-section rail-section--sessions">
+        <div className="rail-section__head rail-section__head--split">
+          <div>
+            <span className="eyebrow">{t("app.nav.sessions.eyebrow")}</span>
+            <strong>{t("app.nav.sessions.title")}</strong>
+          </div>
+          <button
+            type="button"
+            className="rail-section__toggle"
+            onClick={handleToggleSessionLibrary}
+            aria-expanded={!isSessionLibraryCollapsed}
+            aria-label={
+              isSessionLibraryCollapsed
+                ? t("app.nav.sessions.expand")
+                : t("app.nav.sessions.collapse")
+            }
+          >
+            <span
+              className={`rail-section__chevron ${isSessionLibraryCollapsed ? "is-collapsed" : ""}`}
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+
+        {isSessionLibraryCollapsed ? (
+          <div className="session-library-summary">
+            <strong>{activeSession?.session?.title || t("app.session.defaultTitle")}</strong>
+            <span>{t("app.nav.sessions.summary", { count: sessionList.length })}</span>
+          </div>
+        ) : (
+          <div className="session-stack">
+            <div className="session-toolbar">
+              <input
+                value={newSessionTitle}
+                onChange={(event) => setNewSessionTitle(event.target.value)}
+                placeholder={t("app.session.newPlaceholder")}
+                className="field-input"
+              />
               <button
                 type="button"
-                className="rail-section__toggle"
-                onClick={handleToggleSessionLibrary}
-                aria-expanded={!isSessionLibraryCollapsed}
-                aria-label={
-                  isSessionLibraryCollapsed
-                    ? t("app.nav.sessions.expand")
-                    : t("app.nav.sessions.collapse")
-                }
+                className="solid-button"
+                onClick={handleCreateSession}
+                disabled={busy !== "" || loading}
               >
-                <span
-                  className={`rail-section__chevron ${isSessionLibraryCollapsed ? "is-collapsed" : ""}`}
-                  aria-hidden="true"
-                />
+                {t("app.session.create")}
               </button>
             </div>
 
-            {isSessionLibraryCollapsed ? (
-              <div className="session-library-summary">
-                <strong>{activeSession?.session?.title || t("app.session.defaultTitle")}</strong>
-                <span>{t("app.nav.sessions.summary", { count: sessionList.length })}</span>
-              </div>
-            ) : (
-              <div className="session-stack">
-                <div className="session-toolbar">
-                  <input
-                    value={newSessionTitle}
-                    onChange={(event) => setNewSessionTitle(event.target.value)}
-                    placeholder={t("app.session.newPlaceholder")}
-                    className="field-input"
-                  />
-                  <button
-                    type="button"
-                    className="solid-button"
-                    onClick={handleCreateSession}
-                    disabled={busy !== "" || loading}
-                  >
-                    {t("app.session.create")}
-                  </button>
-                </div>
+            <input
+              value={sessionSearch}
+              onChange={(event) => setSessionSearch(event.target.value)}
+              placeholder={t("app.session.searchPlaceholder")}
+              className="field-input session-search-input"
+              aria-label={t("app.session.searchLabel")}
+            />
 
-                <input
-                  value={sessionSearch}
-                  onChange={(event) => setSessionSearch(event.target.value)}
-                  placeholder={t("app.session.searchPlaceholder")}
-                  className="field-input session-search-input"
-                  aria-label={t("app.session.searchLabel")}
-                />
-
-                <div className="session-list-shell">
-                  <div className="session-list">
-                    {filteredSessions.length === 0 ? (
-                      <div className="session-list__empty">
-                        <strong>{t("app.session.searchEmptyTitle")}</strong>
-                        <p>{t("app.session.searchEmptyDescription")}</p>
-                      </div>
-                    ) : (
-                      groupedSessions.map((group) => {
-                        const isGroupCollapsed = Boolean(collapsedSessionGroups[group.id]);
-                        return (
-                          <div key={group.id} className="session-group">
-                            <button
-                              type="button"
-                              className="session-group__head session-group__toggle"
-                              onClick={() => handleToggleSessionGroup(group.id)}
-                              aria-expanded={!isGroupCollapsed}
-                            >
-                              <span>
-                                <span
-                                  className={`session-group__chevron ${isGroupCollapsed ? "is-collapsed" : ""}`}
-                                  aria-hidden="true"
-                                />
-                                {group.label}
-                              </span>
-                              <strong>{group.items.length}</strong>
-                            </button>
-                            {!isGroupCollapsed ? (
-                              <div className="session-group__list">
-                                {group.items.map((session) => {
-                                  const isPreviewCollapsed = collapsedSessionPreviews[session.id] !== false;
-
-                                  return (
-                                    <div
-                                      key={session.id}
-                                      className={`session-card ${
-                                        session.id === activeSessionId ? "is-active" : ""
-                                      }`}
-                                    >
-                                      <button
-                                        type="button"
-                                        className="session-card__main"
-                                        onClick={() => handleOpenSession(session.id)}
-                                      >
-                                        <div className="session-card__head">
-                                          <div className="session-card__title">
-                                            <span className="session-card__icon" aria-hidden="true">
-                                              <PanelIcon type={getSessionCardIconType(session.status)} />
-                                            </span>
-                                            <strong>{session.title}</strong>
-                                          </div>
-                                          <span className={`rail-nav-item__badge session-card__badge status-${session.status}`}>
-                                            {t(`app.status.${session.status}`)}
-                                          </span>
-                                        </div>
-                                        {!isPreviewCollapsed ? (
-                                          <p className="session-card__preview">
-                                            {session.lastMessagePreview || t("app.session.emptyMessages")}
-                                          </p>
-                                        ) : null}
-                                        <div className="session-card__meta">
-                                          <span>{t("app.session.messageCount", { count: session.messageCount })}</span>
-                                          <span>{formatTime(session.updatedAt, lang)}</span>
-                                        </div>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="session-card__toggle"
-                                        onClick={() => handleToggleSessionPreview(session.id)}
-                                        aria-expanded={!isPreviewCollapsed}
-                                        aria-label={
-                                          isPreviewCollapsed
-                                            ? t("app.session.preview.expand")
-                                            : t("app.session.preview.collapse")
-                                        }
-                                      >
-                                        <span
-                                          className={`session-group__chevron ${isPreviewCollapsed ? "is-collapsed" : ""}`}
-                                          aria-hidden="true"
-                                        />
-                                        <span>
-                                          {isPreviewCollapsed
-                                            ? t("app.session.preview.expand")
-                                            : t("app.session.preview.collapse")}
-                                        </span>
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : null}
-                          </div>
-                        );
-                      })
-                    )}
+            <div className="session-list-shell">
+              <div className="session-list">
+                {filteredSessions.length === 0 ? (
+                  <div className="session-list__empty">
+                    <strong>{t("app.session.searchEmptyTitle")}</strong>
+                    <p>{t("app.session.searchEmptyDescription")}</p>
                   </div>
-                </div>
+                ) : (
+                  groupedSessions.map((group) => {
+                    const isGroupCollapsed = Boolean(collapsedSessionGroups[group.id]);
+                    return (
+                      <div key={group.id} className="session-group">
+                        <button
+                          type="button"
+                          className="session-group__head session-group__toggle"
+                          onClick={() => handleToggleSessionGroup(group.id)}
+                          aria-expanded={!isGroupCollapsed}
+                        >
+                          <span>
+                            <span
+                              className={`session-group__chevron ${isGroupCollapsed ? "is-collapsed" : ""}`}
+                              aria-hidden="true"
+                            />
+                            {group.label}
+                          </span>
+                          <strong>{group.items.length}</strong>
+                        </button>
+                        {!isGroupCollapsed ? (
+                          <div className="session-group__list">
+                            {group.items.map((session) => {
+                              const isPreviewCollapsed = collapsedSessionPreviews[session.id] !== false;
 
-                <button
-                  type="button"
-                  className="ghost-button danger-button session-stack__danger"
-                  onClick={() => handleDeleteSession(activeSessionId)}
-                  disabled={!activeSessionId || busy !== "" || loading}
-                >
-                  {t("app.session.delete")}
-                </button>
+                              return (
+                                <div
+                                  key={session.id}
+                                  className={`session-card ${
+                                    session.id === activeSessionId ? "is-active" : ""
+                                  }`}
+                                >
+                                  <button
+                                    type="button"
+                                    className="session-card__main"
+                                    onClick={() => handleOpenSession(session.id)}
+                                  >
+                                    <div className="session-card__head">
+                                      <div className="session-card__title">
+                                        <span className="session-card__icon" aria-hidden="true">
+                                          <PanelIcon type={getSessionCardIconType(session.status)} />
+                                        </span>
+                                        <strong>{session.title}</strong>
+                                      </div>
+                                      <span className={`rail-nav-item__badge session-card__badge status-${session.status}`}>
+                                        {t(`app.status.${session.status}`)}
+                                      </span>
+                                    </div>
+                                    {!isPreviewCollapsed ? (
+                                      <p className="session-card__preview">
+                                        {session.lastMessagePreview || t("app.session.emptyMessages")}
+                                      </p>
+                                    ) : null}
+                                    <div className="session-card__meta">
+                                      <span>{t("app.session.messageCount", { count: session.messageCount })}</span>
+                                      <span>{formatTime(session.updatedAt, lang)}</span>
+                                    </div>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="session-card__toggle"
+                                    onClick={() => handleToggleSessionPreview(session.id)}
+                                    aria-expanded={!isPreviewCollapsed}
+                                    aria-label={
+                                      isPreviewCollapsed
+                                        ? t("app.session.preview.expand")
+                                        : t("app.session.preview.collapse")
+                                    }
+                                  >
+                                    <span
+                                      className={`session-group__chevron ${isPreviewCollapsed ? "is-collapsed" : ""}`}
+                                      aria-hidden="true"
+                                    />
+                                    <span>
+                                      {isPreviewCollapsed
+                                        ? t("app.session.preview.expand")
+                                        : t("app.session.preview.collapse")}
+                                    </span>
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })
+                )}
               </div>
-            )}
-          </section>
-        </div>
-      </aside>
+            </div>
+
+            <button
+              type="button"
+              className="ghost-button danger-button session-stack__danger"
+              onClick={() => handleDeleteSession(activeSessionId)}
+              disabled={!activeSessionId || busy !== "" || loading}
+            >
+              {t("app.session.delete")}
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+
+  return (
+    <div
+      className={`agent-app theme-${theme} view-${currentView} ${
+        showMiniPlayer ? "agent-app--with-mini-player" : ""
+      }`}
+    >
+      <div className="agent-app__glow agent-app__glow--one" />
+      <div className="agent-app__glow agent-app__glow--two" />
+      <div className="agent-app__mesh" aria-hidden="true" />
+
+      <aside className="session-rail session-rail--desktop panel-surface">{railContent}</aside>
+
+      <div className={`mobile-shell-drawer ${isMobileNavOpen ? "is-open" : ""}`}>
+        <button
+          type="button"
+          className="mobile-shell-drawer__backdrop"
+          onClick={() => setIsMobileNavOpen(false)}
+          aria-label={t("app.common.close")}
+          tabIndex={isMobileNavOpen ? 0 : -1}
+        />
+        <aside
+          id="mobile-shell-drawer-panel"
+          className="mobile-shell-drawer__panel session-rail session-rail--drawer panel-surface"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("app.nav.title")}
+        >
+          {railContent}
+        </aside>
+      </div>
 
       <main className="workspace-column">
         <section className="workspace-hero panel-surface">
+          <div className="workspace-hero__masthead">
+            <div className="workspace-hero__brandline">
+              <span className="workspace-hero__brand-mark">MMGH</span>
+              <div className="workspace-hero__brand-copy">
+                <span className="eyebrow">{t("app.brand.tag")}</span>
+                <strong>MMGH Agent</strong>
+              </div>
+            </div>
+            <div className="workspace-hero__meta-bar">
+              <span className="workspace-hero__meta-pill">{formatShortClock(clockNow, lang)}</span>
+              <span className="workspace-hero__meta-pill">
+                {activeNavItem?.meta || viewMeta[currentView].eyebrow}
+              </span>
+              <button
+                type="button"
+                className="shell-menu-button"
+                onClick={() => setIsMobileNavOpen(true)}
+                aria-expanded={isMobileNavOpen}
+                aria-controls="mobile-shell-drawer-panel"
+                aria-label={t("app.nav.title")}
+              >
+                <span className="shell-menu-button__icon" aria-hidden="true">
+                  <PanelIcon type="desktop" />
+                </span>
+              </button>
+            </div>
+          </div>
           <div className="workspace-hero__headline">
             <span className="eyebrow">{viewMeta[currentView].eyebrow}</span>
             <h2>{viewMeta[currentView].title}</h2>
@@ -2267,13 +2349,13 @@ function App() {
                     </button>
                   </div>
                 </div>
-                  <button
-                    type="button"
-                    className={`hero-inspector-toggle ${isInspectorOpen ? "is-active" : ""}`}
-                    onClick={() => handleToggleInspector("runtime")}
-                    aria-expanded={isInspectorOpen}
-                    aria-controls="inspector-drawer-panel"
-                    aria-label={t("app.inspector.group.runtime.title")}
+                <button
+                  type="button"
+                  className={`hero-inspector-toggle ${isInspectorOpen ? "is-active" : ""}`}
+                  onClick={() => handleToggleInspector("runtime")}
+                  aria-expanded={isInspectorOpen}
+                  aria-controls="inspector-drawer-panel"
+                  aria-label={t("app.inspector.group.runtime.title")}
                   title={t("app.inspector.group.runtime.title")}
                 >
                   <span className="hero-inspector-toggle__icon" aria-hidden="true">
@@ -2283,6 +2365,24 @@ function App() {
               </div>
             </div>
           </div>
+          <div className="workspace-hero__switcher" aria-label={t("app.nav.title")}>
+            {allNavigationItems.map((item) => (
+              <button
+                key={`hero-${item.id}`}
+                type="button"
+                className={`workspace-switcher-button ${currentView === item.id ? "is-active" : ""}`}
+                onClick={() => handleSelectView(item.id)}
+              >
+                <span className="workspace-switcher-button__icon" aria-hidden="true">
+                  <PanelIcon type={getNavIconType(item.id)} />
+                </span>
+                <span className="workspace-switcher-button__copy">
+                  <strong>{item.label}</strong>
+                  <span>{item.badge}</span>
+                </span>
+              </button>
+            ))}
+          </div>
         </section>
 
         {error ? <div className="error-banner">{error}</div> : null}
@@ -2291,6 +2391,7 @@ function App() {
           <RuntimeWorkspace
             activeSession={activeSession}
             activeSessionId={activeSessionId}
+            activeSessionRecommendedSkills={activeSessionRecommendedSkills}
             activeSessionSkills={activeSessionSkills}
             busy={busy}
             draft={draft}
@@ -2387,6 +2488,7 @@ function App() {
             activeSkill={activeSkill}
             activeSkillId={activeSkillId}
             activeSkillVersions={activeSkillVersions}
+            activeSessionRecommendedSkills={activeSessionRecommendedSkills}
             activeSessionTitle={activeSession?.session?.title || t("app.skills.currentSession")}
             busy={busy}
             providerConfigured={providerConfigured}
@@ -2694,6 +2796,35 @@ function App() {
         </aside>
       </div>
 
+      <nav className="mobile-dock" aria-label={t("app.nav.title")}>
+        {mobileDockItems.map((item) => (
+          <button
+            key={`dock-${item.id}`}
+            type="button"
+            className={`mobile-dock__item ${currentView === item.id ? "is-active" : ""}`}
+            onClick={() => handleSelectView(item.id)}
+          >
+            <span className="mobile-dock__icon" aria-hidden="true">
+              <PanelIcon type={getNavIconType(item.id)} />
+            </span>
+            <span className="mobile-dock__label">{item.label}</span>
+          </button>
+        ))}
+        <button
+          type="button"
+          className={`mobile-dock__item ${isMobileNavOpen ? "is-active" : ""}`}
+          onClick={() => setIsMobileNavOpen(true)}
+          aria-expanded={isMobileNavOpen}
+          aria-controls="mobile-shell-drawer-panel"
+          aria-label={t("app.nav.title")}
+        >
+          <span className="mobile-dock__icon" aria-hidden="true">
+            <PanelIcon type="desktop" />
+          </span>
+          <span className="mobile-dock__label">{t("app.nav.title")}</span>
+        </button>
+      </nav>
+
       <audio ref={audioRef} preload="metadata">
         {selectedTrackSource ? <source src={selectedTrackSource.src} type="audio/mpeg" /> : null}
       </audio>
@@ -2959,6 +3090,7 @@ function getPanelIconPath(type) {
 function RuntimeWorkspace({
   activeSession,
   activeSessionId,
+  activeSessionRecommendedSkills,
   activeSessionSkills,
   busy,
   draft,
@@ -2988,7 +3120,7 @@ function RuntimeWorkspace({
   return (
     <section className="runtime-workspace">
       <div className="runtime-overview-grid">
-        <article className="panel-surface runtime-overview-card">
+        <article className="panel-surface runtime-overview-card runtime-overview-card--primary">
           <span className="runtime-overview-card__label">{t("app.view.agent.badge.session")}</span>
           <strong>{activeTitle}</strong>
           <div className="runtime-overview-card__meta">
@@ -3006,13 +3138,13 @@ function RuntimeWorkspace({
           </span>
         </article>
 
-        <article className="panel-surface runtime-overview-card">
+        <article className="panel-surface runtime-overview-card runtime-overview-card--compact">
           <span className="runtime-overview-card__label">{t("app.view.agent.badge.mounted")}</span>
           <strong>{t("app.agent.history.skillCount", { count: activeSessionSkills.length })}</strong>
           <span className="runtime-overview-card__meta-text">{t("app.permission.low")}</span>
         </article>
 
-        <article className="panel-surface runtime-overview-card">
+        <article className="panel-surface runtime-overview-card runtime-overview-card--compact">
           <span className="runtime-overview-card__label">{t("app.view.agent.badge.gateway")}</span>
           <strong>{t(`app.provider.${providerConfigured ? "configured" : "pending"}`)}</strong>
           <span
@@ -3044,7 +3176,7 @@ function RuntimeWorkspace({
             </div>
 
             <div className="runtime-thread">
-              <div className="message-list runtime-message-list">
+              <div className="message-list runtime-message-list runtime-thread__frame">
                 {messages.length > 0 ? (
                   messages.map((message, index) => {
                     const messageRole = message.role === "user" ? "user" : "assistant";
@@ -3171,6 +3303,49 @@ function RuntimeWorkspace({
           <section className="panel-surface runtime-sidebar-card">
             <div className="runtime-sidebar-card__head">
               <div>
+                <span className="eyebrow">{t("app.agent.recommend.eyebrow")}</span>
+                <h4>
+                  {activeSessionRecommendedSkills.length > 0
+                    ? t("app.agent.recommend.title")
+                    : t("app.agent.recommend.emptyTitle")}
+                </h4>
+              </div>
+              <button
+                type="button"
+                className="ghost-button runtime-sidebar-card__action"
+                onClick={() => setCurrentView("skills")}
+              >
+                {t("app.mode.skills")}
+              </button>
+            </div>
+
+            {activeSessionRecommendedSkills.length > 0 ? (
+              <div className="runtime-recommend-list">
+                {activeSessionRecommendedSkills.map((skill) => (
+                  <button
+                    key={skill.id}
+                    type="button"
+                    className="runtime-recommend-card"
+                    onClick={() => {
+                      setCurrentView("skills");
+                      void handleOpenSkill(skill.id);
+                    }}
+                  >
+                    <strong>{skill.name}</strong>
+                    <span>{skill.recommendationReason || skill.triggerHint}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="section-note runtime-sidebar-copy">
+                {t("app.agent.recommend.emptyDescription")}
+              </p>
+            )}
+          </section>
+
+          <section className="panel-surface runtime-sidebar-card">
+            <div className="runtime-sidebar-card__head">
+              <div>
                 <span className="eyebrow">{t("app.activity.eyebrow")}</span>
                 <h4>{t("app.activity.title")}</h4>
               </div>
@@ -3275,23 +3450,41 @@ function KnowledgeVault({
   hasUnsavedNote,
 }) {
   const { lang, t } = useI18n();
+  const activeNoteUpdatedAt = activeNote?.updatedAt || 0;
 
   return (
     <section className="knowledge-panel panel-surface">
       <div className="knowledge-sidebar">
-        <div className="section-head knowledge-head">
-          <div>
-            <span className="eyebrow">{t("app.knowledge.eyebrow")}</span>
-            <h3>{t("app.knowledge.title")}</h3>
+        <div className="knowledge-sidebar__intro">
+          <div className="section-head knowledge-head">
+            <div>
+              <span className="eyebrow">{t("app.knowledge.eyebrow")}</span>
+              <h3>{t("app.knowledge.title")}</h3>
+            </div>
+            <button
+              type="button"
+              className="solid-button"
+              onClick={handleCreateNote}
+              disabled={busy !== "" || loading}
+            >
+              {t("app.knowledge.newPage")}
+            </button>
           </div>
-          <button
-            type="button"
-            className="solid-button"
-            onClick={handleCreateNote}
-            disabled={busy !== "" || loading}
-          >
-            {t("app.knowledge.newPage")}
-          </button>
+          <div className="knowledge-sidebar__summary">
+            <article className="knowledge-summary-card">
+              <span>{t("app.stats.notes")}</span>
+              <strong>{filteredNotes.length}</strong>
+            </article>
+            <article className="knowledge-summary-card knowledge-summary-card--wide">
+              <span>{t("app.knowledge.editor.eyebrow")}</span>
+              <strong>{activeNote?.title || t("app.knowledge.defaultTitle")}</strong>
+              <p>
+                {activeNoteUpdatedAt
+                  ? formatTime(activeNoteUpdatedAt, lang)
+                  : t("app.knowledge.editor.description")}
+              </p>
+            </article>
+          </div>
         </div>
 
         <input
@@ -3311,12 +3504,15 @@ function KnowledgeVault({
             >
               <div className="knowledge-note-card__head">
                 <span className="knowledge-note-icon">{note.icon || "*"}</span>
-                <strong>{note.title}</strong>
+                <div className="knowledge-note-card__title-block">
+                  <strong>{note.title}</strong>
+                  <span>{formatTime(note.updatedAt, lang)}</span>
+                </div>
               </div>
               <p>{note.summary}</p>
               <div className="knowledge-note-card__meta">
                 <span>{(note.tags || []).slice(0, 2).join(" | ") || t("app.knowledge.noTags")}</span>
-                <span>{formatTime(note.updatedAt, lang)}</span>
+                <span>{t("app.knowledge.editor.eyebrow")}</span>
               </div>
             </button>
           ))}
@@ -3350,6 +3546,14 @@ function KnowledgeVault({
         </div>
 
         <div className="knowledge-editor__form">
+          <div className="knowledge-editor__hero">
+            <div className="knowledge-editor__hero-icon">{noteDraft.icon || "*"}</div>
+            <div className="knowledge-editor__hero-copy">
+              <span className="eyebrow">{t("app.knowledge.editor.eyebrow")}</span>
+              <strong>{noteDraft.title || t("app.knowledge.defaultTitle")}</strong>
+              <p>{t("app.knowledge.editor.description")}</p>
+            </div>
+          </div>
           <div className="knowledge-editor__title-row">
             <input
               className="knowledge-icon-input"
@@ -3622,170 +3826,12 @@ function formatShortClock(value, lang = "en-US") {
 }
 
 async function generateSkillDraft({ existingSkill, lang, prompt, settings, t }) {
-  if (isModelGenerationReady(settings)) {
-    try {
-      const generated = await requestSkillDraftFromModel({
-        existingSkill,
-        lang,
-        prompt,
-        settings,
-        t,
-      });
-      return sanitizeGeneratedSkill(generated, existingSkill, t);
-    } catch (error) {
-      console.error("Model skill generation failed, falling back to local draft", error);
-    }
-  }
-
-  return sanitizeGeneratedSkill(
-    buildLocalSkillDraft({
-      existingSkill,
-      prompt,
-      t,
-    }),
+  return forgeSkill({
     existingSkill,
-    t
-  );
-}
-
-function isModelGenerationReady(settings) {
-  return Boolean(
-    settings?.baseUrl?.trim() &&
-      settings?.apiKey?.trim() &&
-      settings?.model?.trim()
-  );
-}
-
-async function requestSkillDraftFromModel({ existingSkill, lang, prompt, settings, t }) {
-  const endpoint = `${String(settings.baseUrl || "").replace(/\/+$/, "")}/chat/completions`;
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${settings.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: settings.model,
-      temperature: 0.4,
-      messages: [
-        {
-          role: "system",
-          content:
-            lang === "zh-CN"
-              ? [
-                  "You are a skill designer. Output a reusable low-permission skill based on the user request.",
-                  "Return JSON only. Do not output markdown.",
-                  'JSON fields must be name, description, triggerHint, instructions.',
-                  "name must be under 40 characters.",
-                  "description should summarize the skill value in 1-2 sentences.",
-                  "triggerHint should describe the requests where this skill should activate.",
-                  "instructions should be reusable, explicit, and actionable.",
-                ].join("\n")
-              : [
-                  "You are designing a reusable low-permission skill for an agent workspace.",
-                  "Return JSON only. No markdown.",
-                  'The JSON fields must be: name, description, triggerHint, instructions.',
-                  "Keep name under 40 characters.",
-                  "Description should explain the value of the skill in 1-2 sentences.",
-                  "triggerHint should explain when this skill should activate.",
-                  "instructions should be a reusable instruction block with concrete operational guidance.",
-                ].join("\n"),
-        },
-        {
-          role: "user",
-          content:
-            lang === "zh-CN"
-              ? [
-                  `User request: ${prompt}`,
-                  existingSkill
-                    ? `Existing skill for rewrite reference: ${JSON.stringify(existingSkill)}`
-                    : "This is for a brand new skill.",
-                ].join("\n")
-              : [
-                  `User request: ${prompt}`,
-                  existingSkill
-                    ? `Existing skill for rewrite reference: ${JSON.stringify(existingSkill)}`
-                    : "This is for a brand new skill.",
-                ].join("\n"),
-        },
-      ],
-    }),
+    lang,
+    prompt,
+    settings,
   });
-
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || t("app.skills.forge.requestFailed"));
-  }
-
-  const payload = await response.json();
-  const content = payload?.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error(t("app.skills.forge.emptyResponse"));
-  }
-
-  return parseGeneratedSkill(content);
-}
-
-function parseGeneratedSkill(content) {
-  const raw = String(content || "").trim();
-  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenced?.[1]?.trim() || raw;
-  const start = candidate.indexOf("{");
-  const end = candidate.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
-    throw new Error("Model did not return JSON");
-  }
-  return JSON.parse(candidate.slice(start, end + 1));
-}
-
-function buildLocalSkillDraft({ existingSkill, prompt, t }) {
-  const text = String(prompt || "").trim();
-  const titleSeed = text
-    .split(/[\n,.!?;:]+/)
-    .find(Boolean)
-    ?.trim()
-    ?.slice(0, 28);
-
-  return {
-    name:
-      titleSeed ||
-      existingSkill?.name ||
-      t("app.skills.forge.generatedName"),
-    description: t("app.skills.forge.localDescription", {
-      prompt: trimForTemplate(text, 88),
-    }),
-    triggerHint: t("app.skills.forge.localTrigger", {
-      prompt: trimForTemplate(text, 72),
-    }),
-    instructions: t("app.skills.forge.localInstructions", {
-      prompt: trimForTemplate(text, 180),
-    }),
-  };
-}
-
-function sanitizeGeneratedSkill(skill, existingSkill, t) {
-  return {
-    name: String(skill?.name || existingSkill?.name || t("app.skills.defaultTitle"))
-      .trim()
-      .slice(0, 64),
-    description: String(
-      skill?.description || existingSkill?.description || t("app.skills.form.descriptionPlaceholder")
-    ).trim(),
-    triggerHint: String(skill?.triggerHint || existingSkill?.triggerHint || "").trim(),
-    instructions: String(
-      skill?.instructions ||
-        existingSkill?.instructions ||
-        t("app.skills.form.instructionsPlaceholder")
-    ).trim(),
-  };
-}
-
-function trimForTemplate(value, limit) {
-  const compact = String(value || "").replace(/\s+/g, " ").trim();
-  if (compact.length <= limit) {
-    return compact;
-  }
-  return `${compact.slice(0, limit)}...`;
 }
 
 function readSkillHistory() {
@@ -4235,3 +4281,4 @@ function normalizeError(error) {
 }
 
 export default App;
+

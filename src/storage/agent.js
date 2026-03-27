@@ -497,10 +497,106 @@ const skillSummary = (skill) => ({
   name: skill.name,
   summary: toPreview(skill.description, 120),
   triggerHint: skill.triggerHint,
+  recommendationReason: skill.recommendationReason || skill.recommendation_reason || "",
   enabled: Boolean(skill.enabled),
   permissionLevel: "low",
   updatedAt: skill.updatedAt,
 });
+
+const recommendSessionSkills = (session, skills, limit = 4) => {
+  const mounted = new Set(dedupeIds(session?.skillIds));
+  const sessionText = [session?.title || "", ...(session?.messages || []).slice(-10).map((item) => item.content || "")]
+    .join(" ")
+    .toLowerCase();
+  const keywords = [...new Set(sessionText.split(/[^a-z0-9\u4e00-\u9fff]+/i).filter((part) => part.length >= 2))];
+  const isZh = /[\u4e00-\u9fff]/.test(sessionText);
+
+  const scoreIntent = (skillName, matchedTerms) => {
+    const name = String(skillName || "").toLowerCase();
+    const captureMatch = (patterns) => {
+      const found = patterns.filter((pattern) => sessionText.includes(pattern));
+      if (found.length > 0) {
+        matchedTerms.push(...found);
+        return true;
+      }
+      return false;
+    };
+
+    if (name.includes("note recall") || name.includes("local note recall") || name.includes("笔记召回")) {
+      return captureMatch(["note", "notes", "knowledge", "context", "文档", "笔记", "知识"]) ? 8 : 0;
+    }
+    if (name.includes("knowledge librarian") || name.includes("知识整理员")) {
+      return captureMatch(["summary", "summarize", "整理", "归档", "note", "沉淀", "知识库"]) ? 8 : 0;
+    }
+    if (name.includes("reminder radar") || name.includes("提醒雷达")) {
+      return captureMatch(["todo", "deadline", "follow-up", "follow up", "remind", "待办", "截止", "提醒"]) ? 8 : 0;
+    }
+    if (name.includes("weather brief") || name.includes("天气简报")) {
+      return captureMatch(["weather", "forecast", "temperature", "rain", "travel", "天气", "降雨", "温度", "出行"]) ? 8 : 0;
+    }
+    if (name.includes("music companion") || name.includes("音乐伴听")) {
+      return captureMatch(["music", "playlist", "song", "track", "mood", "音乐", "歌单", "曲目", "氛围"]) ? 8 : 0;
+    }
+    if (name.includes("gallery curator") || name.includes("画廊策展")) {
+      return captureMatch(["gallery", "album", "photo", "image", "caption", "图库", "相册", "照片", "图片"]) ? 8 : 0;
+    }
+    if (name.includes("settings steward") || name.includes("设置管家")) {
+      return captureMatch(["setting", "provider", "api key", "cache", "配置", "设置", "缓存", "网关"]) ? 8 : 0;
+    }
+    if (name.includes("release guard") || name.includes("发布守卫")) {
+      return captureMatch(["deploy", "migration", "auth", "billing", "delete", "发布", "迁移", "鉴权", "删除"]) ? 7 : 0;
+    }
+    if (name.includes("ui polish") || name.includes("界面打磨")) {
+      return captureMatch(["ui", "layout", "css", "frontend", "design", "界面", "布局", "前端", "样式"]) ? 7 : 0;
+    }
+    if (name.includes("research mode") || name.includes("研究模式")) {
+      return captureMatch(["research", "source", "docs", "verify", "citation", "文档", "核验", "出处", "来源"]) ? 7 : 0;
+    }
+    if (name.includes("task router") || name.includes("任务路由")) {
+      return captureMatch(["plan", "steps", "multi-step", "complex", "规划", "步骤", "复杂", "拆解"]) ? 6 : 0;
+    }
+    return 0;
+  };
+
+  return skills
+    .filter((skill) => skill.enabled && !mounted.has(skill.id))
+    .map((skill) => {
+      const searchable = [skill.name, skill.description, skill.triggerHint].join(" ").toLowerCase();
+      let score = 2;
+      const matchedTerms = [];
+      keywords.forEach((keyword) => {
+        if (searchable.includes(keyword)) {
+          score += 2;
+          matchedTerms.push(keyword);
+        }
+        if (String(skill.name || "").toLowerCase().includes(keyword)) {
+          score += 3;
+          matchedTerms.push(keyword);
+        }
+      });
+      score += scoreIntent(skill.name, matchedTerms);
+      const uniqueTerms = [...new Set(matchedTerms)].slice(0, 3);
+      const recommendationReason =
+        uniqueTerms.length > 0
+          ? isZh
+            ? `匹配到当前会话里的关键词：${uniqueTerms.join(" / ")}。`
+            : `Matched session topics: ${uniqueTerms.join(" / ")}.`
+          : "";
+      return { score, skill, recommendationReason };
+    })
+    .filter((item) => item.score > 0)
+    .sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+      if (right.skill.enabled !== left.skill.enabled) {
+        return Number(right.skill.enabled) - Number(left.skill.enabled);
+      }
+      return (right.skill.updatedAt || 0) - (left.skill.updatedAt || 0);
+    })
+    .slice(0, limit)
+    .map((item) => skillSummary({ ...item.skill, recommendationReason: item.recommendationReason }));
+};
 
 const buildSnapshot = (
   workspace,
@@ -539,10 +635,13 @@ const buildSnapshot = (
   const activeNote = orderedNotes.find((note) => note.id === activeNoteId) || orderedNotes[0];
   const activeSkill =
     orderedSkills.find((skill) => skill.id === activeSkillId) || orderedSkills[0];
-  const activeSessionSkillIds = dedupeIds(activeSession.skillIds);
+  const activeSessionSkillIds = dedupeIds(activeSession.skillIds).filter((skillId) =>
+    orderedSkills.some((skill) => skill.id === skillId && skill.enabled)
+  );
   const activeSessionSkills = orderedSkills
     .filter((skill) => activeSessionSkillIds.includes(skill.id))
     .map(skillSummary);
+  const recommendedSessionSkills = recommendSessionSkills(activeSession, orderedSkills, 4);
 
   return {
     settings: workspace.settings,
@@ -554,7 +653,9 @@ const buildSnapshot = (
       updatedAt: session.updatedAt,
       messageCount: session.messages.length,
       lastMessagePreview: toPreview(session.messages[session.messages.length - 1]?.content),
-      mountedSkillCount: dedupeIds(session.skillIds).length,
+      mountedSkillCount: dedupeIds(session.skillIds).filter((skillId) =>
+        orderedSkills.some((skill) => skill.id === skillId && skill.enabled)
+      ).length,
     })),
     activeSessionId,
     activeSession: {
@@ -575,6 +676,7 @@ const buildSnapshot = (
       ),
       mountedSkillIds: activeSessionSkillIds,
       mountedSkills: activeSessionSkills,
+      recommendedSkills: recommendedSessionSkills,
     },
     notes: orderedNotes.map(noteSummary),
     activeNoteId,
@@ -871,7 +973,7 @@ const localSaveSessionSkills = async ({ sessionId, skillIds, activeSessionId }) 
             ...session,
             updatedAt: now(),
             skillIds: dedupeIds(skillIds).filter((skillId) =>
-              current.skills.some((skill) => skill.id === skillId)
+              current.skills.some((skill) => skill.id === skillId && skill.enabled)
             ),
           }
         : session
@@ -883,6 +985,37 @@ const localSaveSessionSkills = async ({ sessionId, skillIds, activeSessionId }) 
     activeSessionId || sessionId,
     workspace.activeNoteId,
     workspace.activeSkillId
+  );
+};
+
+const localForgeSkill = async ({ existingSkill, lang, prompt, settings }) => {
+  const text = String(prompt || "").trim();
+  if (!text) {
+    throw new Error(storageT("promptRequired"));
+  }
+
+  if (isSkillGenerationReady(settings)) {
+    try {
+      const generated = await requestSkillDraftFromModel({
+        existingSkill,
+        lang,
+        prompt: text,
+        settings,
+      });
+      return sanitizeGeneratedSkill(generated, existingSkill, lang);
+    } catch (error) {
+      console.error("Model skill generation failed, falling back to local draft", error);
+    }
+  }
+
+  return sanitizeGeneratedSkill(
+    buildLocalSkillDraft({
+      existingSkill,
+      prompt: text,
+      lang,
+    }),
+    existingSkill,
+    lang
   );
 };
 
@@ -981,6 +1114,133 @@ const localRunAgent = async ({ sessionId, prompt }) => {
   return buildSnapshot(workspace, sessionId, workspace.activeNoteId, workspace.activeSkillId);
 };
 
+const isSkillGenerationReady = (settings) =>
+  Boolean(settings?.baseUrl?.trim() && settings?.apiKey?.trim() && settings?.model?.trim());
+
+const requestSkillDraftFromModel = async ({ existingSkill, lang, prompt, settings }) => {
+  const endpoint = `${String(settings.baseUrl || "").replace(/\/+$/, "")}/chat/completions`;
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${settings.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: settings.model,
+      temperature: 0.4,
+      messages: [
+        {
+          role: "system",
+          content:
+            lang === "zh-CN"
+              ? [
+                  "You are a skill designer. Output a reusable low-permission skill based on the user request.",
+                  "Return JSON only. Do not output markdown.",
+                  "JSON fields must be name, description, triggerHint, instructions.",
+                  "name must be under 40 characters.",
+                  "description should summarize the skill value in 1-2 sentences.",
+                  "triggerHint should describe the requests where this skill should activate.",
+                  "instructions should be reusable, explicit, and actionable.",
+                ].join("\n")
+              : [
+                  "You are designing a reusable low-permission skill for an agent workspace.",
+                  "Return JSON only. No markdown.",
+                  "The JSON fields must be: name, description, triggerHint, instructions.",
+                  "Keep name under 40 characters.",
+                  "Description should explain the value of the skill in 1-2 sentences.",
+                  "triggerHint should explain when this skill should activate.",
+                  "instructions should be a reusable instruction block with concrete operational guidance.",
+                ].join("\n"),
+        },
+        {
+          role: "user",
+          content: [
+            `User request: ${prompt}`,
+            existingSkill
+              ? `Existing skill for rewrite reference: ${JSON.stringify(existingSkill)}`
+              : "This is for a brand new skill.",
+          ].join("\n"),
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || "Skill generation request failed.");
+  }
+
+  const payload = await response.json();
+  const content = payload?.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error("The model returned an empty skill draft.");
+  }
+
+  return parseGeneratedSkill(content);
+};
+
+const parseGeneratedSkill = (content) => {
+  const raw = String(content || "").trim();
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenced?.[1]?.trim() || raw;
+  const start = candidate.indexOf("{");
+  const end = candidate.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error("Model did not return JSON");
+  }
+  return JSON.parse(candidate.slice(start, end + 1));
+};
+
+const buildLocalSkillDraft = ({ existingSkill, prompt, lang }) => {
+  const text = String(prompt || "").trim();
+  const titleSeed = text
+    .split(/[\n,.!?;:]+/)
+    .find(Boolean)
+    ?.trim()
+    ?.slice(0, 28);
+
+  if (lang === "zh-CN") {
+    return {
+      name: titleSeed || existingSkill?.name || "生成技能",
+      description: `根据以下需求生成的本地草稿：${trimForTemplate(text, 88)}`,
+      triggerHint: `当任务涉及以下内容时使用：${trimForTemplate(text, 72)}`,
+      instructions:
+        `将以下目标解释成一个可复用的低权限技能，并据此调整你的执行方式：${trimForTemplate(text, 180)}\n\n` +
+        "优先显式规划，清楚说明假设，除非操作者明确要求，否则避免破坏性操作。",
+    };
+  }
+
+  return {
+    name: titleSeed || existingSkill?.name || "Generated skill",
+    description: `Locally generated draft for: ${trimForTemplate(text, 88)}`,
+    triggerHint: `Use when the request is about: ${trimForTemplate(text, 72)}`,
+    instructions:
+      `Interpret the following goal as a reusable low-permission skill and bias your execution accordingly: ${trimForTemplate(text, 180)}\n\n` +
+      "Prefer explicit planning, keep assumptions visible, and avoid destructive actions unless the operator clearly requests them.",
+  };
+};
+
+const sanitizeGeneratedSkill = (skill, existingSkill, lang) => ({
+  name: String(
+    skill?.name ||
+      existingSkill?.name ||
+      (lang === "zh-CN" ? "生成技能" : "Generated skill")
+  )
+    .trim()
+    .slice(0, 64),
+  description: String(skill?.description || existingSkill?.description || "").trim(),
+  triggerHint: String(skill?.triggerHint || existingSkill?.triggerHint || "").trim(),
+  instructions: String(skill?.instructions || existingSkill?.instructions || "").trim(),
+});
+
+const trimForTemplate = (value, limit) => {
+  const compact = String(value || "").replace(/\s+/g, " ").trim();
+  if (compact.length <= limit) {
+    return compact;
+  }
+  return `${compact.slice(0, limit)}...`;
+};
+
 export const bootstrap = async () =>
   isTauriAvailable() ? invokeTauri({ cmd: "bootstrap" }) : localBootstrap();
 
@@ -1063,6 +1323,11 @@ export const saveSessionSkills = async ({ sessionId, skillIds, activeSessionId }
   isTauriAvailable()
     ? invokeTauri({ cmd: "saveSessionSkills", sessionId, skillIds, activeSessionId })
     : localSaveSessionSkills({ sessionId, skillIds, activeSessionId });
+
+export const forgeSkill = async ({ existingSkill, lang, prompt, settings }) =>
+  isTauriAvailable()
+    ? invokeTauri({ cmd: "forgeSkill", existingSkill, lang, prompt, settings })
+    : localForgeSkill({ existingSkill, lang, prompt, settings });
 
 export const runAgent = async ({ sessionId, prompt }) =>
   isTauriAvailable()

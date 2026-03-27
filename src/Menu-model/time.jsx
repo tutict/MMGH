@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { IonButton, IonContent, IonIcon, IonPage } from "@ionic/react";
 import { alarmOutline } from "ionicons/icons";
 import "../CSS/menu.css";

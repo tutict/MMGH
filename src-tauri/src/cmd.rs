@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 #[serde(tag = "cmd", rename_all = "camelCase")]
@@ -101,6 +101,14 @@ pub enum Cmd {
     callback: String,
     error: String,
   },
+  ForgeSkill {
+    prompt: String,
+    lang: Option<String>,
+    existing_skill: Option<SkillInput>,
+    settings: Option<AgentSettingsInput>,
+    callback: String,
+    error: String,
+  },
   RunAgent {
     session_id: i64,
     prompt: String,
@@ -141,7 +149,7 @@ pub struct ReminderInput {
   pub linked_note_id: Option<i64>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SkillInput {
   pub id: i64,
