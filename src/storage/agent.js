@@ -4,48 +4,48 @@ const DEFAULT_LANG = "zh-CN";
 
 const STORAGE_TEXT = {
   "zh-CN": {
-    systemPrompt: "You are a desktop agent. Clarify the goal, propose an executable plan, and state the next action.",
-    newMission: "New Mission",
+    systemPrompt: "你是桌面 Agent。先澄清目标，给出可执行计划，再明确下一步动作。",
+    newMission: "新任务",
     previewReadyMessage:
-      "Browser preview mode is ready. In Tauri, the real session state and execution trace will be handled by the Rust runtime.",
-    previewReadyTitle: "Preview ready",
-    previewReadyDetail: "Frontend preview mode is active so the layout can be tested without Tauri.",
-    welcomeNote: "Welcome note",
+      "浏览器预览模式已经就绪。在 Tauri 中，真实的会话状态和执行追踪会由 Rust 运行时处理。",
+    previewReadyTitle: "预览已就绪",
+    previewReadyDetail: "当前启用了前端预览模式，因此无需 Tauri 也能测试界面布局。",
+    welcomeNote: "欢迎笔记",
     knowledgeBody:
-      "# Knowledge Vault\n\nUse this area like a local Notion page.\n\n- Save stable product facts.\n- Keep reusable prompts.\n- Build a small private knowledge base.",
-    startWriting: "Start writing here.",
-    localRecall: "Local note recall",
+      "# 知识库\n\n把这里当成本地 Notion 页面来用。\n\n- 保存稳定的产品事实。\n- 存放可复用提示词。\n- 搭建一个私有小型知识库。",
+    startWriting: "从这里开始写。",
+    localRecall: "本地笔记召回",
     localRecallDesc:
-      "Bias the agent toward checking local notes and durable context before answering.",
+      "让 Agent 在回答前优先检查本地笔记和稳定上下文。",
     localRecallInstructions:
-      "Before answering, review the local knowledge notes mentally, prefer stable facts, and align the response with any relevant notes. This skill is low-permission only and must not assume elevated access.",
+      "回答前先在脑中回顾本地知识笔记，优先采用稳定事实，并尽量与相关笔记保持一致。这个技能仅具备低权限，不能假定自己拥有更高访问能力。",
     localRecallTrigger:
-      "Use when the operator asks for note-based context, private docs, or durable knowledge.",
-    customSkillDesc: "Describe what this custom skill should push the agent toward.",
+      "当操作员需要基于笔记的上下文、私有文档或稳定知识时使用。",
+    customSkillDesc: "描述这个自定义技能应该把 Agent 往什么方向推。",
     customSkillInstructions:
-      "Write the reusable instruction block for this skill. All custom skills are low-permission only.",
-    customSkillTrigger: "Describe when the skill should activate.",
-    newReminder: "New reminder",
+      "为这个技能写下可复用的指令块。所有自定义技能都只有低权限。",
+    customSkillTrigger: "描述这个技能应该在什么场景下触发。",
+    newReminder: "新提醒",
     reminderDetail:
-      "Capture the next action, attach a note, and set when it should surface again.",
-    newSkill: "New skill",
-    untitledNote: "Untitled note",
-    promptRequired: "Please enter a mission prompt.",
-    mountedSkillsPrefix: "Mounted low-permission skills: {skills}.",
+      "记录下一步动作，关联一条笔记，并设置它再次出现的时间。",
+    newSkill: "新技能",
+    untitledNote: "未命名笔记",
+    promptRequired: "请输入任务提示。",
+    mountedSkillsPrefix: "已挂载低权限技能：{skills}。",
     replyConfigured:
-      "Preview mode will not call the remote provider, but the provider configuration is complete. Mission recorded: {text}.{suffix}",
+      "预览模式不会真正调用远端 provider，但当前 provider 配置已经完整。已记录任务：{text}.{suffix}",
     replyPending:
-      "No real provider is configured yet, so preview mode recorded this mission locally: {text}.{suffix}",
+      "当前还没有配置真实 provider，因此预览模式只是在本地记录了这条任务：{text}.{suffix}",
     nextSteps:
-      "Suggested next steps:\n1. Switch into the Tauri desktop runtime.\n2. Fill in baseUrl, apiKey and model.\n3. Send the mission again to use the Rust runtime path.",
-    previewReplyReadyTitle: "Preview reply ready",
-    previewReplyReadyDetail: "A local preview response has been generated.",
-    executionPlanTitle: "Execution plan drafted",
+      "建议的下一步：\n1. 切换到 Tauri 桌面运行时。\n2. 补全 baseUrl、apiKey 和 model。\n3. 再次发送任务，走 Rust 运行时链路。",
+    previewReplyReadyTitle: "预览回复已生成",
+    previewReplyReadyDetail: "已经生成一条本地预览回复。",
+    executionPlanTitle: "执行计划已生成",
     executionPlanDetail:
-      "1. Receive mission input. 2. Generate preview response. 3. Point the operator to the Tauri/Rust runtime.",
-    sessionSkillsLoadedTitle: "Session skills loaded",
-    sessionSkillsLoadedSome: "Mounted low-permission skills applied: {skills}.",
-    sessionSkillsLoadedNone: "No enabled skills were mounted on this session.",
+      "1. 接收任务输入。2. 生成预览回复。3. 引导操作员切换到 Tauri/Rust 运行时。",
+    sessionSkillsLoadedTitle: "会话技能已加载",
+    sessionSkillsLoadedSome: "已应用挂载的低权限技能：{skills}。",
+    sessionSkillsLoadedNone: "当前会话没有挂载已启用技能。",
   },
   "en-US": {
     systemPrompt:
@@ -717,38 +717,38 @@ const recommendSessionSkillsStable = (session, skills, limit = 4) => {
       return false;
     };
 
-    if (name.includes("note recall") || name.includes("local note recall") || name.includes("bi ji zhao hui")) {
-      return captureMatch(["note", "notes", "knowledge", "context", "doc", "memo", "knowledge-base"]) ? 8 : 0;
+    if (name.includes("note recall") || name.includes("local note recall") || name.includes("笔记召回")) {
+      return captureMatch(["note", "notes", "knowledge", "context", "文档", "笔记", "知识"]) ? 8 : 0;
     }
-    if (name.includes("knowledge librarian") || name.includes("zhi shi zheng li yuan")) {
-      return captureMatch(["summary", "summarize", "organize", "archive", "note", "facts", "knowledge-base"]) ? 8 : 0;
+    if (name.includes("knowledge librarian") || name.includes("知识整理员")) {
+      return captureMatch(["summary", "summarize", "整理", "归档", "note", "沉淀", "知识库"]) ? 8 : 0;
     }
-    if (name.includes("reminder radar") || name.includes("ti xing lei da")) {
-      return captureMatch(["todo", "deadline", "follow-up", "follow up", "remind", "task", "due", "reminder"]) ? 8 : 0;
+    if (name.includes("reminder radar") || name.includes("提醒雷达")) {
+      return captureMatch(["todo", "deadline", "follow-up", "follow up", "remind", "待办", "截止", "提醒"]) ? 8 : 0;
     }
-    if (name.includes("weather brief") || name.includes("tian qi jian bao")) {
-      return captureMatch(["weather", "forecast", "temperature", "rain", "travel", "climate", "umbrella", "trip"]) ? 8 : 0;
+    if (name.includes("weather brief") || name.includes("天气简报")) {
+      return captureMatch(["weather", "forecast", "temperature", "rain", "travel", "天气", "降雨", "温度", "出行"]) ? 8 : 0;
     }
-    if (name.includes("music companion") || name.includes("yin yue pei ting")) {
-      return captureMatch(["music", "playlist", "song", "track", "mood", "album", "lyrics", "artist"]) ? 8 : 0;
+    if (name.includes("music companion") || name.includes("音乐陪听")) {
+      return captureMatch(["music", "playlist", "song", "track", "mood", "音乐", "歌单", "曲目", "氛围"]) ? 8 : 0;
     }
-    if (name.includes("gallery curator") || name.includes("hua lang ce zhan")) {
-      return captureMatch(["gallery", "album", "photo", "image", "caption", "collection", "picture", "tag"]) ? 8 : 0;
+    if (name.includes("gallery curator") || name.includes("画廊策展")) {
+      return captureMatch(["gallery", "album", "photo", "image", "caption", "图库", "相册", "照片", "图片"]) ? 8 : 0;
     }
-    if (name.includes("settings steward") || name.includes("she zhi guan jia")) {
-      return captureMatch(["setting", "provider", "api key", "cache", "config", "settings", "gateway", "system prompt"]) ? 8 : 0;
+    if (name.includes("settings steward") || name.includes("设置管家")) {
+      return captureMatch(["setting", "provider", "api key", "cache", "配置", "设置", "缓存", "网关"]) ? 8 : 0;
     }
-    if (name.includes("release guard") || name.includes("fa bu shou wei")) {
-      return captureMatch(["deploy", "migration", "auth", "billing", "delete", "release", "rollback", "production"]) ? 7 : 0;
+    if (name.includes("release guard") || name.includes("发布守卫")) {
+      return captureMatch(["deploy", "migration", "auth", "billing", "delete", "发布", "迁移", "鉴权", "删除"]) ? 7 : 0;
     }
-    if (name.includes("ui polish") || name.includes("jie mian da mo")) {
-      return captureMatch(["ui", "layout", "css", "frontend", "design", "screen", "style", "visual"]) ? 7 : 0;
+    if (name.includes("ui polish") || name.includes("界面打磨")) {
+      return captureMatch(["ui", "layout", "css", "frontend", "design", "界面", "布局", "前端", "样式"]) ? 7 : 0;
     }
-    if (name.includes("research mode") || name.includes("yan jiu mo shi")) {
-      return captureMatch(["research", "source", "docs", "verify", "citation", "reference", "evidence", "validate"]) ? 7 : 0;
+    if (name.includes("research mode") || name.includes("研究模式")) {
+      return captureMatch(["research", "source", "docs", "verify", "citation", "文档", "校验", "出处", "来源"]) ? 7 : 0;
     }
-    if (name.includes("task router") || name.includes("ren wu lu you")) {
-      return captureMatch(["plan", "steps", "multi-step", "complex", "breakdown", "sequence", "route", "execution"]) ? 6 : 0;
+    if (name.includes("task router") || name.includes("任务路由")) {
+      return captureMatch(["plan", "steps", "multi-step", "complex", "规划", "步骤", "复杂", "拆解"]) ? 6 : 0;
     }
     return 0;
   };
@@ -774,7 +774,7 @@ const recommendSessionSkillsStable = (session, skills, limit = 4) => {
       const recommendationReason =
         uniqueTerms.length > 0
           ? isZh
-            ? `Matched session topics: ${uniqueTerms.join(" / ")}.`
+            ? `匹配到当前会话里的关键词：${uniqueTerms.join(" / ")}。`
             : `Matched session topics: ${uniqueTerms.join(" / ")}.`
           : "";
       return { score, skill, recommendationReason };
@@ -1422,12 +1422,12 @@ const buildLocalSkillDraft = ({ existingSkill, prompt, lang }) => {
 
   if (lang === "zh-CN") {
     return {
-      name: titleSeed || existingSkill?.name || "Generated skill",
-      description: `Locally generated draft for: ${trimForTemplate(text, 88)}` ,
-      triggerHint: `Use when the request is about: ${trimForTemplate(text, 72)}` ,
+      name: titleSeed || existingSkill?.name || "生成技能",
+      description: `根据以下需求生成的本地草稿：${trimForTemplate(text, 88)}`,
+      triggerHint: `当任务涉及以下内容时使用：${trimForTemplate(text, 72)}`,
       instructions:
-        `Interpret the following goal as a reusable low-permission skill and bias your execution accordingly: ${trimForTemplate(text, 180)}\n\n` +
-        "Prefer explicit planning, keep assumptions visible, and avoid destructive actions unless the operator clearly requests them.",
+        `将以下目标解释成一个可复用的低权限技能，并据此调整你的执行方式：${trimForTemplate(text, 180)}\n\n` +
+        "优先显式规划，清楚说明假设，除非操作者明确要求，否则避免破坏性操作。",
     };
   }
 
@@ -1445,7 +1445,7 @@ const sanitizeGeneratedSkill = (skill, existingSkill, lang) => ({
   name: String(
     skill?.name ||
       existingSkill?.name ||
-      (lang === "zh-CN" ? "Generated skill" : "Generated skill")
+      (lang === "zh-CN" ? "生成技能" : "Generated skill")
   )
     .trim()
     .slice(0, 64),
