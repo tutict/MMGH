@@ -387,7 +387,29 @@ pub fn save_skill(
 
 pub fn delete_skill(skill_id: i64, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let mut stmt = conn.prepare(
+      "SELECT DISTINCT session_id
+       FROM session_skills
+       WHERE skill_id = ?1",
+    )?;
+    let rows = stmt.query_map(params![skill_id], |row| row.get::<_, i64>(0))?;
+    let mut session_ids = Vec::new();
+    for row in rows {
+      session_ids.push(row?);
+    }
+
     conn.execute("DELETE FROM skills WHERE id = ?1", params![skill_id])?;
+
+    if !session_ids.is_empty() {
+      let updated_at = now_millis();
+      for session_id in session_ids {
+        conn.execute(
+          "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
+          params![updated_at, session_id],
+        )?;
+      }
+    }
+
     ensure_seed_skill_in(conn)?;
     build_workspace_snapshot_in(conn, active_session_id, None, None)
   })
@@ -663,6 +685,7 @@ fn run_post_init_migrations_in(conn: &Connection) -> Result<()> {
   }
 
   seed_starter_skill_catalog_in(conn)?;
+  prune_disabled_session_skill_mounts_in(conn)?;
 
   Ok(())
 }
@@ -682,6 +705,43 @@ fn seed_starter_skill_catalog_in(conn: &Connection) -> Result<()> {
       "INSERT INTO settings (key, value) VALUES (?1, ?2)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value",
       params![STARTER_SKILL_SEED_MIGRATION_KEY, "done"],
+    )?;
+  }
+
+  Ok(())
+}
+
+fn prune_disabled_session_skill_mounts_in(conn: &Connection) -> Result<()> {
+  let mut stmt = conn.prepare(
+    "SELECT DISTINCT ss.session_id
+     FROM session_skills ss
+     INNER JOIN skills s ON s.id = ss.skill_id
+     WHERE s.enabled = 0",
+  )?;
+  let rows = stmt.query_map([], |row| row.get::<_, i64>(0))?;
+
+  let mut session_ids = Vec::new();
+  for row in rows {
+    session_ids.push(row?);
+  }
+
+  if session_ids.is_empty() {
+    return Ok(());
+  }
+
+  conn.execute(
+    "DELETE FROM session_skills
+     WHERE skill_id IN (
+       SELECT id FROM skills WHERE enabled = 0
+     )",
+    [],
+  )?;
+
+  let updated_at = now_millis();
+  for session_id in session_ids {
+    conn.execute(
+      "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
+      params![updated_at, session_id],
     )?;
   }
 
@@ -985,6 +1045,7 @@ fn save_skill_in(conn: &Connection, input: SkillInput) -> Result<()> {
   let description = input.description.trim().to_string();
   let instructions = input.instructions.trim().to_string();
   let trigger_hint = input.trigger_hint.trim().to_string();
+  let updated_at = now_millis();
 
   conn.execute(
     "UPDATE skills
@@ -1002,10 +1063,35 @@ fn save_skill_in(conn: &Connection, input: SkillInput) -> Result<()> {
       instructions,
       trigger_hint,
       if input.enabled { 1 } else { 0 },
-      now_millis(),
+      updated_at,
       input.id
     ],
   )?;
+
+  if !input.enabled {
+    let mut stmt = conn.prepare(
+      "SELECT DISTINCT session_id
+       FROM session_skills
+       WHERE skill_id = ?1",
+    )?;
+    let rows = stmt.query_map(params![input.id], |row| row.get::<_, i64>(0))?;
+    let mut session_ids = Vec::new();
+    for row in rows {
+      session_ids.push(row?);
+    }
+
+    conn.execute(
+      "DELETE FROM session_skills WHERE skill_id = ?1",
+      params![input.id],
+    )?;
+
+    for session_id in session_ids {
+      conn.execute(
+        "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
+        params![updated_at, session_id],
+      )?;
+    }
+  }
 
   Ok(())
 }
@@ -1016,14 +1102,16 @@ fn save_session_skills_in(conn: &Connection, session_id: i64, skill_ids: Vec<i64
     params![session_id],
   )?;
 
-  let mut unique_ids = skill_ids
-    .into_iter()
-    .filter(|value| *value > 0)
-    .collect::<Vec<_>>();
-  unique_ids.sort_unstable();
-  unique_ids.dedup();
+  let mut unique_ids = Vec::new();
+  for skill_id in skill_ids.into_iter().filter(|value| *value > 0) {
+    if !unique_ids.contains(&skill_id) {
+      unique_ids.push(skill_id);
+    }
+  }
 
-  for skill_id in unique_ids {
+  let base_timestamp = now_millis();
+
+  for (index, skill_id) in unique_ids.iter().copied().enumerate() {
     let exists = conn
       .query_row(
         "SELECT EXISTS(SELECT 1 FROM skills WHERE id = ?1 AND enabled = 1)",
@@ -1036,14 +1124,14 @@ fn save_session_skills_in(conn: &Connection, session_id: i64, skill_ids: Vec<i64
       conn.execute(
         "INSERT OR IGNORE INTO session_skills (session_id, skill_id, created_at)
          VALUES (?1, ?2, ?3)",
-        params![session_id, skill_id, now_millis()],
+        params![session_id, skill_id, base_timestamp + index as i64],
       )?;
     }
   }
 
   conn.execute(
     "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
-    params![now_millis(), session_id],
+    params![base_timestamp + unique_ids.len() as i64, session_id],
   )?;
 
   Ok(())
@@ -1232,15 +1320,12 @@ fn list_skills_in(conn: &Connection) -> Result<Vec<SkillSummary>> {
 
 fn list_session_enabled_skills_in(conn: &Connection, session_id: i64) -> Result<Vec<SkillDetail>> {
   let mut stmt = conn.prepare(
-    "SELECT id, name, description, instructions, trigger_hint, enabled, permission_level, created_at, updated_at
-     FROM skills
-     WHERE enabled = 1
-       AND id IN (
-         SELECT skill_id
-         FROM session_skills
-         WHERE session_id = ?1
-       )
-     ORDER BY updated_at DESC, id DESC",
+    "SELECT s.id, s.name, s.description, s.instructions, s.trigger_hint, s.enabled, s.permission_level, s.created_at, s.updated_at
+     FROM skills s
+     INNER JOIN session_skills ss ON ss.skill_id = s.id
+     WHERE ss.session_id = ?1
+       AND s.enabled = 1
+     ORDER BY ss.created_at ASC, s.id ASC",
   )?;
   let rows = stmt.query_map(params![session_id], |row| {
     let description: String = row.get(2)?;
@@ -1338,7 +1423,11 @@ fn build_session_summary_in(
     .optional()?
     .unwrap_or_default();
   let mounted_skill_count: i64 = conn.query_row(
-    "SELECT COUNT(*) FROM session_skills WHERE session_id = ?1",
+    "SELECT COUNT(*)
+     FROM session_skills ss
+     INNER JOIN skills s ON s.id = ss.skill_id
+     WHERE ss.session_id = ?1
+       AND s.enabled = 1",
     params![id],
     |row| row.get(0),
   )?;
@@ -1465,7 +1554,7 @@ fn recommend_session_skills_in(
     .into_iter()
     .filter(|skill| skill.enabled && !mounted_skill_ids.contains(&skill.id))
     .map(|mut skill| {
-      let (score, reason) = score_skill_recommendation(&skill, &session_haystack, &keywords);
+      let (score, reason) = score_skill_recommendation_stable(&skill, &session_haystack, &keywords);
       skill.recommendation_reason = reason;
       (score, skill)
     })
@@ -1496,7 +1585,14 @@ fn extract_recommendation_keywords(text: &str) -> Vec<String> {
   keywords
 }
 
-fn score_skill_recommendation(
+fn is_cjk_character(ch: char) -> bool {
+  matches!(
+    ch as u32,
+    0x4E00..=0x9FFF | 0x3400..=0x4DBF | 0xF900..=0xFAFF
+  )
+}
+
+fn score_skill_recommendation_stable(
   skill: &SkillSummary,
   session_haystack: &str,
   keywords: &[String],
@@ -1522,17 +1618,17 @@ fn score_skill_recommendation(
     }
   }
 
-  score += score_skill_recommendation_from_intent(skill, session_haystack, &mut matched_terms);
+  score += score_skill_recommendation_from_intent_stable(skill, session_haystack, &mut matched_terms);
   matched_terms.sort();
   matched_terms.dedup();
 
   (
     score,
-    build_skill_recommendation_reason(session_haystack, &matched_terms),
+    build_skill_recommendation_reason_stable(session_haystack, &matched_terms),
   )
 }
 
-fn score_skill_recommendation_from_intent(
+fn score_skill_recommendation_from_intent_stable(
   skill: &SkillSummary,
   session_haystack: &str,
   matched_terms: &mut Vec<String>,
@@ -1587,7 +1683,7 @@ fn score_skill_recommendation_from_intent(
     };
   }
 
-  if skill_name.contains("music companion") || skill_name.contains("音乐伴听") {
+  if skill_name.contains("music companion") || skill_name.contains("音乐陪听") {
     return if capture_match(&["music", "playlist", "song", "track", "mood", "音乐", "歌单", "曲目", "氛围"]) {
       8
     } else {
@@ -1628,7 +1724,7 @@ fn score_skill_recommendation_from_intent(
   }
 
   if skill_name.contains("research mode") || skill_name.contains("研究模式") {
-    return if capture_match(&["research", "source", "docs", "verify", "citation", "文档", "核验", "出处", "来源"]) {
+    return if capture_match(&["research", "source", "docs", "verify", "citation", "文档", "校验", "出处", "来源"]) {
       7
     } else {
       0
@@ -1646,7 +1742,7 @@ fn score_skill_recommendation_from_intent(
   0
 }
 
-fn build_skill_recommendation_reason(
+fn build_skill_recommendation_reason_stable(
   session_haystack: &str,
   matched_terms: &[String],
 ) -> Option<String> {
@@ -1672,14 +1768,6 @@ fn build_skill_recommendation_reason(
     format!("Matched session topics: {}.", reason_terms.join(" / "))
   })
 }
-
-fn is_cjk_character(ch: char) -> bool {
-  matches!(
-    ch as u32,
-    0x4E00..=0x9FFF | 0x3400..=0x4DBF | 0xF900..=0xFAFF
-  )
-}
-
 fn build_note_detail_in(conn: &Connection, note_id: i64) -> Result<KnowledgeNoteDetail> {
   let note = conn
     .query_row(

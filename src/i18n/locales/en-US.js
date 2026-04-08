@@ -14,6 +14,8 @@ const enUS = {
   "app.status.ready": "ready",
   "app.status.running": "running",
   "app.status.completed": "completed",
+  "app.status.warning": "warning",
+  "app.status.failed": "failed",
 
   "app.provider.configured": "configured",
   "app.provider.pending": "pending",

@@ -14,6 +14,8 @@ const zhCN = {
   "app.status.ready": "就绪",
   "app.status.running": "运行中",
   "app.status.completed": "已完成",
+  "app.status.warning": "警告",
+  "app.status.failed": "失败",
 
   "app.provider.configured": "已配置",
   "app.provider.pending": "待配置",

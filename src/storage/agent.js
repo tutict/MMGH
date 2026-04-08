@@ -4,41 +4,48 @@ const DEFAULT_LANG = "zh-CN";
 
 const STORAGE_TEXT = {
   "zh-CN": {
-    systemPrompt: "你是桌面 Agent。先澄清目标，给出可执行计划，再明确下一步动作。",
-    newMission: "新任务",
+    systemPrompt: "You are a desktop agent. Clarify the goal, propose an executable plan, and state the next action.",
+    newMission: "New Mission",
     previewReadyMessage:
-      "浏览器预览模式已经就绪。在 Tauri 中，真实的会话状态和执行追踪会由 Rust 运行时处理。",
-    previewReadyTitle: "预览已就绪",
-    previewReadyDetail: "当前启用了前端预览模式，因此无需 Tauri 也能测试界面布局。",
-    welcomeNote: "欢迎笔记",
+      "Browser preview mode is ready. In Tauri, the real session state and execution trace will be handled by the Rust runtime.",
+    previewReadyTitle: "Preview ready",
+    previewReadyDetail: "Frontend preview mode is active so the layout can be tested without Tauri.",
+    welcomeNote: "Welcome note",
     knowledgeBody:
-      "# 知识库\n\n把这里当成本地 Notion 页面来用。\n\n- 保存稳定的产品事实。\n- 存放可复用提示词。\n- 搭建一个私有小型知识库。",
-    startWriting: "从这里开始写。",
-    localRecall: "本地笔记召回",
-    localRecallDesc: "让 Agent 在回答前优先检查本地笔记和稳定上下文。",
+      "# Knowledge Vault\n\nUse this area like a local Notion page.\n\n- Save stable product facts.\n- Keep reusable prompts.\n- Build a small private knowledge base.",
+    startWriting: "Start writing here.",
+    localRecall: "Local note recall",
+    localRecallDesc:
+      "Bias the agent toward checking local notes and durable context before answering.",
     localRecallInstructions:
-      "回答前先在脑中回顾本地知识笔记，优先采用稳定事实，并尽量与相关笔记保持一致。这个技能仅具备低权限，不能假定自己拥有更高访问能力。",
-    localRecallTrigger: "当操作员需要基于笔记的上下文、私有文档或稳定知识时使用。",
-    customSkillDesc: "描述这个自定义技能应该把 Agent 往什么方向推。",
-    customSkillInstructions: "为这个技能写下可复用的指令块。所有自定义技能都只有低权限。",
-    customSkillTrigger: "描述这个技能应该在什么场景下触发。",
-    newReminder: "新提醒",
-    reminderDetail: "记录下一步动作，关联一条笔记，并设置它再次出现的时间。",
-    newSkill: "新技能",
-    untitledNote: "未命名笔记",
-    promptRequired: "请输入任务提示。",
-    mountedSkillsPrefix: "已挂载低权限技能：{skills}。",
-    replyConfigured: "预览模式不会真正调用远端 provider，但当前 provider 配置已经完整。已记录任务：{text}.{suffix}",
-    replyPending: "当前还没有配置真实 provider，因此预览模式只是在本地记录了这条任务：{text}.{suffix}",
+      "Before answering, review the local knowledge notes mentally, prefer stable facts, and align the response with any relevant notes. This skill is low-permission only and must not assume elevated access.",
+    localRecallTrigger:
+      "Use when the operator asks for note-based context, private docs, or durable knowledge.",
+    customSkillDesc: "Describe what this custom skill should push the agent toward.",
+    customSkillInstructions:
+      "Write the reusable instruction block for this skill. All custom skills are low-permission only.",
+    customSkillTrigger: "Describe when the skill should activate.",
+    newReminder: "New reminder",
+    reminderDetail:
+      "Capture the next action, attach a note, and set when it should surface again.",
+    newSkill: "New skill",
+    untitledNote: "Untitled note",
+    promptRequired: "Please enter a mission prompt.",
+    mountedSkillsPrefix: "Mounted low-permission skills: {skills}.",
+    replyConfigured:
+      "Preview mode will not call the remote provider, but the provider configuration is complete. Mission recorded: {text}.{suffix}",
+    replyPending:
+      "No real provider is configured yet, so preview mode recorded this mission locally: {text}.{suffix}",
     nextSteps:
-      "建议的下一步：\n1. 切换到 Tauri 桌面运行时。\n2. 补全 baseUrl、apiKey 和 model。\n3. 再次发送任务，走 Rust 运行时链路。",
-    previewReplyReadyTitle: "预览回复已生成",
-    previewReplyReadyDetail: "已经生成一条本地预览回复。",
-    executionPlanTitle: "执行计划已生成",
-    executionPlanDetail: "1. 接收任务输入。2. 生成预览回复。3. 引导操作员切换到 Tauri/Rust 运行时。",
-    sessionSkillsLoadedTitle: "会话技能已加载",
-    sessionSkillsLoadedSome: "已应用挂载的低权限技能：{skills}。",
-    sessionSkillsLoadedNone: "当前会话没有挂载已启用技能。",
+      "Suggested next steps:\n1. Switch into the Tauri desktop runtime.\n2. Fill in baseUrl, apiKey and model.\n3. Send the mission again to use the Rust runtime path.",
+    previewReplyReadyTitle: "Preview reply ready",
+    previewReplyReadyDetail: "A local preview response has been generated.",
+    executionPlanTitle: "Execution plan drafted",
+    executionPlanDetail:
+      "1. Receive mission input. 2. Generate preview response. 3. Point the operator to the Tauri/Rust runtime.",
+    sessionSkillsLoadedTitle: "Session skills loaded",
+    sessionSkillsLoadedSome: "Mounted low-permission skills applied: {skills}.",
+    sessionSkillsLoadedNone: "No enabled skills were mounted on this session.",
   },
   "en-US": {
     systemPrompt:
@@ -192,6 +199,107 @@ const defaultCapabilities = () => [
   },
 ];
 
+const STARTER_SKILL_SEEDS = [
+  {
+    name: "Note Recall",
+    aliases: ["Local note recall"],
+    description: "Bias the agent toward local notes, durable facts, and previously captured context.",
+    instructions:
+      "Before answering, check whether the local note set likely contains stable context. Prefer durable facts from notes over fresh guesses, and call out when the notes appear incomplete or stale.",
+    triggerHint:
+      "Use when the operator asks for context from local notes, private docs, or stable project knowledge.",
+  },
+  {
+    name: "Knowledge Librarian",
+    description:
+      "Turn volatile chat into clean notes, reusable summaries, and durable knowledge entries.",
+    instructions:
+      "Distill the conversation into durable facts, open questions, and next actions. Suggest a note title, a compact summary, and a tag set that would fit the Knowledge Vault. Do not invent facts that were not present in the conversation or local notes.",
+    triggerHint:
+      "Use when the operator wants to extract facts, consolidate a discussion, or turn output into a reusable knowledge note.",
+  },
+  {
+    name: "Reminder Radar",
+    description: "Keep due items, follow-ups, and reminder-worthy actions visible during planning.",
+    instructions:
+      "Surface overdue or due-soon items before proposing brand new work. Turn loose asks into actionable reminder candidates with owner, deadline, and expected outcome when possible. Do not claim a reminder was saved unless the operator explicitly asks for that step.",
+    triggerHint:
+      "Use when the task mentions deadlines, follow-ups, to-dos, scheduling, or asks to remember something later.",
+  },
+  {
+    name: "Weather Brief",
+    description:
+      "Summarize visible weather context and keep weather-related advice grounded in actual data.",
+    instructions:
+      "If concrete weather data is present in the session context or the operator provides it, summarize it clearly and connect it to the request. If live weather data is missing, ask the operator to open the Weather workspace or paste the visible city snapshot. Never invent current conditions.",
+    triggerHint:
+      "Use when the operator asks about the weather board, compares cities, or wants packing and travel advice tied to current conditions.",
+  },
+  {
+    name: "Music Companion",
+    description:
+      "Turn mood, reply rhythm, and track context into playlist or playback suggestions.",
+    instructions:
+      "Use only the track names, artists, lyrics, or playback state that appear in the conversation or visible runtime context. Suggest ordering, transitions, mood fit, and playback notes. Do not claim you can hear audio or read lyrics unless that content was provided.",
+    triggerHint:
+      "Use when the operator asks for playlist ideas, mood matching, track ordering, or reply-synced music suggestions.",
+  },
+  {
+    name: "Gallery Curator",
+    description:
+      "Organize gallery items into themes, captions, tags, and memory-friendly collections.",
+    instructions:
+      "Use the filenames, descriptions, and user-provided context to suggest albums, favorite candidates, captions, and retrieval-friendly tags. Do not claim to inspect image pixels unless the images themselves are provided to the agent.",
+    triggerHint:
+      "Use when the operator wants to group photos, write captions, build collections, or clean up a gallery.",
+  },
+  {
+    name: "Settings Steward",
+    description:
+      "Keep provider, cache, and runtime settings changes deliberate, explicit, and reversible.",
+    instructions:
+      "Restate the intended settings change, call out impact and reversibility, and prefer the smallest safe update. Warn before cache-clearing or state-reset actions, and never pretend a provider setting works until the required fields are present.",
+    triggerHint:
+      "Use when the task touches provider config, cache clearing, system prompts, runtime toggles, or other settings work.",
+  },
+  {
+    name: "Release Guard",
+    description:
+      "Slow the agent down around risky edits, migrations, deletions, and production-impacting changes.",
+    instructions:
+      "Treat risky changes as a review gate. Surface rollback impact, migration risks, and testing gaps before modifying code or config. Favor reversible edits and explicit verification steps.",
+    triggerHint:
+      "Use when the task touches deployment, migrations, auth, billing, or destructive file changes.",
+  },
+  {
+    name: "UI Polish",
+    description:
+      "Push the agent toward sharper layout, stronger hierarchy, and less generic frontend output.",
+    instructions:
+      "Aim for deliberate interface structure, clear hierarchy, and stronger visual rhythm. Avoid generic dashboard filler. Keep motion purposeful, spacing consistent, and mobile behavior explicit.",
+    triggerHint:
+      "Use when the task changes user-facing layout, interaction design, or visual presentation.",
+  },
+  {
+    name: "Research Mode",
+    description:
+      "Optimize for source-backed answers, validation, and clear uncertainty handling.",
+    instructions:
+      "Prioritize primary sources, note what is verified versus inferred, and summarize unresolved gaps before concluding. Avoid confident claims when evidence is thin or time-sensitive.",
+    triggerHint:
+      "Use when the task needs documentation checks, verification, citations, or comparison across sources.",
+  },
+  {
+    name: "Task Router",
+    description:
+      "Improve decomposition, next-step planning, and execution ordering for bigger tasks.",
+    instructions:
+      "Break the task into a minimal critical path, keep side work clearly separated, and sequence execution so blockers are resolved before polish work. State assumptions when they affect downstream steps.",
+    triggerHint:
+      "Use when the request is broad, multi-step, or likely to branch into implementation plus verification.",
+  },
+];
+
 const toPreview = (value, limit = 92) => {
   const compact = String(value || "")
     .replace(/\s+/g, " ")
@@ -208,6 +316,24 @@ const dedupeIds = (values) => {
   }
 
   return [...new Set(values.map((value) => Number(value)).filter((value) => value > 0))];
+};
+
+const resolveNextId = (value, items) => {
+  const parsedValue = Number(value) || 0;
+  const maxExistingId = Math.max(
+    0,
+    ...(Array.isArray(items) ? items : []).map((item) => Number(item?.id) || 0)
+  );
+  return Math.max(parsedValue, maxExistingId + 1);
+};
+
+const resolveActiveId = (value, items) => {
+  const parsedValue = Number(value) || 0;
+  const normalizedItems = Array.isArray(items) ? items : [];
+  if (parsedValue > 0 && normalizedItems.some((item) => item.id === parsedValue)) {
+    return parsedValue;
+  }
+  return normalizedItems[0]?.id || 0;
 };
 
 const createSeedSession = (id, title = storageT("newMission"), skillIds = []) => {
@@ -256,23 +382,14 @@ const createSeedNote = (id, title = storageT("welcomeNote")) => {
   };
 };
 
-const createSeedSkill = (id, name = storageT("localRecall")) => {
+const createCustomSkill = (id, name = storageT("newSkill")) => {
   const timestamp = now();
   return {
     id,
     name,
-    description:
-      name === storageT("localRecall")
-        ? storageT("localRecallDesc")
-        : storageT("customSkillDesc"),
-    instructions:
-      name === storageT("localRecall")
-        ? storageT("localRecallInstructions")
-        : storageT("customSkillInstructions"),
-    triggerHint:
-      name === storageT("localRecall")
-        ? storageT("localRecallTrigger")
-        : storageT("customSkillTrigger"),
+    description: storageT("customSkillDesc"),
+    instructions: storageT("customSkillInstructions"),
+    triggerHint: storageT("customSkillTrigger"),
     enabled: true,
     permissionLevel: "low",
     createdAt: timestamp,
@@ -280,22 +397,89 @@ const createSeedSkill = (id, name = storageT("localRecall")) => {
   };
 };
 
+const createStarterSkills = (startId = 1) => {
+  const timestamp = now();
+  return STARTER_SKILL_SEEDS.map((seed, index) => ({
+    id: startId + index,
+    name: seed.name,
+    description: seed.description,
+    instructions: seed.instructions,
+    triggerHint: seed.triggerHint,
+    enabled: true,
+    permissionLevel: "low",
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  }));
+};
+
+const findStarterSeed = (skillName) => {
+  const normalizedName = String(skillName || "").trim().toLowerCase();
+  if (!normalizedName) {
+    return null;
+  }
+
+  return (
+    STARTER_SKILL_SEEDS.find((seed) =>
+      [seed.name, ...(seed.aliases || [])]
+        .map((name) => String(name || "").trim().toLowerCase())
+        .includes(normalizedName)
+    ) || null
+  );
+};
+
+const mergeStarterSkillCatalog = (skills) => {
+  const normalizedSkills = Array.isArray(skills) ? skills.filter(Boolean) : [];
+  const existingStarterNames = new Set(
+    normalizedSkills
+      .map((skill) => findStarterSeed(skill?.name))
+      .filter(Boolean)
+      .map((seed) => seed.name)
+  );
+  const maxSkillId = Math.max(0, ...normalizedSkills.map((skill) => Number(skill?.id) || 0));
+  const missingStarterSeeds = STARTER_SKILL_SEEDS.filter((seed) => !existingStarterNames.has(seed.name));
+
+  if (missingStarterSeeds.length === 0) {
+    return normalizedSkills;
+  }
+
+  const fallbackSkills = createStarterSkills(maxSkillId + 1)
+    .filter((skill) =>
+      missingStarterSeeds.some((seed) => seed.name === skill.name)
+    );
+
+  return [...normalizedSkills, ...fallbackSkills];
+};
+
+const pruneDisabledSessionSkillIds = (sessions, enabledSkillIds) =>
+  (Array.isArray(sessions) ? sessions : []).map((session) => {
+    const previousSkillIds = dedupeIds(session?.skillIds || []);
+    const nextSkillIds = previousSkillIds.filter((skillId) => enabledSkillIds.includes(skillId));
+    return nextSkillIds.length === previousSkillIds.length
+      ? session
+      : {
+          ...session,
+          skillIds: nextSkillIds,
+        };
+  });
+
 const createInitialWorkspace = () => {
   const note = createSeedNote(1);
+  const starterSkills = createStarterSkills(1);
   return {
     settings: defaultSettings(),
     capabilities: defaultCapabilities(),
+    starterSkillCatalogSeeded: true,
     nextSessionId: 2,
     nextNoteId: 2,
     nextReminderId: 1,
-    nextSkillId: 2,
+    nextSkillId: starterSkills.length + 1,
     activeSessionId: 1,
     activeNoteId: 1,
     activeSkillId: 1,
     sessions: [createSeedSession(1)],
     notes: [note],
     reminders: [],
-    skills: [createSeedSkill(1)],
+    skills: starterSkills,
   };
 };
 
@@ -421,17 +605,25 @@ const readWorkspace = () => {
       Array.isArray(parsed.reminders) && parsed.reminders.length > 0
         ? parsed.reminders.map(normalizeReminder).filter(Boolean)
         : [];
-    const skills =
+    const fallbackStarterSkills = createStarterSkills(1);
+    const starterSkillCatalogSeeded = Boolean(parsed.starterSkillCatalogSeeded);
+    const parsedSkills =
       Array.isArray(parsed.skills) && parsed.skills.length > 0
         ? parsed.skills.map(normalizeSkill).filter(Boolean)
-        : [createSeedSkill(1)];
+        : fallbackStarterSkills;
+    const skills = starterSkillCatalogSeeded
+      ? parsedSkills
+      : mergeStarterSkillCatalog(parsedSkills);
     const enabledSkillIds = skills.filter((skill) => skill.enabled).map((skill) => skill.id);
     const hasMountedSkillData = parsed.sessions.some((session) =>
       Object.prototype.hasOwnProperty.call(session || {}, "skillIds")
     );
-    const sessions = parsed.sessions
+    const sessions = pruneDisabledSessionSkillIds(
+      parsed.sessions
       .map((session) => normalizeSession(session, hasMountedSkillData ? [] : enabledSkillIds))
-      .filter((session) => session && session.id > 0);
+      .filter((session) => session && session.id > 0),
+      enabledSkillIds
+    );
 
     if (sessions.length === 0) {
       return createInitialWorkspace();
@@ -440,13 +632,14 @@ const readWorkspace = () => {
     return {
       settings: { ...defaultSettings(), ...(parsed.settings || {}) },
       capabilities: defaultCapabilities(),
-      nextSessionId: parsed.nextSessionId || sessions.length + 1,
-      nextNoteId: parsed.nextNoteId || notes.length + 1,
-      nextReminderId: parsed.nextReminderId || reminders.length + 1,
-      nextSkillId: parsed.nextSkillId || skills.length + 1,
-      activeSessionId: parsed.activeSessionId || sessions[0].id,
-      activeNoteId: parsed.activeNoteId || notes[0].id,
-      activeSkillId: parsed.activeSkillId || skills[0].id,
+      starterSkillCatalogSeeded: true,
+      nextSessionId: resolveNextId(parsed.nextSessionId, sessions),
+      nextNoteId: resolveNextId(parsed.nextNoteId, notes),
+      nextReminderId: resolveNextId(parsed.nextReminderId, reminders),
+      nextSkillId: resolveNextId(parsed.nextSkillId, skills),
+      activeSessionId: resolveActiveId(parsed.activeSessionId, sessions),
+      activeNoteId: resolveActiveId(parsed.activeNoteId, notes),
+      activeSkillId: resolveActiveId(parsed.activeSkillId, skills),
       sessions,
       notes,
       reminders,
@@ -463,6 +656,7 @@ const writeWorkspace = (workspace) => {
     STORAGE_KEY,
     JSON.stringify({
       settings: workspace.settings,
+      starterSkillCatalogSeeded: workspace.starterSkillCatalogSeeded !== false,
       nextSessionId: workspace.nextSessionId,
       nextNoteId: workspace.nextNoteId,
       nextReminderId: workspace.nextReminderId,
@@ -503,7 +697,8 @@ const skillSummary = (skill) => ({
   updatedAt: skill.updatedAt,
 });
 
-const recommendSessionSkills = (session, skills, limit = 4) => {
+
+const recommendSessionSkillsStable = (session, skills, limit = 4) => {
   const mounted = new Set(dedupeIds(session?.skillIds));
   const sessionText = [session?.title || "", ...(session?.messages || []).slice(-10).map((item) => item.content || "")]
     .join(" ")
@@ -522,38 +717,38 @@ const recommendSessionSkills = (session, skills, limit = 4) => {
       return false;
     };
 
-    if (name.includes("note recall") || name.includes("local note recall") || name.includes("笔记召回")) {
-      return captureMatch(["note", "notes", "knowledge", "context", "文档", "笔记", "知识"]) ? 8 : 0;
+    if (name.includes("note recall") || name.includes("local note recall") || name.includes("bi ji zhao hui")) {
+      return captureMatch(["note", "notes", "knowledge", "context", "doc", "memo", "knowledge-base"]) ? 8 : 0;
     }
-    if (name.includes("knowledge librarian") || name.includes("知识整理员")) {
-      return captureMatch(["summary", "summarize", "整理", "归档", "note", "沉淀", "知识库"]) ? 8 : 0;
+    if (name.includes("knowledge librarian") || name.includes("zhi shi zheng li yuan")) {
+      return captureMatch(["summary", "summarize", "organize", "archive", "note", "facts", "knowledge-base"]) ? 8 : 0;
     }
-    if (name.includes("reminder radar") || name.includes("提醒雷达")) {
-      return captureMatch(["todo", "deadline", "follow-up", "follow up", "remind", "待办", "截止", "提醒"]) ? 8 : 0;
+    if (name.includes("reminder radar") || name.includes("ti xing lei da")) {
+      return captureMatch(["todo", "deadline", "follow-up", "follow up", "remind", "task", "due", "reminder"]) ? 8 : 0;
     }
-    if (name.includes("weather brief") || name.includes("天气简报")) {
-      return captureMatch(["weather", "forecast", "temperature", "rain", "travel", "天气", "降雨", "温度", "出行"]) ? 8 : 0;
+    if (name.includes("weather brief") || name.includes("tian qi jian bao")) {
+      return captureMatch(["weather", "forecast", "temperature", "rain", "travel", "climate", "umbrella", "trip"]) ? 8 : 0;
     }
-    if (name.includes("music companion") || name.includes("音乐伴听")) {
-      return captureMatch(["music", "playlist", "song", "track", "mood", "音乐", "歌单", "曲目", "氛围"]) ? 8 : 0;
+    if (name.includes("music companion") || name.includes("yin yue pei ting")) {
+      return captureMatch(["music", "playlist", "song", "track", "mood", "album", "lyrics", "artist"]) ? 8 : 0;
     }
-    if (name.includes("gallery curator") || name.includes("画廊策展")) {
-      return captureMatch(["gallery", "album", "photo", "image", "caption", "图库", "相册", "照片", "图片"]) ? 8 : 0;
+    if (name.includes("gallery curator") || name.includes("hua lang ce zhan")) {
+      return captureMatch(["gallery", "album", "photo", "image", "caption", "collection", "picture", "tag"]) ? 8 : 0;
     }
-    if (name.includes("settings steward") || name.includes("设置管家")) {
-      return captureMatch(["setting", "provider", "api key", "cache", "配置", "设置", "缓存", "网关"]) ? 8 : 0;
+    if (name.includes("settings steward") || name.includes("she zhi guan jia")) {
+      return captureMatch(["setting", "provider", "api key", "cache", "config", "settings", "gateway", "system prompt"]) ? 8 : 0;
     }
-    if (name.includes("release guard") || name.includes("发布守卫")) {
-      return captureMatch(["deploy", "migration", "auth", "billing", "delete", "发布", "迁移", "鉴权", "删除"]) ? 7 : 0;
+    if (name.includes("release guard") || name.includes("fa bu shou wei")) {
+      return captureMatch(["deploy", "migration", "auth", "billing", "delete", "release", "rollback", "production"]) ? 7 : 0;
     }
-    if (name.includes("ui polish") || name.includes("界面打磨")) {
-      return captureMatch(["ui", "layout", "css", "frontend", "design", "界面", "布局", "前端", "样式"]) ? 7 : 0;
+    if (name.includes("ui polish") || name.includes("jie mian da mo")) {
+      return captureMatch(["ui", "layout", "css", "frontend", "design", "screen", "style", "visual"]) ? 7 : 0;
     }
-    if (name.includes("research mode") || name.includes("研究模式")) {
-      return captureMatch(["research", "source", "docs", "verify", "citation", "文档", "核验", "出处", "来源"]) ? 7 : 0;
+    if (name.includes("research mode") || name.includes("yan jiu mo shi")) {
+      return captureMatch(["research", "source", "docs", "verify", "citation", "reference", "evidence", "validate"]) ? 7 : 0;
     }
-    if (name.includes("task router") || name.includes("任务路由")) {
-      return captureMatch(["plan", "steps", "multi-step", "complex", "规划", "步骤", "复杂", "拆解"]) ? 6 : 0;
+    if (name.includes("task router") || name.includes("ren wu lu you")) {
+      return captureMatch(["plan", "steps", "multi-step", "complex", "breakdown", "sequence", "route", "execution"]) ? 6 : 0;
     }
     return 0;
   };
@@ -579,7 +774,7 @@ const recommendSessionSkills = (session, skills, limit = 4) => {
       const recommendationReason =
         uniqueTerms.length > 0
           ? isZh
-            ? `匹配到当前会话里的关键词：${uniqueTerms.join(" / ")}。`
+            ? `Matched session topics: ${uniqueTerms.join(" / ")}.`
             : `Matched session topics: ${uniqueTerms.join(" / ")}.`
           : "";
       return { score, skill, recommendationReason };
@@ -597,7 +792,6 @@ const recommendSessionSkills = (session, skills, limit = 4) => {
     .slice(0, limit)
     .map((item) => skillSummary({ ...item.skill, recommendationReason: item.recommendationReason }));
 };
-
 const buildSnapshot = (
   workspace,
   preferredSessionId = workspace.activeSessionId,
@@ -641,7 +835,7 @@ const buildSnapshot = (
   const activeSessionSkills = orderedSkills
     .filter((skill) => activeSessionSkillIds.includes(skill.id))
     .map(skillSummary);
-  const recommendedSessionSkills = recommendSessionSkills(activeSession, orderedSkills, 4);
+  const recommendedSessionSkills = recommendSessionSkillsStable(activeSession, orderedSkills, 4);
 
   return {
     settings: workspace.settings,
@@ -702,7 +896,11 @@ const updateWorkspace = (mutator) => {
   return next;
 };
 
-const localBootstrap = async () => buildSnapshot(readWorkspace());
+const localBootstrap = async () => {
+  const workspace = readWorkspace();
+  writeWorkspace(workspace);
+  return buildSnapshot(workspace);
+};
 
 const localOpenSession = async (sessionId) =>
   buildSnapshot(
@@ -899,7 +1097,7 @@ const localOpenSkill = async ({ skillId, activeSessionId }) => {
 const localCreateSkill = async ({ name, activeSessionId }) => {
   const workspace = updateWorkspace((current) => {
     const skillId = current.nextSkillId;
-    const skill = createSeedSkill(skillId, name?.trim() || storageT("newSkill"));
+    const skill = createCustomSkill(skillId, name?.trim() || storageT("newSkill"));
     return {
       ...current,
       nextSkillId: skillId + 1,
@@ -922,6 +1120,7 @@ const localCreateSkill = async ({ name, activeSessionId }) => {
 const localSaveSkill = async ({ skill, activeSessionId }) => {
   const workspace = updateWorkspace((current) => {
     const timestamp = now();
+    const nextEnabled = Boolean(skill.enabled);
     return {
       ...current,
       activeSkillId: skill.id,
@@ -933,12 +1132,25 @@ const localSaveSkill = async ({ skill, activeSessionId }) => {
               description: skill.description?.trim() || "",
               instructions: skill.instructions?.trim() || "",
               triggerHint: skill.triggerHint?.trim() || "",
-              enabled: Boolean(skill.enabled),
+              enabled: nextEnabled,
               permissionLevel: "low",
               updatedAt: timestamp,
             }
           : item
       ),
+      sessions: nextEnabled
+        ? current.sessions
+        : current.sessions.map((session) => {
+            const previousSkillIds = dedupeIds(session.skillIds || []);
+            const nextSkillIds = previousSkillIds.filter((id) => id !== skill.id);
+            return nextSkillIds.length === previousSkillIds.length
+              ? session
+              : {
+                  ...session,
+                  skillIds: nextSkillIds,
+                  updatedAt: timestamp,
+                };
+          }),
     };
   });
   return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId, skill.id);
@@ -946,17 +1158,26 @@ const localSaveSkill = async ({ skill, activeSessionId }) => {
 
 const localDeleteSkill = async ({ skillId, activeSessionId }) => {
   const workspace = updateWorkspace((current) => {
+    const timestamp = now();
     const remaining = current.skills.filter((skill) => skill.id !== skillId);
-    const skills = remaining.length > 0 ? remaining : [createSeedSkill(current.nextSkillId)];
-    const nextSkillId = remaining.length > 0 ? current.nextSkillId : current.nextSkillId + 1;
+    const skills = remaining.length > 0 ? remaining : createStarterSkills(current.nextSkillId);
+    const nextSkillId =
+      remaining.length > 0 ? current.nextSkillId : current.nextSkillId + STARTER_SKILL_SEEDS.length;
     return {
       ...current,
       nextSkillId,
       skills,
-      sessions: current.sessions.map((session) => ({
-        ...session,
-        skillIds: dedupeIds((session.skillIds || []).filter((id) => id !== skillId)),
-      })),
+      sessions: current.sessions.map((session) => {
+        const previousSkillIds = dedupeIds(session.skillIds || []);
+        const nextSkillIds = previousSkillIds.filter((id) => id !== skillId);
+        return nextSkillIds.length === previousSkillIds.length
+          ? session
+          : {
+              ...session,
+              skillIds: nextSkillIds,
+              updatedAt: timestamp,
+            };
+      }),
       activeSkillId: skills[0].id,
     };
   });
@@ -1201,12 +1422,12 @@ const buildLocalSkillDraft = ({ existingSkill, prompt, lang }) => {
 
   if (lang === "zh-CN") {
     return {
-      name: titleSeed || existingSkill?.name || "生成技能",
-      description: `根据以下需求生成的本地草稿：${trimForTemplate(text, 88)}`,
-      triggerHint: `当任务涉及以下内容时使用：${trimForTemplate(text, 72)}`,
+      name: titleSeed || existingSkill?.name || "Generated skill",
+      description: `Locally generated draft for: ${trimForTemplate(text, 88)}` ,
+      triggerHint: `Use when the request is about: ${trimForTemplate(text, 72)}` ,
       instructions:
-        `将以下目标解释成一个可复用的低权限技能，并据此调整你的执行方式：${trimForTemplate(text, 180)}\n\n` +
-        "优先显式规划，清楚说明假设，除非操作者明确要求，否则避免破坏性操作。",
+        `Interpret the following goal as a reusable low-permission skill and bias your execution accordingly: ${trimForTemplate(text, 180)}\n\n` +
+        "Prefer explicit planning, keep assumptions visible, and avoid destructive actions unless the operator clearly requests them.",
     };
   }
 
@@ -1224,7 +1445,7 @@ const sanitizeGeneratedSkill = (skill, existingSkill, lang) => ({
   name: String(
     skill?.name ||
       existingSkill?.name ||
-      (lang === "zh-CN" ? "生成技能" : "Generated skill")
+      (lang === "zh-CN" ? "Generated skill" : "Generated skill")
   )
     .trim()
     .slice(0, 64),

@@ -123,90 +123,106 @@ pub fn run_agent(session_id: i64, prompt: String) -> Result<db::WorkspaceSnapsho
   }
 
   db::update_session_status(session_id, "running")?;
-  db::append_message(session_id, "user", &trimmed_prompt)?;
-  db::ensure_session_title(session_id, &trimmed_prompt)?;
-  db::append_activity(
-    session_id,
-    "input",
-    "Mission received",
-    &format!("New mission captured: {}", shorten(&trimmed_prompt, 120)),
-    "completed",
-  )?;
-
-  let runtime_context = build_runtime_context(session_id, &trimmed_prompt)?;
-  db::append_activity(
-    session_id,
-    "system",
-    "Runtime context staged",
-    &render_runtime_context_activity(&runtime_context),
-    "completed",
-  )?;
-
-  let plan = draft_plan(&trimmed_prompt, &runtime_context);
-  db::append_activity(
-    session_id,
-    "plan",
-    "Execution plan drafted",
-    &plan,
-    "completed",
-  )?;
-
-  let settings = db::load_settings()?;
-  let reply = if settings.is_ready() {
-    match request_completion(&settings, session_id, &runtime_context) {
-      Ok(content) => {
-        db::append_activity(
-          session_id,
-          "model",
-          "Provider call finished",
-          &format!(
-            "{} / {} returned {} chars.",
-            settings.provider_name,
-            settings.model,
-            content.chars().count()
-          ),
-          "completed",
-        )?;
-        content
-      }
-      Err(error) => {
-        db::append_activity(
-          session_id,
-          "model",
-          "Provider call failed",
-          &shorten(&format!("{:#}", error), 200),
-          "failed",
-        )?;
-        local_fallback_reply(
-          &trimmed_prompt,
-          Some(&error.to_string()),
-          &settings,
-          &runtime_context,
-        )
-      }
-    }
-  } else {
+  let result = (|| -> Result<db::WorkspaceSnapshot> {
+    db::append_message(session_id, "user", &trimmed_prompt)?;
+    db::ensure_session_title(session_id, &trimmed_prompt)?;
     db::append_activity(
       session_id,
-      "model",
-      "Provider not configured",
-      "Missing baseUrl, model or apiKey. Falling back to local preview mode.",
-      "warning",
+      "input",
+      "Mission received",
+      &format!("New mission captured: {}", shorten(&trimmed_prompt, 120)),
+      "completed",
     )?;
-    local_fallback_reply(&trimmed_prompt, None, &settings, &runtime_context)
-  };
 
-  db::append_message(session_id, "assistant", &reply)?;
-  db::append_activity(
-    session_id,
-    "output",
-    "Reply persisted",
-    "Assistant output has been stored in the session log.",
-    "completed",
-  )?;
-  db::update_session_status(session_id, "ready")?;
+    let runtime_context = build_runtime_context(session_id, &trimmed_prompt)?;
+    db::append_activity(
+      session_id,
+      "system",
+      "Runtime context staged",
+      &render_runtime_context_activity(&runtime_context),
+      "completed",
+    )?;
 
-  db::workspace_snapshot(Some(session_id))
+    let plan = draft_plan(&trimmed_prompt, &runtime_context);
+    db::append_activity(
+      session_id,
+      "plan",
+      "Execution plan drafted",
+      &plan,
+      "completed",
+    )?;
+
+    let settings = db::load_settings()?;
+    let reply = if settings.is_ready() {
+      match request_completion(&settings, session_id, &runtime_context) {
+        Ok(content) => {
+          db::append_activity(
+            session_id,
+            "model",
+            "Provider call finished",
+            &format!(
+              "{} / {} returned {} chars.",
+              settings.provider_name,
+              settings.model,
+              content.chars().count()
+            ),
+            "completed",
+          )?;
+          content
+        }
+        Err(error) => {
+          db::append_activity(
+            session_id,
+            "model",
+            "Provider call failed",
+            &shorten(&format!("{:#}", error), 200),
+            "failed",
+          )?;
+          local_fallback_reply(
+            &trimmed_prompt,
+            Some(&error.to_string()),
+            &settings,
+            &runtime_context,
+          )
+        }
+      }
+    } else {
+      db::append_activity(
+        session_id,
+        "model",
+        "Provider not configured",
+        "Missing baseUrl, model or apiKey. Falling back to local preview mode.",
+        "warning",
+      )?;
+      local_fallback_reply(&trimmed_prompt, None, &settings, &runtime_context)
+    };
+
+    db::append_message(session_id, "assistant", &reply)?;
+    db::append_activity(
+      session_id,
+      "output",
+      "Reply persisted",
+      "Assistant output has been stored in the session log.",
+      "completed",
+    )?;
+    db::update_session_status(session_id, "ready")?;
+
+    db::workspace_snapshot(Some(session_id))
+  })();
+
+  if let Err(error) = result {
+    let _ = db::append_activity(
+      session_id,
+      "system",
+      "Run aborted",
+      &shorten(&format!("{:#}", error), 200),
+      "failed",
+    );
+    let _ = db::update_session_status(session_id, "ready");
+    return Err(error);
+  }
+
+  result
 }
 
 fn request_completion(

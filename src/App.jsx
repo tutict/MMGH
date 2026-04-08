@@ -2897,7 +2897,7 @@ function getSessionCardIconType(status) {
     case "running":
       return "runtime";
     case "failed":
-      return "warning";
+      return "failed";
     case "completed":
       return "check";
     case "queued":
@@ -3067,6 +3067,14 @@ function getPanelIconPath(type) {
           <path d="M12 4l8 14H4z" />
           <path d="M12 9v4" />
           <path d="M12 16h.01" />
+        </>
+      );
+    case "failed":
+      return (
+        <>
+          <circle cx="12" cy="12" r="8" />
+          <path d="M9.2 9.2l5.6 5.6" />
+          <path d="M14.8 9.2l-5.6 5.6" />
         </>
       );
     case "system":

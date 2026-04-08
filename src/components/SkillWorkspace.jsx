@@ -3,6 +3,20 @@ import { useI18n } from "../i18n";
 
 const FILTER_MODES = ["all", "enabled", "mounted", "starter", "workspace"];
 
+const STARTER_TEMPLATE_ALIAS_FIXUPS = {
+  "starter-note-recall": ["Note Recall", "笔记召回", "Local note recall"],
+  "starter-knowledge-librarian": ["Knowledge Librarian", "知识整理员"],
+  "starter-reminder-radar": ["Reminder Radar", "提醒雷达"],
+  "starter-weather-brief": ["Weather Brief", "天气简报"],
+  "starter-music-companion": ["Music Companion", "音乐陪听"],
+  "starter-gallery-curator": ["Gallery Curator", "画廊策展"],
+  "starter-settings-steward": ["Settings Steward", "设置管家"],
+  "starter-release-guard": ["Release Guard", "发布守卫"],
+  "starter-ui-polish": ["UI Polish", "界面打磨"],
+  "starter-research-mode": ["Research Mode", "研究模式"],
+  "starter-task-router": ["Task Router", "任务路由"],
+};
+
 function SkillWorkspace({
   activeSkill,
   activeSkillId,
@@ -38,7 +52,7 @@ function SkillWorkspace({
   const [catalogSearch, setCatalogSearch] = useState("");
   const [forgePrompt, setForgePrompt] = useState("");
 
-  const templates = useMemo(() => createSkillTemplates(t), [t]);
+  const templates = useMemo(() => normalizeStarterTemplates(createSkillTemplates(t)), [t]);
   const templateNameMap = useMemo(
     () =>
       new Map(
@@ -857,6 +871,13 @@ function findInstalledStarterSkill(template, skillList) {
     [template.name, ...(template.aliases || [])].map((name) => normalizeName(name))
   );
   return skillList.find((skill) => aliases.has(normalizeName(skill.name)));
+}
+
+function normalizeStarterTemplates(templates) {
+  return templates.map((template) => ({
+    ...template,
+    aliases: [...new Set([...(template.aliases || []), ...(STARTER_TEMPLATE_ALIAS_FIXUPS[template.id] || [])])],
+  }));
 }
 
 function normalizeName(value) {
