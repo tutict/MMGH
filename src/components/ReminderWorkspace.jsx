@@ -123,6 +123,7 @@ function ReminderWorkspace({
                         className={`reminder-card ${
                           item.id === selectedReminderId ? "is-active" : ""
                         }`}
+                        disabled={busy !== "" || loading}
                         onClick={() => setSelectedReminderId(item.id)}
                       >
                         <div className="reminder-card__head">

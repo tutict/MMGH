@@ -9,6 +9,10 @@ const enUS = {
   "app.common.dirty": "dirty",
   "app.common.selected": "selected",
   "app.common.empty": "empty",
+  "app.common.discardChangesConfirm":
+    "You have unsaved changes. Discard them and continue?",
+  "app.workspace.syncDeferred":
+    "Another tab changed the workspace. Your unsaved edits were kept locally and the sync will resume after you save or discard them.",
 
   "app.status.idle": "idle",
   "app.status.ready": "ready",
@@ -20,6 +24,7 @@ const enUS = {
   "app.provider.configured": "configured",
   "app.provider.pending": "pending",
   "app.permission.low": "low permission",
+  "app.preference.persistFailed": "Preference update failed: {detail}",
 
   "app.language.label": "Language",
   "app.theme.light": "Light mode",
@@ -333,6 +338,7 @@ const enUS = {
   "app.skills.import.createFailed": "Failed to create an imported skill.",
   "app.skills.export.selected": "Export selected",
   "app.skills.export.all": "Export all",
+  "app.skills.export.failed": "Skill export failed: {detail}",
   "app.skills.enabled": "enabled",
   "app.skills.disabled": "disabled",
   "app.skills.mounted": "mounted",
@@ -585,6 +591,7 @@ const enUS = {
   "app.music.lyrics.search": "Search online",
   "app.music.lyrics.upload": "Upload LRC",
   "app.music.lyrics.status.loading": "Searching",
+  "app.music.lyrics.status.cleared": "Cache cleared",
   "app.music.lyrics.status.manual": "Manual override",
   "app.music.lyrics.status.cached": "Local cache",
   "app.music.lyrics.status.fallback": "Fallback lines",
@@ -624,6 +631,17 @@ const enUS = {
   "app.settings.providerName": "Provider name",
   "app.settings.baseUrl": "Base URL",
   "app.settings.apiKey": "API key",
+  "app.settings.apiKeyPlaceholder.enter": "Enter a new API key",
+  "app.settings.apiKeyPlaceholder.clearing": "Save to remove the current API key",
+  "app.settings.apiKeyPlaceholder.keep": "Leave blank to keep the current API key",
+  "app.settings.apiKeyAction.clear": "Clear current API key",
+  "app.settings.apiKeyAction.undoClear": "Keep current API key",
+  "app.settings.apiKeyHint.missing":
+    "No API key is available yet. Enter one and save to start using the provider.",
+  "app.settings.apiKeyHint.clearing":
+    "The current API key will be removed on save. In the desktop runtime this also clears the system keyring entry.",
+  "app.settings.apiKeyHint.keep":
+    "A current API key is already available. Leave this blank to keep using it.",
   "app.settings.model": "Model",
   "app.settings.systemPrompt": "System prompt",
   "app.settings.save": "Save settings",
@@ -668,6 +686,8 @@ const enUS = {
     "Clear the local skill version history cache?",
   "app.settings.cache.confirm.all":
     "Clear all auxiliary caches now? This keeps sessions, notes, reminders, and skills.",
+  "app.settings.cache.clearFailed": "Cache clear failed: {detail}",
+  "app.settings.cache.writeFailed": "Cache update failed: {detail}",
 
   "app.capability.runtime.title": "Rust Runtime",
   "app.capability.runtime.description":

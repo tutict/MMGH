@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -5,15 +6,25 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Context, Result};
 use once_cell::sync::Lazy;
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{params, Connection, OptionalExtension, Transaction};
 use serde::{Deserialize, Serialize};
 
 use crate::cmd::{AgentSettingsInput, KnowledgeNoteInput, ReminderInput, SkillInput};
 
 static DB_CONN: Lazy<Mutex<Option<Connection>>> = Lazy::new(|| Mutex::new(None));
+static RUNTIME_API_KEY: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
 const SETTINGS_KEY: &str = "agent_settings_v1";
+#[cfg_attr(test, allow(dead_code))]
+const API_KEYRING_SERVICE: &str = "mmgh-agent-desktop";
+#[cfg_attr(test, allow(dead_code))]
+const API_KEYRING_ACCOUNT: &str = "provider-api-key";
 const SESSION_SKILL_MIGRATION_KEY: &str = "session_skill_mount_migration_v1";
 const STARTER_SKILL_SEED_MIGRATION_KEY: &str = "starter_skill_seed_migration_v1";
+const STARTER_SKILL_CATALOG_VERSION_KEY: &str = "starter_skill_catalog_version";
+const STARTER_SKILL_DELETED_TOMBSTONES_KEY: &str = "starter_skill_deleted_tombstones_v1";
+const LEGACY_STARTER_SKILL_CATALOG_VERSION: u32 = 1;
+const STARTER_SKILL_CATALOG_VERSION: u32 = 2;
+const DEFAULT_SESSION_TITLE: &str = "New Mission";
 
 #[derive(Debug, Clone, Copy)]
 struct StarterSkillSeed {
@@ -109,6 +120,8 @@ static STARTER_SKILL_SEEDS: &[StarterSkillSeed] = &[
 pub struct AgentSettings {
   pub provider_name: String,
   pub base_url: String,
+  #[serde(default)]
+  pub has_api_key: bool,
   pub api_key: String,
   pub model: String,
   pub system_prompt: String,
@@ -263,7 +276,10 @@ pub fn bootstrap() -> Result<WorkspaceSnapshot> {
 }
 
 pub fn open_session(session_id: i64) -> Result<WorkspaceSnapshot> {
-  workspace_snapshot(Some(session_id))
+  with_connection(|conn| {
+    ensure_session_exists_in(conn, session_id)?;
+    build_workspace_snapshot_in(conn, Some(session_id), None, None)
+  })
 }
 
 pub fn create_session(title: Option<String>) -> Result<WorkspaceSnapshot> {
@@ -275,9 +291,7 @@ pub fn create_session(title: Option<String>) -> Result<WorkspaceSnapshot> {
 
 pub fn delete_session(session_id: i64) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
-    conn.execute("DELETE FROM activity WHERE session_id = ?1", params![session_id])?;
-    conn.execute("DELETE FROM messages WHERE session_id = ?1", params![session_id])?;
-    conn.execute("DELETE FROM sessions WHERE id = ?1", params![session_id])?;
+    delete_session_in(conn, session_id)?;
     ensure_seed_session_in(conn)?;
     build_workspace_snapshot_in(conn, None, None, None)
   })
@@ -288,14 +302,19 @@ pub fn save_settings(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
-    let settings = normalize_settings(input);
+    let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
+    let settings = merge_settings_input(load_settings_in(conn)?, input);
     store_settings_in(conn, &settings)?;
     build_workspace_snapshot_in(conn, active_session_id, None, None)
   })
 }
 
 pub fn open_note(note_id: i64, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| build_workspace_snapshot_in(conn, active_session_id, Some(note_id), None))
+  with_connection(|conn| {
+    let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
+    ensure_note_exists_in(conn, note_id)?;
+    build_workspace_snapshot_in(conn, active_session_id, Some(note_id), None)
+  })
 }
 
 pub fn create_note(
@@ -303,6 +322,7 @@ pub fn create_note(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let note_id = create_note_in(conn, title)?;
     build_workspace_snapshot_in(conn, active_session_id, Some(note_id), None)
   })
@@ -313,6 +333,7 @@ pub fn save_note(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     save_note_in(conn, input.clone())?;
     build_workspace_snapshot_in(conn, active_session_id, Some(input.id), None)
   })
@@ -320,7 +341,8 @@ pub fn save_note(
 
 pub fn delete_note(note_id: i64, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
-    conn.execute("DELETE FROM notes WHERE id = ?1", params![note_id])?;
+    let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
+    delete_note_in(conn, note_id)?;
     ensure_seed_note_in(conn)?;
     build_workspace_snapshot_in(conn, active_session_id, None, None)
   })
@@ -331,6 +353,7 @@ pub fn create_reminder(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     create_reminder_in(conn, title)?;
     build_workspace_snapshot_in(conn, active_session_id, None, None)
   })
@@ -341,6 +364,7 @@ pub fn save_reminder(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     save_reminder_in(conn, input)?;
     build_workspace_snapshot_in(conn, active_session_id, None, None)
   })
@@ -351,13 +375,18 @@ pub fn delete_reminder(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
-    conn.execute("DELETE FROM reminders WHERE id = ?1", params![reminder_id])?;
+    let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
+    delete_reminder_in(conn, reminder_id)?;
     build_workspace_snapshot_in(conn, active_session_id, None, None)
   })
 }
 
 pub fn open_skill(skill_id: i64, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| build_workspace_snapshot_in(conn, active_session_id, None, Some(skill_id)))
+  with_connection(|conn| {
+    let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
+    ensure_skill_exists_in(conn, skill_id)?;
+    build_workspace_snapshot_in(conn, active_session_id, None, Some(skill_id))
+  })
 }
 
 pub fn create_skill(
@@ -365,12 +394,8 @@ pub fn create_skill(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
-    let skill_id = create_skill_in(conn, name)?;
-    if let Some(session_id) = active_session_id {
-      let mut skill_ids = list_session_skill_ids_in(conn, session_id)?;
-      skill_ids.push(skill_id);
-      save_session_skills_in(conn, session_id, skill_ids)?;
-    }
+    let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
+    let skill_id = create_skill_for_active_session_in(conn, name, active_session_id)?;
     build_workspace_snapshot_in(conn, active_session_id, None, Some(skill_id))
   })
 }
@@ -380,6 +405,7 @@ pub fn save_skill(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     save_skill_in(conn, input.clone())?;
     build_workspace_snapshot_in(conn, active_session_id, None, Some(input.id))
   })
@@ -387,29 +413,8 @@ pub fn save_skill(
 
 pub fn delete_skill(skill_id: i64, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
-    let mut stmt = conn.prepare(
-      "SELECT DISTINCT session_id
-       FROM session_skills
-       WHERE skill_id = ?1",
-    )?;
-    let rows = stmt.query_map(params![skill_id], |row| row.get::<_, i64>(0))?;
-    let mut session_ids = Vec::new();
-    for row in rows {
-      session_ids.push(row?);
-    }
-
-    conn.execute("DELETE FROM skills WHERE id = ?1", params![skill_id])?;
-
-    if !session_ids.is_empty() {
-      let updated_at = now_millis();
-      for session_id in session_ids {
-        conn.execute(
-          "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
-          params![updated_at, session_id],
-        )?;
-      }
-    }
-
+    let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
+    delete_skill_in(conn, skill_id)?;
     ensure_seed_skill_in(conn)?;
     build_workspace_snapshot_in(conn, active_session_id, None, None)
   })
@@ -421,8 +426,63 @@ pub fn save_session_skills(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     save_session_skills_in(conn, session_id, skill_ids)?;
     build_workspace_snapshot_in(conn, active_session_id.or(Some(session_id)), None, None)
+  })
+}
+
+pub fn persist_agent_run(
+  session_id: i64,
+  prompt: &str,
+  runtime_context_detail: &str,
+  plan: &str,
+  model_title: &str,
+  model_detail: &str,
+  model_status: &str,
+  reply: &str,
+) -> Result<WorkspaceSnapshot> {
+  with_transaction(|tx| {
+    ensure_session_exists_in(tx, session_id)?;
+    touch_session_in(tx, session_id, "running")?;
+    append_message_in(tx, session_id, "user", prompt)?;
+    ensure_session_title_in(tx, session_id, prompt)?;
+    append_activity_in(
+      tx,
+      session_id,
+      "input",
+      "Mission received",
+      &format!("New mission captured: {}", preview_text(prompt, 120)),
+      "completed",
+    )?;
+    append_activity_in(
+      tx,
+      session_id,
+      "system",
+      "Runtime context staged",
+      runtime_context_detail,
+      "completed",
+    )?;
+    append_activity_in(
+      tx,
+      session_id,
+      "plan",
+      "Execution plan drafted",
+      plan,
+      "completed",
+    )?;
+    append_activity_in(tx, session_id, "model", model_title, model_detail, model_status)?;
+    append_message_in(tx, session_id, "assistant", reply)?;
+    append_activity_in(
+      tx,
+      session_id,
+      "output",
+      "Reply persisted",
+      "Assistant output has been stored in the session log.",
+      "completed",
+    )?;
+    touch_session_in(tx, session_id, "ready")?;
+    build_workspace_snapshot_in(tx, Some(session_id), None, None)
   })
 }
 
@@ -436,7 +496,7 @@ pub fn load_settings() -> Result<AgentSettings> {
 
 pub fn resolve_settings_override(input: Option<AgentSettingsInput>) -> Result<AgentSettings> {
   match input {
-    Some(value) => Ok(normalize_settings(value)),
+    Some(value) => Ok(merge_settings_input(load_settings()?, value)),
     None => load_settings(),
   }
 }
@@ -447,57 +507,6 @@ pub fn recent_note_details(limit: usize) -> Result<Vec<KnowledgeNoteDetail>> {
 
 pub fn workspace_snapshot(preferred_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| build_workspace_snapshot_in(conn, preferred_session_id, None, None))
-}
-
-pub fn append_message(session_id: i64, role: &str, content: &str) -> Result<()> {
-  with_connection(|conn| {
-    append_message_in(conn, session_id, role, content)?;
-    Ok(())
-  })
-}
-
-pub fn append_activity(
-  session_id: i64,
-  kind: &str,
-  title: &str,
-  detail: &str,
-  status: &str,
-) -> Result<()> {
-  with_connection(|conn| {
-    append_activity_in(conn, session_id, kind, title, detail, status)?;
-    Ok(())
-  })
-}
-
-pub fn update_session_status(session_id: i64, status: &str) -> Result<()> {
-  with_connection(|conn| {
-    touch_session_in(conn, session_id, status)?;
-    Ok(())
-  })
-}
-
-pub fn ensure_session_title(session_id: i64, prompt: &str) -> Result<()> {
-  with_connection(|conn| {
-    let existing: Option<String> = conn
-      .query_row(
-        "SELECT title FROM sessions WHERE id = ?1",
-        params![session_id],
-        |row| row.get(0),
-      )
-      .optional()?;
-
-    if let Some(title) = existing {
-      if title.trim() == "New Mission" {
-        let next_title = infer_title(prompt);
-        conn.execute(
-          "UPDATE sessions SET title = ?1, updated_at = ?2 WHERE id = ?3",
-          params![next_title, now_millis(), session_id],
-        )?;
-      }
-    }
-
-    Ok(())
-  })
 }
 
 pub fn recent_messages(session_id: i64, limit: usize) -> Result<Vec<ChatMessage>> {
@@ -548,6 +557,30 @@ where
   action(conn)
 }
 
+fn with_transaction<T, F>(action: F) -> Result<T>
+where
+  F: FnOnce(&Transaction<'_>) -> Result<T>,
+{
+  let mut guard = DB_CONN
+    .lock()
+    .map_err(|_| anyhow!("database mutex poisoned"))?;
+
+  if guard.is_none() {
+    let path = db_path()?;
+    let conn = Connection::open(path)?;
+    conn.execute_batch(include_str!("../sql/schema.sql"))?;
+    conn.execute_batch("PRAGMA foreign_keys = ON;")?;
+    run_post_init_migrations_in(&conn)?;
+    *guard = Some(conn);
+  }
+
+  let conn = guard.as_mut().context("database connection not initialized")?;
+  let tx = conn.transaction()?;
+  let result = action(&tx)?;
+  tx.commit()?;
+  Ok(result)
+}
+
 fn app_data_dir() -> Option<PathBuf> {
   let app_name = env!("CARGO_PKG_NAME");
   tauri::api::path::local_data_dir()
@@ -577,37 +610,174 @@ fn now_millis() -> i64 {
 }
 
 fn default_settings() -> AgentSettings {
+  let api_key = std::env::var("OPENAI_API_KEY").unwrap_or_default();
   AgentSettings {
     provider_name: "OpenAI Compatible".to_string(),
     base_url: std::env::var("OPENAI_API_BASE")
       .unwrap_or_else(|_| "https://api.openai.com/v1".to_string()),
-    api_key: std::env::var("OPENAI_API_KEY").unwrap_or_default(),
+    has_api_key: !api_key.trim().is_empty(),
+    api_key,
     model: std::env::var("OPENAI_MODEL").unwrap_or_else(|_| "gpt-4.1-mini".to_string()),
     system_prompt: "You are a desktop agent. Clarify the goal, propose an executable plan, and state the next action.".to_string(),
   }
 }
 
-fn normalize_settings(input: AgentSettingsInput) -> AgentSettings {
-  let defaults = default_settings();
+fn read_runtime_api_key() -> Result<Option<String>> {
+  let guard = RUNTIME_API_KEY
+    .lock()
+    .map_err(|_| anyhow!("runtime api key mutex poisoned"))?;
+  Ok(guard.clone())
+}
+
+fn store_runtime_api_key(value: String) -> Result<()> {
+  let mut guard = RUNTIME_API_KEY
+    .lock()
+    .map_err(|_| anyhow!("runtime api key mutex poisoned"))?;
+  *guard = if value.trim().is_empty() { None } else { Some(value) };
+  Ok(())
+}
+
+#[cfg(not(test))]
+fn load_api_key_from_keyring() -> Result<Option<String>> {
+  let entry = keyring::Entry::new(API_KEYRING_SERVICE, API_KEYRING_ACCOUNT);
+  match entry.get_password() {
+    Ok(api_key) if api_key.trim().is_empty() => Ok(None),
+    Ok(api_key) => Ok(Some(api_key)),
+    Err(keyring::Error::NoEntry) => Ok(None),
+    Err(error) => Err(error).context("failed to load api key from system keyring"),
+  }
+}
+
+#[cfg(test)]
+static TEST_KEYRING_API_KEY: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
+
+#[cfg(test)]
+fn load_api_key_from_keyring() -> Result<Option<String>> {
+  let guard = TEST_KEYRING_API_KEY
+    .lock()
+    .map_err(|_| anyhow!("test keyring mutex poisoned"))?;
+  Ok(guard.clone())
+}
+
+#[cfg(not(test))]
+fn store_api_key_in_keyring(value: &str) -> Result<()> {
+  let api_key = value.trim();
+  if api_key.is_empty() {
+    return Ok(());
+  }
+
+  let entry = keyring::Entry::new(API_KEYRING_SERVICE, API_KEYRING_ACCOUNT);
+  entry
+    .set_password(api_key)
+    .context("failed to store api key in system keyring")
+}
+
+#[cfg(test)]
+fn store_api_key_in_keyring(value: &str) -> Result<()> {
+  let api_key = value.trim();
+  if api_key.is_empty() {
+    return Ok(());
+  }
+
+  let mut guard = TEST_KEYRING_API_KEY
+    .lock()
+    .map_err(|_| anyhow!("test keyring mutex poisoned"))?;
+  *guard = Some(api_key.to_string());
+  Ok(())
+}
+
+#[cfg(not(test))]
+fn delete_api_key_from_keyring() -> Result<()> {
+  let entry = keyring::Entry::new(API_KEYRING_SERVICE, API_KEYRING_ACCOUNT);
+  match entry.delete_password() {
+    Ok(_) | Err(keyring::Error::NoEntry) => Ok(()),
+    Err(error) => Err(error).context("failed to delete api key from system keyring"),
+  }
+}
+
+#[cfg(test)]
+fn delete_api_key_from_keyring() -> Result<()> {
+  let mut guard = TEST_KEYRING_API_KEY
+    .lock()
+    .map_err(|_| anyhow!("test keyring mutex poisoned"))?;
+  *guard = None;
+  Ok(())
+}
+
+fn resolve_effective_api_key(stored_api_key: Option<&str>) -> Result<String> {
+  if let Some(runtime_api_key) = read_runtime_api_key()? {
+    return Ok(runtime_api_key);
+  }
+
+  if let Some(api_key) = load_api_key_from_keyring()? {
+    store_runtime_api_key(api_key.clone())?;
+    return Ok(api_key.trim().to_string());
+  }
+
+  if let Some(api_key) = stored_api_key {
+    let api_key = api_key.trim().to_string();
+    if !api_key.is_empty() {
+      store_api_key_in_keyring(&api_key)?;
+      store_runtime_api_key(api_key.clone())?;
+      return Ok(api_key);
+    }
+  }
+
+  Ok(std::env::var("OPENAI_API_KEY").unwrap_or_default())
+}
+
+fn sanitize_settings_for_persistence(settings: &AgentSettings) -> AgentSettings {
+  let mut sanitized = settings.clone();
+  sanitized.has_api_key = false;
+  sanitized.api_key.clear();
+  sanitized
+}
+
+fn sanitize_settings_for_client(settings: &AgentSettings) -> AgentSettings {
+  let mut sanitized = settings.clone();
+  sanitized.has_api_key = !settings.api_key.trim().is_empty();
+  sanitized.api_key.clear();
+  sanitized
+}
+
+fn is_default_session_title(title: &str) -> bool {
+  matches!(title.trim(), DEFAULT_SESSION_TITLE | "新任务")
+}
+
+fn merge_settings_input(current: AgentSettings, input: AgentSettingsInput) -> AgentSettings {
+  let next_api_key = input.api_key.trim().to_string();
+  let clear_api_key = input.clear_api_key && next_api_key.is_empty();
+
   AgentSettings {
     provider_name: if input.provider_name.trim().is_empty() {
-      defaults.provider_name
+      current.provider_name
     } else {
       input.provider_name.trim().to_string()
     },
     base_url: if input.base_url.trim().is_empty() {
-      defaults.base_url
+      current.base_url
     } else {
       input.base_url.trim().trim_end_matches('/').to_string()
     },
-    api_key: input.api_key.trim().to_string(),
+    has_api_key: if clear_api_key {
+      false
+    } else {
+      current.has_api_key || !next_api_key.is_empty()
+    },
+    api_key: if clear_api_key {
+      String::new()
+    } else if next_api_key.is_empty() {
+      current.api_key
+    } else {
+      next_api_key
+    },
     model: if input.model.trim().is_empty() {
-      defaults.model
+      current.model
     } else {
       input.model.trim().to_string()
     },
     system_prompt: if input.system_prompt.trim().is_empty() {
-      defaults.system_prompt
+      current.system_prompt
     } else {
       input.system_prompt.trim().to_string()
     },
@@ -615,27 +785,143 @@ fn normalize_settings(input: AgentSettingsInput) -> AgentSettings {
 }
 
 fn load_settings_in(conn: &Connection) -> Result<AgentSettings> {
-  let raw: Option<String> = conn
-    .query_row(
-      "SELECT value FROM settings WHERE key = ?1",
-      params![SETTINGS_KEY],
-      |row| row.get(0),
-    )
-    .optional()?;
+  let raw = load_setting_value_in(conn, SETTINGS_KEY)?;
 
   match raw {
-    Some(value) => serde_json::from_str(&value).or_else(|_| Ok(default_settings())),
-    None => Ok(default_settings()),
+    Some(value) => {
+      let mut settings =
+        serde_json::from_str::<AgentSettings>(&value).unwrap_or_else(|_| default_settings());
+      let legacy_api_key = settings.api_key.trim().to_string();
+
+      if !legacy_api_key.is_empty() {
+        let sanitized_payload =
+          serde_json::to_string(&sanitize_settings_for_persistence(&settings))?;
+        upsert_setting_value_in(conn, SETTINGS_KEY, &sanitized_payload)?;
+      }
+
+      settings.api_key = resolve_effective_api_key(Some(&legacy_api_key))?;
+      settings.has_api_key = !settings.api_key.trim().is_empty();
+      Ok(settings)
+    }
+    None => {
+      let mut settings = default_settings();
+      settings.api_key = resolve_effective_api_key(None)?;
+      settings.has_api_key = !settings.api_key.trim().is_empty();
+      Ok(settings)
+    }
   }
 }
 
 fn store_settings_in(conn: &Connection, settings: &AgentSettings) -> Result<()> {
-  let payload = serde_json::to_string(settings)?;
+  if settings.api_key.trim().is_empty() {
+    delete_api_key_from_keyring()?;
+  } else {
+    store_api_key_in_keyring(&settings.api_key)?;
+  }
+  store_runtime_api_key(settings.api_key.clone())?;
+  let payload = serde_json::to_string(&sanitize_settings_for_persistence(settings))?;
+  upsert_setting_value_in(conn, SETTINGS_KEY, &payload)
+}
+
+fn load_setting_value_in(conn: &Connection, key: &str) -> Result<Option<String>> {
+  conn
+    .query_row(
+      "SELECT value FROM settings WHERE key = ?1",
+      params![key],
+      |row| row.get(0),
+    )
+    .optional()
+    .map_err(Into::into)
+}
+
+fn upsert_setting_value_in(conn: &Connection, key: &str, value: &str) -> Result<()> {
   conn.execute(
     "INSERT INTO settings (key, value) VALUES (?1, ?2)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-    params![SETTINGS_KEY, payload],
+    params![key, value],
   )?;
+  Ok(())
+}
+
+fn canonical_starter_skill_name(name: &str) -> Option<&'static str> {
+  let normalized_name = name.trim().to_ascii_lowercase();
+  if normalized_name.is_empty() {
+    return None;
+  }
+
+  STARTER_SKILL_SEEDS.iter().find_map(|seed| {
+    std::iter::once(seed.name)
+      .chain(seed.legacy_names.iter().copied())
+      .find(|candidate| candidate.trim().eq_ignore_ascii_case(&normalized_name))
+      .map(|_| seed.name)
+  })
+}
+
+fn normalize_starter_skill_tombstones(names: impl IntoIterator<Item = String>) -> BTreeSet<String> {
+  names
+    .into_iter()
+    .filter_map(|name| canonical_starter_skill_name(&name).map(str::to_string))
+    .collect()
+}
+
+fn infer_starter_skill_tombstones_in(conn: &Connection) -> Result<BTreeSet<String>> {
+  let mut existing_starter_names = BTreeSet::new();
+  let mut stmt = conn.prepare("SELECT name FROM skills")?;
+  let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
+
+  for row in rows {
+    if let Some(name) = canonical_starter_skill_name(&row?) {
+      existing_starter_names.insert(name.to_string());
+    }
+  }
+
+  Ok(
+    STARTER_SKILL_SEEDS
+      .iter()
+      .filter(|seed| !existing_starter_names.contains(seed.name))
+      .map(|seed| seed.name.to_string())
+      .collect(),
+  )
+}
+
+fn load_starter_skill_catalog_version_in(conn: &Connection) -> Result<u32> {
+  if let Some(value) = load_setting_value_in(conn, STARTER_SKILL_CATALOG_VERSION_KEY)? {
+    return Ok(value.parse::<u32>().unwrap_or(0));
+  }
+
+  if load_setting_value_in(conn, STARTER_SKILL_SEED_MIGRATION_KEY)?.is_some() {
+    return Ok(LEGACY_STARTER_SKILL_CATALOG_VERSION);
+  }
+
+  Ok(0)
+}
+
+fn load_starter_skill_tombstones_in(conn: &Connection) -> Result<BTreeSet<String>> {
+  if let Some(value) = load_setting_value_in(conn, STARTER_SKILL_DELETED_TOMBSTONES_KEY)? {
+    let names = serde_json::from_str::<Vec<String>>(&value).unwrap_or_default();
+    return Ok(normalize_starter_skill_tombstones(names));
+  }
+
+  if load_setting_value_in(conn, STARTER_SKILL_SEED_MIGRATION_KEY)?.is_some() {
+    return infer_starter_skill_tombstones_in(conn);
+  }
+
+  Ok(BTreeSet::new())
+}
+
+fn store_starter_skill_tombstones_in(
+  conn: &Connection,
+  tombstones: &BTreeSet<String>,
+) -> Result<()> {
+  let payload = serde_json::to_string(tombstones)?;
+  upsert_setting_value_in(conn, STARTER_SKILL_DELETED_TOMBSTONES_KEY, &payload)
+}
+
+fn append_starter_skill_tombstone_in(conn: &Connection, name: &str) -> Result<()> {
+  let mut tombstones = load_starter_skill_tombstones_in(conn)?;
+  if tombstones.insert(name.to_string()) {
+    store_starter_skill_tombstones_in(conn, &tombstones)?;
+  }
   Ok(())
 }
 
@@ -691,22 +977,19 @@ fn run_post_init_migrations_in(conn: &Connection) -> Result<()> {
 }
 
 fn seed_starter_skill_catalog_in(conn: &Connection) -> Result<()> {
-  let migration_done: Option<String> = conn
-    .query_row(
-      "SELECT value FROM settings WHERE key = ?1",
-      params![STARTER_SKILL_SEED_MIGRATION_KEY],
-      |row| row.get(0),
-    )
-    .optional()?;
+  let catalog_version = load_starter_skill_catalog_version_in(conn)?;
+  let tombstones = load_starter_skill_tombstones_in(conn)?;
 
-  if migration_done.is_none() {
-    ensure_starter_skills_in(conn)?;
-    conn.execute(
-      "INSERT INTO settings (key, value) VALUES (?1, ?2)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-      params![STARTER_SKILL_SEED_MIGRATION_KEY, "done"],
-    )?;
+  if catalog_version < STARTER_SKILL_CATALOG_VERSION {
+    ensure_starter_skills_in(conn, &tombstones)?;
   }
+
+  store_starter_skill_tombstones_in(conn, &tombstones)?;
+  upsert_setting_value_in(
+    conn,
+    STARTER_SKILL_CATALOG_VERSION_KEY,
+    &STARTER_SKILL_CATALOG_VERSION.to_string(),
+  )?;
 
   Ok(())
 }
@@ -748,8 +1031,11 @@ fn prune_disabled_session_skill_mounts_in(conn: &Connection) -> Result<()> {
   Ok(())
 }
 
-fn ensure_starter_skills_in(conn: &Connection) -> Result<()> {
+fn ensure_starter_skills_in(conn: &Connection, tombstones: &BTreeSet<String>) -> Result<()> {
   for seed in STARTER_SKILL_SEEDS {
+    if tombstones.contains(seed.name) {
+      continue;
+    }
     if find_skill_id_by_names(conn, seed).is_some() {
       continue;
     }
@@ -803,7 +1089,7 @@ fn ensure_seed_session_in(conn: &Connection) -> Result<i64> {
 
   match existing {
     Some(id) => Ok(id),
-    None => create_session_in(conn, Some("New Mission".to_string())),
+    None => create_session_in(conn, Some(DEFAULT_SESSION_TITLE.to_string())),
   }
 }
 
@@ -833,11 +1119,7 @@ fn ensure_seed_skill_in(conn: &Connection) -> Result<i64> {
 
   match existing {
     Some(id) => Ok(id),
-    None => {
-      ensure_starter_skills_in(conn)?;
-      find_skill_id_by_names(conn, &STARTER_SKILL_SEEDS[0])
-        .context("failed to seed starter skills")
-    }
+    None => create_skill_in(conn, None),
   }
 }
 
@@ -848,7 +1130,7 @@ fn create_session_in(conn: &Connection, title: Option<String>) -> Result<i64> {
     .map(str::trim)
     .filter(|value| !value.is_empty())
     .map(|value| value.to_string())
-    .unwrap_or_else(|| "New Mission".to_string());
+    .unwrap_or_else(|| DEFAULT_SESSION_TITLE.to_string());
 
   conn.execute(
     "INSERT INTO sessions (title, status, created_at, updated_at)
@@ -981,13 +1263,35 @@ fn save_note_in(conn: &Connection, input: KnowledgeNoteInput) -> Result<()> {
   let body = input.body.trim().to_string();
   let tags = encode_tags(input.tags);
 
-  conn.execute(
+  let changed = conn.execute(
     "UPDATE notes
      SET icon = ?1, title = ?2, body = ?3, tags = ?4, updated_at = ?5
      WHERE id = ?6",
     params![icon, title, body, tags, now_millis(), input.id],
   )?;
 
+  if changed == 0 {
+    return Err(anyhow!("note not found"));
+  }
+
+  Ok(())
+}
+
+fn delete_session_in(conn: &Connection, session_id: i64) -> Result<()> {
+  conn.execute("DELETE FROM activity WHERE session_id = ?1", params![session_id])?;
+  conn.execute("DELETE FROM messages WHERE session_id = ?1", params![session_id])?;
+  let changed = conn.execute("DELETE FROM sessions WHERE id = ?1", params![session_id])?;
+  if changed == 0 {
+    return Err(anyhow!("session not found"));
+  }
+  Ok(())
+}
+
+fn delete_note_in(conn: &Connection, note_id: i64) -> Result<()> {
+  let changed = conn.execute("DELETE FROM notes WHERE id = ?1", params![note_id])?;
+  if changed == 0 {
+    return Err(anyhow!("note not found"));
+  }
   Ok(())
 }
 
@@ -1009,9 +1313,12 @@ fn save_reminder_in(conn: &Connection, input: ReminderInput) -> Result<()> {
   } else {
     "scheduled"
   };
-  let linked_note_id = input.linked_note_id.filter(|value| *value > 0);
+  let linked_note_id = match input.linked_note_id.filter(|value| *value > 0) {
+    Some(note_id) if note_exists_in(conn, note_id)? => Some(note_id),
+    _ => None,
+  };
 
-  conn.execute(
+  let changed = conn.execute(
     "UPDATE reminders
      SET title = ?1,
          detail = ?2,
@@ -1033,6 +1340,169 @@ fn save_reminder_in(conn: &Connection, input: ReminderInput) -> Result<()> {
     ],
   )?;
 
+  if changed == 0 {
+    return Err(anyhow!("reminder not found"));
+  }
+
+  Ok(())
+}
+
+fn delete_reminder_in(conn: &Connection, reminder_id: i64) -> Result<()> {
+  let changed = conn.execute("DELETE FROM reminders WHERE id = ?1", params![reminder_id])?;
+  if changed == 0 {
+    return Err(anyhow!("reminder not found"));
+  }
+  Ok(())
+}
+
+fn session_exists_in(conn: &Connection, session_id: i64) -> Result<bool> {
+  conn
+    .query_row(
+      "SELECT EXISTS(SELECT 1 FROM sessions WHERE id = ?1)",
+      params![session_id],
+      |row| row.get::<_, i64>(0),
+    )
+    .map(|value| value != 0)
+    .map_err(Into::into)
+}
+
+fn note_exists_in(conn: &Connection, note_id: i64) -> Result<bool> {
+  conn
+    .query_row(
+      "SELECT EXISTS(SELECT 1 FROM notes WHERE id = ?1)",
+      params![note_id],
+      |row| row.get::<_, i64>(0),
+    )
+    .map(|value| value != 0)
+    .map_err(Into::into)
+}
+
+fn skill_exists_in(conn: &Connection, skill_id: i64) -> Result<bool> {
+  conn
+    .query_row(
+      "SELECT EXISTS(SELECT 1 FROM skills WHERE id = ?1)",
+      params![skill_id],
+      |row| row.get::<_, i64>(0),
+    )
+    .map(|value| value != 0)
+    .map_err(Into::into)
+}
+
+fn ensure_session_exists_in(conn: &Connection, session_id: i64) -> Result<()> {
+  if !session_exists_in(conn, session_id)? {
+    return Err(anyhow!("session not found"));
+  }
+  Ok(())
+}
+
+fn resolve_active_session_id_in(
+  conn: &Connection,
+  active_session_id: Option<i64>,
+) -> Result<Option<i64>> {
+  if let Some(session_id) = active_session_id {
+    ensure_session_exists_in(conn, session_id)?;
+    return Ok(Some(session_id));
+  }
+  Ok(None)
+}
+
+fn ensure_note_exists_in(conn: &Connection, note_id: i64) -> Result<()> {
+  if !note_exists_in(conn, note_id)? {
+    return Err(anyhow!("note not found"));
+  }
+  Ok(())
+}
+
+fn ensure_skill_exists_in(conn: &Connection, skill_id: i64) -> Result<()> {
+  if !skill_exists_in(conn, skill_id)? {
+    return Err(anyhow!("skill not found"));
+  }
+  Ok(())
+}
+
+fn get_skill_name_in(conn: &Connection, skill_id: i64) -> Result<Option<String>> {
+  conn
+    .query_row(
+      "SELECT name FROM skills WHERE id = ?1",
+      params![skill_id],
+      |row| row.get(0),
+    )
+    .optional()
+    .map_err(Into::into)
+}
+
+fn create_skill_for_active_session_in(
+  conn: &Connection,
+  name: Option<String>,
+  active_session_id: Option<i64>,
+) -> Result<i64> {
+  if let Some(session_id) = active_session_id {
+    ensure_session_exists_in(conn, session_id)?;
+  }
+
+  let skill_id = create_skill_in(conn, name)?;
+  if let Some(session_id) = active_session_id {
+    let mut skill_ids = list_session_skill_ids_in(conn, session_id)?;
+    skill_ids.push(skill_id);
+    save_session_skills_in(conn, session_id, skill_ids)?;
+  }
+  Ok(skill_id)
+}
+
+fn ensure_session_title_in(conn: &Connection, session_id: i64, prompt: &str) -> Result<()> {
+  let existing: Option<String> = conn
+    .query_row(
+      "SELECT title FROM sessions WHERE id = ?1",
+      params![session_id],
+      |row| row.get(0),
+    )
+    .optional()?;
+
+  if let Some(title) = existing {
+    if is_default_session_title(&title) {
+      let next_title = infer_title(prompt);
+      conn.execute(
+        "UPDATE sessions SET title = ?1, updated_at = ?2 WHERE id = ?3",
+        params![next_title, now_millis(), session_id],
+      )?;
+    }
+  }
+
+  Ok(())
+}
+
+fn delete_skill_in(conn: &Connection, skill_id: i64) -> Result<()> {
+  let deleted_skill_name = get_skill_name_in(conn, skill_id)?.context("skill not found")?;
+  let mut stmt = conn.prepare(
+    "SELECT DISTINCT session_id
+     FROM session_skills
+     WHERE skill_id = ?1",
+  )?;
+  let rows = stmt.query_map(params![skill_id], |row| row.get::<_, i64>(0))?;
+  let mut session_ids = Vec::new();
+  for row in rows {
+    session_ids.push(row?);
+  }
+
+  let changed = conn.execute("DELETE FROM skills WHERE id = ?1", params![skill_id])?;
+  if changed == 0 {
+    return Err(anyhow!("skill not found"));
+  }
+
+  if let Some(starter_name) = canonical_starter_skill_name(&deleted_skill_name) {
+    append_starter_skill_tombstone_in(conn, starter_name)?;
+  }
+
+  if !session_ids.is_empty() {
+    let updated_at = now_millis();
+    for session_id in session_ids {
+      conn.execute(
+        "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
+        params![updated_at, session_id],
+      )?;
+    }
+  }
+
   Ok(())
 }
 
@@ -1047,7 +1517,7 @@ fn save_skill_in(conn: &Connection, input: SkillInput) -> Result<()> {
   let trigger_hint = input.trigger_hint.trim().to_string();
   let updated_at = now_millis();
 
-  conn.execute(
+  let changed = conn.execute(
     "UPDATE skills
      SET name = ?1,
          description = ?2,
@@ -1067,6 +1537,10 @@ fn save_skill_in(conn: &Connection, input: SkillInput) -> Result<()> {
       input.id
     ],
   )?;
+
+  if changed == 0 {
+    return Err(anyhow!("skill not found"));
+  }
 
   if !input.enabled {
     let mut stmt = conn.prepare(
@@ -1097,10 +1571,16 @@ fn save_skill_in(conn: &Connection, input: SkillInput) -> Result<()> {
 }
 
 fn save_session_skills_in(conn: &Connection, session_id: i64, skill_ids: Vec<i64>) -> Result<()> {
-  conn.execute(
-    "DELETE FROM session_skills WHERE session_id = ?1",
-    params![session_id],
-  )?;
+  let session_exists = conn
+    .query_row(
+      "SELECT EXISTS(SELECT 1 FROM sessions WHERE id = ?1)",
+      params![session_id],
+      |row| row.get::<_, i64>(0),
+    )
+    .map(|value| value != 0)?;
+  if !session_exists {
+    return Err(anyhow!("session not found"));
+  }
 
   let mut unique_ids = Vec::new();
   for skill_id in skill_ids.into_iter().filter(|value| *value > 0) {
@@ -1109,9 +1589,8 @@ fn save_session_skills_in(conn: &Connection, session_id: i64, skill_ids: Vec<i64
     }
   }
 
-  let base_timestamp = now_millis();
-
-  for (index, skill_id) in unique_ids.iter().copied().enumerate() {
+  let mut next_skill_ids = Vec::new();
+  for skill_id in unique_ids {
     let exists = conn
       .query_row(
         "SELECT EXISTS(SELECT 1 FROM skills WHERE id = ?1 AND enabled = 1)",
@@ -1121,17 +1600,33 @@ fn save_session_skills_in(conn: &Connection, session_id: i64, skill_ids: Vec<i64
       .map(|value| value != 0)?;
 
     if exists {
-      conn.execute(
-        "INSERT OR IGNORE INTO session_skills (session_id, skill_id, created_at)
-         VALUES (?1, ?2, ?3)",
-        params![session_id, skill_id, base_timestamp + index as i64],
-      )?;
+      next_skill_ids.push(skill_id);
     }
+  }
+
+  let current_skill_ids = list_session_skill_ids_in(conn, session_id)?;
+  if current_skill_ids == next_skill_ids {
+    return Ok(());
+  }
+
+  conn.execute(
+    "DELETE FROM session_skills WHERE session_id = ?1",
+    params![session_id],
+  )?;
+
+  let base_timestamp = now_millis();
+
+  for (index, skill_id) in next_skill_ids.iter().copied().enumerate() {
+    conn.execute(
+      "INSERT OR IGNORE INTO session_skills (session_id, skill_id, created_at)
+       VALUES (?1, ?2, ?3)",
+      params![session_id, skill_id, base_timestamp + index as i64],
+    )?;
   }
 
   conn.execute(
     "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
-    params![base_timestamp + unique_ids.len() as i64, session_id],
+    params![base_timestamp + next_skill_ids.len() as i64, session_id],
   )?;
 
   Ok(())
@@ -1166,7 +1661,7 @@ fn build_workspace_snapshot_in(
   let active_skill = build_skill_detail_in(conn, active_skill_id)?;
 
   Ok(WorkspaceSnapshot {
-    settings: load_settings_in(conn)?,
+    settings: sanitize_settings_for_client(&load_settings_in(conn)?),
     sessions,
     active_session_id,
     active_session,
@@ -1894,7 +2389,7 @@ fn infer_title(prompt: &str) -> String {
   let compact = prompt.split_whitespace().collect::<Vec<_>>().join(" ");
   let shortened = compact.chars().take(28).collect::<String>();
   if shortened.is_empty() {
-    "New Mission".to_string()
+    DEFAULT_SESSION_TITLE.to_string()
   } else {
     shortened
   }
@@ -1945,4 +2440,425 @@ fn capability_catalog() -> Vec<Capability> {
       status: "ready".to_string(),
     },
   ]
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  static TEST_STATE_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+
+  struct EnvGuard {
+    api_key: Option<String>,
+    api_base: Option<String>,
+    model: Option<String>,
+  }
+
+  impl EnvGuard {
+    fn clear_openai_vars() -> Self {
+      let guard = Self {
+        api_key: std::env::var("OPENAI_API_KEY").ok(),
+        api_base: std::env::var("OPENAI_API_BASE").ok(),
+        model: std::env::var("OPENAI_MODEL").ok(),
+      };
+
+      std::env::remove_var("OPENAI_API_KEY");
+      std::env::remove_var("OPENAI_API_BASE");
+      std::env::remove_var("OPENAI_MODEL");
+
+      guard
+    }
+  }
+
+  impl Drop for EnvGuard {
+    fn drop(&mut self) {
+      match &self.api_key {
+        Some(value) => std::env::set_var("OPENAI_API_KEY", value),
+        None => std::env::remove_var("OPENAI_API_KEY"),
+      }
+      match &self.api_base {
+        Some(value) => std::env::set_var("OPENAI_API_BASE", value),
+        None => std::env::remove_var("OPENAI_API_BASE"),
+      }
+      match &self.model {
+        Some(value) => std::env::set_var("OPENAI_MODEL", value),
+        None => std::env::remove_var("OPENAI_MODEL"),
+      }
+    }
+  }
+
+  fn test_connection() -> Result<Connection> {
+    let conn = Connection::open_in_memory()?;
+    conn.execute_batch(include_str!("../sql/schema.sql"))?;
+    conn.execute_batch("PRAGMA foreign_keys = ON;")?;
+    run_post_init_migrations_in(&conn)?;
+    Ok(conn)
+  }
+
+  fn reset_secret_state() -> Result<()> {
+    store_runtime_api_key(String::new())?;
+    delete_api_key_from_keyring()
+  }
+
+  fn sample_settings(api_key: &str) -> AgentSettings {
+    AgentSettings {
+      provider_name: "OpenAI Compatible".to_string(),
+      base_url: "https://api.openai.com/v1".to_string(),
+      has_api_key: !api_key.trim().is_empty(),
+      api_key: api_key.to_string(),
+      model: "gpt-4.1-mini".to_string(),
+      system_prompt: "test prompt".to_string(),
+    }
+  }
+
+  fn blank_input(clear_api_key: bool) -> AgentSettingsInput {
+    AgentSettingsInput {
+      provider_name: String::new(),
+      base_url: String::new(),
+      clear_api_key,
+      api_key: "   ".to_string(),
+      model: String::new(),
+      system_prompt: String::new(),
+    }
+  }
+
+  fn input_with_api_key(api_key: &str) -> AgentSettingsInput {
+    AgentSettingsInput {
+      provider_name: String::new(),
+      base_url: String::new(),
+      clear_api_key: false,
+      api_key: api_key.to_string(),
+      model: String::new(),
+      system_prompt: String::new(),
+    }
+  }
+
+  fn persisted_settings(conn: &Connection) -> Result<AgentSettings> {
+    let raw = load_setting_value_in(conn, SETTINGS_KEY)?.context("missing settings payload")?;
+    serde_json::from_str(&raw).map_err(Into::into)
+  }
+
+  #[test]
+  fn blank_save_keeps_existing_api_key() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let _env = EnvGuard::clear_openai_vars();
+    reset_secret_state()?;
+
+    let conn = test_connection()?;
+    store_settings_in(&conn, &sample_settings("key-one"))?;
+
+    let merged = merge_settings_input(load_settings_in(&conn)?, blank_input(false));
+    store_settings_in(&conn, &merged)?;
+
+    let reloaded = load_settings_in(&conn)?;
+    let persisted = persisted_settings(&conn)?;
+
+    assert_eq!(reloaded.api_key, "key-one");
+    assert!(reloaded.has_api_key);
+    assert_eq!(read_runtime_api_key()?, Some("key-one".to_string()));
+    assert_eq!(load_api_key_from_keyring()?, Some("key-one".to_string()));
+    assert_eq!(persisted.api_key, "");
+    assert!(!persisted.has_api_key);
+    Ok(())
+  }
+
+  #[test]
+  fn explicit_clear_removes_stored_api_key() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let _env = EnvGuard::clear_openai_vars();
+    reset_secret_state()?;
+
+    let conn = test_connection()?;
+    store_settings_in(&conn, &sample_settings("key-one"))?;
+
+    let merged = merge_settings_input(load_settings_in(&conn)?, blank_input(true));
+    store_settings_in(&conn, &merged)?;
+
+    let reloaded = load_settings_in(&conn)?;
+    let persisted = persisted_settings(&conn)?;
+
+    assert_eq!(reloaded.api_key, "");
+    assert!(!reloaded.has_api_key);
+    assert_eq!(read_runtime_api_key()?, None);
+    assert_eq!(load_api_key_from_keyring()?, None);
+    assert_eq!(persisted.api_key, "");
+    assert!(!persisted.has_api_key);
+    Ok(())
+  }
+
+  #[test]
+  fn load_settings_migrates_legacy_plaintext_api_key_out_of_db() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let _env = EnvGuard::clear_openai_vars();
+    reset_secret_state()?;
+
+    let conn = test_connection()?;
+    upsert_setting_value_in(&conn, SETTINGS_KEY, &serde_json::to_string(&sample_settings("legacy-key"))?)?;
+
+    let loaded = load_settings_in(&conn)?;
+    let persisted = persisted_settings(&conn)?;
+
+    assert_eq!(loaded.api_key, "legacy-key");
+    assert!(loaded.has_api_key);
+    assert_eq!(read_runtime_api_key()?, Some("legacy-key".to_string()));
+    assert_eq!(load_api_key_from_keyring()?, Some("legacy-key".to_string()));
+    assert_eq!(persisted.api_key, "");
+    assert!(!persisted.has_api_key);
+    Ok(())
+  }
+
+  #[test]
+  fn snapshot_settings_stay_sanitized_after_saving_api_key() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let _env = EnvGuard::clear_openai_vars();
+    reset_secret_state()?;
+
+    let conn = test_connection()?;
+    let settings = merge_settings_input(load_settings_in(&conn)?, input_with_api_key("key-one"));
+    store_settings_in(&conn, &settings)?;
+
+    let snapshot = build_workspace_snapshot_in(&conn, None, None, None)?;
+
+    assert!(snapshot.settings.has_api_key);
+    assert_eq!(snapshot.settings.api_key, "");
+    assert_eq!(load_settings_in(&conn)?.api_key, "key-one");
+    Ok(())
+  }
+
+  #[test]
+  fn snapshot_settings_stay_sanitized_after_clearing_api_key() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let _env = EnvGuard::clear_openai_vars();
+    reset_secret_state()?;
+
+    let conn = test_connection()?;
+    store_settings_in(&conn, &sample_settings("key-one"))?;
+
+    let settings = merge_settings_input(load_settings_in(&conn)?, blank_input(true));
+    store_settings_in(&conn, &settings)?;
+
+    let snapshot = build_workspace_snapshot_in(&conn, None, None, None)?;
+
+    assert!(!snapshot.settings.has_api_key);
+    assert_eq!(snapshot.settings.api_key, "");
+    assert_eq!(load_settings_in(&conn)?.api_key, "");
+    Ok(())
+  }
+
+  #[test]
+  fn saving_missing_note_returns_not_found_error() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let error = save_note_in(
+      &conn,
+      KnowledgeNoteInput {
+        id: 999,
+        icon: "*".to_string(),
+        title: "Missing".to_string(),
+        body: "Missing".to_string(),
+        tags: vec![],
+      },
+    )
+    .expect_err("missing note should fail");
+
+    assert!(error.to_string().contains("note not found"));
+    Ok(())
+  }
+
+  #[test]
+  fn saving_missing_reminder_returns_not_found_error() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let error = save_reminder_in(
+      &conn,
+      ReminderInput {
+        id: 999,
+        title: "Missing".to_string(),
+        detail: "Missing".to_string(),
+        due_at: None,
+        severity: "medium".to_string(),
+        status: "scheduled".to_string(),
+        linked_note_id: None,
+      },
+    )
+    .expect_err("missing reminder should fail");
+
+    assert!(error.to_string().contains("reminder not found"));
+    Ok(())
+  }
+
+  #[test]
+  fn saving_missing_skill_returns_not_found_error() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let error = save_skill_in(
+      &conn,
+      SkillInput {
+        id: 999,
+        name: "Missing".to_string(),
+        description: String::new(),
+        instructions: String::new(),
+        trigger_hint: String::new(),
+        enabled: true,
+      },
+    )
+    .expect_err("missing skill should fail");
+
+    assert!(error.to_string().contains("skill not found"));
+    Ok(())
+  }
+
+  #[test]
+  fn saving_session_skills_requires_existing_session() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let error = save_session_skills_in(&conn, 999, vec![1]).expect_err("missing session should fail");
+
+    assert!(error.to_string().contains("session not found"));
+    Ok(())
+  }
+
+  #[test]
+  fn opening_missing_session_returns_not_found_error() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let error = (|| build_workspace_snapshot_in(&conn, Some(999), None, None))()
+      .expect("snapshot fallback should still be available");
+    assert_ne!(error.active_session_id, 999);
+
+    let direct_error = ensure_session_exists_in(&conn, 999).expect_err("missing session should fail");
+    assert!(direct_error.to_string().contains("session not found"));
+    Ok(())
+  }
+
+  #[test]
+  fn opening_missing_note_returns_not_found_error() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let error = ensure_note_exists_in(&conn, 999).expect_err("missing note should fail");
+    assert!(error.to_string().contains("note not found"));
+    Ok(())
+  }
+
+  #[test]
+  fn opening_missing_skill_returns_not_found_error() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let error = ensure_skill_exists_in(&conn, 999).expect_err("missing skill should fail");
+    assert!(error.to_string().contains("skill not found"));
+    Ok(())
+  }
+
+  #[test]
+  fn deleting_missing_entities_returns_not_found_error() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let session_error = delete_session_in(&conn, 999).expect_err("missing session should fail");
+    assert!(session_error.to_string().contains("session not found"));
+
+    let note_error = delete_note_in(&conn, 999).expect_err("missing note should fail");
+    assert!(note_error.to_string().contains("note not found"));
+
+    let reminder_error =
+      delete_reminder_in(&conn, 999).expect_err("missing reminder should fail");
+    assert!(reminder_error.to_string().contains("reminder not found"));
+
+    let skill_error = delete_skill_in(&conn, 999).expect_err("missing skill should fail");
+    assert!(skill_error.to_string().contains("skill not found"));
+    Ok(())
+  }
+
+  #[test]
+  fn saving_reminder_ignores_missing_linked_note_id() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let reminder_id = create_reminder_in(&conn, Some("Reminder".to_string()))?;
+    save_reminder_in(
+      &conn,
+      ReminderInput {
+        id: reminder_id,
+        title: "Reminder".to_string(),
+        detail: "Detail".to_string(),
+        due_at: None,
+        severity: "medium".to_string(),
+        status: "scheduled".to_string(),
+        linked_note_id: Some(999),
+      },
+    )?;
+
+    let linked_note_id: Option<i64> = conn.query_row(
+      "SELECT linked_note_id FROM reminders WHERE id = ?1",
+      params![reminder_id],
+      |row| row.get(0),
+    )?;
+    assert_eq!(linked_note_id, None);
+    Ok(())
+  }
+
+  #[test]
+  fn invalid_active_session_id_is_rejected_in_snapshot_operations() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let error = resolve_active_session_id_in(&conn, Some(999))
+      .expect_err("missing active session should fail");
+
+    assert!(error.to_string().contains("session not found"));
+    Ok(())
+  }
+
+  #[test]
+  fn create_skill_for_missing_active_session_does_not_insert_skill() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+    let initial_count = list_skills_in(&conn)?.len();
+
+    let error = create_skill_for_active_session_in(&conn, Some("Orphan".to_string()), Some(999))
+      .expect_err("missing active session should fail");
+
+    assert!(error.to_string().contains("session not found"));
+    assert_eq!(list_skills_in(&conn)?.len(), initial_count);
+    Ok(())
+  }
 }

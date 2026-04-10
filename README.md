@@ -1,5 +1,7 @@
 # MMGH Agent Deck
 
+API key handling notes: [docs/API_KEY_HANDLING.md](docs/API_KEY_HANDLING.md)
+
 一个基于 `Rust + Tauri + React` 的桌面 Agent 工作台。项目已经从早期的工具集合，收敛成一个以会话、知识、提醒、技能和工作区面板为核心的本地 Agent 桌面应用。
 
 ## 当前能力

@@ -5,6 +5,7 @@ function SettingsWorkspace({
   busy,
   cacheCards,
   handleSaveSettings,
+  handleClearApiKey,
   hasUnsavedSettings,
   providerConfigured,
   settingsForm,
@@ -98,13 +99,39 @@ function SettingsWorkspace({
                   className="field-input"
                   type="password"
                   value={settingsForm.apiKey || ""}
+                  placeholder={
+                    settingsForm.clearApiKey
+                      ? t("app.settings.apiKeyPlaceholder.clearing")
+                      : settingsForm.hasApiKey
+                      ? t("app.settings.apiKeyPlaceholder.keep")
+                      : t("app.settings.apiKeyPlaceholder.enter")
+                  }
                   onChange={(event) =>
                     setSettingsForm((prev) => ({
                       ...prev,
+                      clearApiKey: false,
                       apiKey: event.target.value,
                     }))
                   }
                 />
+                <span className="section-note">
+                  {settingsForm.clearApiKey
+                    ? t("app.settings.apiKeyHint.clearing")
+                    : settingsForm.hasApiKey
+                    ? t("app.settings.apiKeyHint.keep")
+                    : t("app.settings.apiKeyHint.missing")}
+                </span>
+                {(settingsForm.hasApiKey || settingsForm.clearApiKey) && (
+                  <button
+                    type="button"
+                    className={`ghost-button ${settingsForm.clearApiKey ? "danger-button" : ""}`}
+                    onClick={handleClearApiKey}
+                  >
+                    {settingsForm.clearApiKey
+                      ? t("app.settings.apiKeyAction.undoClear")
+                      : t("app.settings.apiKeyAction.clear")}
+                  </button>
+                )}
               </label>
             </div>
 

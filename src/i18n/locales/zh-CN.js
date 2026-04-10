@@ -9,6 +9,9 @@ const zhCN = {
   "app.common.dirty": "有修改",
   "app.common.selected": "已选中",
   "app.common.empty": "空",
+  "app.common.discardChangesConfirm": "当前有未保存的修改。要放弃这些修改并继续吗？",
+  "app.workspace.syncDeferred":
+    "另一个标签页刚更新了工作区。当前未保存的编辑已保留，本页会在你保存或放弃这些修改后继续同步。",
 
   "app.status.idle": "空闲",
   "app.status.ready": "就绪",
@@ -20,6 +23,7 @@ const zhCN = {
   "app.provider.configured": "已配置",
   "app.provider.pending": "待配置",
   "app.permission.low": "低权限",
+  "app.preference.persistFailed": "偏好设置更新失败：{detail}",
 
   "app.language.label": "语言",
   "app.theme.light": "浅色模式",
@@ -319,6 +323,7 @@ const zhCN = {
   "app.skills.import.createFailed": "创建导入技能失败。",
   "app.skills.export.selected": "导出当前",
   "app.skills.export.all": "导出全部",
+  "app.skills.export.failed": "导出技能失败：{detail}",
   "app.skills.enabled": "启用",
   "app.skills.disabled": "停用",
   "app.skills.mounted": "已挂载",
@@ -599,6 +604,14 @@ const zhCN = {
   "app.settings.providerName": "Provider 名称",
   "app.settings.baseUrl": "Base URL",
   "app.settings.apiKey": "API Key",
+  "app.settings.apiKeyPlaceholder.enter": "输入新的 API Key",
+  "app.settings.apiKeyPlaceholder.clearing": "保存后会移除当前 API Key",
+  "app.settings.apiKeyPlaceholder.keep": "留空则保留当前 API Key",
+  "app.settings.apiKeyAction.clear": "清除当前 API Key",
+  "app.settings.apiKeyAction.undoClear": "保留当前 API Key",
+  "app.settings.apiKeyHint.missing": "当前还没有可用的 API Key。输入后保存即可开始使用 provider。",
+  "app.settings.apiKeyHint.clearing": "当前 API Key 会在保存后移除；在桌面运行时里，这也会清掉系统钥匙串中的记录。",
+  "app.settings.apiKeyHint.keep": "当前已经有可用的 API Key。留空保存会继续沿用它。",
   "app.settings.model": "模型",
   "app.settings.systemPrompt": "系统提示词",
   "app.settings.save": "保存设置",
@@ -639,6 +652,8 @@ const zhCN = {
   "app.settings.cache.confirm.skillHistory": "确定要清空本地技能版本历史缓存吗？",
   "app.settings.cache.confirm.all":
     "确定现在清空全部辅助缓存吗？会话、笔记、提醒和技能会被保留。",
+  "app.settings.cache.clearFailed": "清理缓存失败：{detail}",
+  "app.settings.cache.writeFailed": "更新缓存失败：{detail}",
 
   "app.capability.runtime.title": "Rust Runtime",
   "app.capability.runtime.description": "桌面模式下由 Rust 负责持久化、规划和模型调用。",
@@ -758,6 +773,7 @@ const zhCN = {
   "time.alarm.edit": "修改",
   "time.alarm.set": "设置",
   "time.alert.ring": "闹钟时间到了",
+  "app.music.lyrics.status.cleared": "\u7f13\u5b58\u5df2\u6e05\u7a7a",
 };
 
 export default zhCN;

@@ -213,6 +213,7 @@ function SkillWorkspace({
                     skill.id === activeSkillId ? "is-active" : ""
                   }`}
                   onClick={() => handleOpenSkill(skill.id)}
+                  disabled={busy !== "" || loading}
                 >
                   <div className="skill-card__head">
                     <strong>{skill.name}</strong>
@@ -337,6 +338,7 @@ function SkillWorkspace({
                         enabled: !prev.enabled,
                       }))
                     }
+                    disabled={busy !== "" || loading}
                   >
                     <span />
                   </button>
@@ -378,6 +380,7 @@ function SkillWorkspace({
                 <input
                   className="field-input"
                   value={skillDraft.name}
+                  disabled={busy !== "" || loading}
                   onChange={(event) =>
                     setSkillDraft((prev) => ({
                       ...prev,
@@ -393,6 +396,7 @@ function SkillWorkspace({
                 <input
                   className="field-input"
                   value={skillDraft.triggerHint}
+                  disabled={busy !== "" || loading}
                   onChange={(event) =>
                     setSkillDraft((prev) => ({
                       ...prev,
@@ -410,6 +414,7 @@ function SkillWorkspace({
                 className="field-area"
                 rows={4}
                 value={skillDraft.description}
+                disabled={busy !== "" || loading}
                 onChange={(event) =>
                   setSkillDraft((prev) => ({
                     ...prev,
@@ -425,6 +430,7 @@ function SkillWorkspace({
               <textarea
                 className="knowledge-body-input reminder-detail-input"
                 value={skillDraft.instructions}
+                disabled={busy !== "" || loading}
                 onChange={(event) =>
                   setSkillDraft((prev) => ({
                     ...prev,
@@ -464,6 +470,7 @@ function SkillWorkspace({
             className="field-area skill-forge-input"
             rows={7}
             value={forgePrompt}
+            disabled={busy !== "" || loading}
             onChange={(event) => setForgePrompt(event.target.value)}
             placeholder={t("app.skills.forge.placeholder")}
           />
@@ -631,6 +638,7 @@ function SkillWorkspace({
                     type="button"
                     className="skill-mounted-card"
                     onClick={() => handleOpenSkill(skill.id)}
+                    disabled={busy !== "" || loading}
                   >
                     <strong>{skill.name}</strong>
                     <span>{meta.categoryLabel}</span>

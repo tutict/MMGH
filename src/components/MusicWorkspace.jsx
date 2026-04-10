@@ -80,6 +80,33 @@ const TRACK_LYRICS = {
   ],
 };
 
+const AUDIO_ANALYSIS_CACHE = new WeakMap();
+
+function getOrCreateAudioAnalysis(mediaElement, AudioContextCtor) {
+  const cached = AUDIO_ANALYSIS_CACHE.get(mediaElement);
+  if (cached) {
+    return cached;
+  }
+
+  const context = new AudioContextCtor();
+  const analyser = context.createAnalyser();
+  analyser.fftSize = 128;
+  analyser.smoothingTimeConstant = 0.84;
+
+  const source = context.createMediaElementSource(mediaElement);
+  source.connect(analyser);
+  analyser.connect(context.destination);
+
+  const analysis = {
+    context,
+    analyser,
+    dataArray: new Uint8Array(analyser.frequencyBinCount),
+    source,
+  };
+  AUDIO_ANALYSIS_CACHE.set(mediaElement, analysis);
+  return analysis;
+}
+
 function MusicWorkspace({
   autoPlayOnReply,
   currentTime,
@@ -110,13 +137,7 @@ function MusicWorkspace({
   volume,
 }) {
   const { t } = useI18n();
-  const analysisRef = React.useRef({
-    context: null,
-    analyser: null,
-    dataArray: null,
-    source: null,
-    hasBoundSource: false,
-  });
+  const analysisRef = React.useRef(null);
   const animationFrameRef = React.useRef(0);
   const pulseLevelRef = React.useRef(0.2);
   const lastPulseCommitRef = React.useRef(0);
@@ -190,37 +211,21 @@ function MusicWorkspace({
 
     const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextCtor || !playerAudioElement) {
+      analysisRef.current = null;
       return undefined;
     }
 
-    const analysis = analysisRef.current;
+    let analysis = null;
 
     try {
-      if (!analysis.context) {
-        analysis.context = new AudioContextCtor();
-      }
-
-      if (!analysis.analyser) {
-        analysis.analyser = analysis.context.createAnalyser();
-        analysis.analyser.fftSize = 128;
-        analysis.analyser.smoothingTimeConstant = 0.84;
-      }
-
-      if (!analysis.hasBoundSource) {
-        analysis.source = analysis.context.createMediaElementSource(playerAudioElement);
-        analysis.source.connect(analysis.analyser);
-        analysis.analyser.connect(analysis.context.destination);
-        analysis.hasBoundSource = true;
-      }
-
-      if (!analysis.dataArray) {
-        analysis.dataArray = new Uint8Array(analysis.analyser.frequencyBinCount);
-      }
+      analysis = getOrCreateAudioAnalysis(playerAudioElement, AudioContextCtor);
+      analysisRef.current = analysis;
 
       if (analysis.context.state === "suspended") {
         void analysis.context.resume().catch(() => {});
       }
     } catch (error) {
+      analysisRef.current = null;
       return undefined;
     }
 
@@ -261,7 +266,7 @@ function MusicWorkspace({
   }, [isPlaying, playerAudioElement]);
 
   React.useEffect(() => {
-    if (analysisRef.current.hasBoundSource || !isPlaying) {
+    if (analysisRef.current?.analyser || !isPlaying) {
       return;
     }
 
@@ -752,6 +757,10 @@ const CosmicDustRing = React.memo(function CosmicDustRing({ isPlaying, particleC
 function resolveLyricsStatusLabel({ lyricsError, lyricsSource, lyricsStatus, t }) {
   if (lyricsStatus === "loading") {
     return t("app.music.lyrics.status.loading");
+  }
+
+  if (lyricsStatus === "cleared") {
+    return t("app.music.lyrics.status.cleared");
   }
 
   if (lyricsError) {

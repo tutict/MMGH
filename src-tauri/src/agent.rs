@@ -40,6 +40,8 @@ pub struct GeneratedSkillDraft {
   description: String,
   trigger_hint: String,
   instructions: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  warning: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -101,10 +103,9 @@ pub fn forge_skill(
       existing_skill.as_ref(),
     ) {
       Ok(skill) => Ok(skill),
-      Err(_) => Ok(build_local_skill_draft(
-        existing_skill.as_ref(),
-        &trimmed_prompt,
-        resolved_lang,
+      Err(error) => Ok(with_skill_generation_warning(
+        build_local_skill_draft(existing_skill.as_ref(), &trimmed_prompt, resolved_lang),
+        skill_generation_fallback_warning_message(resolved_lang, &error),
       )),
     }
   } else {
@@ -122,113 +123,62 @@ pub fn run_agent(session_id: i64, prompt: String) -> Result<db::WorkspaceSnapsho
     return Err(anyhow!("prompt cannot be empty"));
   }
 
-  db::update_session_status(session_id, "running")?;
-  let result = (|| -> Result<db::WorkspaceSnapshot> {
-    db::append_message(session_id, "user", &trimmed_prompt)?;
-    db::ensure_session_title(session_id, &trimmed_prompt)?;
-    db::append_activity(
-      session_id,
-      "input",
-      "Mission received",
-      &format!("New mission captured: {}", shorten(&trimmed_prompt, 120)),
-      "completed",
-    )?;
+  let runtime_context = build_runtime_context(session_id, &trimmed_prompt)?;
+  let runtime_context_detail = render_runtime_context_activity(&runtime_context);
+  let plan = draft_plan(&trimmed_prompt, &runtime_context);
+  let settings = db::load_settings()?;
 
-    let runtime_context = build_runtime_context(session_id, &trimmed_prompt)?;
-    db::append_activity(
-      session_id,
-      "system",
-      "Runtime context staged",
-      &render_runtime_context_activity(&runtime_context),
-      "completed",
-    )?;
+  let (model_title, model_detail, model_status, reply) = if settings.is_ready() {
+    match request_completion(&settings, session_id, &runtime_context, &trimmed_prompt) {
+      Ok(content) => (
+        "Provider call finished".to_string(),
+        format!(
+          "{} / {} returned {} chars.",
+          settings.provider_name,
+          settings.model,
+          content.chars().count()
+        ),
+        "completed".to_string(),
+        content,
+      ),
+      Err(error) => (
+        "Provider call failed".to_string(),
+        shorten(&format!("{:#}", error), 200),
+        "failed".to_string(),
+        local_fallback_reply(
+          &trimmed_prompt,
+          Some(&error.to_string()),
+          &settings,
+          &runtime_context,
+        ),
+      ),
+    }
+  } else {
+    (
+      "Provider not configured".to_string(),
+      "Missing baseUrl, model or apiKey. Falling back to local preview mode.".to_string(),
+      "warning".to_string(),
+      local_fallback_reply(&trimmed_prompt, None, &settings, &runtime_context),
+    )
+  };
 
-    let plan = draft_plan(&trimmed_prompt, &runtime_context);
-    db::append_activity(
-      session_id,
-      "plan",
-      "Execution plan drafted",
-      &plan,
-      "completed",
-    )?;
-
-    let settings = db::load_settings()?;
-    let reply = if settings.is_ready() {
-      match request_completion(&settings, session_id, &runtime_context) {
-        Ok(content) => {
-          db::append_activity(
-            session_id,
-            "model",
-            "Provider call finished",
-            &format!(
-              "{} / {} returned {} chars.",
-              settings.provider_name,
-              settings.model,
-              content.chars().count()
-            ),
-            "completed",
-          )?;
-          content
-        }
-        Err(error) => {
-          db::append_activity(
-            session_id,
-            "model",
-            "Provider call failed",
-            &shorten(&format!("{:#}", error), 200),
-            "failed",
-          )?;
-          local_fallback_reply(
-            &trimmed_prompt,
-            Some(&error.to_string()),
-            &settings,
-            &runtime_context,
-          )
-        }
-      }
-    } else {
-      db::append_activity(
-        session_id,
-        "model",
-        "Provider not configured",
-        "Missing baseUrl, model or apiKey. Falling back to local preview mode.",
-        "warning",
-      )?;
-      local_fallback_reply(&trimmed_prompt, None, &settings, &runtime_context)
-    };
-
-    db::append_message(session_id, "assistant", &reply)?;
-    db::append_activity(
-      session_id,
-      "output",
-      "Reply persisted",
-      "Assistant output has been stored in the session log.",
-      "completed",
-    )?;
-    db::update_session_status(session_id, "ready")?;
-
-    db::workspace_snapshot(Some(session_id))
-  })();
-
-  if let Err(error) = result {
-    let _ = db::append_activity(
-      session_id,
-      "system",
-      "Run aborted",
-      &shorten(&format!("{:#}", error), 200),
-      "failed",
-    );
-    let _ = db::update_session_status(session_id, "ready");
-    return Err(error);
-  }
-
-  result
+  db::persist_agent_run(
+    session_id,
+    &trimmed_prompt,
+    &runtime_context_detail,
+    &plan,
+    &model_title,
+    &model_detail,
+    &model_status,
+    &reply,
+  )
 }
 
 fn request_completion(
   settings: &db::AgentSettings,
   session_id: i64,
   runtime_context: &AgentRuntimeContext,
+  prompt: &str,
 ) -> Result<String> {
   let history = db::recent_messages(session_id, 18)?;
   let enabled_skills = db::session_enabled_skills(session_id)?;
@@ -263,6 +213,10 @@ fn request_completion(
       content: item.content,
     });
   }
+  messages.push(CompletionMessage {
+    role: "user".to_string(),
+    content: prompt.to_string(),
+  });
 
   let request = ChatCompletionRequest {
     model: settings.model.clone(),
@@ -554,6 +508,47 @@ fn sanitize_generated_skill(
           .filter(|value| !value.is_empty())
       })
       .unwrap_or_default(),
+    warning: None,
+  }
+}
+
+fn with_skill_generation_warning(
+  mut draft: GeneratedSkillDraft,
+  warning: String,
+) -> GeneratedSkillDraft {
+  let trimmed = warning.trim();
+  if !trimmed.is_empty() {
+    draft.warning = Some(trimmed.to_string());
+  }
+  draft
+}
+
+/*
+fn skill_generation_fallback_warning(lang: &str, error: &anyhow::Error) -> String {
+  let detail = shorten(&format!("{:#}", error), 200);
+  if lang == "zh-CN" {
+    format!("模型技能生成失败，已退回到本地草稿构建：{}", detail)
+  } else {
+    format!(
+      "Model skill generation failed, so a local draft was created instead: {}",
+      detail
+    )
+  }
+}
+
+*/
+fn skill_generation_fallback_warning_message(lang: &str, error: &anyhow::Error) -> String {
+  let detail = shorten(&format!("{:#}", error), 200);
+  if lang == "zh-CN" {
+    format!(
+      "\u{6a21}\u{578b}\u{6280}\u{80fd}\u{751f}\u{6210}\u{5931}\u{8d25}\u{ff0c}\u{5df2}\u{9000}\u{56de}\u{5230}\u{672c}\u{5730}\u{8349}\u{7a3f}\u{6784}\u{5efa}\u{ff1a}{}",
+      detail
+    )
+  } else {
+    format!(
+      "Model skill generation failed, so a local draft was created instead: {}",
+      detail
+    )
   }
 }
 

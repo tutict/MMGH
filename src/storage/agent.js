@@ -1,6 +1,10 @@
 const STORAGE_KEY = "mmgh_agent_workspace_v1";
+const PREVIEW_WRITE_MAX_RETRIES = 4;
 const LANG_STORAGE_KEY = "mmgh-lang";
+const PREVIEW_API_KEY_STORAGE_KEY = "mmgh_agent_preview_api_key_v1";
+const CORRUPT_WORKSPACE_BACKUP_STORAGE_KEY = "mmgh_agent_workspace_v1.corrupt_backup";
 const DEFAULT_LANG = "zh-CN";
+export const PREVIEW_WORKSPACE_STORAGE_KEY = STORAGE_KEY;
 
 const STORAGE_TEXT = {
   "zh-CN": {
@@ -31,6 +35,7 @@ const STORAGE_TEXT = {
     newSkill: "新技能",
     untitledNote: "未命名笔记",
     promptRequired: "请输入任务提示。",
+    concurrentEditConflict: "预览工作区刚刚在另一个标签页被更新，请重试当前操作。",
     mountedSkillsPrefix: "已挂载低权限技能：{skills}。",
     replyConfigured:
       "预览模式不会真正调用远端 provider，但当前 provider 配置已经完整。已记录任务：{text}.{suffix}",
@@ -76,6 +81,7 @@ const STORAGE_TEXT = {
     newSkill: "New skill",
     untitledNote: "Untitled note",
     promptRequired: "Please enter a mission prompt.",
+    concurrentEditConflict: "Preview workspace changed in another tab. Please retry the action.",
     mountedSkillsPrefix: "Mounted low-permission skills: {skills}.",
     replyConfigured:
       "Preview mode will not call the remote provider, but the provider configuration is complete. Mission recorded: {text}.{suffix}",
@@ -94,6 +100,36 @@ const STORAGE_TEXT = {
   },
 };
 
+const LOCAL_SKILL_DRAFT_TEXT = {
+  "zh-CN": {
+    generatedSkillName: "生成技能",
+    descriptionPrefix: "根据以下需求生成的本地草稿：",
+    triggerPrefix: "当任务涉及以下内容时使用：",
+    instructionsPrefix: "将以下目标解释成一个可复用的低权限技能，并据此调整你的执行方式：",
+    instructionsSuffix: "优先显式规划，清楚说明假设，除非操作者明确要求，否则避免破坏性操作。",
+  },
+  "en-US": {
+    generatedSkillName: "Generated skill",
+    descriptionPrefix: "Locally generated draft for:",
+    triggerPrefix: "Use when the request is about:",
+    instructionsPrefix:
+      "Interpret the following goal as a reusable low-permission skill and bias your execution accordingly:",
+    instructionsSuffix:
+      "Prefer explicit planning, keep assumptions visible, and avoid destructive actions unless the operator clearly requests them.",
+  },
+};
+
+const RECOMMENDATION_REASON_TEXT = {
+  "zh-CN": {
+    prefix: "匹配到当前会话里的关键词：",
+    suffix: "。",
+  },
+  "en-US": {
+    prefix: "Matched session topics: ",
+    suffix: ".",
+  },
+};
+
 const normalizeLang = (value) => {
   if (!value) {
     return DEFAULT_LANG;
@@ -108,12 +144,32 @@ const normalizeLang = (value) => {
   return DEFAULT_LANG;
 };
 
+const localizedSkillDraftText = (lang) =>
+  LOCAL_SKILL_DRAFT_TEXT[normalizeLang(lang)] || LOCAL_SKILL_DRAFT_TEXT[DEFAULT_LANG];
+
+const buildRecommendationReason = (lang, terms) => {
+  const reasonText =
+    RECOMMENDATION_REASON_TEXT[normalizeLang(lang)] || RECOMMENDATION_REASON_TEXT[DEFAULT_LANG];
+  return `${reasonText.prefix}${terms.join(" / ")}${reasonText.suffix}`;
+};
+
+const readStoredLang = () => {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    return window.localStorage.getItem(LANG_STORAGE_KEY) || "";
+  } catch (error) {
+    console.error("Failed to read preview language preference", error);
+    return "";
+  }
+};
+
 const getCurrentLang = () => {
-  if (typeof window !== "undefined") {
-    const savedLang = window.localStorage.getItem(LANG_STORAGE_KEY);
-    if (savedLang) {
-      return normalizeLang(savedLang);
-    }
+  const savedLang = readStoredLang();
+  if (savedLang) {
+    return normalizeLang(savedLang);
   }
 
   if (typeof navigator !== "undefined") {
@@ -145,14 +201,82 @@ const isTauriAvailable = () =>
 const invokeTauri = (payload) => window.__TAURI__.tauri.promisified(payload);
 
 const now = () => Date.now();
+let volatilePreviewApiKey = "";
+const describeStorageError = (error) =>
+  error instanceof Error ? error.message : String(error || "Unknown error");
+
+const readPersistedPreviewApiKey = () => {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    return String(window.localStorage.getItem(PREVIEW_API_KEY_STORAGE_KEY) || "").trim();
+  } catch (error) {
+    console.error("Failed to read preview api key", error);
+    return "";
+  }
+};
+
+const writePersistedPreviewApiKey = (apiKey) => {
+  const normalizedApiKey = String(apiKey || "").trim();
+
+  if (typeof window === "undefined") {
+    volatilePreviewApiKey = normalizedApiKey;
+    return normalizedApiKey;
+  }
+
+  try {
+    if (normalizedApiKey) {
+      window.localStorage.setItem(PREVIEW_API_KEY_STORAGE_KEY, normalizedApiKey);
+    } else {
+      window.localStorage.removeItem(PREVIEW_API_KEY_STORAGE_KEY);
+    }
+    volatilePreviewApiKey = normalizedApiKey;
+    return normalizedApiKey;
+  } catch (error) {
+    console.error("Failed to persist preview api key", error);
+    throw new Error("Failed to persist preview api key. Local storage may be full.");
+  }
+};
 
 const defaultSettings = () => ({
   providerName: "OpenAI Compatible",
   baseUrl: "https://api.openai.com/v1",
+  clearApiKey: false,
+  hasApiKey: false,
   apiKey: "",
   model: "gpt-4.1-mini",
   systemPrompt: storageT("systemPrompt"),
 });
+
+const hydratePreviewSettings = (settings) => {
+  const normalized = {
+    ...defaultSettings(),
+    ...(settings || {}),
+  };
+  const persistedApiKey =
+    String(normalized.apiKey || "").trim() || readPersistedPreviewApiKey();
+  volatilePreviewApiKey = persistedApiKey;
+
+  return {
+    ...normalized,
+    clearApiKey: false,
+    hasApiKey: Boolean(volatilePreviewApiKey),
+    apiKey: "",
+  };
+};
+
+const sanitizeSettingsForPersistence = (settings) => ({
+  ...defaultSettings(),
+  ...(settings || {}),
+  clearApiKey: false,
+  hasApiKey: false,
+  apiKey: "",
+});
+
+const resolvePreviewApiKey = (settings) =>
+  String(settings?.apiKey || "").trim() || volatilePreviewApiKey;
 
 const defaultCapabilities = () => [
   {
@@ -299,6 +423,8 @@ const STARTER_SKILL_SEEDS = [
       "Use when the request is broad, multi-step, or likely to branch into implementation plus verification.",
   },
 ];
+const LEGACY_STARTER_SKILL_CATALOG_VERSION = 1;
+const STARTER_SKILL_CATALOG_VERSION = 2;
 
 const toPreview = (value, limit = 92) => {
   const compact = String(value || "")
@@ -334,6 +460,16 @@ const resolveActiveId = (value, items) => {
     return parsedValue;
   }
   return normalizedItems[0]?.id || 0;
+};
+
+const ensureExistingItem = (items, id, label) => {
+  const parsedId = Number(id) || 0;
+  const normalizedItems = Array.isArray(items) ? items : [];
+  const exists = parsedId > 0 && normalizedItems.some((item) => item?.id === parsedId);
+  if (!exists) {
+    throw new Error(`${label} not found.`);
+  }
+  return parsedId;
 };
 
 const createSeedSession = (id, title = storageT("newMission"), skillIds = []) => {
@@ -427,7 +563,16 @@ const findStarterSeed = (skillName) => {
   );
 };
 
-const mergeStarterSkillCatalog = (skills) => {
+const normalizeStarterSkillTombstones = (values) =>
+  [
+    ...new Set(
+      (Array.isArray(values) ? values : [])
+        .map((value) => findStarterSeed(value)?.name)
+        .filter(Boolean)
+    ),
+  ].sort();
+
+const inferStarterSkillTombstones = (skills) => {
   const normalizedSkills = Array.isArray(skills) ? skills.filter(Boolean) : [];
   const existingStarterNames = new Set(
     normalizedSkills
@@ -435,8 +580,25 @@ const mergeStarterSkillCatalog = (skills) => {
       .filter(Boolean)
       .map((seed) => seed.name)
   );
+
+  return STARTER_SKILL_SEEDS.filter((seed) => !existingStarterNames.has(seed.name)).map(
+    (seed) => seed.name
+  );
+};
+
+const mergeStarterSkillCatalog = (skills, tombstones = []) => {
+  const normalizedSkills = Array.isArray(skills) ? skills.filter(Boolean) : [];
+  const existingStarterNames = new Set(
+    normalizedSkills
+      .map((skill) => findStarterSeed(skill?.name))
+      .filter(Boolean)
+      .map((seed) => seed.name)
+  );
+  const tombstoneNames = new Set(normalizeStarterSkillTombstones(tombstones));
   const maxSkillId = Math.max(0, ...normalizedSkills.map((skill) => Number(skill?.id) || 0));
-  const missingStarterSeeds = STARTER_SKILL_SEEDS.filter((seed) => !existingStarterNames.has(seed.name));
+  const missingStarterSeeds = STARTER_SKILL_SEEDS.filter(
+    (seed) => !existingStarterNames.has(seed.name) && !tombstoneNames.has(seed.name)
+  );
 
   if (missingStarterSeeds.length === 0) {
     return normalizedSkills;
@@ -448,6 +610,23 @@ const mergeStarterSkillCatalog = (skills) => {
     );
 
   return [...normalizedSkills, ...fallbackSkills];
+};
+
+const ensureWorkspaceSkills = (skills, nextSkillId) => {
+  const normalizedSkills = Array.isArray(skills) ? skills.filter(Boolean) : [];
+  const resolvedNextSkillId = Math.max(Number(nextSkillId) || 0, 1);
+
+  if (normalizedSkills.length > 0) {
+    return {
+      skills: normalizedSkills,
+      nextSkillId: resolvedNextSkillId,
+    };
+  }
+
+  return {
+    skills: [createCustomSkill(resolvedNextSkillId)],
+    nextSkillId: resolvedNextSkillId + 1,
+  };
 };
 
 const pruneDisabledSessionSkillIds = (sessions, enabledSkillIds) =>
@@ -468,7 +647,8 @@ const createInitialWorkspace = () => {
   return {
     settings: defaultSettings(),
     capabilities: defaultCapabilities(),
-    starterSkillCatalogSeeded: true,
+    starterSkillCatalogVersion: STARTER_SKILL_CATALOG_VERSION,
+    starterSkillTombstones: [],
     nextSessionId: 2,
     nextNoteId: 2,
     nextReminderId: 1,
@@ -587,89 +767,179 @@ const normalizeSession = (session, fallbackSkillIds = []) => {
   };
 };
 
-const readWorkspace = () => {
+const hydrateWorkspace = (raw) => {
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed.sessions) || parsed.sessions.length === 0) {
+    throw new Error("Preview workspace sessions are missing.");
+  }
+
+  const legacyPersistedApiKey = String(parsed?.settings?.apiKey || "").trim();
+  if (legacyPersistedApiKey && !readPersistedPreviewApiKey()) {
+    try {
+      writePersistedPreviewApiKey(legacyPersistedApiKey);
+    } catch (error) {
+      console.error("Failed to migrate preview api key", error);
+    }
+  }
+
+  const notes =
+    Array.isArray(parsed.notes) && parsed.notes.length > 0 ? parsed.notes : [createSeedNote(1)];
+  const reminders =
+    Array.isArray(parsed.reminders) && parsed.reminders.length > 0
+      ? parsed.reminders.map(normalizeReminder).filter(Boolean)
+      : [];
+  const fallbackStarterSkills = createStarterSkills(1);
+  const storedCatalogVersion = Number(parsed.starterSkillCatalogVersion);
+  const starterSkillCatalogVersion =
+    Number.isInteger(storedCatalogVersion) && storedCatalogVersion > 0
+      ? storedCatalogVersion
+      : parsed.starterSkillCatalogSeeded
+        ? LEGACY_STARTER_SKILL_CATALOG_VERSION
+        : 0;
+  const parsedSkills = Array.isArray(parsed.skills)
+    ? parsed.skills.map(normalizeSkill).filter(Boolean)
+    : fallbackStarterSkills;
+  const starterSkillTombstones = normalizeStarterSkillTombstones(
+    Array.isArray(parsed.starterSkillTombstones)
+      ? parsed.starterSkillTombstones
+      : starterSkillCatalogVersion > 0
+        ? inferStarterSkillTombstones(parsedSkills)
+        : []
+  );
+  const mergedSkills =
+    starterSkillCatalogVersion < STARTER_SKILL_CATALOG_VERSION
+      ? mergeStarterSkillCatalog(parsedSkills, starterSkillTombstones)
+      : parsedSkills;
+  const { skills, nextSkillId } = ensureWorkspaceSkills(
+    mergedSkills,
+    resolveNextId(parsed.nextSkillId, mergedSkills)
+  );
+  const enabledSkillIds = skills.filter((skill) => skill.enabled).map((skill) => skill.id);
+  const hasMountedSkillData = parsed.sessions.some((session) =>
+    Object.prototype.hasOwnProperty.call(session || {}, "skillIds")
+  );
+  const sessions = pruneDisabledSessionSkillIds(
+    parsed.sessions
+      .map((session) => normalizeSession(session, hasMountedSkillData ? [] : enabledSkillIds))
+      .filter((session) => session && session.id > 0),
+    enabledSkillIds
+  );
+
+  if (sessions.length === 0) {
+    throw new Error("Preview workspace does not contain any valid sessions.");
+  }
+
+  return {
+    settings: hydratePreviewSettings(parsed.settings),
+    capabilities: defaultCapabilities(),
+    starterSkillCatalogVersion: STARTER_SKILL_CATALOG_VERSION,
+    starterSkillTombstones,
+    nextSessionId: resolveNextId(parsed.nextSessionId, sessions),
+    nextNoteId: resolveNextId(parsed.nextNoteId, notes),
+    nextReminderId: resolveNextId(parsed.nextReminderId, reminders),
+    nextSkillId,
+    activeSessionId: resolveActiveId(parsed.activeSessionId, sessions),
+    activeNoteId: resolveActiveId(parsed.activeNoteId, notes),
+    activeSkillId: resolveActiveId(parsed.activeSkillId, skills),
+    sessions,
+    notes,
+    reminders,
+    skills,
+  };
+};
+
+const backupCorruptWorkspaceRecord = (raw, error) => {
+  if (typeof window === "undefined" || !raw) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      CORRUPT_WORKSPACE_BACKUP_STORAGE_KEY,
+      JSON.stringify({
+        raw,
+        reason: describeStorageError(error),
+        backedUpAt: now(),
+      })
+    );
+  } catch (backupError) {
+    console.error("Failed to back up corrupt preview workspace", backupError);
+  }
+};
+
+const readWorkspaceRecord = () => {
+  if (typeof window === "undefined") {
+    return {
+      raw: null,
+      workspace: createInitialWorkspace(),
+      persistOnBootstrap: false,
+    };
+  }
+
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      return createInitialWorkspace();
+      return {
+        raw: null,
+        workspace: createInitialWorkspace(),
+        persistOnBootstrap: true,
+      };
     }
 
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed.sessions) || parsed.sessions.length === 0) {
-      return createInitialWorkspace();
-    }
-
-    const notes =
-      Array.isArray(parsed.notes) && parsed.notes.length > 0 ? parsed.notes : [createSeedNote(1)];
-    const reminders =
-      Array.isArray(parsed.reminders) && parsed.reminders.length > 0
-        ? parsed.reminders.map(normalizeReminder).filter(Boolean)
-        : [];
-    const fallbackStarterSkills = createStarterSkills(1);
-    const starterSkillCatalogSeeded = Boolean(parsed.starterSkillCatalogSeeded);
-    const parsedSkills =
-      Array.isArray(parsed.skills) && parsed.skills.length > 0
-        ? parsed.skills.map(normalizeSkill).filter(Boolean)
-        : fallbackStarterSkills;
-    const skills = starterSkillCatalogSeeded
-      ? parsedSkills
-      : mergeStarterSkillCatalog(parsedSkills);
-    const enabledSkillIds = skills.filter((skill) => skill.enabled).map((skill) => skill.id);
-    const hasMountedSkillData = parsed.sessions.some((session) =>
-      Object.prototype.hasOwnProperty.call(session || {}, "skillIds")
-    );
-    const sessions = pruneDisabledSessionSkillIds(
-      parsed.sessions
-      .map((session) => normalizeSession(session, hasMountedSkillData ? [] : enabledSkillIds))
-      .filter((session) => session && session.id > 0),
-      enabledSkillIds
-    );
-
-    if (sessions.length === 0) {
-      return createInitialWorkspace();
-    }
-
+    const workspace = hydrateWorkspace(raw);
     return {
-      settings: { ...defaultSettings(), ...(parsed.settings || {}) },
-      capabilities: defaultCapabilities(),
-      starterSkillCatalogSeeded: true,
-      nextSessionId: resolveNextId(parsed.nextSessionId, sessions),
-      nextNoteId: resolveNextId(parsed.nextNoteId, notes),
-      nextReminderId: resolveNextId(parsed.nextReminderId, reminders),
-      nextSkillId: resolveNextId(parsed.nextSkillId, skills),
-      activeSessionId: resolveActiveId(parsed.activeSessionId, sessions),
-      activeNoteId: resolveActiveId(parsed.activeNoteId, notes),
-      activeSkillId: resolveActiveId(parsed.activeSkillId, skills),
-      sessions,
-      notes,
-      reminders,
-      skills,
+      raw,
+      workspace,
+      persistOnBootstrap: serializeWorkspace(workspace) !== raw,
     };
   } catch (error) {
     console.error("Failed to read preview workspace", error);
-    return createInitialWorkspace();
+    const raw = (() => {
+      try {
+        return window.localStorage.getItem(STORAGE_KEY);
+      } catch {
+        return null;
+      }
+    })();
+    backupCorruptWorkspaceRecord(raw, error);
+    return {
+      raw,
+      workspace: createInitialWorkspace(),
+      persistOnBootstrap: false,
+    };
+  }
+};
+
+const serializeWorkspace = (workspace) =>
+  JSON.stringify({
+    settings: sanitizeSettingsForPersistence(workspace.settings),
+    starterSkillCatalogVersion:
+      Number(workspace.starterSkillCatalogVersion) || STARTER_SKILL_CATALOG_VERSION,
+    starterSkillTombstones: normalizeStarterSkillTombstones(workspace.starterSkillTombstones),
+    nextSessionId: workspace.nextSessionId,
+    nextNoteId: workspace.nextNoteId,
+    nextReminderId: workspace.nextReminderId,
+    nextSkillId: workspace.nextSkillId,
+    activeSessionId: workspace.activeSessionId,
+    activeNoteId: workspace.activeNoteId,
+    activeSkillId: workspace.activeSkillId,
+    sessions: workspace.sessions,
+    notes: workspace.notes,
+    reminders: workspace.reminders,
+    skills: workspace.skills,
+  });
+
+const persistSerializedWorkspace = (serializedWorkspace) => {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, serializedWorkspace);
+  } catch (error) {
+    console.error("Failed to write preview workspace", error);
+    throw new Error("Failed to persist preview workspace. Local storage may be full.");
   }
 };
 
 const writeWorkspace = (workspace) => {
-  window.localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({
-      settings: workspace.settings,
-      starterSkillCatalogSeeded: workspace.starterSkillCatalogSeeded !== false,
-      nextSessionId: workspace.nextSessionId,
-      nextNoteId: workspace.nextNoteId,
-      nextReminderId: workspace.nextReminderId,
-      nextSkillId: workspace.nextSkillId,
-      activeSessionId: workspace.activeSessionId,
-      activeNoteId: workspace.activeNoteId,
-      activeSkillId: workspace.activeSkillId,
-      sessions: workspace.sessions,
-      notes: workspace.notes,
-      reminders: workspace.reminders,
-      skills: workspace.skills,
-    })
-  );
+  persistSerializedWorkspace(serializeWorkspace(workspace));
 };
 
 const noteSummary = (note) => ({
@@ -773,9 +1043,7 @@ const recommendSessionSkillsStable = (session, skills, limit = 4) => {
       const uniqueTerms = [...new Set(matchedTerms)].slice(0, 3);
       const recommendationReason =
         uniqueTerms.length > 0
-          ? isZh
-            ? `匹配到当前会话里的关键词：${uniqueTerms.join(" / ")}。`
-            : `Matched session topics: ${uniqueTerms.join(" / ")}.`
+          ? buildRecommendationReason(isZh ? "zh-CN" : "en-US", uniqueTerms)
           : "";
       return { score, skill, recommendationReason };
     })
@@ -890,21 +1158,45 @@ const buildSnapshot = (
 };
 
 const updateWorkspace = (mutator) => {
-  const current = readWorkspace();
-  const next = mutator(current);
-  writeWorkspace(next);
-  return next;
+  for (let attempt = 0; attempt < PREVIEW_WRITE_MAX_RETRIES; attempt += 1) {
+    const { raw: currentRaw, workspace: current } = readWorkspaceRecord();
+    const next = mutator(current);
+    const serializedNext = serializeWorkspace(next);
+
+    try {
+      const latestRaw = window.localStorage.getItem(STORAGE_KEY);
+      if (latestRaw !== currentRaw) {
+        continue;
+      }
+
+      persistSerializedWorkspace(serializedNext);
+
+      if (window.localStorage.getItem(STORAGE_KEY) === serializedNext) {
+        return next;
+      }
+    } catch (error) {
+      console.error("Failed to update preview workspace", error);
+      throw new Error("Failed to persist preview workspace. Local storage may be full.");
+    }
+  }
+
+  throw new Error(storageT("concurrentEditConflict"));
 };
 
 const localBootstrap = async () => {
-  const workspace = readWorkspace();
-  writeWorkspace(workspace);
+  const { workspace, persistOnBootstrap } = readWorkspaceRecord();
+  if (persistOnBootstrap) {
+    writeWorkspace(workspace);
+  }
   return buildSnapshot(workspace);
 };
 
 const localOpenSession = async (sessionId) =>
   buildSnapshot(
-    updateWorkspace((workspace) => ({ ...workspace, activeSessionId: sessionId })),
+    updateWorkspace((workspace) => ({
+      ...workspace,
+      activeSessionId: ensureExistingItem(workspace.sessions, sessionId, "Session"),
+    })),
     sessionId,
     undefined,
     undefined
@@ -926,7 +1218,8 @@ const localCreateSession = async (title) => {
 
 const localDeleteSession = async (sessionId) => {
   const workspace = updateWorkspace((current) => {
-    const remaining = current.sessions.filter((session) => session.id !== sessionId);
+    const ensuredSessionId = ensureExistingItem(current.sessions, sessionId, "Session");
+    const remaining = current.sessions.filter((session) => session.id !== ensuredSessionId);
     const sessions = remaining.length > 0 ? remaining : [createSeedSession(current.nextSessionId)];
     const nextSessionId =
       remaining.length > 0 ? current.nextSessionId : current.nextSessionId + 1;
@@ -941,22 +1234,44 @@ const localDeleteSession = async (sessionId) => {
 };
 
 const localSaveSettings = async ({ settings, activeSessionId }) => {
-  const workspace = updateWorkspace((current) => ({
-    ...current,
-    settings: {
-      providerName: settings.providerName?.trim() || "OpenAI Compatible",
-      baseUrl: settings.baseUrl?.trim() || "https://api.openai.com/v1",
-      apiKey: settings.apiKey?.trim() || "",
-      model: settings.model?.trim() || "gpt-4.1-mini",
-      systemPrompt: settings.systemPrompt?.trim() || storageT("systemPrompt"),
-    },
-  }));
-  return buildSnapshot(workspace, activeSessionId);
+  const previousApiKey = readPersistedPreviewApiKey();
+  const nextApiKey = settings.apiKey?.trim();
+  const resolvedApiKey =
+    settings.clearApiKey && !nextApiKey ? "" : nextApiKey || previousApiKey;
+
+  try {
+    writePersistedPreviewApiKey(resolvedApiKey);
+    const workspace = updateWorkspace((current) => ({
+      ...current,
+      settings: {
+        providerName: settings.providerName?.trim() || "OpenAI Compatible",
+        baseUrl: settings.baseUrl?.trim() || "https://api.openai.com/v1",
+        clearApiKey: false,
+        hasApiKey: Boolean(resolvedApiKey),
+        apiKey: "",
+        model: settings.model?.trim() || "gpt-4.1-mini",
+        systemPrompt: settings.systemPrompt?.trim() || storageT("systemPrompt"),
+      },
+    }));
+    return buildSnapshot(workspace, activeSessionId);
+  } catch (error) {
+    try {
+      writePersistedPreviewApiKey(previousApiKey);
+    } catch (rollbackError) {
+      throw new Error(
+        `${describeStorageError(error)} Rollback failed: ${describeStorageError(rollbackError)}`
+      );
+    }
+    throw error;
+  }
 };
 
 const localOpenKnowledgeNote = async ({ noteId, activeSessionId }) =>
   buildSnapshot(
-    updateWorkspace((workspace) => ({ ...workspace, activeNoteId: noteId })),
+    updateWorkspace((workspace) => ({
+      ...workspace,
+      activeNoteId: ensureExistingItem(workspace.notes, noteId, "Knowledge note"),
+    })),
     activeSessionId,
     noteId
   );
@@ -977,12 +1292,13 @@ const localCreateKnowledgeNote = async ({ title, activeSessionId }) => {
 
 const localSaveKnowledgeNote = async ({ note, activeSessionId }) => {
   const workspace = updateWorkspace((current) => {
+    const noteId = ensureExistingItem(current.notes, note?.id, "Knowledge note");
     const timestamp = now();
     return {
       ...current,
-      activeNoteId: note.id,
+      activeNoteId: noteId,
       notes: current.notes.map((item) =>
-        item.id === note.id
+        item.id === noteId
           ? {
               ...item,
               icon: note.icon?.trim() || "*",
@@ -1002,11 +1318,12 @@ const localSaveKnowledgeNote = async ({ note, activeSessionId }) => {
 
 const localDeleteKnowledgeNote = async ({ noteId, activeSessionId }) => {
   const workspace = updateWorkspace((current) => {
-    const remaining = current.notes.filter((note) => note.id !== noteId);
+    const ensuredNoteId = ensureExistingItem(current.notes, noteId, "Knowledge note");
+    const remaining = current.notes.filter((note) => note.id !== ensuredNoteId);
     const notes = remaining.length > 0 ? remaining : [createSeedNote(current.nextNoteId)];
     const nextNoteId = remaining.length > 0 ? current.nextNoteId : current.nextNoteId + 1;
     const reminders = current.reminders.map((reminder) =>
-      reminder.linkedNoteId === noteId ? { ...reminder, linkedNoteId: null } : reminder
+      reminder.linkedNoteId === ensuredNoteId ? { ...reminder, linkedNoteId: null } : reminder
     );
     return {
       ...current,
@@ -1046,9 +1363,16 @@ const localCreateReminder = async ({ title, activeSessionId }) => {
 
 const localSaveReminder = async ({ reminder, activeSessionId }) => {
   const workspace = updateWorkspace((current) => {
+    const reminderId = ensureExistingItem(current.reminders, reminder?.id, "Reminder");
     const timestamp = now();
+    const linkedNoteId =
+      typeof reminder.linkedNoteId === "number" &&
+      reminder.linkedNoteId > 0 &&
+      current.notes.some((item) => item.id === reminder.linkedNoteId)
+        ? reminder.linkedNoteId
+        : null;
     const nextReminder = {
-      id: reminder.id,
+      id: reminderId,
       title: reminder.title?.trim() || storageT("newReminder"),
       detail: reminder.detail?.trim() || "",
       dueAt:
@@ -1059,19 +1383,16 @@ const localSaveReminder = async ({ reminder, activeSessionId }) => {
         ? reminder.severity
         : "medium",
       status: reminder.status === "done" ? "done" : "scheduled",
-      linkedNoteId:
-        typeof reminder.linkedNoteId === "number" && reminder.linkedNoteId > 0
-          ? reminder.linkedNoteId
-          : null,
+      linkedNoteId,
       createdAt:
-        current.reminders.find((item) => item.id === reminder.id)?.createdAt || timestamp,
+        current.reminders.find((item) => item.id === reminderId)?.createdAt || timestamp,
       updatedAt: timestamp,
     };
 
     return {
       ...current,
       reminders: current.reminders.map((item) =>
-        item.id === reminder.id ? nextReminder : item
+        item.id === reminderId ? nextReminder : item
       ),
     };
   });
@@ -1079,17 +1400,20 @@ const localSaveReminder = async ({ reminder, activeSessionId }) => {
 };
 
 const localDeleteReminder = async ({ reminderId, activeSessionId }) => {
-  const workspace = updateWorkspace((current) => ({
-    ...current,
-    reminders: current.reminders.filter((reminder) => reminder.id !== reminderId),
-  }));
+  const workspace = updateWorkspace((current) => {
+    const ensuredReminderId = ensureExistingItem(current.reminders, reminderId, "Reminder");
+    return {
+      ...current,
+      reminders: current.reminders.filter((reminder) => reminder.id !== ensuredReminderId),
+    };
+  });
   return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId);
 };
 
 const localOpenSkill = async ({ skillId, activeSessionId }) => {
   const workspace = updateWorkspace((current) => ({
     ...current,
-    activeSkillId: skillId,
+    activeSkillId: ensureExistingItem(current.skills, skillId, "Skill"),
   }));
   return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId, skillId);
 };
@@ -1119,13 +1443,14 @@ const localCreateSkill = async ({ name, activeSessionId }) => {
 
 const localSaveSkill = async ({ skill, activeSessionId }) => {
   const workspace = updateWorkspace((current) => {
+    const skillId = ensureExistingItem(current.skills, skill?.id, "Skill");
     const timestamp = now();
     const nextEnabled = Boolean(skill.enabled);
     return {
       ...current,
-      activeSkillId: skill.id,
+      activeSkillId: skillId,
       skills: current.skills.map((item) =>
-        item.id === skill.id
+        item.id === skillId
           ? {
               ...item,
               name: skill.name?.trim() || storageT("newSkill"),
@@ -1142,7 +1467,7 @@ const localSaveSkill = async ({ skill, activeSessionId }) => {
         ? current.sessions
         : current.sessions.map((session) => {
             const previousSkillIds = dedupeIds(session.skillIds || []);
-            const nextSkillIds = previousSkillIds.filter((id) => id !== skill.id);
+            const nextSkillIds = previousSkillIds.filter((id) => id !== skillId);
             return nextSkillIds.length === previousSkillIds.length
               ? session
               : {
@@ -1150,7 +1475,7 @@ const localSaveSkill = async ({ skill, activeSessionId }) => {
                   skillIds: nextSkillIds,
                   updatedAt: timestamp,
                 };
-          }),
+      }),
     };
   });
   return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId, skill.id);
@@ -1159,47 +1484,78 @@ const localSaveSkill = async ({ skill, activeSessionId }) => {
 const localDeleteSkill = async ({ skillId, activeSessionId }) => {
   const workspace = updateWorkspace((current) => {
     const timestamp = now();
-    const remaining = current.skills.filter((skill) => skill.id !== skillId);
-    const skills = remaining.length > 0 ? remaining : createStarterSkills(current.nextSkillId);
-    const nextSkillId =
-      remaining.length > 0 ? current.nextSkillId : current.nextSkillId + STARTER_SKILL_SEEDS.length;
+    const ensuredSkillId = ensureExistingItem(current.skills, skillId, "Skill");
+    const deletedSkill = current.skills.find((skill) => skill.id === ensuredSkillId);
+    const deletedStarterName = findStarterSeed(deletedSkill?.name)?.name;
+    const remaining = current.skills.filter((skill) => skill.id !== ensuredSkillId);
+    const fallbackSkill =
+      remaining.length > 0 ? null : createCustomSkill(Math.max(current.nextSkillId, 1));
+    const skills = remaining.length > 0 ? remaining : [fallbackSkill];
+    const nextSkillId = remaining.length > 0 ? current.nextSkillId : fallbackSkill.id + 1;
+    const starterSkillTombstones = deletedStarterName
+      ? normalizeStarterSkillTombstones([
+          ...(current.starterSkillTombstones || []),
+          deletedStarterName,
+        ])
+      : normalizeStarterSkillTombstones(current.starterSkillTombstones);
     return {
       ...current,
+      starterSkillCatalogVersion: STARTER_SKILL_CATALOG_VERSION,
+      starterSkillTombstones,
       nextSkillId,
       skills,
       sessions: current.sessions.map((session) => {
         const previousSkillIds = dedupeIds(session.skillIds || []);
-        const nextSkillIds = previousSkillIds.filter((id) => id !== skillId);
+        const nextSkillIds = previousSkillIds.filter((id) => id !== ensuredSkillId);
         return nextSkillIds.length === previousSkillIds.length
           ? session
           : {
               ...session,
               skillIds: nextSkillIds,
               updatedAt: timestamp,
-            };
+          };
       }),
-      activeSkillId: skills[0].id,
+      activeSkillId: skills.some((skill) => skill.id === current.activeSkillId)
+        ? current.activeSkillId
+        : skills[0].id,
     };
   });
   return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId, workspace.activeSkillId);
 };
 
 const localSaveSessionSkills = async ({ sessionId, skillIds, activeSessionId }) => {
-  const workspace = updateWorkspace((current) => ({
-    ...current,
-    activeSessionId: activeSessionId || sessionId,
-    sessions: current.sessions.map((session) =>
-      session.id === sessionId
-        ? {
-            ...session,
-            updatedAt: now(),
-            skillIds: dedupeIds(skillIds).filter((skillId) =>
-              current.skills.some((skill) => skill.id === skillId && skill.enabled)
-            ),
-          }
-        : session
-    ),
-  }));
+  const workspace = updateWorkspace((current) => {
+    const ensuredSessionId = ensureExistingItem(current.sessions, sessionId, "Session");
+    const nextActiveSessionId = activeSessionId
+      ? ensureExistingItem(current.sessions, activeSessionId, "Session")
+      : ensuredSessionId;
+
+    return {
+      ...current,
+      activeSessionId: nextActiveSessionId,
+      sessions: current.sessions.map((session) =>
+        session.id === ensuredSessionId
+          ? (() => {
+              const previousSkillIds = dedupeIds(session.skillIds || []);
+              const nextSkillIds = dedupeIds(skillIds).filter((skillId) =>
+                current.skills.some((skill) => skill.id === skillId && skill.enabled)
+              );
+              const unchanged =
+                previousSkillIds.length === nextSkillIds.length &&
+                previousSkillIds.every((skillId, index) => skillId === nextSkillIds[index]);
+              if (unchanged) {
+                return session;
+              }
+              return {
+                ...session,
+                updatedAt: now(),
+                skillIds: nextSkillIds,
+              };
+            })()
+          : session
+      ),
+    };
+  });
 
   return buildSnapshot(
     workspace,
@@ -1226,6 +1582,18 @@ const localForgeSkill = async ({ existingSkill, lang, prompt, settings }) => {
       return sanitizeGeneratedSkill(generated, existingSkill, lang);
     } catch (error) {
       console.error("Model skill generation failed, falling back to local draft", error);
+      return sanitizeGeneratedSkill(
+        {
+          ...buildLocalSkillDraft({
+            existingSkill,
+            prompt: text,
+            lang,
+          }),
+          warning: buildSkillGenerationFallbackWarning(lang, error),
+        },
+        existingSkill,
+        lang
+      );
     }
   }
 
@@ -1247,14 +1615,17 @@ const localRunAgent = async ({ sessionId, prompt }) => {
   }
 
   const workspace = updateWorkspace((current) => {
+    const ensuredSessionId = ensureExistingItem(current.sessions, sessionId, "Session");
     const timestamp = now();
     const sessions = current.sessions.map((session) => {
-      if (session.id !== sessionId) {
+      if (session.id !== ensuredSessionId) {
         return session;
       }
 
       const providerReady =
-        current.settings.apiKey && current.settings.baseUrl && current.settings.model;
+        resolvePreviewApiKey(current.settings) &&
+        current.settings.baseUrl &&
+        current.settings.model;
       const mountedSkillIds = dedupeIds(session.skillIds);
       const enabledSkills = current.skills.filter(
         (skill) => skill.enabled && mountedSkillIds.includes(skill.id)
@@ -1327,7 +1698,7 @@ const localRunAgent = async ({ sessionId, prompt }) => {
 
     return {
       ...current,
-      activeSessionId: sessionId,
+      activeSessionId: ensuredSessionId,
       sessions,
     };
   });
@@ -1336,14 +1707,14 @@ const localRunAgent = async ({ sessionId, prompt }) => {
 };
 
 const isSkillGenerationReady = (settings) =>
-  Boolean(settings?.baseUrl?.trim() && settings?.apiKey?.trim() && settings?.model?.trim());
+  Boolean(settings?.baseUrl?.trim() && resolvePreviewApiKey(settings) && settings?.model?.trim());
 
 const requestSkillDraftFromModel = async ({ existingSkill, lang, prompt, settings }) => {
   const endpoint = `${String(settings.baseUrl || "").replace(/\/+$/, "")}/chat/completions`;
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${settings.apiKey}`,
+      Authorization: `Bearer ${resolvePreviewApiKey(settings)}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -1419,39 +1790,30 @@ const buildLocalSkillDraft = ({ existingSkill, prompt, lang }) => {
     .find(Boolean)
     ?.trim()
     ?.slice(0, 28);
-
-  if (lang === "zh-CN") {
-    return {
-      name: titleSeed || existingSkill?.name || "生成技能",
-      description: `根据以下需求生成的本地草稿：${trimForTemplate(text, 88)}`,
-      triggerHint: `当任务涉及以下内容时使用：${trimForTemplate(text, 72)}`,
-      instructions:
-        `将以下目标解释成一个可复用的低权限技能，并据此调整你的执行方式：${trimForTemplate(text, 180)}\n\n` +
-        "优先显式规划，清楚说明假设，除非操作者明确要求，否则避免破坏性操作。",
-    };
-  }
-
+  const draftText = localizedSkillDraftText(lang);
   return {
-    name: titleSeed || existingSkill?.name || "Generated skill",
-    description: `Locally generated draft for: ${trimForTemplate(text, 88)}`,
-    triggerHint: `Use when the request is about: ${trimForTemplate(text, 72)}`,
+    name: titleSeed || existingSkill?.name || draftText.generatedSkillName,
+    description: `${draftText.descriptionPrefix}${trimForTemplate(text, 88)}`,
+    triggerHint: `${draftText.triggerPrefix}${trimForTemplate(text, 72)}`,
     instructions:
-      `Interpret the following goal as a reusable low-permission skill and bias your execution accordingly: ${trimForTemplate(text, 180)}\n\n` +
-      "Prefer explicit planning, keep assumptions visible, and avoid destructive actions unless the operator clearly requests them.",
+      `${draftText.instructionsPrefix}${trimForTemplate(text, 180)}\n\n` +
+      draftText.instructionsSuffix,
   };
 };
 
 const sanitizeGeneratedSkill = (skill, existingSkill, lang) => ({
+  // Keep the localized fallback name in one place so preview and forge paths stay aligned.
   name: String(
     skill?.name ||
       existingSkill?.name ||
-      (lang === "zh-CN" ? "生成技能" : "Generated skill")
+      localizedSkillDraftText(lang).generatedSkillName
   )
     .trim()
     .slice(0, 64),
   description: String(skill?.description || existingSkill?.description || "").trim(),
   triggerHint: String(skill?.triggerHint || existingSkill?.triggerHint || "").trim(),
   instructions: String(skill?.instructions || existingSkill?.instructions || "").trim(),
+  warning: String(skill?.warning || "").trim(),
 });
 
 const trimForTemplate = (value, limit) => {
@@ -1460,6 +1822,13 @@ const trimForTemplate = (value, limit) => {
     return compact;
   }
   return `${compact.slice(0, limit)}...`;
+};
+
+const buildSkillGenerationFallbackWarning = (lang, error) => {
+  const detail = trimForTemplate(String(error?.message || error || ""), 180) || "Unknown error.";
+  return lang === "zh-CN"
+    ? `模型技能生成失败，已退回到本地草稿构建：${detail}`
+    : `Model skill generation failed, so a local draft was created instead: ${detail}`;
 };
 
 export const bootstrap = async () =>
@@ -1554,3 +1923,34 @@ export const runAgent = async ({ sessionId, prompt }) =>
   isTauriAvailable()
     ? invokeTauri({ cmd: "runAgent", sessionId, prompt })
     : localRunAgent({ sessionId, prompt });
+
+export const __previewTestUtils = {
+  resetPreviewState() {
+    volatilePreviewApiKey = "";
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(PREVIEW_API_KEY_STORAGE_KEY);
+      window.localStorage.removeItem(CORRUPT_WORKSPACE_BACKUP_STORAGE_KEY);
+    }
+  },
+  getResolvedPreviewApiKey(settings) {
+    return resolvePreviewApiKey(settings);
+  },
+  getPersistedPreviewApiKey() {
+    return readPersistedPreviewApiKey();
+  },
+  getPersistedWorkspaceSettings() {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw).settings : null;
+  },
+  getCorruptWorkspaceBackup() {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    const raw = window.localStorage.getItem(CORRUPT_WORKSPACE_BACKUP_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  },
+};

@@ -16,6 +16,7 @@ const DICTS = {
 
 const DEFAULT_LANG = "zh-CN";
 const LANG_STORAGE_KEY = "mmgh-lang";
+export const LANG_PERSIST_ERROR_EVENT = "mmgh:lang-persist-error";
 
 const I18nContext = createContext({
   lang: DEFAULT_LANG,
@@ -43,16 +44,46 @@ const normalizeLang = (value) => {
   return DEFAULT_LANG;
 };
 
+const readStoredLang = () => {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    return window.localStorage.getItem(LANG_STORAGE_KEY) || "";
+  } catch (error) {
+    console.error("Failed to read language preference", error);
+    return "";
+  }
+};
+
+const persistLang = (lang) => {
+  if (typeof window === "undefined") {
+    return true;
+  }
+
+  try {
+    window.localStorage.setItem(LANG_STORAGE_KEY, lang);
+    return true;
+  } catch (error) {
+    console.error("Failed to persist language preference", error);
+    window.dispatchEvent(
+      new CustomEvent(LANG_PERSIST_ERROR_EVENT, {
+        detail: error,
+      })
+    );
+    return false;
+  }
+};
+
 const getInitialLang = (initialLang) => {
   if (initialLang) {
     return normalizeLang(initialLang);
   }
 
-  if (typeof window !== "undefined") {
-    const savedLang = window.localStorage.getItem(LANG_STORAGE_KEY);
-    if (savedLang) {
-      return normalizeLang(savedLang);
-    }
+  const savedLang = readStoredLang();
+  if (savedLang) {
+    return normalizeLang(savedLang);
   }
 
   if (typeof navigator !== "undefined") {
@@ -73,15 +104,19 @@ const formatMessage = (message, vars) => {
 };
 
 export const I18nProvider = ({ children, initialLang }) => {
-  const [lang, setLang] = useState(() => getInitialLang(initialLang));
+  const [lang, setLangState] = useState(() => getInitialLang(initialLang));
 
   useEffect(() => {
     if (typeof document !== "undefined") {
       document.documentElement.lang = lang;
     }
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(LANG_STORAGE_KEY, lang);
-    }
+  }, [lang]);
+
+  const setLang = useCallback((nextLang) => {
+    const resolvedLang =
+      typeof nextLang === "function" ? normalizeLang(nextLang(lang)) : normalizeLang(nextLang);
+    persistLang(resolvedLang);
+    setLangState(resolvedLang);
   }, [lang]);
 
   const t = useCallback(
@@ -94,7 +129,7 @@ export const I18nProvider = ({ children, initialLang }) => {
     [lang]
   );
 
-  const value = useMemo(() => ({ lang, setLang, t }), [lang, t]);
+  const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 };

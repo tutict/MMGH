@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 
 const OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
@@ -8,6 +8,7 @@ const WEATHER_RECENT_SEARCHES_STORAGE_KEY = "mmgh-weather-recent-searches-v1";
 const WEATHER_USAGE_STORAGE_KEY = "mmgh-weather-usage-v1";
 const MAX_RECENT_SEARCHES = 6;
 const MAX_COMMON_CITY_SUGGESTIONS = 6;
+const WEATHER_AUX_CACHE_WRITE_MAX_RETRIES = 5;
 
 export const WEATHER_LOCATIONS = [
   {
@@ -120,7 +121,9 @@ export async function searchWeatherLocations(query, lang, options = {}) {
 }
 
 function WeatherWorkspace({
+  auxiliaryCacheVersion,
   clockNow,
+  onLocalCacheError,
   selectedCityId,
   setSelectedCityId,
   weatherCities,
@@ -136,8 +139,31 @@ function WeatherWorkspace({
   const [searchResults, setSearchResults] = useState([]);
   const [searchStatus, setSearchStatus] = useState("idle");
   const [searchError, setSearchError] = useState("");
+  const searchRequestIdRef = useRef(0);
   const [recentSearches, setRecentSearches] = useState(() => readRecentWeatherSearches());
   const [usageMap, setUsageMap] = useState(() => readWeatherUsageMap());
+
+  const updateRecentSearches = React.useCallback((updater) => {
+    try {
+      const nextRecentSearches = updateStoredRecentWeatherSearches(updater);
+      setRecentSearches(nextRecentSearches);
+      return nextRecentSearches;
+    } catch (error) {
+      onLocalCacheError?.(t("app.settings.cache.writeFailed", { detail: normalizeError(error) }));
+      return null;
+    }
+  }, [onLocalCacheError, t]);
+
+  const updateUsageMap = React.useCallback((updater) => {
+    try {
+      const nextUsageMap = updateStoredWeatherUsageMap(updater);
+      setUsageMap(nextUsageMap);
+      return nextUsageMap;
+    } catch (error) {
+      onLocalCacheError?.(t("app.settings.cache.writeFailed", { detail: normalizeError(error) }));
+      return null;
+    }
+  }, [onLocalCacheError, t]);
 
   const selectedCity = useMemo(
     () =>
@@ -178,6 +204,9 @@ function WeatherWorkspace({
 
   useEffect(() => {
     const keyword = searchQuery.trim();
+    const requestId = searchRequestIdRef.current + 1;
+    searchRequestIdRef.current = requestId;
+
     if (!keyword) {
       setSearchResults([]);
       setSearchStatus("idle");
@@ -193,11 +222,17 @@ function WeatherWorkspace({
         signal: controller.signal,
       })
         .then((results) => {
+          if (searchRequestIdRef.current !== requestId) {
+            return;
+          }
           setSearchResults(results);
           setSearchStatus("ready");
         })
         .catch((error) => {
           if (error?.name === "AbortError") {
+            return;
+          }
+          if (searchRequestIdRef.current !== requestId) {
             return;
           }
           setSearchResults([]);
@@ -213,12 +248,9 @@ function WeatherWorkspace({
   }, [lang, searchQuery]);
 
   useEffect(() => {
-    writeRecentWeatherSearches(recentSearches);
-  }, [recentSearches]);
-
-  useEffect(() => {
-    writeWeatherUsageMap(usageMap);
-  }, [usageMap]);
+    setRecentSearches(readRecentWeatherSearches());
+    setUsageMap(readWeatherUsageMap());
+  }, [auxiliaryCacheVersion]);
 
   const weatherCityIds = useMemo(() => new Set(weatherCities.map((city) => getCityIdentity(city))), [weatherCities]);
   const commonCities = useMemo(
@@ -304,9 +336,12 @@ function WeatherWorkspace({
 
   function rememberCityUsage(city, options = {}) {
     const normalizedCity = sanitizeSearchSuggestion(city);
+    if (!normalizedCity) {
+      return;
+    }
     const cityKey = getCityIdentity(normalizedCity);
 
-    setUsageMap((prev) => ({
+    updateUsageMap((prev) => ({
       ...prev,
       [cityKey]: {
         count: (prev?.[cityKey]?.count || 0) + 1,
@@ -315,12 +350,15 @@ function WeatherWorkspace({
     }));
 
     if (options.includeRecent !== false) {
-      setRecentSearches((prev) => mergeRecentWeatherSearches(prev, normalizedCity));
+      updateRecentSearches((prev) => mergeRecentWeatherSearches(prev, normalizedCity));
     }
   }
 
   function handleSuggestionSelect(city) {
     const normalizedCity = sanitizeSearchSuggestion(city);
+    if (!normalizedCity) {
+      return;
+    }
     const alreadyAdded = weatherCityIds.has(getCityIdentity(normalizedCity));
 
     rememberCityUsage(normalizedCity);
@@ -1225,12 +1263,16 @@ function buildCommonCitySuggestions({ recentSearches, usageMap, weatherCities })
     if (!city) {
       return;
     }
-    const key = getCityIdentity(city);
+    const normalizedCity = sanitizeSearchSuggestion(city);
+    if (!normalizedCity) {
+      return;
+    }
+    const key = getCityIdentity(normalizedCity);
     if (seen.has(key)) {
       return;
     }
     seen.add(key);
-    merged.push(sanitizeSearchSuggestion(city));
+    merged.push(normalizedCity);
   });
 
   return merged.slice(0, MAX_COMMON_CITY_SUGGESTIONS);
@@ -1239,6 +1281,9 @@ function buildCommonCitySuggestions({ recentSearches, usageMap, weatherCities })
 function mergeRecentWeatherSearches(current, city) {
   const normalizedCity = sanitizeSearchSuggestion(city);
   const currentList = Array.isArray(current) ? current : [];
+  if (!normalizedCity) {
+    return currentList.slice(0, MAX_RECENT_SEARCHES);
+  }
   const filtered = currentList.filter(
     (item) => getCityIdentity(item) !== getCityIdentity(normalizedCity)
   );
@@ -1270,37 +1315,84 @@ function sanitizeSearchSuggestion(city) {
   };
 }
 
+function resolveCacheUpdater(current, updater) {
+  return typeof updater === "function" ? updater(current) : updater;
+}
+
+function updateStoredWeatherAuxValue({ key, parseRaw, serialize, updater, cacheLabel }) {
+  if (typeof window === "undefined") {
+    return parseRaw(serialize(resolveCacheUpdater(parseRaw(null), updater)));
+  }
+
+  for (let attempt = 0; attempt < WEATHER_AUX_CACHE_WRITE_MAX_RETRIES; attempt += 1) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      const current = parseRaw(raw);
+      const next = resolveCacheUpdater(current, updater);
+      const serializedNext = serialize(next);
+      const latestRaw = window.localStorage.getItem(key);
+
+      if (latestRaw !== raw) {
+        continue;
+      }
+
+      window.localStorage.setItem(key, serializedNext);
+
+      if (window.localStorage.getItem(key) === serializedNext) {
+        return parseRaw(serializedNext);
+      }
+    } catch (error) {
+      console.error(`Failed to update ${cacheLabel}`, error);
+      throw new Error(`Failed to persist ${cacheLabel}. ${normalizeError(error)}`);
+    }
+  }
+
+  throw new Error(`Failed to persist ${cacheLabel}. Concurrent updates could not be reconciled.`);
+}
+
 function readRecentWeatherSearches() {
   if (typeof window === "undefined") {
     return [];
   }
 
   try {
-    const raw = window.localStorage.getItem(WEATHER_RECENT_SEARCHES_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed.map((city) => sanitizeSearchSuggestion(city)).filter(Boolean);
+    return parseRecentWeatherSearchesRaw(window.localStorage.getItem(WEATHER_RECENT_SEARCHES_STORAGE_KEY));
   } catch (error) {
     console.error("Failed to read recent weather searches", error);
     return [];
   }
 }
 
-function writeRecentWeatherSearches(entries) {
-  if (typeof window === "undefined") {
-    return;
+function parseRecentWeatherSearchesRaw(raw) {
+  if (!raw) {
+    return [];
   }
 
   try {
-    window.localStorage.setItem(WEATHER_RECENT_SEARCHES_STORAGE_KEY, JSON.stringify(entries));
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed.map((city) => sanitizeSearchSuggestion(city)).filter(Boolean);
   } catch (error) {
-    console.error("Failed to write recent weather searches", error);
+    console.error("Failed to parse recent weather searches", error);
+    return [];
   }
+}
+
+function updateStoredRecentWeatherSearches(updater) {
+  return updateStoredWeatherAuxValue({
+    key: WEATHER_RECENT_SEARCHES_STORAGE_KEY,
+    parseRaw: parseRecentWeatherSearchesRaw,
+    serialize: (entries) =>
+      JSON.stringify(
+        (Array.isArray(entries) ? entries : [])
+          .map((entry) => sanitizeSearchSuggestion(entry))
+          .filter(Boolean)
+      ),
+    updater,
+    cacheLabel: "recent weather searches",
+  });
 }
 
 function readWeatherUsageMap() {
@@ -1309,10 +1401,19 @@ function readWeatherUsageMap() {
   }
 
   try {
-    const raw = window.localStorage.getItem(WEATHER_USAGE_STORAGE_KEY);
-    if (!raw) {
-      return {};
-    }
+    return parseWeatherUsageMapRaw(window.localStorage.getItem(WEATHER_USAGE_STORAGE_KEY));
+  } catch (error) {
+    console.error("Failed to read weather usage map", error);
+    return {};
+  }
+}
+
+function parseWeatherUsageMapRaw(raw) {
+  if (!raw) {
+    return {};
+  }
+
+  try {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") {
       return {};
@@ -1333,21 +1434,32 @@ function readWeatherUsageMap() {
       return accumulator;
     }, {});
   } catch (error) {
-    console.error("Failed to read weather usage map", error);
+    console.error("Failed to parse weather usage map", error);
     return {};
   }
 }
 
-function writeWeatherUsageMap(usageMap) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(WEATHER_USAGE_STORAGE_KEY, JSON.stringify(usageMap));
-  } catch (error) {
-    console.error("Failed to write weather usage map", error);
-  }
+function updateStoredWeatherUsageMap(updater) {
+  return updateStoredWeatherAuxValue({
+    key: WEATHER_USAGE_STORAGE_KEY,
+    parseRaw: parseWeatherUsageMapRaw,
+    serialize: (usageMap) =>
+      JSON.stringify(
+        Object.entries(usageMap || {}).reduce((accumulator, [key, value]) => {
+          const city = sanitizeSearchSuggestion(value?.city);
+          if (!city) {
+            return accumulator;
+          }
+          accumulator[key] = {
+            count: Number.isFinite(Number(value?.count)) ? Number(value.count) : 0,
+            city,
+          };
+          return accumulator;
+        }, {})
+      ),
+    updater,
+    cacheLabel: "weather usage cache",
+  });
 }
 
 function matchesCityKeyword(city, keyword) {

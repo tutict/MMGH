@@ -122,6 +122,8 @@ pub enum Cmd {
 pub struct AgentSettingsInput {
   pub provider_name: String,
   pub base_url: String,
+  #[serde(default)]
+  pub clear_api_key: bool,
   pub api_key: String,
   pub model: String,
   pub system_prompt: String,
