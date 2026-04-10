@@ -7280,6 +7280,14 @@ html[data-theme="light"] .message-card__badge.role-assistant {
   color: var(--danger);
 }
 
+.notice-banner {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(217, 161, 72, 0.28);
+  background: rgba(217, 161, 72, 0.12);
+  color: var(--warning);
+}
+
 html[data-theme="light"] .music-stage {
   border-color: rgba(18, 32, 45, 0.08);
 }
@@ -11182,8 +11190,7 @@ html[data-theme="light"] .music-room__library-empty {
       "masthead"
       "headline"
       "status"
-      "actions"
-      "switcher";
+      "actions";
     gap: 16px;
     padding: 18px;
     border-radius: 28px;
@@ -11224,8 +11231,7 @@ html[data-theme="light"] .music-room__library-empty {
   }
 
   .workspace-hero__switcher {
-    margin: 0 -4px;
-    padding: 0 4px 2px;
+    display: none;
   }
 
   .workspace-switcher-button {
@@ -11280,11 +11286,15 @@ html[data-theme="light"] .music-room__library-empty {
   }
 
   .agent-app--with-mini-player {
-    padding-bottom: 276px;
+    padding-bottom: 344px;
+  }
+
+  .agent-app--with-mini-player .mini-player-bar {
+    bottom: calc(112px + env(safe-area-inset-bottom, 0px));
   }
 
   .agent-app--with-mini-player .mobile-dock {
-    bottom: calc(124px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -11367,11 +11377,15 @@ html[data-theme="light"] .music-room__library-empty {
   }
 
   .agent-app--with-mini-player {
-    padding-bottom: 268px;
+    padding-bottom: 328px;
+  }
+
+  .agent-app--with-mini-player .mini-player-bar {
+    bottom: calc(102px + env(safe-area-inset-bottom, 0px));
   }
 
   .agent-app--with-mini-player .mobile-dock {
-    bottom: calc(118px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   }
 }
 

@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./CSS/App.css";
 import {
+  PREVIEW_WORKSPACE_STORAGE_KEY,
   bootstrap,
   createReminder,
   createSkill,
@@ -32,7 +33,7 @@ import WeatherWorkspace, {
   createInitialWeatherCities,
   fetchWeatherSnapshots,
 } from "./components/WeatherWorkspace";
-import { useI18n } from "./i18n";
+import { LANG_PERSIST_ERROR_EVENT, useI18n } from "./i18n";
 
 const BUILT_IN_TRACKS = [
   {
@@ -60,6 +61,7 @@ const WEATHER_RECENT_SEARCHES_STORAGE_KEY = "mmgh-weather-recent-searches-v1";
 const WEATHER_USAGE_STORAGE_KEY = "mmgh-weather-usage-v1";
 const SKILL_HISTORY_STORAGE_KEY = "mmgh-skill-history-v1";
 const LYRICS_CACHE_STORAGE_KEY = "mmgh-lyrics-cache-v1";
+const LYRICS_CACHE_CLEAR_MARKER_STORAGE_KEY = "mmgh-lyrics-cache-cleared-at-v1";
 const MAX_SKILL_HISTORY_ENTRIES = 24;
 
 const EMPTY_REMINDER_DRAFT = {
@@ -80,24 +82,55 @@ const EMPTY_SKILL_DRAFT = {
   triggerHint: "",
   enabled: true,
 };
+const EMPTY_LIST = [];
+const LOCAL_CACHE_WRITE_MAX_RETRIES = 5;
+const THEME_STORAGE_KEY = "mmgh-theme";
+
+function readStoredTheme() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    return window.localStorage.getItem(THEME_STORAGE_KEY) || "";
+  } catch (error) {
+    console.error("Failed to read theme preference", error);
+    return "";
+  }
+}
+
+function persistTheme(theme) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch (error) {
+    console.error("Failed to persist theme preference", error);
+    throw new Error(`Failed to persist theme preference. ${normalizeError(error)}`);
+  }
+}
 
 function App() {
   const { lang, setLang, t } = useI18n();
   const [workspace, setWorkspace] = useState(null);
   const [currentView, setCurrentView] = useState("agent");
   const [theme, setTheme] = useState(() => {
-    if (typeof window === "undefined") {
-      return "dark";
-    }
-    const savedTheme = window.localStorage.getItem("mmgh-theme");
+    const savedTheme = readStoredTheme();
     if (savedTheme === "light" || savedTheme === "dark") {
       return savedTheme;
+    }
+    if (typeof window === "undefined") {
+      return "dark";
     }
     return window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark";
   });
   const [settingsForm, setSettingsForm] = useState({
     providerName: "OpenAI Compatible",
     baseUrl: "",
+    clearApiKey: false,
+    hasApiKey: false,
     apiKey: "",
     model: "",
     systemPrompt: "",
@@ -128,6 +161,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [galleryItems, setGalleryItems] = useState(() => readGalleryItems());
   const [gallerySearch, setGallerySearch] = useState("");
   const [galleryFilter, setGalleryFilter] = useState("all");
@@ -135,6 +169,7 @@ function App() {
   const [weatherLocations, setWeatherLocations] = useState(() => readWeatherLocations());
   const [selectedWeatherCityId, setSelectedWeatherCityId] = useState(() => readWeatherLocations()[0]?.id || WEATHER_LOCATIONS[0].id);
   const [weatherCities, setWeatherCities] = useState(() => createInitialWeatherCities(readWeatherLocations()));
+  const [weatherAuxCacheVersion, setWeatherAuxCacheVersion] = useState(0);
   const [weatherStatus, setWeatherStatus] = useState("loading");
   const [weatherError, setWeatherError] = useState("");
   const [weatherUpdatedAt, setWeatherUpdatedAt] = useState(0);
@@ -149,6 +184,7 @@ function App() {
   const [playerAudioElement, setPlayerAudioElement] = useState(null);
   const [skillHistoryMap, setSkillHistoryMap] = useState(() => readSkillHistory());
   const [lyricsCache, setLyricsCache] = useState(() => readLyricsCache());
+  const [lyricsCacheClearMarker, setLyricsCacheClearMarker] = useState(() => readLyricsCacheClearMarker());
   const [lyricsLookupState, setLyricsLookupState] = useState({});
 
   const localizedTracks = useMemo(
@@ -168,6 +204,195 @@ function App() {
   const lyricsUploadInputRef = useRef(null);
   const lastAutoPlayedReplyRef = useRef(null);
   const triggeredRemindersRef = useRef(new Set());
+  const uploadedTrackUrlsRef = useRef(new Set());
+  const pendingWorkspaceSyncRef = useRef(false);
+  const hasUnsavedWorkspaceDraftsRef = useRef(false);
+  const busyRef = useRef("");
+  const loadingRef = useRef(true);
+  const mobileDrawerPanelRef = useRef(null);
+  const inspectorDrawerPanelRef = useRef(null);
+  const lastMobileNavTriggerRef = useRef(null);
+  const lastInspectorTriggerRef = useRef(null);
+  const weatherRequestIdRef = useRef(0);
+  const weatherAbortControllerRef = useRef(null);
+  const lyricsRequestVersionRef = useRef({});
+  const openView = useCallback(
+    (viewId) => {
+      if (!viewId) {
+        return;
+      }
+      if (viewId !== currentView) {
+        setNotice("");
+      }
+      setCurrentView(viewId);
+      setIsMobileNavOpen(false);
+    },
+    [currentView]
+  );
+  const loadWeatherSnapshotData = useCallback(async (locations) => {
+    const sourceLocations =
+      Array.isArray(locations) && locations.length > 0 ? locations : weatherLocations;
+    const requestId = weatherRequestIdRef.current + 1;
+    const controller = new AbortController();
+
+    weatherRequestIdRef.current = requestId;
+    weatherAbortControllerRef.current?.abort();
+    weatherAbortControllerRef.current = controller;
+
+    setWeatherStatus("loading");
+    setWeatherError("");
+    setWeatherCities(createInitialWeatherCities(sourceLocations));
+    try {
+      const nextCities = await fetchWeatherSnapshots(sourceLocations, {
+        signal: controller.signal,
+      });
+      if (weatherRequestIdRef.current !== requestId) {
+        return;
+      }
+      setWeatherCities(nextCities);
+      setWeatherUpdatedAt(Date.now());
+      setWeatherStatus(nextCities.some((city) => city.fetchFailed) ? "partial" : "ready");
+    } catch (err) {
+      if (err?.name === "AbortError") {
+        return;
+      }
+      if (weatherRequestIdRef.current !== requestId) {
+        return;
+      }
+      setWeatherStatus("error");
+      setWeatherError(normalizeError(err));
+    } finally {
+      if (weatherAbortControllerRef.current === controller) {
+        weatherAbortControllerRef.current = null;
+      }
+    }
+  }, [weatherLocations]);
+  const resolveAdjacentTrackId = useCallback((direction = 1, mode = playMode) => {
+    if (tracks.length === 0) {
+      return "";
+    }
+
+    const currentIndex = tracks.findIndex((track) => track.id === selectedTrackId);
+    const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+
+    if (mode === "shuffle") {
+      if (tracks.length === 1) {
+        return tracks[0].id;
+      }
+
+      const candidates = tracks.filter((track) => track.id !== tracks[safeIndex].id);
+      return candidates[Math.floor(Math.random() * candidates.length)]?.id || tracks[safeIndex].id;
+    }
+
+    const nextIndex = (safeIndex + direction + tracks.length) % tracks.length;
+    return tracks[nextIndex]?.id || tracks[0].id;
+  }, [playMode, selectedTrackId, tracks]);
+
+  const updateGalleryItems = useCallback((updater) => {
+    try {
+      const nextItems = updateStoredGalleryItems(updater);
+      setGalleryItems(nextItems);
+      return { ok: true, value: nextItems };
+    } catch (err) {
+      setError(t("app.settings.cache.writeFailed", { detail: normalizeError(err) }));
+      return { ok: false, value: null };
+    }
+  }, [t]);
+
+  const updateWeatherLocations = useCallback((updater) => {
+    try {
+      const nextLocations = updateStoredWeatherLocations(updater);
+      setWeatherLocations(nextLocations);
+      return { ok: true, value: nextLocations };
+    } catch (err) {
+      setError(t("app.settings.cache.writeFailed", { detail: normalizeError(err) }));
+      return { ok: false, value: null };
+    }
+  }, [t]);
+
+  const updateSkillHistoryMap = useCallback((updater) => {
+    try {
+      const nextHistoryMap = updateStoredSkillHistory(updater);
+      setSkillHistoryMap(nextHistoryMap);
+      return { ok: true, value: nextHistoryMap };
+    } catch (err) {
+      setError(t("app.settings.cache.writeFailed", { detail: normalizeError(err) }));
+      return { ok: false, value: null };
+    }
+  }, [t]);
+
+  const updateLyricsCache = useCallback((updater) => {
+    try {
+      const nextLyricsCache = updateStoredLyricsCache(updater);
+      setLyricsCache(nextLyricsCache);
+      return { ok: true, value: nextLyricsCache };
+    } catch (err) {
+      setError(t("app.settings.cache.writeFailed", { detail: normalizeError(err) }));
+      return { ok: false, value: null };
+    }
+  }, [t]);
+
+  const syncWorkspaceFromStorage = useCallback(async (options = {}) => {
+    const syncDeferredMessage = t("app.workspace.syncDeferred");
+    if (
+      !options.force &&
+      (hasUnsavedWorkspaceDraftsRef.current || busyRef.current !== "" || loadingRef.current)
+    ) {
+      pendingWorkspaceSyncRef.current = true;
+      setError(syncDeferredMessage);
+      return;
+    }
+
+    try {
+      const snapshot = await bootstrap();
+      setWorkspace(snapshot);
+      pendingWorkspaceSyncRef.current = false;
+      setError((current) => (current === syncDeferredMessage ? "" : current));
+      return true;
+    } catch (err) {
+      if (options.force) {
+        pendingWorkspaceSyncRef.current = true;
+      }
+      setError(normalizeError(err));
+      return false;
+    }
+  }, [t]);
+
+  const syncGalleryCacheFromStorage = useCallback(() => {
+    const nextItems = readGalleryItems();
+    setGalleryItems(nextItems);
+    setGalleryViewerId((prev) => (nextItems.some((item) => item.id === prev) ? prev : ""));
+  }, []);
+
+  const syncWeatherCacheFromStorage = useCallback(() => {
+    const nextLocations = readWeatherLocations();
+    setWeatherLocations(nextLocations);
+    setSelectedWeatherCityId((prev) =>
+      nextLocations.some((location) => location.id === prev)
+        ? prev
+        : nextLocations[0]?.id || WEATHER_LOCATIONS[0].id
+    );
+  }, []);
+
+  const syncSkillHistoryFromStorage = useCallback(() => {
+    setSkillHistoryMap(readSkillHistory());
+  }, []);
+
+  const syncLyricsClearMarkerFromStorage = useCallback(() => {
+    setLyricsCacheClearMarker(readLyricsCacheClearMarker());
+  }, []);
+
+  const syncLyricsCacheFromStorage = useCallback(() => {
+    const nextLyricsCache = readLyricsCache();
+    setLyricsCache(nextLyricsCache);
+    setLyricsLookupState((prev) =>
+      mergeLyricsLookupStateFromCache({
+        cache: nextLyricsCache,
+        previousState: prev,
+        trackList: localizedTracks,
+      })
+    );
+  }, [localizedTracks]);
 
   useEffect(() => {
     void loadWorkspace();
@@ -187,59 +412,164 @@ function App() {
   }, [selectedTrackId]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    void loadWeatherSnapshots(weatherLocations, controller.signal);
-    return () => controller.abort();
-  }, [weatherLocations]);
+    void loadWeatherSnapshotData(weatherLocations);
+  }, [loadWeatherSnapshotData, weatherLocations]);
+
+  useEffect(
+    () => () => {
+      weatherRequestIdRef.current += 1;
+      weatherAbortControllerRef.current?.abort();
+      weatherAbortControllerRef.current = null;
+    },
+    []
+  );
 
   useEffect(() => {
-    if (workspace?.settings) {
-      setSettingsForm(workspace.settings);
+    try {
+      persistTheme(theme);
+    } catch (err) {
+      setError(t("app.preference.persistFailed", { detail: normalizeError(err) }));
     }
-    if (workspace?.activeNote) {
-      setNoteDraft({
-        id: workspace.activeNote.id,
-        icon: workspace.activeNote.icon || "*",
-        title: workspace.activeNote.title || "",
-        body: workspace.activeNote.body || "",
-        tagsText: (workspace.activeNote.tags || []).join(", "),
+  }, [t, theme]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handleStorage = (event) => {
+      if (event.storageArea !== window.localStorage) {
+        return;
+      }
+
+      if (!event.key) {
+        void syncWorkspaceFromStorage();
+        syncGalleryCacheFromStorage();
+        syncWeatherCacheFromStorage();
+        setWeatherAuxCacheVersion((prev) => prev + 1);
+        syncSkillHistoryFromStorage();
+        syncLyricsClearMarkerFromStorage();
+        syncLyricsCacheFromStorage();
+        return;
+      }
+
+      if (event.key === PREVIEW_WORKSPACE_STORAGE_KEY) {
+        void syncWorkspaceFromStorage();
+        return;
+      }
+
+      if (event.key === GALLERY_STORAGE_KEY || event.key === LEGACY_ALBUM_STORAGE_KEY) {
+        syncGalleryCacheFromStorage();
+        return;
+      }
+
+      if (
+        event.key === WEATHER_LOCATIONS_STORAGE_KEY
+      ) {
+        syncWeatherCacheFromStorage();
+        return;
+      }
+
+      if (
+        event.key === WEATHER_RECENT_SEARCHES_STORAGE_KEY ||
+        event.key === WEATHER_USAGE_STORAGE_KEY
+      ) {
+        setWeatherAuxCacheVersion((prev) => prev + 1);
+        return;
+      }
+
+      if (event.key === SKILL_HISTORY_STORAGE_KEY) {
+        syncSkillHistoryFromStorage();
+        return;
+      }
+
+      if (event.key === LYRICS_CACHE_CLEAR_MARKER_STORAGE_KEY) {
+        syncLyricsClearMarkerFromStorage();
+        return;
+      }
+
+      if (event.key === LYRICS_CACHE_STORAGE_KEY) {
+        syncLyricsCacheFromStorage();
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [
+    syncGalleryCacheFromStorage,
+    syncLyricsCacheFromStorage,
+    syncLyricsClearMarkerFromStorage,
+    syncSkillHistoryFromStorage,
+    syncWeatherCacheFromStorage,
+    syncWorkspaceFromStorage,
+  ]);
+
+  useEffect(() => {
+    if (lyricsCacheClearMarker) {
+      setLyricsLookupState(buildLyricsLookupStateWithClearMarker(lyricsCache, localizedTracks));
+      return;
+    }
+
+    setLyricsLookupState((prev) => clearClearedLyricsLookupState(prev));
+  }, [localizedTracks, lyricsCache, lyricsCacheClearMarker]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handleLangPersistError = (event) => {
+      setError(
+        t("app.preference.persistFailed", {
+          detail: normalizeError(event?.detail),
+        })
+      );
+    };
+
+    window.addEventListener(LANG_PERSIST_ERROR_EVENT, handleLangPersistError);
+    return () => window.removeEventListener(LANG_PERSIST_ERROR_EVENT, handleLangPersistError);
+  }, [t]);
+
+  useEffect(() => {
+    if (busy && busy !== "forge-skill") {
+      setNotice("");
+    }
+  }, [busy]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const nextUrls = new Set(
+      tracks
+        .map((track) => track?.src)
+        .filter((src) => typeof src === "string" && src.startsWith("blob:"))
+    );
+
+    uploadedTrackUrlsRef.current.forEach((url) => {
+      if (!nextUrls.has(url)) {
+        window.URL.revokeObjectURL(url);
+      }
+    });
+
+    uploadedTrackUrlsRef.current = nextUrls;
+
+    return undefined;
+  }, [tracks]);
+
+  useEffect(
+    () => () => {
+      if (typeof window === "undefined") {
+        return;
+      }
+      uploadedTrackUrlsRef.current.forEach((url) => {
+        window.URL.revokeObjectURL(url);
       });
-    }
-    if (workspace?.activeSkill) {
-      setSkillDraft({
-        id: workspace.activeSkill.id,
-        name: workspace.activeSkill.name || "",
-        description: workspace.activeSkill.description || "",
-        instructions: workspace.activeSkill.instructions || "",
-        triggerHint: workspace.activeSkill.triggerHint || "",
-        enabled: Boolean(workspace.activeSkill.enabled),
-      });
-    } else {
-      setSkillDraft({ ...EMPTY_SKILL_DRAFT });
-    }
-  }, [workspace]);
-
-  useEffect(() => {
-    writeGalleryItems(galleryItems);
-  }, [galleryItems]);
-
-  useEffect(() => {
-    writeWeatherLocations(weatherLocations);
-  }, [weatherLocations]);
-
-  useEffect(() => {
-    writeSkillHistory(skillHistoryMap);
-  }, [skillHistoryMap]);
-
-  useEffect(() => {
-    writeLyricsCache(lyricsCache);
-  }, [lyricsCache]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("mmgh-theme", theme);
-    }
-  }, [theme]);
+      uploadedTrackUrlsRef.current.clear();
+    },
+    []
+  );
 
   useEffect(() => {
     if (typeof document === "undefined") {
@@ -255,10 +585,19 @@ function App() {
         return undefined;
       }
 
+      const activePanel = isInspectorOpen
+        ? inspectorDrawerPanelRef.current
+        : mobileDrawerPanelRef.current;
+
       const handleKeyDown = (event) => {
         if (event.key === "Escape") {
           setIsInspectorOpen(false);
           setIsMobileNavOpen(false);
+          return;
+        }
+
+        if (event.key === "Tab" && activePanel) {
+          trapFocusWithinPanel(event, activePanel);
         }
       };
 
@@ -272,17 +611,47 @@ function App() {
         window.addEventListener("keydown", handleKeyDown);
       }
 
+      const focusTimer =
+        typeof window !== "undefined"
+          ? window.setTimeout(() => focusDialogPanel(activePanel), 0)
+          : 0;
+
       return () => {
         if (typeof document !== "undefined") {
           document.body.style.overflow = previousOverflow;
         }
         if (typeof window !== "undefined") {
+          window.clearTimeout(focusTimer);
           window.removeEventListener("keydown", handleKeyDown);
         }
       };
     },
     [isInspectorOpen, isMobileNavOpen]
   );
+
+  useEffect(() => {
+    if (isMobileNavOpen) {
+      return;
+    }
+
+    const trigger = lastMobileNavTriggerRef.current;
+    if (trigger?.isConnected) {
+      trigger.focus();
+    }
+    lastMobileNavTriggerRef.current = null;
+  }, [isMobileNavOpen]);
+
+  useEffect(() => {
+    if (isInspectorOpen) {
+      return;
+    }
+
+    const trigger = lastInspectorTriggerRef.current;
+    if (trigger?.isConnected) {
+      trigger.focus();
+    }
+    lastInspectorTriggerRef.current = null;
+  }, [isInspectorOpen]);
 
   useEffect(() => {
     setIsMobileNavOpen(false);
@@ -336,7 +705,7 @@ function App() {
       audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [playMode, selectedTrackId, tracks]);
+  }, [playMode, resolveAdjacentTrackId, selectedTrackId, tracks]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -348,18 +717,18 @@ function App() {
 
   const activeSession = workspace?.activeSession;
   const activeSessionId = workspace?.activeSessionId;
-  const sessionList = workspace?.sessions || [];
-  const capabilities = workspace?.capabilities || [];
-  const noteList = workspace?.notes || [];
-  const reminders = workspace?.reminders || [];
-  const skillList = workspace?.skills || [];
+  const sessionList = workspace?.sessions ?? EMPTY_LIST;
+  const capabilities = workspace?.capabilities ?? EMPTY_LIST;
+  const noteList = workspace?.notes ?? EMPTY_LIST;
+  const reminders = workspace?.reminders ?? EMPTY_LIST;
+  const skillList = workspace?.skills ?? EMPTY_LIST;
   const activeNote = workspace?.activeNote;
   const activeNoteId = workspace?.activeNoteId;
   const activeSkill = workspace?.activeSkill;
   const activeSkillId = workspace?.activeSkillId;
-  const activeSessionSkillIds = activeSession?.mountedSkillIds || [];
-  const activeSessionSkills = activeSession?.mountedSkills || [];
-  const activeSessionRecommendedSkills = activeSession?.recommendedSkills || [];
+  const activeSessionSkillIds = activeSession?.mountedSkillIds ?? EMPTY_LIST;
+  const activeSessionSkills = activeSession?.mountedSkills ?? EMPTY_LIST;
+  const activeSessionRecommendedSkills = activeSession?.recommendedSkills ?? EMPTY_LIST;
   const selectedTrackSource = tracks.find((track) => track.id === selectedTrackId) || tracks[0] || null;
   const selectedTrack =
     localizedTracks.find((track) => track.id === selectedTrackId) || localizedTracks[0] || null;
@@ -385,26 +754,6 @@ function App() {
     : "";
   const selectedTrackLyricsSource = selectedTrackLyricsEntry?.source || "";
   const showMiniPlayer = currentView !== "music" && Boolean(selectedTrackSource);
-  function resolveAdjacentTrackId(direction = 1, mode = playMode) {
-    if (tracks.length === 0) {
-      return "";
-    }
-
-    const currentIndex = tracks.findIndex((track) => track.id === selectedTrackId);
-    const safeIndex = currentIndex >= 0 ? currentIndex : 0;
-
-    if (mode === "shuffle") {
-      if (tracks.length === 1) {
-        return tracks[0].id;
-      }
-
-      const candidates = tracks.filter((track) => track.id !== tracks[safeIndex].id);
-      return candidates[Math.floor(Math.random() * candidates.length)]?.id || tracks[safeIndex].id;
-    }
-
-    const nextIndex = (safeIndex + direction + tracks.length) % tracks.length;
-    return tracks[nextIndex]?.id || tracks[0].id;
-  }
 
   function handleSelectTrack(trackId) {
     const audio = audioRef.current;
@@ -450,12 +799,39 @@ function App() {
     });
   }
 
-  async function handleRefreshLyrics(options = {}) {
+  const bumpLyricsRequestVersion = useCallback((trackId) => {
+    if (!trackId) {
+      return 0;
+    }
+
+    const nextVersion = (lyricsRequestVersionRef.current[trackId] || 0) + 1;
+    lyricsRequestVersionRef.current[trackId] = nextVersion;
+    return nextVersion;
+  }, []);
+
+  const invalidateAllLyricsRequestVersions = useCallback(() => {
+    const nextVersions = {};
+    Object.entries(lyricsRequestVersionRef.current).forEach(([trackId, version]) => {
+      nextVersions[trackId] = Number(version || 0) + 1;
+    });
+    if (selectedTrackId) {
+      nextVersions[selectedTrackId] = Number(nextVersions[selectedTrackId] || 0) + 1;
+    }
+    lyricsRequestVersionRef.current = nextVersions;
+  }, [selectedTrackId]);
+
+  const handleRefreshLyrics = useCallback(async (options = {}) => {
     const track = selectedTrack;
     if (!track) {
       return;
     }
 
+    const initiatedBy = options.initiatedBy || "manual";
+    if (initiatedBy === "auto" && lyricsCacheClearMarker) {
+      return;
+    }
+
+    const requestVersion = bumpLyricsRequestVersion(track.id);
     const cacheKey = getLyricsCacheEntryKey(track, duration);
     const cacheEntry = lyricsCache[cacheKey];
     if (!options.force && cacheEntry?.source && cacheEntry?.fingerprint === cacheKey) {
@@ -474,32 +850,87 @@ function App() {
         title: track.title,
       });
 
-      setLyricsCache((prev) => ({
-        ...prev,
-        [cacheKey]: {
-          artist: track.artist,
-          fetchedAt: Date.now(),
-          fingerprint: cacheKey,
-          plainLyrics: response.plainLyrics || "",
-          source: "online",
-          syncedLyrics: response.syncedLyrics || "",
-          title: track.title,
-        },
-      }));
-      setLyricsLookupState((prev) => ({
-        ...prev,
-        [track.id]: { status: "ready", error: "" },
-      }));
+      const cacheUpdate = updateLyricsCache((prev) => {
+        if (
+          lyricsRequestVersionRef.current[track.id] !== requestVersion ||
+          prev[cacheKey]?.source === "manual"
+        ) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          [cacheKey]: {
+            artist: track.artist,
+            fetchedAt: Date.now(),
+            fingerprint: cacheKey,
+            plainLyrics: response.plainLyrics || "",
+            source: "online",
+            syncedLyrics: response.syncedLyrics || "",
+            title: track.title,
+          },
+        };
+      });
+      if (!cacheUpdate.ok) {
+        setLyricsLookupState((prev) => {
+          if (lyricsRequestVersionRef.current[track.id] !== requestVersion) {
+            return prev;
+          }
+
+          return {
+            ...prev,
+            [track.id]: {
+              status: "error",
+              error: t("app.settings.cache.writeFailed", {
+                detail: "Lyrics cache update failed",
+              }),
+            },
+          };
+        });
+        return;
+      }
+      if (lyricsCacheClearMarker) {
+        setLyricsCacheClearMarker("");
+        try {
+          writeLyricsCacheClearMarker("");
+        } catch (error) {
+          setError(t("app.settings.cache.writeFailed", { detail: normalizeError(error) }));
+        }
+      }
+      setLyricsLookupState((prev) => {
+        if (lyricsRequestVersionRef.current[track.id] !== requestVersion) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          [track.id]: { status: "ready", error: "" },
+        };
+      });
     } catch (error) {
-      setLyricsLookupState((prev) => ({
-        ...prev,
-        [track.id]: {
-          status: "error",
-          error: normalizeLyricsError(error, t),
-        },
-      }));
+      setLyricsLookupState((prev) => {
+        if (lyricsRequestVersionRef.current[track.id] !== requestVersion) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          [track.id]: {
+            status: "error",
+            error: normalizeLyricsError(error, t),
+          },
+        };
+      });
     }
-  }
+  }, [
+    bumpLyricsRequestVersion,
+    duration,
+    lyricsCache,
+    lyricsCacheClearMarker,
+    selectedTrack,
+    t,
+    updateLyricsCache,
+  ]);
 
   async function handleUploadLyricsFile(file) {
     if (!selectedTrack || !file) {
@@ -507,9 +938,10 @@ function App() {
     }
 
     try {
+      bumpLyricsRequestVersion(selectedTrack.id);
       const text = await file.text();
       const cacheKey = getLyricsCacheEntryKey(selectedTrack, duration);
-      setLyricsCache((prev) => ({
+      const cacheUpdate = updateLyricsCache((prev) => ({
         ...prev,
         [cacheKey]: {
           artist: selectedTrack.artist,
@@ -521,6 +953,26 @@ function App() {
           title: selectedTrack.title,
         },
       }));
+      if (!cacheUpdate.ok) {
+        setLyricsLookupState((prev) => ({
+          ...prev,
+          [selectedTrack.id]: {
+            status: "error",
+            error: t("app.settings.cache.writeFailed", {
+              detail: "Lyrics cache update failed",
+            }),
+          },
+        }));
+        return;
+      }
+      if (lyricsCacheClearMarker) {
+        setLyricsCacheClearMarker("");
+        try {
+          writeLyricsCacheClearMarker("");
+        } catch (error) {
+          setError(t("app.settings.cache.writeFailed", { detail: normalizeError(error) }));
+        }
+      }
       setLyricsLookupState((prev) => ({
         ...prev,
         [selectedTrack.id]: { status: "manual", error: "" },
@@ -546,7 +998,9 @@ function App() {
   const providerConfigured = useMemo(() => {
     const settings = workspace?.settings;
     return Boolean(
-      settings?.baseUrl?.trim() && settings?.apiKey?.trim() && settings?.model?.trim()
+      settings?.baseUrl?.trim() &&
+      (settings?.hasApiKey || settings?.apiKey?.trim()) &&
+      settings?.model?.trim()
     );
   }, [workspace]);
 
@@ -582,7 +1036,6 @@ function App() {
       week: [],
       earlier: [],
     };
-    const now = Date.now();
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const weekStart = todayStart.getTime() - 6 * 24 * 60 * 60 * 1000;
@@ -608,7 +1061,27 @@ function App() {
     if (!workspace?.settings) {
       return false;
     }
-    return JSON.stringify(settingsForm) !== JSON.stringify(workspace.settings);
+    const currentSettings = workspace.settings;
+    const comparableDraft = {
+      providerName: settingsForm.providerName || "",
+      baseUrl: settingsForm.baseUrl || "",
+      hasApiKey: Boolean(currentSettings.hasApiKey),
+      model: settingsForm.model || "",
+      systemPrompt: settingsForm.systemPrompt || "",
+    };
+    const comparableSaved = {
+      providerName: currentSettings.providerName || "",
+      baseUrl: currentSettings.baseUrl || "",
+      hasApiKey: Boolean(currentSettings.hasApiKey),
+      model: currentSettings.model || "",
+      systemPrompt: currentSettings.systemPrompt || "",
+    };
+
+    return (
+      Boolean(settingsForm.clearApiKey) ||
+      Boolean(settingsForm.apiKey?.trim()) ||
+      JSON.stringify(comparableDraft) !== JSON.stringify(comparableSaved)
+    );
   }, [settingsForm, workspace]);
 
   const hasUnsavedNote = useMemo(() => {
@@ -670,6 +1143,98 @@ function App() {
         enabled: Boolean(activeSkill.enabled),
       });
   }, [activeSkill, skillDraft]);
+  const hasUnsavedWorkspaceDrafts =
+    hasUnsavedSettings || hasUnsavedNote || hasUnsavedReminder || hasUnsavedSkill;
+
+  useEffect(() => {
+    hasUnsavedWorkspaceDraftsRef.current = hasUnsavedWorkspaceDrafts;
+  }, [hasUnsavedWorkspaceDrafts]);
+
+  useEffect(() => {
+    if (workspace?.settings && !hasUnsavedSettings) {
+      setSettingsForm({
+        ...workspace.settings,
+        clearApiKey: false,
+      });
+    }
+
+    if (workspace?.activeNote && (!hasUnsavedNote || noteDraft.id !== workspace.activeNote.id)) {
+      setNoteDraft({
+        id: workspace.activeNote.id,
+        icon: workspace.activeNote.icon || "*",
+        title: workspace.activeNote.title || "",
+        body: workspace.activeNote.body || "",
+        tagsText: (workspace.activeNote.tags || []).join(", "),
+      });
+    }
+
+    if (workspace?.activeSkill) {
+      if (!hasUnsavedSkill || skillDraft.id !== workspace.activeSkill.id) {
+        setSkillDraft({
+          id: workspace.activeSkill.id,
+          name: workspace.activeSkill.name || "",
+          description: workspace.activeSkill.description || "",
+          instructions: workspace.activeSkill.instructions || "",
+          triggerHint: workspace.activeSkill.triggerHint || "",
+          enabled: Boolean(workspace.activeSkill.enabled),
+        });
+      }
+    } else {
+      setSkillDraft({ ...EMPTY_SKILL_DRAFT });
+    }
+  }, [
+    hasUnsavedNote,
+    hasUnsavedSettings,
+    hasUnsavedSkill,
+    noteDraft.id,
+    skillDraft.id,
+    workspace,
+  ]);
+
+  useEffect(() => {
+    busyRef.current = busy;
+  }, [busy]);
+
+  useEffect(() => {
+    loadingRef.current = loading;
+  }, [loading]);
+
+  useEffect(() => {
+    if (hasUnsavedWorkspaceDrafts || busy !== "" || loading || !pendingWorkspaceSyncRef.current) {
+      return;
+    }
+
+    void syncWorkspaceFromStorage({ force: true });
+  }, [busy, hasUnsavedWorkspaceDrafts, loading, syncWorkspaceFromStorage]);
+
+  const confirmDiscardWorkspaceDrafts = useCallback(() => {
+    if (!hasUnsavedWorkspaceDrafts) {
+      return true;
+    }
+
+    if (typeof window === "undefined") {
+      return false;
+    }
+
+    return window.confirm(t("app.common.discardChangesConfirm"));
+  }, [hasUnsavedWorkspaceDrafts, t]);
+
+  const handleSelectReminder = useCallback((reminderId, options = {}) => {
+    if (!reminderId || reminderId === selectedReminderId) {
+      return false;
+    }
+
+    if (busy !== "" || loading) {
+      return false;
+    }
+
+    if (!options.force && hasUnsavedReminder && !confirmDiscardWorkspaceDrafts()) {
+      return false;
+    }
+
+    setSelectedReminderId(reminderId);
+    return true;
+  }, [busy, confirmDiscardWorkspaceDrafts, hasUnsavedReminder, loading, selectedReminderId]);
 
   const activeSkillVersions = useMemo(
     () => getSkillHistoryEntries(skillHistoryMap, activeSkillId),
@@ -709,53 +1274,45 @@ function App() {
     [galleryItems.length]
   );
   const auxiliaryCacheGroupCount = 4;
-  const cacheCards = useMemo(
-    () => [
-      {
-        id: "media",
-        title: t("app.settings.cache.media.title"),
-        summary: t("app.settings.cache.entryCount", { count: mediaCacheCount }),
-        countLabel: t("app.settings.cache.countLabel", { count: mediaCacheCount }),
-        description: t("app.settings.cache.media.description"),
-        buttonLabel: t("app.settings.cache.clear"),
-        onClear: handleClearMediaCache,
-      },
-      {
-        id: "weather",
-        title: t("app.settings.cache.weather.title"),
-        summary: t("app.settings.cache.entryCount", { count: weatherLocations.length }),
-        countLabel: t("app.settings.cache.countLabel", { count: weatherLocations.length }),
-        description: t("app.settings.cache.weather.description"),
-        buttonLabel: t("app.settings.cache.clear"),
-        onClear: handleClearWeatherCache,
-      },
-      {
-        id: "skill-history",
-        title: t("app.settings.cache.skillHistory.title"),
-        summary: t("app.settings.cache.entryCount", { count: skillHistoryEntryCount }),
-        countLabel: t("app.settings.cache.countLabel", { count: skillHistoryEntryCount }),
-        description: t("app.settings.cache.skillHistory.description"),
-        buttonLabel: t("app.settings.cache.clear"),
-        onClear: handleClearSkillHistoryCache,
-      },
-      {
-        id: "all",
-        title: t("app.settings.cache.all.title"),
-        summary: t("app.settings.cache.groupCount", { count: auxiliaryCacheGroupCount }),
-        countLabel: t("app.settings.cache.all.countLabel"),
-        description: t("app.settings.cache.all.description"),
-        buttonLabel: t("app.settings.cache.clearAll"),
-        onClear: handleClearAllCaches,
-        danger: true,
-      },
-    ],
-    [
-      mediaCacheCount,
-      skillHistoryEntryCount,
-      t,
-      weatherLocations.length,
-    ]
-  );
+  const cacheCards = [
+    {
+      id: "media",
+      title: t("app.settings.cache.media.title"),
+      summary: t("app.settings.cache.entryCount", { count: mediaCacheCount }),
+      countLabel: t("app.settings.cache.countLabel", { count: mediaCacheCount }),
+      description: t("app.settings.cache.media.description"),
+      buttonLabel: t("app.settings.cache.clear"),
+      onClear: handleClearMediaCache,
+    },
+    {
+      id: "weather",
+      title: t("app.settings.cache.weather.title"),
+      summary: t("app.settings.cache.entryCount", { count: weatherLocations.length }),
+      countLabel: t("app.settings.cache.countLabel", { count: weatherLocations.length }),
+      description: t("app.settings.cache.weather.description"),
+      buttonLabel: t("app.settings.cache.clear"),
+      onClear: handleClearWeatherCache,
+    },
+    {
+      id: "skill-history",
+      title: t("app.settings.cache.skillHistory.title"),
+      summary: t("app.settings.cache.entryCount", { count: skillHistoryEntryCount }),
+      countLabel: t("app.settings.cache.countLabel", { count: skillHistoryEntryCount }),
+      description: t("app.settings.cache.skillHistory.description"),
+      buttonLabel: t("app.settings.cache.clear"),
+      onClear: handleClearSkillHistoryCache,
+    },
+    {
+      id: "all",
+      title: t("app.settings.cache.all.title"),
+      summary: t("app.settings.cache.groupCount", { count: auxiliaryCacheGroupCount }),
+      countLabel: t("app.settings.cache.all.countLabel"),
+      description: t("app.settings.cache.all.description"),
+      buttonLabel: t("app.settings.cache.clearAll"),
+      onClear: handleClearAllCaches,
+      danger: true,
+    },
+  ];
   const navigationGroups = useMemo(
     () => [
       {
@@ -853,7 +1410,7 @@ function App() {
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || !selectedTrack) {
+    if (!audio || !selectedTrackSource) {
       return;
     }
 
@@ -867,7 +1424,7 @@ function App() {
         setIsPlaying(false);
       });
     }
-  }, [selectedTrackId]);
+  }, [isPlaying, selectedTrackId, selectedTrackSource]);
 
   useEffect(() => {
     if (!selectedTrack) {
@@ -880,12 +1437,15 @@ function App() {
       return;
     }
 
-    if (lyricsLookupState[selectedTrack.id]?.status === "loading") {
+    if (
+      lyricsLookupState[selectedTrack.id]?.status === "loading" ||
+      lyricsLookupState[selectedTrack.id]?.status === "cleared"
+    ) {
       return;
     }
 
-    void handleRefreshLyrics({ force: true });
-  }, [duration, lyricsCache, lyricsLookupState, selectedTrack, selectedTrackId]);
+    void handleRefreshLyrics({ force: true, initiatedBy: "auto" });
+  }, [duration, handleRefreshLyrics, lyricsCache, lyricsLookupState, selectedTrack, selectedTrackId]);
 
   useEffect(() => {
     if (!autoPlayOnReply || !lastAssistantMessageId) {
@@ -904,7 +1464,7 @@ function App() {
     void audio.play().catch(() => {
       setIsPlaying(false);
     });
-  }, [autoPlayOnReply, lastAssistantMessageId, selectedTrackId]);
+  }, [autoPlayOnReply, lastAssistantMessageId, selectedTrack, selectedTrackId]);
 
   useEffect(() => {
     if (reminders.length === 0) {
@@ -924,6 +1484,10 @@ function App() {
       return;
     }
 
+    if (hasUnsavedReminder && reminderDraft.id === selectedReminder.id) {
+      return;
+    }
+
     setReminderDraft({
       id: selectedReminder.id,
       title: selectedReminder.title || "",
@@ -933,9 +1497,13 @@ function App() {
       status: selectedReminder.status || "scheduled",
       linkedNoteId: selectedReminder.linkedNoteId ? String(selectedReminder.linkedNoteId) : "",
     });
-  }, [selectedReminder]);
+  }, [hasUnsavedReminder, reminderDraft.id, selectedReminder]);
 
   useEffect(() => {
+    if (hasUnsavedWorkspaceDrafts || busy !== "" || loading) {
+      return;
+    }
+
     const dueReminder = reminders.find((item) => {
       if (item.status === "done" || !item.dueAt || item.dueAt > clockNow) {
         return false;
@@ -948,19 +1516,34 @@ function App() {
       return;
     }
 
+    if (!handleSelectReminder(dueReminder.id, { force: true })) {
+      return;
+    }
+
     const alertKey = `${dueReminder.id}:${dueReminder.updatedAt}:${dueReminder.status}`;
-    triggeredRemindersRef.current.add(alertKey);
-    setSelectedReminderId(dueReminder.id);
-    setCurrentView("reminders");
+    const triggeredReminderKeys = triggeredRemindersRef.current;
+    triggeredReminderKeys.add(alertKey);
+    setNotice("");
+    setIsInspectorOpen(false);
+    openView("reminders");
 
     if (typeof window !== "undefined") {
       const audio = new Audio("/reply-pulse.mp3");
       void audio.play().catch(() => {});
-      window.setTimeout(() => {
+      let didAlert = false;
+      const timeoutId = window.setTimeout(() => {
+        didAlert = true;
         window.alert(t("app.reminders.alertDue", { title: dueReminder.title }));
       }, 120);
+
+      return () => {
+        if (!didAlert) {
+          window.clearTimeout(timeoutId);
+          triggeredReminderKeys.delete(alertKey);
+        }
+      };
     }
-  }, [clockNow, reminders]);
+  }, [busy, clockNow, handleSelectReminder, hasUnsavedWorkspaceDrafts, loading, openView, reminders, t]);
 
   async function loadWorkspace() {
     setLoading(true);
@@ -975,40 +1558,23 @@ function App() {
     }
   }
 
-  async function loadWeatherSnapshots(locations, signal) {
-    const sourceLocations =
-      Array.isArray(locations) && locations.length > 0 ? locations : weatherLocations;
-
-    setWeatherStatus("loading");
-    setWeatherError("");
-    setWeatherCities(createInitialWeatherCities(sourceLocations));
-    try {
-      const nextCities = await fetchWeatherSnapshots(sourceLocations, { signal });
-      setWeatherCities(nextCities);
-      setWeatherUpdatedAt(Date.now());
-      setWeatherStatus(nextCities.some((city) => city.fetchFailed) ? "partial" : "ready");
-    } catch (err) {
-      if (err?.name === "AbortError") {
-        return;
-      }
-      setWeatherStatus("error");
-      setWeatherError(normalizeError(err));
-    }
-  }
-
   function handleAddWeatherCity(location) {
-    if (!location) {
+    const normalizedLocation = sanitizeWeatherLocation(location);
+    if (!normalizedLocation) {
       return;
     }
 
-    setWeatherLocations((prev) => {
-      if (prev.some((item) => isSameWeatherLocation(item, location))) {
+    const weatherLocationUpdate = updateWeatherLocations((prev) => {
+      if (prev.some((item) => isSameWeatherLocation(item, normalizedLocation))) {
         return prev;
       }
-      return [...prev, sanitizeWeatherLocation(location)];
+      return [...prev, normalizedLocation];
     });
-    setSelectedWeatherCityId(location.id);
-    setCurrentView("weather");
+    if (!weatherLocationUpdate.ok) {
+      return;
+    }
+    setSelectedWeatherCityId(normalizedLocation.id);
+    openView("weather");
   }
 
   function handleRemoveWeatherCity(cityId) {
@@ -1016,7 +1582,7 @@ function App() {
       return;
     }
 
-    setWeatherLocations((prev) => {
+    const weatherLocationUpdate = updateWeatherLocations((prev) => {
       if (prev.length <= 1) {
         return prev;
       }
@@ -1026,16 +1592,23 @@ function App() {
         return prev;
       }
 
-      if (selectedWeatherCityId === cityId) {
-        setSelectedWeatherCityId(nextLocations[0].id);
-      }
-
       return nextLocations;
     });
+    if (!weatherLocationUpdate.ok) {
+      return;
+    }
+
+    if (!weatherLocationUpdate.value.some((city) => city.id === selectedWeatherCityId)) {
+      setSelectedWeatherCityId(weatherLocationUpdate.value[0]?.id || WEATHER_LOCATIONS[0].id);
+    }
   }
 
   async function handleOpenSession(sessionId) {
     if (!sessionId || sessionId === activeSessionId) {
+      setIsMobileNavOpen(false);
+      return;
+    }
+    if (!confirmDiscardWorkspaceDrafts()) {
       setIsMobileNavOpen(false);
       return;
     }
@@ -1053,6 +1626,9 @@ function App() {
   }
 
   async function handleCreateSession() {
+    if (!confirmDiscardWorkspaceDrafts()) {
+      return;
+    }
     setBusy("create");
     setError("");
     try {
@@ -1128,9 +1704,21 @@ function App() {
     }
   }
 
+  function handleClearApiKey() {
+    setSettingsForm((prev) => ({
+      ...prev,
+      clearApiKey: !prev.clearApiKey,
+      hasApiKey: prev.clearApiKey ? Boolean(workspace?.settings?.hasApiKey) : false,
+      apiKey: "",
+    }));
+  }
+
   async function handleOpenNote(noteId) {
     if (!noteId || noteId === activeNoteId) {
-      return;
+      return false;
+    }
+    if (!confirmDiscardWorkspaceDrafts()) {
+      return false;
     }
     setBusy("open-note");
     setError("");
@@ -1140,14 +1728,19 @@ function App() {
         activeSessionId,
       });
       setWorkspace(snapshot);
+      return true;
     } catch (err) {
       setError(normalizeError(err));
+      return false;
     } finally {
       setBusy("");
     }
   }
 
   async function handleCreateNote() {
+    if (!confirmDiscardWorkspaceDrafts()) {
+      return;
+    }
     setBusy("create-note");
     setError("");
     try {
@@ -1156,7 +1749,7 @@ function App() {
         activeSessionId,
       });
       setWorkspace(snapshot);
-      setCurrentView("knowledge");
+      openView("knowledge");
     } catch (err) {
       setError(normalizeError(err));
     } finally {
@@ -1196,6 +1789,9 @@ function App() {
     if (typeof window !== "undefined" && !window.confirm(t("app.knowledge.deleteConfirm"))) {
       return;
     }
+    if (hasUnsavedNote && noteDraft.id === activeNoteId && !confirmDiscardWorkspaceDrafts()) {
+      return;
+    }
     setBusy("delete-note");
     setError("");
     try {
@@ -1213,7 +1809,10 @@ function App() {
 
   async function handleOpenSkill(skillId) {
     if (!skillId || skillId === activeSkillId) {
-      return;
+      return false;
+    }
+    if (!confirmDiscardWorkspaceDrafts()) {
+      return false;
     }
     setBusy("open-skill");
     setError("");
@@ -1223,14 +1822,19 @@ function App() {
         activeSessionId,
       });
       setWorkspace(snapshot);
+      return true;
     } catch (err) {
       setError(normalizeError(err));
+      return false;
     } finally {
       setBusy("");
     }
   }
 
   async function handleCreateSkill() {
+    if (!confirmDiscardWorkspaceDrafts()) {
+      return;
+    }
     setBusy("create-skill");
     setError("");
     try {
@@ -1239,7 +1843,7 @@ function App() {
         activeSessionId,
       });
       setWorkspace(snapshot);
-      setCurrentView("skills");
+      openView("skills");
     } catch (err) {
       setError(normalizeError(err));
     } finally {
@@ -1269,7 +1873,7 @@ function App() {
         skill: nextSkill,
       });
       if (shouldTrackSkillVersion(activeSkill, nextSkill)) {
-        setSkillHistoryMap((prev) => appendSkillHistoryEntry(prev, activeSkill, "manual-save"));
+        updateSkillHistoryMap((prev) => appendSkillHistoryEntry(prev, activeSkill, "manual-save"));
       }
       setWorkspace(snapshot);
     } catch (err) {
@@ -1279,19 +1883,41 @@ function App() {
     }
   }
 
+  const rollbackCreatedSkill = useCallback(async (skillId, error) => {
+    const baseMessage = normalizeError(error);
+    if (!skillId || !activeSessionId) {
+      return baseMessage;
+    }
+
+    try {
+      const rollbackSnapshot = await deleteSkill({
+        skillId,
+        activeSessionId,
+      });
+      setWorkspace(rollbackSnapshot);
+      return baseMessage;
+    } catch (rollbackError) {
+      return `${baseMessage} Rollback failed: ${normalizeError(rollbackError)}`;
+    }
+  }, [activeSessionId]);
+
   async function handleInstallSkillTemplate(template) {
     if (!template || !activeSessionId) {
+      return;
+    }
+    if (!confirmDiscardWorkspaceDrafts()) {
       return;
     }
 
     setBusy("install-skill-template");
     setError("");
+    let createdSkillId = 0;
     try {
       const createdSnapshot = await createSkill({
         name: template.name,
         activeSessionId,
       });
-      const createdSkillId = createdSnapshot?.activeSkill?.id || createdSnapshot?.activeSkillId;
+      createdSkillId = createdSnapshot?.activeSkill?.id || createdSnapshot?.activeSkillId;
       if (!createdSkillId) {
         throw new Error("Failed to create skill template");
       }
@@ -1308,9 +1934,9 @@ function App() {
         },
       });
       setWorkspace(savedSnapshot);
-      setCurrentView("skills");
+      openView("skills");
     } catch (err) {
-      setError(normalizeError(err));
+      setError(await rollbackCreatedSkill(createdSkillId, err));
     } finally {
       setBusy("");
     }
@@ -1321,7 +1947,14 @@ function App() {
     if (!file || !activeSessionId) {
       return;
     }
+    if (!confirmDiscardWorkspaceDrafts()) {
+      if (event?.target) {
+        event.target.value = "";
+      }
+      return;
+    }
 
+    const createdSkillIds = [];
     setBusy("import-skills");
     setError("");
     try {
@@ -1338,6 +1971,7 @@ function App() {
         if (!createdSkillId) {
           throw new Error(t("app.skills.import.createFailed"));
         }
+        createdSkillIds.push(createdSkillId);
 
         latestSnapshot = await saveSkill({
           activeSessionId,
@@ -1354,10 +1988,29 @@ function App() {
 
       if (latestSnapshot) {
         setWorkspace(latestSnapshot);
-        setCurrentView("skills");
+        openView("skills");
       }
     } catch (err) {
-      setError(normalizeError(err));
+      let rollbackMessage = "";
+      try {
+        let rollbackSnapshot = null;
+
+        for (const skillId of createdSkillIds.reverse()) {
+          rollbackSnapshot = await deleteSkill({
+            skillId,
+            activeSessionId,
+          });
+        }
+
+        if (rollbackSnapshot) {
+          setWorkspace(rollbackSnapshot);
+          rollbackMessage = " Imported skills were rolled back.";
+        }
+      } catch (rollbackError) {
+        rollbackMessage = ` Rollback failed: ${normalizeError(rollbackError)}`;
+      }
+
+      setError(`${normalizeError(err)}${rollbackMessage}`);
     } finally {
       if (event?.target) {
         event.target.value = "";
@@ -1370,6 +2023,8 @@ function App() {
     if (!skill) {
       return;
     }
+
+    setError("");
 
     const payload = {
       type: "mmgh-skill",
@@ -1384,13 +2039,19 @@ function App() {
       },
     };
 
-    downloadJsonFile(payload, `${slugifyFileName(skill.name || "skill")}.skill.json`);
+    try {
+      downloadJsonFile(payload, `${slugifyFileName(skill.name || "skill")}.skill.json`);
+    } catch (err) {
+      setError(t("app.skills.export.failed", { detail: normalizeError(err) }));
+    }
   }
 
   function handleExportAllSkills() {
     if (!skillList.length) {
       return;
     }
+
+    setError("");
 
     const payload = {
       type: "mmgh-skill-bundle",
@@ -1405,16 +2066,25 @@ function App() {
       })),
     };
 
-    downloadJsonFile(payload, "mmgh-skills.bundle.json");
+    try {
+      downloadJsonFile(payload, "mmgh-skills.bundle.json");
+    } catch (err) {
+      setError(t("app.skills.export.failed", { detail: normalizeError(err) }));
+    }
   }
 
   async function handleForgeSkill({ prompt, mode }) {
     if (!activeSessionId || !String(prompt || "").trim()) {
       return;
     }
+    if (!confirmDiscardWorkspaceDrafts()) {
+      return;
+    }
 
     setBusy("forge-skill");
     setError("");
+    setNotice("");
+    let createdSkillId = 0;
     try {
       const generatedSkill = await generateSkillDraft({
         existingSkill: mode === "rewrite" ? activeSkill : null,
@@ -1438,9 +2108,10 @@ function App() {
           skill: nextSkill,
         });
         if (shouldTrackSkillVersion(activeSkill, nextSkill)) {
-          setSkillHistoryMap((prev) => appendSkillHistoryEntry(prev, activeSkill, "ai-rewrite"));
+          updateSkillHistoryMap((prev) => appendSkillHistoryEntry(prev, activeSkill, "ai-rewrite"));
         }
         setWorkspace(savedSnapshot);
+        setNotice(String(generatedSkill.warning || "").trim());
         return;
       }
 
@@ -1448,7 +2119,7 @@ function App() {
         name: generatedSkill.name || t("app.skills.defaultTitle"),
         activeSessionId,
       });
-      const createdSkillId = createdSnapshot?.activeSkill?.id || createdSnapshot?.activeSkillId;
+      createdSkillId = createdSnapshot?.activeSkill?.id || createdSnapshot?.activeSkillId;
       if (!createdSkillId) {
         throw new Error(t("app.skills.forge.createFailed"));
       }
@@ -1465,9 +2136,11 @@ function App() {
         },
       });
       setWorkspace(savedSnapshot);
-      setCurrentView("skills");
+      setNotice(String(generatedSkill.warning || "").trim());
+      openView("skills");
     } catch (err) {
-      setError(normalizeError(err));
+      setNotice("");
+      setError(await rollbackCreatedSkill(createdSkillId, err));
     } finally {
       setBusy("");
     }
@@ -1480,6 +2153,9 @@ function App() {
     if (typeof window !== "undefined" && !window.confirm(t("app.skills.deleteConfirm"))) {
       return;
     }
+    if (hasUnsavedSkill && skillDraft.id === activeSkillId && !confirmDiscardWorkspaceDrafts()) {
+      return;
+    }
     setBusy("delete-skill");
     setError("");
     try {
@@ -1487,7 +2163,7 @@ function App() {
         skillId: activeSkillId,
         activeSessionId,
       });
-      setSkillHistoryMap((prev) => removeSkillHistoryEntries(prev, activeSkillId));
+      updateSkillHistoryMap((prev) => removeSkillHistoryEntries(prev, activeSkillId));
       setWorkspace(snapshot);
     } catch (err) {
       setError(normalizeError(err));
@@ -1525,12 +2201,18 @@ function App() {
     if (!version || !activeSkillId) {
       return;
     }
+    if (!confirmDiscardWorkspaceDrafts()) {
+      return;
+    }
 
     setSkillDraft(buildSkillDraftFromVersion(version, activeSkillId));
   }
 
   async function handleRestoreSkillVersion(version) {
     if (!version || !activeSkillId || !activeSessionId || !activeSkill) {
+      return;
+    }
+    if (!confirmDiscardWorkspaceDrafts()) {
       return;
     }
 
@@ -1547,9 +2229,9 @@ function App() {
         activeSessionId,
         skill: nextSkill,
       });
-      setSkillHistoryMap((prev) => appendSkillHistoryEntry(prev, activeSkill, "restore"));
+      updateSkillHistoryMap((prev) => appendSkillHistoryEntry(prev, activeSkill, "restore"));
       setWorkspace(snapshot);
-      setCurrentView("skills");
+      openView("skills");
     } catch (err) {
       setError(normalizeError(err));
     } finally {
@@ -1558,6 +2240,9 @@ function App() {
   }
 
   async function handleCreateReminder() {
+    if (!confirmDiscardWorkspaceDrafts()) {
+      return;
+    }
     setBusy("create-reminder");
     setError("");
     try {
@@ -1567,7 +2252,7 @@ function App() {
       });
       setWorkspace(snapshot);
       setSelectedReminderId(snapshot.reminders?.[0]?.id || 0);
-      setCurrentView("reminders");
+      openView("reminders");
     } catch (err) {
       setError(normalizeError(err));
     } finally {
@@ -1611,6 +2296,13 @@ function App() {
     if (typeof window !== "undefined" && !window.confirm(t("app.reminders.deleteConfirm"))) {
       return;
     }
+    if (
+      hasUnsavedReminder &&
+      reminderDraft.id === selectedReminderId &&
+      !confirmDiscardWorkspaceDrafts()
+    ) {
+      return;
+    }
 
     setBusy("delete-reminder");
     setError("");
@@ -1632,8 +2324,10 @@ function App() {
     if (!noteId) {
       return;
     }
-    await handleOpenNote(noteId);
-    setCurrentView("knowledge");
+    const opened = await handleOpenNote(noteId);
+    if (opened) {
+      openView("knowledge");
+    }
   }
 
   async function handleRunAgent(event) {
@@ -1718,25 +2412,33 @@ function App() {
     if (files.length === 0) {
       return;
     }
+    setError("");
+    try {
+      const items = await Promise.all(
+        files.map(async (file) => ({
+          id: `gallery-${file.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
+          name: file.name.replace(/\.[^/.]+$/, ""),
+          caption: "",
+          favorite: false,
+          createdAt: Date.now(),
+          src: await fileToDataUrl(file),
+        }))
+      );
 
-    const items = await Promise.all(
-      files.map(async (file) => ({
-        id: `gallery-${file.lastModified}-${Math.random().toString(36).slice(2, 8)}`,
-        name: file.name.replace(/\.[^/.]+$/, ""),
-        caption: "",
-        favorite: false,
-        createdAt: Date.now(),
-        src: await fileToDataUrl(file),
-      }))
-    );
-
-    setGalleryItems((prev) => [...items, ...prev]);
-    setGalleryViewerId(items[0]?.id || "");
-    event.target.value = "";
+      const galleryUpdate = updateGalleryItems((prev) => [...items, ...prev]);
+      if (!galleryUpdate.ok) {
+        return;
+      }
+      setGalleryViewerId(items[0]?.id || "");
+    } catch (error) {
+      setError(normalizeError(error));
+    } finally {
+      event.target.value = "";
+    }
   }
 
   function handleToggleFavoriteGalleryItem(itemId) {
-    setGalleryItems((prev) =>
+    updateGalleryItems((prev) =>
       prev.map((item) =>
         item.id === itemId ? { ...item, favorite: !item.favorite } : item
       )
@@ -1748,7 +2450,10 @@ function App() {
       return;
     }
 
-    setGalleryItems((prev) => prev.filter((item) => item.id !== itemId));
+    const galleryUpdate = updateGalleryItems((prev) => prev.filter((item) => item.id !== itemId));
+    if (!galleryUpdate.ok) {
+      return;
+    }
     setGalleryViewerId((prev) => (prev === itemId ? "" : prev));
   }
 
@@ -1760,11 +2465,16 @@ function App() {
       return;
     }
 
-    removeLocalStorageKeys([GALLERY_STORAGE_KEY, LEGACY_ALBUM_STORAGE_KEY]);
-    setGalleryItems([]);
-    setGallerySearch("");
-    setGalleryFilter("all");
-    setGalleryViewerId("");
+    setError("");
+    try {
+      removeLocalStorageKeys([GALLERY_STORAGE_KEY, LEGACY_ALBUM_STORAGE_KEY]);
+      setGalleryItems([]);
+      setGallerySearch("");
+      setGalleryFilter("all");
+      setGalleryViewerId("");
+    } catch (err) {
+      setError(t("app.settings.cache.clearFailed", { detail: normalizeError(err) }));
+    }
   }
 
   function handleClearWeatherCache() {
@@ -1776,17 +2486,23 @@ function App() {
     }
 
     const fallbackLocations = WEATHER_LOCATIONS.map((location) => sanitizeWeatherLocation(location)).filter(Boolean);
-    removeLocalStorageKeys([
-      WEATHER_LOCATIONS_STORAGE_KEY,
-      WEATHER_RECENT_SEARCHES_STORAGE_KEY,
-      WEATHER_USAGE_STORAGE_KEY,
-    ]);
-    setWeatherLocations(fallbackLocations);
-    setSelectedWeatherCityId(fallbackLocations[0]?.id || WEATHER_LOCATIONS[0].id);
-    setWeatherCities(createInitialWeatherCities(fallbackLocations));
-    setWeatherStatus("loading");
-    setWeatherError("");
-    setWeatherUpdatedAt(0);
+    setError("");
+    try {
+      removeLocalStorageKeys([
+        WEATHER_LOCATIONS_STORAGE_KEY,
+        WEATHER_RECENT_SEARCHES_STORAGE_KEY,
+        WEATHER_USAGE_STORAGE_KEY,
+      ]);
+      setWeatherLocations(fallbackLocations);
+      setSelectedWeatherCityId(fallbackLocations[0]?.id || WEATHER_LOCATIONS[0].id);
+      setWeatherCities(createInitialWeatherCities(fallbackLocations));
+      setWeatherStatus("loading");
+      setWeatherError("");
+      setWeatherUpdatedAt(0);
+      setWeatherAuxCacheVersion((prev) => prev + 1);
+    } catch (err) {
+      setError(t("app.settings.cache.clearFailed", { detail: normalizeError(err) }));
+    }
   }
 
   function handleClearSkillHistoryCache() {
@@ -1797,8 +2513,13 @@ function App() {
       return;
     }
 
-    removeLocalStorageKeys([SKILL_HISTORY_STORAGE_KEY]);
-    setSkillHistoryMap({});
+    setError("");
+    try {
+      removeLocalStorageKeys([SKILL_HISTORY_STORAGE_KEY]);
+      setSkillHistoryMap({});
+    } catch (err) {
+      setError(t("app.settings.cache.clearFailed", { detail: normalizeError(err) }));
+    }
   }
 
   function handleClearAllCaches() {
@@ -1810,25 +2531,48 @@ function App() {
     }
 
     const fallbackLocations = WEATHER_LOCATIONS.map((location) => sanitizeWeatherLocation(location)).filter(Boolean);
-    removeLocalStorageKeys([
-      GALLERY_STORAGE_KEY,
-      LEGACY_ALBUM_STORAGE_KEY,
-      WEATHER_LOCATIONS_STORAGE_KEY,
-      WEATHER_RECENT_SEARCHES_STORAGE_KEY,
-      WEATHER_USAGE_STORAGE_KEY,
-      SKILL_HISTORY_STORAGE_KEY,
-    ]);
-    setGalleryItems([]);
-    setGallerySearch("");
-    setGalleryFilter("all");
-    setGalleryViewerId("");
-    setWeatherLocations(fallbackLocations);
-    setSelectedWeatherCityId(fallbackLocations[0]?.id || WEATHER_LOCATIONS[0].id);
-    setWeatherCities(createInitialWeatherCities(fallbackLocations));
-    setWeatherStatus("loading");
-    setWeatherError("");
-    setWeatherUpdatedAt(0);
-    setSkillHistoryMap({});
+    setError("");
+    try {
+      const nextLyricsClearMarker = String(Date.now());
+      writeLyricsCacheClearMarker(nextLyricsClearMarker);
+      removeLocalStorageKeys([
+        GALLERY_STORAGE_KEY,
+        LEGACY_ALBUM_STORAGE_KEY,
+        WEATHER_LOCATIONS_STORAGE_KEY,
+        WEATHER_RECENT_SEARCHES_STORAGE_KEY,
+        WEATHER_USAGE_STORAGE_KEY,
+        SKILL_HISTORY_STORAGE_KEY,
+        LYRICS_CACHE_STORAGE_KEY,
+      ]);
+      invalidateAllLyricsRequestVersions();
+      setGalleryItems([]);
+      setGallerySearch("");
+      setGalleryFilter("all");
+      setGalleryViewerId("");
+      setWeatherLocations(fallbackLocations);
+      setSelectedWeatherCityId(fallbackLocations[0]?.id || WEATHER_LOCATIONS[0].id);
+      setWeatherCities(createInitialWeatherCities(fallbackLocations));
+      setWeatherStatus("loading");
+      setWeatherError("");
+      setWeatherUpdatedAt(0);
+      setSkillHistoryMap({});
+      setLyricsCache({});
+      setLyricsCacheClearMarker(nextLyricsClearMarker);
+      setLyricsLookupState(buildLyricsLookupStateWithClearMarker({}, tracks));
+      setWeatherAuxCacheVersion((prev) => prev + 1);
+    } catch (err) {
+      try {
+        writeLyricsCacheClearMarker(lyricsCacheClearMarker);
+      } catch (rollbackError) {
+        setError(
+          t("app.settings.cache.clearFailed", {
+            detail: `${normalizeError(err)}; rollback: ${normalizeError(rollbackError)}`,
+          })
+        );
+        return;
+      }
+      setError(t("app.settings.cache.clearFailed", { detail: normalizeError(err) }));
+    }
   }
 
   const viewMeta = {
@@ -1981,18 +2725,28 @@ function App() {
   ];
   const activeInspectorMeta =
     inspectorTabs.find((tab) => tab.id === activeInspectorTab) || inspectorTabs[0];
+  const isModalOpen = isInspectorOpen || isMobileNavOpen;
+  const modalBackgroundProps = isModalOpen ? { "aria-hidden": "true", inert: "" } : {};
 
   function openInspector(tab = "runtime") {
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      lastInspectorTriggerRef.current = document.activeElement;
+    }
+    setIsMobileNavOpen(false);
     setActiveInspectorTab(tab);
     setIsInspectorOpen(true);
   }
 
   function handleSelectView(viewId) {
-    if (!viewId) {
-      return;
+    openView(viewId);
+  }
+
+  function handleToggleMobileNav() {
+    if (!isMobileNavOpen && typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      lastMobileNavTriggerRef.current = document.activeElement;
+      setIsInspectorOpen(false);
     }
-    setCurrentView(viewId);
-    setIsMobileNavOpen(false);
+    setIsMobileNavOpen((prev) => !prev);
   }
 
   function handleToggleInspector(tab = "runtime") {
@@ -2002,6 +2756,44 @@ function App() {
     }
 
     openInspector(tab);
+  }
+
+  function handleInspectorTabKeyDown(event, tabIndex) {
+    let nextTabIndex = tabIndex;
+
+    switch (event.key) {
+      case "ArrowRight":
+      case "ArrowDown":
+        nextTabIndex = (tabIndex + 1) % inspectorTabs.length;
+        break;
+      case "ArrowLeft":
+      case "ArrowUp":
+        nextTabIndex = (tabIndex - 1 + inspectorTabs.length) % inspectorTabs.length;
+        break;
+      case "Home":
+        nextTabIndex = 0;
+        break;
+      case "End":
+        nextTabIndex = inspectorTabs.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+
+    const nextTab = inspectorTabs[nextTabIndex];
+    if (!nextTab) {
+      return;
+    }
+
+    setActiveInspectorTab(nextTab.id);
+
+    const tabButtons = Array.from(event.currentTarget.parentElement?.querySelectorAll('[role="tab"]') || []);
+    const nextButton = tabButtons[nextTabIndex];
+    if (nextButton instanceof HTMLElement) {
+      nextButton.focus();
+    }
   }
 
   const railContent = (
@@ -2255,28 +3047,33 @@ function App() {
       <div className="agent-app__glow agent-app__glow--two" />
       <div className="agent-app__mesh" aria-hidden="true" />
 
-      <aside className="session-rail session-rail--desktop panel-surface">{railContent}</aside>
+      <aside className="session-rail session-rail--desktop panel-surface" {...modalBackgroundProps}>
+        {railContent}
+      </aside>
 
-      <div className={`mobile-shell-drawer ${isMobileNavOpen ? "is-open" : ""}`}>
-        <button
-          type="button"
-          className="mobile-shell-drawer__backdrop"
-          onClick={() => setIsMobileNavOpen(false)}
-          aria-label={t("app.common.close")}
-          tabIndex={isMobileNavOpen ? 0 : -1}
-        />
-        <aside
-          id="mobile-shell-drawer-panel"
-          className="mobile-shell-drawer__panel session-rail session-rail--drawer panel-surface"
-          role="dialog"
-          aria-modal="true"
-          aria-label={t("app.nav.title")}
-        >
-          {railContent}
-        </aside>
-      </div>
+      {isMobileNavOpen ? (
+        <div className="mobile-shell-drawer is-open">
+          <button
+            type="button"
+            className="mobile-shell-drawer__backdrop"
+            onClick={() => setIsMobileNavOpen(false)}
+            aria-label={t("app.common.close")}
+          />
+          <aside
+            id="mobile-shell-drawer-panel"
+            ref={mobileDrawerPanelRef}
+            className="mobile-shell-drawer__panel session-rail session-rail--drawer panel-surface"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("app.nav.title")}
+            tabIndex={-1}
+          >
+            {railContent}
+          </aside>
+        </div>
+      ) : null}
 
-      <main className="workspace-column">
+      <main className="workspace-column" {...modalBackgroundProps}>
         <section className="workspace-hero panel-surface">
           <div className="workspace-hero__masthead">
             <div className="workspace-hero__brandline">
@@ -2294,7 +3091,7 @@ function App() {
               <button
                 type="button"
                 className="shell-menu-button"
-                onClick={() => setIsMobileNavOpen(true)}
+                onClick={handleToggleMobileNav}
                 aria-expanded={isMobileNavOpen}
                 aria-controls="mobile-shell-drawer-panel"
                 aria-label={t("app.nav.title")}
@@ -2385,6 +3182,7 @@ function App() {
           </div>
         </section>
 
+        {notice ? <div className="notice-banner">{notice}</div> : null}
         {error ? <div className="error-banner">{error}</div> : null}
 
         {currentView === "agent" ? (
@@ -2402,9 +3200,9 @@ function App() {
             lang={lang}
             loading={loading}
             openInspector={openInspector}
+            openView={openView}
             providerConfigured={providerConfigured}
             sessionList={sessionList}
-            setCurrentView={setCurrentView}
             setDraft={setDraft}
           />
         ) : currentView === "knowledge" ? (
@@ -2456,7 +3254,7 @@ function App() {
             lyricsLines={selectedTrackLyrics}
             lyricsSource={selectedTrackLyricsSource}
             lyricsStatus={selectedTrackLyricsStatus}
-            onRefreshLyrics={() => void handleRefreshLyrics({ force: true })}
+            onRefreshLyrics={() => void handleRefreshLyrics({ force: true, initiatedBy: "manual" })}
             onUploadLyricsFile={handleUploadLyricsFile}
             localizedTracks={localizedTracks}
             playMode={playMode}
@@ -2472,7 +3270,9 @@ function App() {
           />
         ) : currentView === "weather" ? (
           <WeatherWorkspace
+            auxiliaryCacheVersion={weatherAuxCacheVersion}
             clockNow={clockNow}
+            onLocalCacheError={(message) => setError(message)}
             selectedCityId={selectedWeatherCityId}
             setSelectedCityId={setSelectedWeatherCityId}
             weatherCities={weatherCities}
@@ -2480,7 +3280,7 @@ function App() {
             weatherStatus={weatherStatus}
             weatherUpdatedAt={weatherUpdatedAt}
             onAddCity={handleAddWeatherCity}
-            onRefresh={() => void loadWeatherSnapshots(weatherLocations)}
+            onRefresh={() => void loadWeatherSnapshotData(weatherLocations)}
             onRemoveCity={handleRemoveWeatherCity}
           />
         ) : currentView === "skills" ? (
@@ -2518,6 +3318,7 @@ function App() {
           <SettingsWorkspace
             busy={busy}
             cacheCards={cacheCards}
+            handleClearApiKey={handleClearApiKey}
             handleSaveSettings={handleSaveSettings}
             hasUnsavedSettings={hasUnsavedSettings}
             providerConfigured={providerConfigured}
@@ -2539,62 +3340,73 @@ function App() {
             reminderSearch={reminderSearch}
             reminders={reminders}
             selectedReminderId={selectedReminderId}
+            setSelectedReminderId={handleSelectReminder}
             setReminderDraft={setReminderDraft}
             setReminderSearch={setReminderSearch}
-            setSelectedReminderId={setSelectedReminderId}
           />
         )}
       </main>
 
-      <div className={`inspector-drawer ${isInspectorOpen ? "is-open" : ""}`}>
-        <button
-          type="button"
-          className="inspector-drawer__backdrop"
-          onClick={() => setIsInspectorOpen(false)}
-          aria-label={t("app.common.close")}
-          tabIndex={isInspectorOpen ? 0 : -1}
-        />
-        <aside
-          id="inspector-drawer-panel"
-          className="inspector-drawer__panel panel-surface"
-          role="dialog"
-          aria-modal="true"
-          aria-label={t("app.inspector.group.runtime.title")}
-        >
-          <div className="inspector-drawer__head">
-            <div className="inspector-drawer__headline">
-              <span className="eyebrow">{activeInspectorMeta.eyebrow}</span>
-              <h3>{activeInspectorMeta.label}</h3>
-              <p>{viewMeta[currentView].title}</p>
-            </div>
-            <button
-              type="button"
-              className="ghost-button inspector-drawer__close"
-              onClick={() => setIsInspectorOpen(false)}
-            >
-              {t("app.common.close")}
-            </button>
-          </div>
-          <div className="inspector-tab-strip" role="tablist" aria-label={t("app.inspector.group.runtime.title")}>
-            {inspectorTabs.map((tab) => (
+      {isInspectorOpen ? (
+        <div className="inspector-drawer is-open">
+          <button
+            type="button"
+            className="inspector-drawer__backdrop"
+            onClick={() => setIsInspectorOpen(false)}
+            aria-label={t("app.common.close")}
+          />
+          <aside
+            id="inspector-drawer-panel"
+            ref={inspectorDrawerPanelRef}
+            className="inspector-drawer__panel panel-surface"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="inspector-drawer-title"
+            tabIndex={-1}
+          >
+            <div className="inspector-drawer__head">
+              <div className="inspector-drawer__headline">
+                <span className="eyebrow">{activeInspectorMeta.eyebrow}</span>
+                <h3 id="inspector-drawer-title">{activeInspectorMeta.label}</h3>
+                <p>{viewMeta[currentView].title}</p>
+              </div>
               <button
-                key={tab.id}
                 type="button"
-                role="tab"
-                aria-selected={activeInspectorTab === tab.id}
-                className={`inspector-tab ${activeInspectorTab === tab.id ? "is-active" : ""}`}
-                onClick={() => setActiveInspectorTab(tab.id)}
+                className="ghost-button inspector-drawer__close"
+                onClick={() => setIsInspectorOpen(false)}
               >
-                <span className="inspector-tab__icon" aria-hidden="true">
-                  <PanelIcon type={tab.icon} />
-                </span>
-                <span>{tab.label}</span>
+                {t("app.common.close")}
               </button>
-            ))}
-          </div>
-          <div className="inspector-column inspector-column--tabs">
+            </div>
+            <div className="inspector-tab-strip" role="tablist" aria-labelledby="inspector-drawer-title">
+              {inspectorTabs.map((tab, index) => (
+                <button
+                  key={tab.id}
+                  id={`inspector-tab-${tab.id}`}
+                  type="button"
+                  role="tab"
+                  tabIndex={activeInspectorTab === tab.id ? 0 : -1}
+                  aria-controls={`inspector-panel-${tab.id}`}
+                  aria-selected={activeInspectorTab === tab.id}
+                  className={`inspector-tab ${activeInspectorTab === tab.id ? "is-active" : ""}`}
+                  onClick={() => setActiveInspectorTab(tab.id)}
+                  onKeyDown={(event) => handleInspectorTabKeyDown(event, index)}
+                >
+                  <span className="inspector-tab__icon" aria-hidden="true">
+                    <PanelIcon type={tab.icon} />
+                  </span>
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
+            <div className="inspector-column inspector-column--tabs">
             {activeInspectorTab === "runtime" ? (
-              <section className="panel-surface runtime-panel inspector-tab-panel">
+              <section
+                id="inspector-panel-runtime"
+                className="panel-surface runtime-panel inspector-tab-panel"
+                role="tabpanel"
+                aria-labelledby="inspector-tab-runtime"
+              >
                 <div className="section-head">
                   <div>
                     <span className="eyebrow">{t("app.runtime.eyebrow")}</span>
@@ -2621,7 +3433,12 @@ function App() {
             ) : null}
 
             {activeInspectorTab === "media" ? (
-              <section className="panel-surface sound-panel inspector-tab-panel">
+              <section
+                id="inspector-panel-media"
+                className="panel-surface sound-panel inspector-tab-panel"
+                role="tabpanel"
+                aria-labelledby="inspector-tab-media"
+              >
                 <div className="section-head">
                   <div>
                     <span className="eyebrow">{t("app.sound.eyebrow")}</span>
@@ -2678,7 +3495,12 @@ function App() {
             ) : null}
 
             {activeInspectorTab === "activity" ? (
-              <section className="panel-surface activity-panel inspector-tab-panel">
+              <section
+                id="inspector-panel-activity"
+                className="panel-surface activity-panel inspector-tab-panel"
+                role="tabpanel"
+                aria-labelledby="inspector-tab-activity"
+              >
                 <div className="section-head">
                   <div>
                     <span className="eyebrow">{t("app.activity.eyebrow")}</span>
@@ -2724,7 +3546,12 @@ function App() {
             ) : null}
 
             {activeInspectorTab === "quick" ? (
-              <section className="panel-surface settings-panel inspector-tab-panel">
+                <section
+                  id="inspector-panel-quick"
+                  className="panel-surface settings-panel inspector-tab-panel"
+                  role="tabpanel"
+                  aria-labelledby="inspector-tab-quick"
+                >
                 <div className="section-head">
                   <div>
                     <span className="eyebrow">{t("app.settings.quick.eyebrow")}</span>
@@ -2783,7 +3610,7 @@ function App() {
                     type="button"
                     className="solid-button"
                     onClick={() => {
-                      setCurrentView("settings");
+                      openView("settings");
                       setIsInspectorOpen(false);
                     }}
                   >
@@ -2792,11 +3619,12 @@ function App() {
                 </div>
               </section>
             ) : null}
-          </div>
+            </div>
         </aside>
       </div>
+      ) : null}
 
-      <nav className="mobile-dock" aria-label={t("app.nav.title")}>
+      <nav className="mobile-dock" aria-label={t("app.nav.title")} {...modalBackgroundProps}>
         {mobileDockItems.map((item) => (
           <button
             key={`dock-${item.id}`}
@@ -2813,7 +3641,7 @@ function App() {
         <button
           type="button"
           className={`mobile-dock__item ${isMobileNavOpen ? "is-active" : ""}`}
-          onClick={() => setIsMobileNavOpen(true)}
+          onClick={handleToggleMobileNav}
           aria-expanded={isMobileNavOpen}
           aria-controls="mobile-shell-drawer-panel"
           aria-label={t("app.nav.title")}
@@ -2825,22 +3653,24 @@ function App() {
         </button>
       </nav>
 
-      <audio ref={audioRef} preload="metadata">
-        {selectedTrackSource ? <source src={selectedTrackSource.src} type="audio/mpeg" /> : null}
-      </audio>
+      <div {...modalBackgroundProps}>
+        <audio ref={audioRef} preload="metadata">
+          {selectedTrackSource ? <source src={selectedTrackSource.src} type="audio/mpeg" /> : null}
+        </audio>
 
-      {showMiniPlayer ? (
-        <MiniPlayerBar
-          currentTime={currentTime}
-          duration={duration}
-          handleOpenMusicWorkspace={() => setCurrentView("music")}
-          handleRestartTrack={handleRestartTrack}
-          handleSeek={handleSeek}
-          handleTogglePlayback={handleTogglePlayback}
-          isPlaying={isPlaying}
-          selectedTrack={selectedTrack}
-        />
-      ) : null}
+        {showMiniPlayer ? (
+          <MiniPlayerBar
+            currentTime={currentTime}
+            duration={duration}
+            handleOpenMusicWorkspace={() => openView("music")}
+            handleRestartTrack={handleRestartTrack}
+            handleSeek={handleSeek}
+            handleTogglePlayback={handleTogglePlayback}
+            isPlaying={isPlaying}
+            selectedTrack={selectedTrack}
+          />
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -2852,6 +3682,75 @@ function Badge({ label, value }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function getFocusableElements(container) {
+  if (!container) {
+    return [];
+  }
+
+  return Array.from(
+    container.querySelectorAll(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+  ).filter((element) => {
+    if (
+      element.hasAttribute("hidden") ||
+      element.getAttribute("aria-hidden") === "true" ||
+      element.getAttribute("aria-disabled") === "true"
+    ) {
+      return false;
+    }
+
+    const style = window.getComputedStyle(element);
+    if (style.display === "none" || style.visibility === "hidden") {
+      return false;
+    }
+
+    return element.getClientRects().length > 0;
+  });
+}
+
+function focusDialogPanel(panel) {
+  if (!panel) {
+    return;
+  }
+
+  const [firstFocusable] = getFocusableElements(panel);
+  const target = firstFocusable || panel;
+
+  if (target instanceof HTMLElement) {
+    target.focus();
+  }
+}
+
+function trapFocusWithinPanel(event, panel) {
+  const focusableElements = getFocusableElements(panel);
+
+  if (!focusableElements.length) {
+    event.preventDefault();
+    if (panel instanceof HTMLElement) {
+      panel.focus();
+    }
+    return;
+  }
+
+  const firstElement = focusableElements[0];
+  const lastElement = focusableElements[focusableElements.length - 1];
+  const activeElement = document.activeElement;
+
+  if (event.shiftKey) {
+    if (activeElement === firstElement || !panel.contains(activeElement)) {
+      event.preventDefault();
+      lastElement.focus();
+    }
+    return;
+  }
+
+  if (activeElement === lastElement || !panel.contains(activeElement)) {
+    event.preventDefault();
+    firstElement.focus();
+  }
 }
 
 function normalizeActivityKind(kind) {
@@ -3109,9 +4008,9 @@ function RuntimeWorkspace({
   lang,
   loading,
   openInspector,
+  openView,
   providerConfigured,
   sessionList,
-  setCurrentView,
   setDraft,
 }) {
   const { t } = useI18n();
@@ -3279,7 +4178,7 @@ function RuntimeWorkspace({
               <button
                 type="button"
                 className="ghost-button runtime-sidebar-card__action"
-                onClick={() => setCurrentView("skills")}
+                onClick={() => openView("skills")}
               >
                 {t("app.mode.skills")}
               </button>
@@ -3292,9 +4191,11 @@ function RuntimeWorkspace({
                     key={skill.id}
                     type="button"
                     className={`chip-button ${skill.enabled ? "is-active" : ""}`}
-                    onClick={() => {
-                      setCurrentView("skills");
-                      void handleOpenSkill(skill.id);
+                    onClick={async () => {
+                      const opened = await handleOpenSkill(skill.id);
+                      if (opened) {
+                        openView("skills");
+                      }
                     }}
                   >
                     {skill.name}
@@ -3321,7 +4222,7 @@ function RuntimeWorkspace({
               <button
                 type="button"
                 className="ghost-button runtime-sidebar-card__action"
-                onClick={() => setCurrentView("skills")}
+                onClick={() => openView("skills")}
               >
                 {t("app.mode.skills")}
               </button>
@@ -3334,9 +4235,11 @@ function RuntimeWorkspace({
                     key={skill.id}
                     type="button"
                     className="runtime-recommend-card"
-                    onClick={() => {
-                      setCurrentView("skills");
-                      void handleOpenSkill(skill.id);
+                    onClick={async () => {
+                      const opened = await handleOpenSkill(skill.id);
+                      if (opened) {
+                        openView("skills");
+                      }
                     }}
                   >
                     <strong>{skill.name}</strong>
@@ -3628,13 +4531,56 @@ function removeLocalStorageKeys(keys) {
     return;
   }
 
+  const snapshots = [];
   keys.forEach((key) => {
     try {
-      window.localStorage.removeItem(key);
+      snapshots.push({
+        key,
+        value: window.localStorage.getItem(key),
+      });
     } catch (error) {
-      console.error(`Failed to remove cache key: ${key}`, error);
+      console.error(`Failed to inspect cache key: ${key}`, error);
+      throw new Error(`Failed to clear local cache. ${key}: ${normalizeError(error)}`);
     }
   });
+
+  const removedSnapshots = [];
+  for (const snapshot of snapshots) {
+    try {
+      window.localStorage.removeItem(snapshot.key);
+      removedSnapshots.push(snapshot);
+    } catch (error) {
+      console.error(`Failed to remove cache key: ${snapshot.key}`, error);
+      const rollbackFailures = restoreLocalStorageSnapshots(removedSnapshots);
+      const rollbackDetail =
+        rollbackFailures.length > 0
+          ? ` Rollback failed for ${rollbackFailures.join("; ")}.`
+          : "";
+      throw new Error(
+        `Failed to clear local cache. ${snapshot.key}: ${normalizeError(error)}.${rollbackDetail}`
+      );
+    }
+  }
+}
+
+function restoreLocalStorageSnapshots(snapshots) {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  return snapshots.reduce((failures, snapshot) => {
+    try {
+      if (snapshot.value === null) {
+        window.localStorage.removeItem(snapshot.key);
+      } else {
+        window.localStorage.setItem(snapshot.key, snapshot.value);
+      }
+    } catch (error) {
+      console.error(`Failed to restore cache key: ${snapshot.key}`, error);
+      failures.push(`${snapshot.key}: ${normalizeError(error)}`);
+    }
+    return failures;
+  }, []);
 }
 
 function getStoredArrayLength(key) {
@@ -3656,16 +4602,49 @@ function getStoredArrayLength(key) {
   }
 }
 
-function readGalleryItems() {
+function resolveStateUpdater(current, updater) {
+  return typeof updater === "function" ? updater(current) : updater;
+}
+
+function updateStoredValue({ key, parseRaw, serialize, updater, cacheLabel }) {
   if (typeof window === "undefined") {
+    return parseRaw(serialize(resolveStateUpdater(parseRaw(null), updater)));
+  }
+
+  for (let attempt = 0; attempt < LOCAL_CACHE_WRITE_MAX_RETRIES; attempt += 1) {
+    let raw = null;
+
+    try {
+      raw = window.localStorage.getItem(key);
+      const current = parseRaw(raw);
+      const next = resolveStateUpdater(current, updater);
+      const serializedNext = serialize(next);
+      const latestRaw = window.localStorage.getItem(key);
+
+      if (latestRaw !== raw) {
+        continue;
+      }
+
+      window.localStorage.setItem(key, serializedNext);
+
+      if (window.localStorage.getItem(key) === serializedNext) {
+        return parseRaw(serializedNext);
+      }
+    } catch (error) {
+      console.error(`Failed to update ${cacheLabel}`, error);
+      throw new Error(`Failed to persist ${cacheLabel}. ${normalizeError(error)}`);
+    }
+  }
+
+  throw new Error(`Failed to persist ${cacheLabel}. Concurrent updates could not be reconciled.`);
+}
+
+function parseGalleryItemsRaw(raw) {
+  if (!raw) {
     return [];
   }
 
   try {
-    const raw = window.localStorage.getItem(GALLERY_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) {
       return [];
@@ -3678,21 +4657,32 @@ function readGalleryItems() {
         typeof item.src === "string"
     );
   } catch (error) {
+    console.error("Failed to parse gallery cache", error);
+    return [];
+  }
+}
+
+function readGalleryItems() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    return parseGalleryItemsRaw(window.localStorage.getItem(GALLERY_STORAGE_KEY));
+  } catch (error) {
     console.error("Failed to read gallery cache", error);
     return [];
   }
 }
 
-function writeGalleryItems(items) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(GALLERY_STORAGE_KEY, JSON.stringify(items));
-  } catch (error) {
-    console.error("Failed to write gallery cache", error);
-  }
+function updateStoredGalleryItems(updater) {
+  return updateStoredValue({
+    key: GALLERY_STORAGE_KEY,
+    parseRaw: parseGalleryItemsRaw,
+    serialize: (items) => JSON.stringify(Array.isArray(items) ? items : []),
+    updater,
+    cacheLabel: "gallery cache",
+  });
 }
 
 function readWeatherLocations() {
@@ -3701,11 +4691,19 @@ function readWeatherLocations() {
   }
 
   try {
-    const raw = window.localStorage.getItem(WEATHER_LOCATIONS_STORAGE_KEY);
-    if (!raw) {
-      return WEATHER_LOCATIONS;
-    }
+    return parseWeatherLocationsRaw(window.localStorage.getItem(WEATHER_LOCATIONS_STORAGE_KEY));
+  } catch (error) {
+    console.error("Failed to read weather locations", error);
+    return WEATHER_LOCATIONS;
+  }
+}
 
+function parseWeatherLocationsRaw(raw) {
+  if (!raw) {
+    return WEATHER_LOCATIONS;
+  }
+
+  try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) {
       return WEATHER_LOCATIONS;
@@ -3714,21 +4712,24 @@ function readWeatherLocations() {
     const locations = parsed.map((item) => sanitizeWeatherLocation(item)).filter(Boolean);
     return locations.length > 0 ? locations : WEATHER_LOCATIONS;
   } catch (error) {
-    console.error("Failed to read weather locations", error);
+    console.error("Failed to parse weather locations", error);
     return WEATHER_LOCATIONS;
   }
 }
 
-function writeWeatherLocations(locations) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(WEATHER_LOCATIONS_STORAGE_KEY, JSON.stringify(locations));
-  } catch (error) {
-    console.error("Failed to write weather locations", error);
-  }
+function updateStoredWeatherLocations(updater) {
+  return updateStoredValue({
+    key: WEATHER_LOCATIONS_STORAGE_KEY,
+    parseRaw: parseWeatherLocationsRaw,
+    serialize: (locations) => {
+      const normalizedLocations = (Array.isArray(locations) ? locations : [])
+        .map((location) => sanitizeWeatherLocation(location))
+        .filter(Boolean);
+      return JSON.stringify(normalizedLocations.length > 0 ? normalizedLocations : WEATHER_LOCATIONS);
+    },
+    updater,
+    cacheLabel: "weather cache",
+  });
 }
 
 function sanitizeWeatherLocation(location) {
@@ -3815,16 +4816,6 @@ function formatTime(value, lang = "en-US") {
   });
 }
 
-function formatDuration(value) {
-  if (!value || Number.isNaN(value)) {
-    return "0:00";
-  }
-  const whole = Math.floor(value);
-  const minutes = Math.floor(whole / 60);
-  const seconds = whole % 60;
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
-}
-
 function formatShortClock(value, lang = "en-US") {
   return new Date(value).toLocaleTimeString(lang, {
     hour: "2-digit",
@@ -3848,11 +4839,19 @@ function readSkillHistory() {
   }
 
   try {
-    const raw = window.localStorage.getItem(SKILL_HISTORY_STORAGE_KEY);
-    if (!raw) {
-      return {};
-    }
+    return parseSkillHistoryRaw(window.localStorage.getItem(SKILL_HISTORY_STORAGE_KEY));
+  } catch (error) {
+    console.error("Failed to read skill history", error);
+    return {};
+  }
+}
 
+function parseSkillHistoryRaw(raw) {
+  if (!raw) {
+    return {};
+  }
+
+  try {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") {
       return {};
@@ -3876,21 +4875,19 @@ function readSkillHistory() {
       return accumulator;
     }, {});
   } catch (error) {
-    console.error("Failed to read skill history", error);
+    console.error("Failed to parse skill history", error);
     return {};
   }
 }
 
-function writeSkillHistory(historyMap) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(SKILL_HISTORY_STORAGE_KEY, JSON.stringify(historyMap));
-  } catch (error) {
-    console.error("Failed to write skill history", error);
-  }
+function updateStoredSkillHistory(updater) {
+  return updateStoredValue({
+    key: SKILL_HISTORY_STORAGE_KEY,
+    parseRaw: parseSkillHistoryRaw,
+    serialize: (historyMap) => JSON.stringify(historyMap || {}),
+    updater,
+    cacheLabel: "skill history cache",
+  });
 }
 
 function readLyricsCache() {
@@ -3899,35 +4896,147 @@ function readLyricsCache() {
   }
 
   try {
-    const raw = window.localStorage.getItem(LYRICS_CACHE_STORAGE_KEY);
-    if (!raw) {
-      return {};
-    }
-
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
+    return parseLyricsCacheRaw(window.localStorage.getItem(LYRICS_CACHE_STORAGE_KEY));
   } catch (error) {
     console.error("Failed to read lyrics cache", error);
     return {};
   }
 }
 
-function writeLyricsCache(cache) {
+function readLyricsCacheClearMarker() {
   if (typeof window === "undefined") {
-    return;
+    return "";
   }
 
   try {
-    window.localStorage.setItem(LYRICS_CACHE_STORAGE_KEY, JSON.stringify(cache));
+    return String(window.localStorage.getItem(LYRICS_CACHE_CLEAR_MARKER_STORAGE_KEY) || "");
   } catch (error) {
-    console.error("Failed to write lyrics cache", error);
+    console.error("Failed to read lyrics cache clear marker", error);
+    return "";
   }
 }
 
+function writeLyricsCacheClearMarker(marker) {
+  if (typeof window === "undefined") {
+    return String(marker || "");
+  }
+
+  const normalizedMarker = String(marker || "");
+
+  try {
+    if (normalizedMarker) {
+      window.localStorage.setItem(LYRICS_CACHE_CLEAR_MARKER_STORAGE_KEY, normalizedMarker);
+    } else {
+      window.localStorage.removeItem(LYRICS_CACHE_CLEAR_MARKER_STORAGE_KEY);
+    }
+    return normalizedMarker;
+  } catch (error) {
+    console.error("Failed to persist lyrics cache clear marker", error);
+    throw new Error(`Failed to persist lyrics cache clear marker. ${normalizeError(error)}`);
+  }
+}
+
+function parseLyricsCacheRaw(raw) {
+  if (!raw) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    console.error("Failed to parse lyrics cache", error);
+    return {};
+  }
+}
+
+function updateStoredLyricsCache(updater) {
+  return updateStoredValue({
+    key: LYRICS_CACHE_STORAGE_KEY,
+    parseRaw: parseLyricsCacheRaw,
+    serialize: (cache) => JSON.stringify(cache || {}),
+    updater,
+    cacheLabel: "lyrics cache",
+  });
+}
+
+function buildLyricsLookupStateFromCache(cache, trackList) {
+  return (Array.isArray(trackList) ? trackList : []).reduce((accumulator, track) => {
+    const cacheKey = getLyricsCacheEntryKey(track);
+    const entry = cache?.[cacheKey];
+
+    if (entry?.fingerprint !== cacheKey || !entry?.source) {
+      return accumulator;
+    }
+
+    accumulator[track.id] = {
+      status: entry.source === "manual" ? "manual" : "ready",
+      error: "",
+    };
+    return accumulator;
+  }, {});
+}
+
+function buildLyricsLookupStateWithClearMarker(cache, trackList) {
+  return (Array.isArray(trackList) ? trackList : []).reduce((accumulator, track) => {
+    if (!track?.id) {
+      return accumulator;
+    }
+
+    const cacheKey = getLyricsCacheEntryKey(track);
+    const entry = cache?.[cacheKey];
+    accumulator[track.id] =
+      entry?.fingerprint === cacheKey && entry?.source
+        ? {
+            status: entry.source === "manual" ? "manual" : "ready",
+            error: "",
+          }
+        : {
+            status: "cleared",
+            error: "",
+          };
+    return accumulator;
+  }, {});
+}
+
+function mergeLyricsLookupStateFromCache({ cache, previousState, trackList }) {
+  const cacheState = buildLyricsLookupStateFromCache(cache, trackList);
+
+  return Object.entries(previousState || {}).reduce((accumulator, [trackId, entry]) => {
+    if (cacheState[trackId]) {
+      return accumulator;
+    }
+
+    if (
+      entry?.status === "loading" ||
+      entry?.status === "cleared" ||
+      String(entry?.error || "").trim()
+    ) {
+      accumulator[trackId] = entry;
+    }
+    return accumulator;
+  }, { ...cacheState });
+}
+
+function clearClearedLyricsLookupState(lookupState) {
+  return Object.entries(lookupState || {}).reduce((accumulator, [trackId, entry]) => {
+    if (entry?.status !== "cleared") {
+      accumulator[trackId] = entry;
+    }
+    return accumulator;
+  }, {});
+}
+
 function getLyricsCacheEntryKey(track, duration) {
-  const title = sanitizeLyricsSearchPart(track?.title || "");
-  const artist = sanitizeLyricsSearchPart(track?.artist || "");
+  void duration;
+  const title = resolveLyricsCacheIdentityPart(track, "title");
+  const artist = resolveLyricsCacheIdentityPart(track, "artist");
   return `${title}__${artist}`;
+}
+
+function resolveLyricsCacheIdentityPart(track, field) {
+  const translationKeyField = `${field}Key`;
+  return sanitizeLyricsSearchPart(track?.[translationKeyField] || track?.[field] || "");
 }
 
 function sanitizeLyricsSearchPart(value) {
@@ -4254,17 +5363,30 @@ function downloadJsonFile(payload, filename) {
     return;
   }
 
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {
-    type: "application/json;charset=utf-8",
-  });
-  const url = window.URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  window.URL.revokeObjectURL(url);
+  let url = "";
+
+  try {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json;charset=utf-8",
+    });
+    url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+  } catch (error) {
+    throw new Error(`Failed to export JSON file. ${normalizeError(error)}`);
+  } finally {
+    if (url) {
+      try {
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error("Failed to revoke exported JSON URL", error);
+      }
+    }
+  }
 }
 
 function slugifyFileName(value) {
@@ -4289,4 +5411,5 @@ function normalizeError(error) {
 }
 
 export default App;
+
 

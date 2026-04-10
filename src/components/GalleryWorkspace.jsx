@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useI18n } from "../i18n";
 
 function GalleryWorkspace({
@@ -16,6 +16,8 @@ function GalleryWorkspace({
   setGalleryViewerId,
 }) {
   const { lang, t } = useI18n();
+  const viewerCardRef = useRef(null);
+  const lastViewerTriggerRef = useRef(null);
   const galleryDateFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat(lang, {
@@ -62,161 +64,224 @@ function GalleryWorkspace({
       label: galleryDateFormatter.format(new Date(items[0].createdAt)),
       items,
     }));
-  }, [filteredGalleryItems]);
+  }, [filteredGalleryItems, galleryDateFormatter]);
 
   const latestImage = filteredGalleryItems[0] || galleryItems[0] || null;
-  const activeImage =
-    galleryItems.find((item) => item.id === galleryViewerId) || filteredGalleryItems[0] || null;
+  const activeImage = galleryItems.find((item) => item.id === galleryViewerId) || null;
+  const viewerBackgroundProps = galleryViewerId && activeImage ? { "aria-hidden": "true", inert: "" } : {};
+
+  useEffect(() => {
+    if (!galleryViewerId || !activeImage) {
+      return undefined;
+    }
+
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      lastViewerTriggerRef.current = document.activeElement;
+    }
+
+    const viewerPanel = viewerCardRef.current;
+    const previousOverflow =
+      typeof document !== "undefined" ? document.body.style.overflow : "";
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setGalleryViewerId("");
+        return;
+      }
+
+      if (event.key === "Tab" && viewerPanel) {
+        trapFocusWithinViewer(event, viewerPanel);
+      }
+    };
+
+    if (typeof document !== "undefined") {
+      document.body.style.overflow = "hidden";
+    }
+    if (typeof window !== "undefined") {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+
+    const focusTimer =
+      typeof window !== "undefined"
+        ? window.setTimeout(() => focusViewerPanel(viewerPanel), 0)
+        : 0;
+
+    return () => {
+      if (typeof document !== "undefined") {
+        document.body.style.overflow = previousOverflow;
+      }
+      if (typeof window !== "undefined") {
+        window.clearTimeout(focusTimer);
+        window.removeEventListener("keydown", handleKeyDown);
+      }
+
+      const trigger = lastViewerTriggerRef.current;
+      if (trigger?.isConnected) {
+        trigger.focus();
+      }
+      lastViewerTriggerRef.current = null;
+    };
+  }, [activeImage, galleryViewerId, setGalleryViewerId]);
 
   return (
     <section className="gallery-panel panel-surface">
-      <div className="gallery-toolbar">
-        <div className="section-head gallery-toolbar__head">
-          <div>
-            <span className="eyebrow">{t("app.gallery.eyebrow")}</span>
-            <h3>{t("app.gallery.title")}</h3>
-          </div>
-          <span className="section-note">
-            {t("app.gallery.imageCount", { count: filteredGalleryItems.length })} /{" "}
-            {t(`app.gallery.filter.${galleryFilter}`)}
-          </span>
-        </div>
-
-        <div className="gallery-toolbar__summary">
-          <span className="gallery-toolbar__pill">{t(`app.gallery.filter.${galleryFilter}`)}</span>
-          <span className="gallery-toolbar__pill">
-            {t("app.gallery.filter.favorites")} {favoriteCount}
-          </span>
-          {latestImage ? (
-            <span className="gallery-toolbar__pill">
-              {formatGalleryTime(latestImage.createdAt, lang)}
+      <div {...viewerBackgroundProps}>
+        <div className="gallery-toolbar">
+          <div className="section-head gallery-toolbar__head">
+            <div>
+              <span className="eyebrow">{t("app.gallery.eyebrow")}</span>
+              <h3>{t("app.gallery.title")}</h3>
+            </div>
+            <span className="section-note">
+              {t("app.gallery.imageCount", { count: filteredGalleryItems.length })} /{" "}
+              {t(`app.gallery.filter.${galleryFilter}`)}
             </span>
-          ) : null}
-        </div>
+          </div>
 
-        <div className="gallery-toolbar__actions">
-          <input
-            className="field-input"
-            value={gallerySearch}
-            onChange={(event) => setGallerySearch(event.target.value)}
-            placeholder={t("app.gallery.search")}
-          />
-          <div className="segmented-filter">
+          <div className="gallery-toolbar__summary">
+            <span className="gallery-toolbar__pill">{t(`app.gallery.filter.${galleryFilter}`)}</span>
+            <span className="gallery-toolbar__pill">
+              {t("app.gallery.filter.favorites")} {favoriteCount}
+            </span>
+            {latestImage ? (
+              <span className="gallery-toolbar__pill">
+                {formatGalleryTime(latestImage.createdAt, lang)}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="gallery-toolbar__actions">
+            <input
+              className="field-input"
+              value={gallerySearch}
+              onChange={(event) => setGallerySearch(event.target.value)}
+              placeholder={t("app.gallery.search")}
+            />
+            <div className="segmented-filter">
+              <button
+                type="button"
+                className={`segmented-filter__button ${
+                  galleryFilter === "all" ? "is-active" : ""
+                }`}
+                onClick={() => setGalleryFilter("all")}
+              >
+                {t("app.gallery.filter.all")}
+              </button>
+              <button
+                type="button"
+                className={`segmented-filter__button ${
+                  galleryFilter === "favorites" ? "is-active" : ""
+                }`}
+                onClick={() => setGalleryFilter("favorites")}
+              >
+                {t("app.gallery.filter.favorites")}
+              </button>
+            </div>
             <button
               type="button"
-              className={`segmented-filter__button ${
-                galleryFilter === "all" ? "is-active" : ""
-              }`}
-              onClick={() => setGalleryFilter("all")}
+              className="solid-button"
+              onClick={() => galleryUploadInputRef.current?.click()}
             >
-              {t("app.gallery.filter.all")}
-            </button>
-            <button
-              type="button"
-              className={`segmented-filter__button ${
-                galleryFilter === "favorites" ? "is-active" : ""
-              }`}
-              onClick={() => setGalleryFilter("favorites")}
-            >
-              {t("app.gallery.filter.favorites")}
+              {t("app.gallery.import")}
             </button>
           </div>
-          <button
-            type="button"
-            className="solid-button"
-            onClick={() => galleryUploadInputRef.current?.click()}
-          >
-            {t("app.gallery.import")}
-          </button>
         </div>
-      </div>
 
-      <div className="gallery-stage">
-        {groupedGalleryItems.length > 0 ? (
-          groupedGalleryItems.map((group) => (
-            <section key={group.key} className="gallery-group">
-              <div className="gallery-group__head">
-                <div className="gallery-group__intro">
-                  <span className="eyebrow">{group.label}</span>
-                  <strong>{group.items[0]?.name}</strong>
+        <div className="gallery-stage">
+          {groupedGalleryItems.length > 0 ? (
+            groupedGalleryItems.map((group) => (
+              <section key={group.key} className="gallery-group">
+                <div className="gallery-group__head">
+                  <div className="gallery-group__intro">
+                    <span className="eyebrow">{group.label}</span>
+                    <strong>{group.items[0]?.name}</strong>
+                  </div>
+                  <span className="section-note">
+                    {t("app.gallery.shotCount", { count: group.items.length })}
+                  </span>
                 </div>
-                <span className="section-note">
-                  {t("app.gallery.shotCount", { count: group.items.length })}
-                </span>
-              </div>
-              <div className="gallery-grid">
-                {group.items.map((item) => (
-                  <article
-                    key={item.id}
-                    className={`gallery-card ${item.favorite ? "is-favorite" : ""}`}
-                  >
-                    <button
-                      type="button"
-                      className="gallery-card__image"
-                      onClick={() => openGalleryViewer(item.id)}
+                <div className="gallery-grid">
+                  {group.items.map((item) => (
+                    <article
+                      key={item.id}
+                      className={`gallery-card ${item.favorite ? "is-favorite" : ""}`}
                     >
-                      <img src={item.src} alt={item.name} />
-                      <span className="gallery-card__badge">
-                        {item.favorite
-                          ? t("app.gallery.favoriteImage")
-                          : t("app.gallery.libraryImage")}
-                      </span>
-                    </button>
-                    <div className="gallery-card__meta">
-                      <div className="gallery-card__copy">
-                        <strong>{item.name}</strong>
-                        <p>{item.caption || formatGalleryTime(item.createdAt, lang)}</p>
-                      </div>
-                      <div className="gallery-card__actions">
-                        <button
-                          type="button"
-                          className={`chip-button ${item.favorite ? "is-active" : ""}`}
-                          onClick={() => handleToggleFavoriteGalleryItem(item.id)}
-                        >
+                      <button
+                        type="button"
+                        className="gallery-card__image"
+                        onClick={() => openGalleryViewer(item.id)}
+                        aria-haspopup="dialog"
+                        aria-expanded={galleryViewerId === item.id}
+                        aria-controls="gallery-viewer-dialog"
+                      >
+                        <img src={item.src} alt={item.name} />
+                        <span className="gallery-card__badge">
                           {item.favorite
-                            ? t("app.gallery.favorited")
-                            : t("app.gallery.favorite")}
-                        </button>
-                        <button
-                          type="button"
-                          className="chip-button danger"
-                          onClick={() => handleDeleteGalleryItem(item.id)}
-                        >
-                          {t("app.gallery.remove")}
-                        </button>
+                            ? t("app.gallery.favoriteImage")
+                            : t("app.gallery.libraryImage")}
+                        </span>
+                      </button>
+                      <div className="gallery-card__meta">
+                        <div className="gallery-card__copy">
+                          <strong>{item.name}</strong>
+                          <p>{item.caption || formatGalleryTime(item.createdAt, lang)}</p>
+                        </div>
+                        <div className="gallery-card__actions">
+                          <button
+                            type="button"
+                            className={`chip-button ${item.favorite ? "is-active" : ""}`}
+                            onClick={() => handleToggleFavoriteGalleryItem(item.id)}
+                          >
+                            {item.favorite
+                              ? t("app.gallery.favorited")
+                              : t("app.gallery.favorite")}
+                          </button>
+                          <button
+                            type="button"
+                            className="chip-button danger"
+                            onClick={() => handleDeleteGalleryItem(item.id)}
+                          >
+                            {t("app.gallery.remove")}
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-          ))
-        ) : (
-          <div className="gallery-empty">
-            <span className="eyebrow">{t("app.gallery.empty.eyebrow")}</span>
-            <h3>{t("app.gallery.empty.title")}</h3>
-            <p>{t("app.gallery.empty.description")}</p>
-          </div>
-        )}
-      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ))
+          ) : (
+            <div className="gallery-empty">
+              <span className="eyebrow">{t("app.gallery.empty.eyebrow")}</span>
+              <h3>{t("app.gallery.empty.title")}</h3>
+              <p>{t("app.gallery.empty.description")}</p>
+            </div>
+          )}
+        </div>
 
-      <input
-        ref={galleryUploadInputRef}
-        className="upload-input"
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handleGalleryUpload}
-      />
+        <input
+          ref={galleryUploadInputRef}
+          className="upload-input"
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleGalleryUpload}
+        />
+      </div>
 
       {galleryViewerId && activeImage ? (
-        <div className="gallery-viewer" role="dialog" aria-modal="true">
+        <div className="gallery-viewer" role="dialog" aria-modal="true" aria-labelledby="gallery-viewer-title">
           <div className="gallery-viewer__scrim" onClick={() => setGalleryViewerId("")} />
-          <div className="gallery-viewer__card panel-surface">
+          <div
+            id="gallery-viewer-dialog"
+            ref={viewerCardRef}
+            className="gallery-viewer__card panel-surface"
+            tabIndex={-1}
+          >
             <div className="gallery-viewer__head">
               <div>
                 <span className="eyebrow">{t("app.gallery.preview")}</span>
-                <h3>{activeImage.name}</h3>
+                <h3 id="gallery-viewer-title">{activeImage.name}</h3>
               </div>
               <button
                 type="button"
@@ -251,7 +316,10 @@ function GalleryWorkspace({
                 <button
                   type="button"
                   className="chip-button danger"
-                  onClick={() => handleDeleteGalleryItem(activeImage.id)}
+                  onClick={() => {
+                    handleDeleteGalleryItem(activeImage.id);
+                    setGalleryViewerId("");
+                  }}
                 >
                   {t("app.gallery.remove")}
                 </button>
@@ -262,6 +330,75 @@ function GalleryWorkspace({
       ) : null}
     </section>
   );
+}
+
+function getViewerFocusableElements(container) {
+  if (!container) {
+    return [];
+  }
+
+  return Array.from(
+    container.querySelectorAll(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+  ).filter((element) => {
+    if (
+      element.hasAttribute("hidden") ||
+      element.getAttribute("aria-hidden") === "true" ||
+      element.getAttribute("aria-disabled") === "true"
+    ) {
+      return false;
+    }
+
+    const style = window.getComputedStyle(element);
+    if (style.display === "none" || style.visibility === "hidden") {
+      return false;
+    }
+
+    return element.getClientRects().length > 0;
+  });
+}
+
+function focusViewerPanel(panel) {
+  if (!panel) {
+    return;
+  }
+
+  const [firstFocusable] = getViewerFocusableElements(panel);
+  const target = firstFocusable || panel;
+
+  if (target instanceof HTMLElement) {
+    target.focus();
+  }
+}
+
+function trapFocusWithinViewer(event, panel) {
+  const focusableElements = getViewerFocusableElements(panel);
+
+  if (!focusableElements.length) {
+    event.preventDefault();
+    if (panel instanceof HTMLElement) {
+      panel.focus();
+    }
+    return;
+  }
+
+  const firstElement = focusableElements[0];
+  const lastElement = focusableElements[focusableElements.length - 1];
+  const activeElement = document.activeElement;
+
+  if (event.shiftKey) {
+    if (activeElement === firstElement || !panel.contains(activeElement)) {
+      event.preventDefault();
+      lastElement.focus();
+    }
+    return;
+  }
+
+  if (activeElement === lastElement || !panel.contains(activeElement)) {
+    event.preventDefault();
+    firstElement.focus();
+  }
 }
 
 function formatGalleryTime(value, lang) {
