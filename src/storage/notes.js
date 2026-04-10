@@ -1,12 +1,13 @@
+import {
+  invokeTauri as invokeRuntimeTauri,
+  isTauriAvailable as isTauriRuntimeAvailable,
+} from "./tauri";
+
 const STORAGE_KEY = "mmgh_notes_v1";
+const DESKTOP_NOTES_COMMANDS_ENABLED = false;
 
-const isTauriAvailable = () =>
-  typeof window !== "undefined" &&
-  window.__TAURI__ &&
-  window.__TAURI__.tauri &&
-  window.__TAURI__.tauri.promisified;
-
-const invokeTauri = (payload) => window.__TAURI__.tauri.promisified(payload);
+const isTauriAvailable = () => DESKTOP_NOTES_COMMANDS_ENABLED && isTauriRuntimeAvailable();
+const invokeTauri = (command, args) => invokeRuntimeTauri(command, args);
 
 const ionicApiBase = (() => {
   if (typeof import.meta !== "undefined" && import.meta.env) {
@@ -114,7 +115,7 @@ const filterNotes = (notes, query) => {
 
 export const listNotes = async ({ query, limit } = {}) => {
   if (isTauriAvailable()) {
-    return invokeTauri({ cmd: "listNotes", query, limit });
+    return invokeTauri("list_notes", { query, limit });
   }
   if (isIonicEnabled()) {
     const params = new URLSearchParams();
@@ -139,7 +140,7 @@ export const listNotes = async ({ query, limit } = {}) => {
 
 export const addNote = async ({ title, content, mood, tags } = {}) => {
   if (isTauriAvailable()) {
-    return invokeTauri({ cmd: "addNote", title, content, mood, tags });
+    return invokeTauri("add_note", { title, content, mood, tags });
   }
   if (isIonicEnabled()) {
     const data = await requestJson("/notes", {
@@ -165,7 +166,7 @@ export const addNote = async ({ title, content, mood, tags } = {}) => {
 
 export const updateNote = async ({ id, title, content, mood, tags }) => {
   if (isTauriAvailable()) {
-    return invokeTauri({ cmd: "updateNote", id, title, content, mood, tags });
+    return invokeTauri("update_note", { id, title, content, mood, tags });
   }
   if (isIonicEnabled()) {
     const data = await requestJson(`/notes/${id}`, {
@@ -194,7 +195,7 @@ export const updateNote = async ({ id, title, content, mood, tags }) => {
 
 export const deleteNote = async (id) => {
   if (isTauriAvailable()) {
-    return invokeTauri({ cmd: "deleteNote", id });
+    return invokeTauri("delete_note", { id });
   }
   if (isIonicEnabled()) {
     await requestJson(`/notes/${id}`, { method: "DELETE" });

@@ -13,6 +13,7 @@ use crate::cmd::{AgentSettingsInput, KnowledgeNoteInput, ReminderInput, SkillInp
 
 static DB_CONN: Lazy<Mutex<Option<Connection>>> = Lazy::new(|| Mutex::new(None));
 static RUNTIME_API_KEY: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
+static APP_DATA_DIR: Lazy<Mutex<Option<PathBuf>>> = Lazy::new(|| Mutex::new(None));
 const SETTINGS_KEY: &str = "agent_settings_v1";
 #[cfg_attr(test, allow(dead_code))]
 const API_KEYRING_SERVICE: &str = "mmgh-agent-desktop";
@@ -581,14 +582,16 @@ where
   Ok(result)
 }
 
+pub fn set_app_data_dir(path: PathBuf) -> Result<()> {
+  let mut guard = APP_DATA_DIR
+    .lock()
+    .map_err(|_| anyhow!("app data dir mutex poisoned"))?;
+  *guard = Some(path);
+  Ok(())
+}
+
 fn app_data_dir() -> Option<PathBuf> {
-  let app_name = env!("CARGO_PKG_NAME");
-  tauri::api::path::local_data_dir()
-    .or_else(tauri::api::path::data_dir)
-    .map(|mut dir| {
-      dir.push(app_name);
-      dir
-    })
+  APP_DATA_DIR.lock().ok().and_then(|guard| guard.clone())
 }
 
 fn db_path() -> Result<PathBuf> {

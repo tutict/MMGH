@@ -1,3 +1,5 @@
+import { invokeTauri, isTauriAvailable } from "./tauri";
+
 const STORAGE_KEY = "mmgh_agent_workspace_v1";
 const PREVIEW_WRITE_MAX_RETRIES = 4;
 const LANG_STORAGE_KEY = "mmgh-lang";
@@ -191,14 +193,6 @@ const storageT = (key, vars) => {
     return value == null ? "" : String(value);
   });
 };
-
-const isTauriAvailable = () =>
-  typeof window !== "undefined" &&
-  window.__TAURI__ &&
-  window.__TAURI__.tauri &&
-  window.__TAURI__.tauri.promisified;
-
-const invokeTauri = (payload) => window.__TAURI__.tauri.promisified(payload);
 
 const now = () => Date.now();
 let volatilePreviewApiKey = "";
@@ -1832,96 +1826,96 @@ const buildSkillGenerationFallbackWarning = (lang, error) => {
 };
 
 export const bootstrap = async () =>
-  isTauriAvailable() ? invokeTauri({ cmd: "bootstrap" }) : localBootstrap();
+  isTauriAvailable() ? invokeTauri("bootstrap") : localBootstrap();
 
 export const openSession = async (sessionId) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "openSession", sessionId })
+    ? invokeTauri("open_session", { sessionId })
     : localOpenSession(sessionId);
 
 export const createSession = async (title) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "createSession", title })
+    ? invokeTauri("create_session", { title })
     : localCreateSession(title);
 
 export const deleteSession = async (sessionId) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "deleteSession", sessionId })
+    ? invokeTauri("delete_session", { sessionId })
     : localDeleteSession(sessionId);
 
 export const saveSettings = async ({ settings, activeSessionId }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "saveSettings", settings, activeSessionId })
+    ? invokeTauri("save_settings", { settings, activeSessionId })
     : localSaveSettings({ settings, activeSessionId });
 
 export const openKnowledgeNote = async ({ noteId, activeSessionId }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "openKnowledgeNote", noteId, activeSessionId })
+    ? invokeTauri("open_knowledge_note", { noteId, activeSessionId })
     : localOpenKnowledgeNote({ noteId, activeSessionId });
 
 export const createKnowledgeNote = async ({ title, activeSessionId }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "createKnowledgeNote", title, activeSessionId })
+    ? invokeTauri("create_knowledge_note", { title, activeSessionId })
     : localCreateKnowledgeNote({ title, activeSessionId });
 
 export const saveKnowledgeNote = async ({ note, activeSessionId }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "saveKnowledgeNote", note, activeSessionId })
+    ? invokeTauri("save_knowledge_note", { note, activeSessionId })
     : localSaveKnowledgeNote({ note, activeSessionId });
 
 export const deleteKnowledgeNote = async ({ noteId, activeSessionId }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "deleteKnowledgeNote", noteId, activeSessionId })
+    ? invokeTauri("delete_knowledge_note", { noteId, activeSessionId })
     : localDeleteKnowledgeNote({ noteId, activeSessionId });
 
 export const createReminder = async ({ title, activeSessionId }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "createReminder", title, activeSessionId })
+    ? invokeTauri("create_reminder", { title, activeSessionId })
     : localCreateReminder({ title, activeSessionId });
 
 export const saveReminder = async ({ reminder, activeSessionId }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "saveReminder", reminder, activeSessionId })
+    ? invokeTauri("save_reminder", { reminder, activeSessionId })
     : localSaveReminder({ reminder, activeSessionId });
 
 export const deleteReminder = async ({ reminderId, activeSessionId }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "deleteReminder", reminderId, activeSessionId })
+    ? invokeTauri("delete_reminder", { reminderId, activeSessionId })
     : localDeleteReminder({ reminderId, activeSessionId });
 
 export const openSkill = async ({ skillId, activeSessionId }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "openSkill", skillId, activeSessionId })
+    ? invokeTauri("open_skill", { skillId, activeSessionId })
     : localOpenSkill({ skillId, activeSessionId });
 
 export const createSkill = async ({ name, activeSessionId }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "createSkill", name, activeSessionId })
+    ? invokeTauri("create_skill", { name, activeSessionId })
     : localCreateSkill({ name, activeSessionId });
 
 export const saveSkill = async ({ skill, activeSessionId }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "saveSkill", skill, activeSessionId })
+    ? invokeTauri("save_skill", { skill, activeSessionId })
     : localSaveSkill({ skill, activeSessionId });
 
 export const deleteSkill = async ({ skillId, activeSessionId }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "deleteSkill", skillId, activeSessionId })
+    ? invokeTauri("delete_skill", { skillId, activeSessionId })
     : localDeleteSkill({ skillId, activeSessionId });
 
 export const saveSessionSkills = async ({ sessionId, skillIds, activeSessionId }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "saveSessionSkills", sessionId, skillIds, activeSessionId })
+    ? invokeTauri("save_session_skills", { sessionId, skillIds, activeSessionId })
     : localSaveSessionSkills({ sessionId, skillIds, activeSessionId });
 
 export const forgeSkill = async ({ existingSkill, lang, prompt, settings }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "forgeSkill", existingSkill, lang, prompt, settings })
+    ? invokeTauri("forge_skill", { existingSkill, lang, prompt, settings })
     : localForgeSkill({ existingSkill, lang, prompt, settings });
 
 export const runAgent = async ({ sessionId, prompt }) =>
   isTauriAvailable()
-    ? invokeTauri({ cmd: "runAgent", sessionId, prompt })
+    ? invokeTauri("run_agent", { sessionId, prompt })
     : localRunAgent({ sessionId, prompt });
 
 export const __previewTestUtils = {

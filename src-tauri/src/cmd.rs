@@ -1,120 +1,151 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
-#[serde(tag = "cmd", rename_all = "camelCase")]
-pub enum Cmd {
-  Bootstrap {
-    callback: String,
-    error: String,
-  },
-  OpenSession {
-    session_id: i64,
-    callback: String,
-    error: String,
-  },
-  CreateSession {
-    title: Option<String>,
-    callback: String,
-    error: String,
-  },
-  DeleteSession {
-    session_id: i64,
-    callback: String,
-    error: String,
-  },
-  SaveSettings {
-    settings: AgentSettingsInput,
-    active_session_id: Option<i64>,
-    callback: String,
-    error: String,
-  },
-  OpenKnowledgeNote {
-    note_id: i64,
-    active_session_id: Option<i64>,
-    callback: String,
-    error: String,
-  },
-  CreateKnowledgeNote {
-    title: Option<String>,
-    active_session_id: Option<i64>,
-    callback: String,
-    error: String,
-  },
-  SaveKnowledgeNote {
-    note: KnowledgeNoteInput,
-    active_session_id: Option<i64>,
-    callback: String,
-    error: String,
-  },
-  DeleteKnowledgeNote {
-    note_id: i64,
-    active_session_id: Option<i64>,
-    callback: String,
-    error: String,
-  },
-  CreateReminder {
-    title: Option<String>,
-    active_session_id: Option<i64>,
-    callback: String,
-    error: String,
-  },
-  SaveReminder {
-    reminder: ReminderInput,
-    active_session_id: Option<i64>,
-    callback: String,
-    error: String,
-  },
-  DeleteReminder {
-    reminder_id: i64,
-    active_session_id: Option<i64>,
-    callback: String,
-    error: String,
-  },
-  OpenSkill {
-    skill_id: i64,
-    active_session_id: Option<i64>,
-    callback: String,
-    error: String,
-  },
-  CreateSkill {
-    name: Option<String>,
-    active_session_id: Option<i64>,
-    callback: String,
-    error: String,
-  },
-  SaveSkill {
-    skill: SkillInput,
-    active_session_id: Option<i64>,
-    callback: String,
-    error: String,
-  },
-  DeleteSkill {
-    skill_id: i64,
-    active_session_id: Option<i64>,
-    callback: String,
-    error: String,
-  },
-  SaveSessionSkills {
-    session_id: i64,
-    skill_ids: Vec<i64>,
-    active_session_id: Option<i64>,
-    callback: String,
-    error: String,
-  },
-  ForgeSkill {
-    prompt: String,
-    lang: Option<String>,
-    existing_skill: Option<SkillInput>,
-    settings: Option<AgentSettingsInput>,
-    callback: String,
-    error: String,
-  },
-  RunAgent {
-    session_id: i64,
-    prompt: String,
-    callback: String,
-    error: String,
-  },
+use crate::{agent, db};
+
+type CommandResult<T> = Result<T, String>;
+
+fn into_command_error(error: anyhow::Error) -> String {
+  format!("{error:#}")
+}
+
+#[tauri::command]
+pub fn bootstrap() -> CommandResult<db::WorkspaceSnapshot> {
+  db::bootstrap().map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn open_session(session_id: i64) -> CommandResult<db::WorkspaceSnapshot> {
+  db::open_session(session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn create_session(title: Option<String>) -> CommandResult<db::WorkspaceSnapshot> {
+  db::create_session(title).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn delete_session(session_id: i64) -> CommandResult<db::WorkspaceSnapshot> {
+  db::delete_session(session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn save_settings(
+  settings: AgentSettingsInput,
+  active_session_id: Option<i64>,
+) -> CommandResult<db::WorkspaceSnapshot> {
+  db::save_settings(settings, active_session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn open_knowledge_note(
+  note_id: i64,
+  active_session_id: Option<i64>,
+) -> CommandResult<db::WorkspaceSnapshot> {
+  db::open_note(note_id, active_session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn create_knowledge_note(
+  title: Option<String>,
+  active_session_id: Option<i64>,
+) -> CommandResult<db::WorkspaceSnapshot> {
+  db::create_note(title, active_session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn save_knowledge_note(
+  note: KnowledgeNoteInput,
+  active_session_id: Option<i64>,
+) -> CommandResult<db::WorkspaceSnapshot> {
+  db::save_note(note, active_session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn delete_knowledge_note(
+  note_id: i64,
+  active_session_id: Option<i64>,
+) -> CommandResult<db::WorkspaceSnapshot> {
+  db::delete_note(note_id, active_session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn create_reminder(
+  title: Option<String>,
+  active_session_id: Option<i64>,
+) -> CommandResult<db::WorkspaceSnapshot> {
+  db::create_reminder(title, active_session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn save_reminder(
+  reminder: ReminderInput,
+  active_session_id: Option<i64>,
+) -> CommandResult<db::WorkspaceSnapshot> {
+  db::save_reminder(reminder, active_session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn delete_reminder(
+  reminder_id: i64,
+  active_session_id: Option<i64>,
+) -> CommandResult<db::WorkspaceSnapshot> {
+  db::delete_reminder(reminder_id, active_session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn open_skill(
+  skill_id: i64,
+  active_session_id: Option<i64>,
+) -> CommandResult<db::WorkspaceSnapshot> {
+  db::open_skill(skill_id, active_session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn create_skill(
+  name: Option<String>,
+  active_session_id: Option<i64>,
+) -> CommandResult<db::WorkspaceSnapshot> {
+  db::create_skill(name, active_session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn save_skill(
+  skill: SkillInput,
+  active_session_id: Option<i64>,
+) -> CommandResult<db::WorkspaceSnapshot> {
+  db::save_skill(skill, active_session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn delete_skill(
+  skill_id: i64,
+  active_session_id: Option<i64>,
+) -> CommandResult<db::WorkspaceSnapshot> {
+  db::delete_skill(skill_id, active_session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn save_session_skills(
+  session_id: i64,
+  skill_ids: Vec<i64>,
+  active_session_id: Option<i64>,
+) -> CommandResult<db::WorkspaceSnapshot> {
+  db::save_session_skills(session_id, skill_ids, active_session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn forge_skill(
+  prompt: String,
+  lang: Option<String>,
+  existing_skill: Option<SkillInput>,
+  settings: Option<AgentSettingsInput>,
+) -> CommandResult<agent::GeneratedSkillDraft> {
+  agent::forge_skill(prompt, lang, existing_skill, settings).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn run_agent(session_id: i64, prompt: String) -> CommandResult<db::WorkspaceSnapshot> {
+  agent::run_agent(session_id, prompt).map_err(into_command_error)
 }
 
 #[derive(Debug, Clone, Deserialize)]
