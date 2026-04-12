@@ -6,6 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Context, Result};
 use once_cell::sync::Lazy;
+use reqwest::Url;
 use rusqlite::{params, Connection, OptionalExtension, Transaction};
 use serde::{Deserialize, Serialize};
 
@@ -305,6 +306,7 @@ pub fn save_settings(
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let settings = merge_settings_input(load_settings_in(conn)?, input);
+    validate_provider_base_url(&settings.base_url)?;
     store_settings_in(conn, &settings)?;
     build_workspace_snapshot_in(conn, active_session_id, None, None)
   })
@@ -497,7 +499,11 @@ pub fn load_settings() -> Result<AgentSettings> {
 
 pub fn resolve_settings_override(input: Option<AgentSettingsInput>) -> Result<AgentSettings> {
   match input {
-    Some(value) => Ok(merge_settings_input(load_settings()?, value)),
+    Some(value) => {
+      let merged = merge_settings_input(load_settings()?, value);
+      validate_provider_base_url(&merged.base_url)?;
+      Ok(merged)
+    }
     None => load_settings(),
   }
 }
@@ -734,6 +740,119 @@ fn sanitize_settings_for_persistence(settings: &AgentSettings) -> AgentSettings 
   sanitized.has_api_key = false;
   sanitized.api_key.clear();
   sanitized
+}
+
+fn configured_trusted_provider_hosts() -> Vec<String> {
+  std::env::var("MMGH_TRUSTED_PROVIDER_HOSTS")
+    .unwrap_or_default()
+    .split(',')
+    .map(normalize_provider_host)
+    .filter(|host| !host.is_empty())
+    .collect()
+}
+
+fn enforce_trusted_provider_hosts() -> bool {
+  matches!(
+    std::env::var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS")
+      .unwrap_or_default()
+      .trim()
+      .to_ascii_lowercase()
+      .as_str(),
+    "1" | "true" | "yes" | "on"
+  )
+}
+
+fn normalize_provider_host(host: &str) -> String {
+  host.trim().trim_end_matches('.').to_ascii_lowercase()
+}
+
+fn is_ipv4_host(host: &str) -> bool {
+  let parts = host.split('.').collect::<Vec<_>>();
+  if parts.len() != 4 {
+    return false;
+  }
+
+  parts.iter().all(|part| part.parse::<u8>().is_ok())
+}
+
+fn is_private_ipv4_host(host: &str) -> bool {
+  if !is_ipv4_host(host) {
+    return false;
+  }
+
+  let octets = host
+    .split('.')
+    .filter_map(|part| part.parse::<u8>().ok())
+    .collect::<Vec<_>>();
+
+  if matches!(octets.as_slice(), [10, ..] | [127, ..] | [192, 168, ..] | [169, 254, ..]) {
+    return true;
+  }
+
+  matches!(octets.as_slice(), [172, second, ..] if (16..=31).contains(second))
+}
+
+fn is_local_provider_host(host: &str) -> bool {
+  let normalized = normalize_provider_host(host);
+  normalized == "localhost"
+    || normalized == "::1"
+    || normalized == "[::1]"
+    || normalized.ends_with(".local")
+    || is_private_ipv4_host(&normalized)
+}
+
+fn provider_host_matches_allowlist(host: &str, allowlist: &[String]) -> bool {
+  let normalized_host = normalize_provider_host(host);
+  allowlist.iter().any(|allowed| {
+    normalized_host == *allowed || normalized_host.ends_with(&format!(".{allowed}"))
+  })
+}
+
+fn validate_provider_base_url(base_url: &str) -> Result<()> {
+  let trimmed = base_url.trim();
+  if trimmed.is_empty() {
+    return Ok(());
+  }
+
+  let parsed = Url::parse(trimmed).context("provider base url must be a valid absolute URL")?;
+  let scheme = parsed.scheme();
+  if !matches!(scheme, "http" | "https") {
+    return Err(anyhow!("provider base url must use http or https"));
+  }
+
+  if !parsed.username().is_empty() || parsed.password().is_some() {
+    return Err(anyhow!("provider base url must not contain embedded credentials"));
+  }
+
+  if parsed.query().is_some() || parsed.fragment().is_some() {
+    return Err(anyhow!("provider base url must not contain query params or fragments"));
+  }
+
+  let host = parsed
+    .host_str()
+    .map(normalize_provider_host)
+    .filter(|host| !host.is_empty())
+    .context("provider base url must include a host")?;
+  let is_local_host = is_local_provider_host(&host);
+
+  if scheme == "http" && !is_local_host {
+    return Err(anyhow!(
+      "provider base url must use https unless it points to localhost or a private network"
+    ));
+  }
+
+  let allowlist = configured_trusted_provider_hosts();
+  if enforce_trusted_provider_hosts()
+    && !is_local_host
+    && !provider_host_matches_allowlist(&host, &allowlist)
+  {
+    return Err(anyhow!(
+      "provider host '{}' is not on MMGH_TRUSTED_PROVIDER_HOSTS",
+      host
+    ));
+  }
+
+  Ok(())
 }
 
 fn sanitize_settings_for_client(settings: &AgentSettings) -> AgentSettings {
@@ -2862,6 +2981,44 @@ mod tests {
 
     assert!(error.to_string().contains("session not found"));
     assert_eq!(list_skills_in(&conn)?.len(), initial_count);
+    Ok(())
+  }
+
+  #[test]
+  fn provider_base_url_rejects_remote_http() {
+    let error = validate_provider_base_url("http://example.com/v1")
+      .expect_err("remote http should be rejected");
+
+    assert!(error
+      .to_string()
+      .contains("https unless it points to localhost or a private network"));
+  }
+
+  #[test]
+  fn provider_base_url_allows_local_http() -> Result<()> {
+    validate_provider_base_url("http://127.0.0.1:11434/v1")
+  }
+
+  #[test]
+  fn provider_base_url_rejects_embedded_credentials() {
+    let error = validate_provider_base_url("https://user:pass@example.com/v1")
+      .expect_err("embedded credentials should be rejected");
+
+    assert!(error.to_string().contains("embedded credentials"));
+  }
+
+  #[test]
+  fn provider_base_url_enforces_allowlist_when_requested() -> Result<()> {
+    std::env::set_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS", "true");
+    std::env::set_var("MMGH_TRUSTED_PROVIDER_HOSTS", "api.openai.com");
+
+    let error = validate_provider_base_url("https://gateway.example.com/v1")
+      .expect_err("untrusted host should be rejected when allowlist enforcement is enabled");
+
+    assert!(error.to_string().contains("MMGH_TRUSTED_PROVIDER_HOSTS"));
+
+    std::env::remove_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS");
+    std::env::remove_var("MMGH_TRUSTED_PROVIDER_HOSTS");
     Ok(())
   }
 }

@@ -9,43 +9,6 @@ const DESKTOP_NOTES_COMMANDS_ENABLED = false;
 const isTauriAvailable = () => DESKTOP_NOTES_COMMANDS_ENABLED && isTauriRuntimeAvailable();
 const invokeTauri = (command, args) => invokeRuntimeTauri(command, args);
 
-const ionicApiBase = (() => {
-  if (typeof import.meta !== "undefined" && import.meta.env) {
-    return import.meta.env.VITE_IONIC_API;
-  }
-  return undefined;
-})();
-
-const isIonicEnabled = () => {
-  if (typeof import.meta !== "undefined" && import.meta.env) {
-    const mode = import.meta.env.VITE_BACKEND;
-    if (mode === "ionic") {
-      return true;
-    }
-  }
-  return Boolean(ionicApiBase);
-};
-
-const getIonicBaseUrl = () => ionicApiBase || "http://127.0.0.1:4781";
-
-const requestJson = async (path, options = {}) => {
-  const response = await fetch(`${getIonicBaseUrl()}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || `HTTP ${response.status}`);
-  }
-  if (data && data.error) {
-    throw new Error(data.error);
-  }
-  return data;
-};
-
 const normalizeTags = (tags) => {
   if (!tags) {
     return [];
@@ -117,20 +80,6 @@ export const listNotes = async ({ query, limit } = {}) => {
   if (isTauriAvailable()) {
     return invokeTauri("list_notes", { query, limit });
   }
-  if (isIonicEnabled()) {
-    const params = new URLSearchParams();
-    if (query) {
-      params.set("query", query);
-    }
-    if (typeof limit === "number") {
-      params.set("limit", String(limit));
-    }
-    const suffix = params.toString() ? `?${params}` : "";
-    const data = await requestJson(`/notes${suffix}`);
-    return Array.isArray(data?.notes)
-      ? data.notes.map(normalizeNote)
-      : [];
-  }
   const notes = filterNotes(readLocalNotes(), query);
   if (typeof limit === "number") {
     return notes.slice(0, limit);
@@ -141,13 +90,6 @@ export const listNotes = async ({ query, limit } = {}) => {
 export const addNote = async ({ title, content, mood, tags } = {}) => {
   if (isTauriAvailable()) {
     return invokeTauri("add_note", { title, content, mood, tags });
-  }
-  if (isIonicEnabled()) {
-    const data = await requestJson("/notes", {
-      method: "POST",
-      body: JSON.stringify({ title, content, mood, tags }),
-    });
-    return data?.note ? normalizeNote(data.note) : null;
   }
   const now = Date.now();
   const note = normalizeNote({
@@ -167,13 +109,6 @@ export const addNote = async ({ title, content, mood, tags } = {}) => {
 export const updateNote = async ({ id, title, content, mood, tags }) => {
   if (isTauriAvailable()) {
     return invokeTauri("update_note", { id, title, content, mood, tags });
-  }
-  if (isIonicEnabled()) {
-    const data = await requestJson(`/notes/${id}`, {
-      method: "PUT",
-      body: JSON.stringify({ title, content, mood, tags }),
-    });
-    return data?.note ? normalizeNote(data.note) : null;
   }
   const notes = readLocalNotes();
   const updatedAt = Date.now();
@@ -196,10 +131,6 @@ export const updateNote = async ({ id, title, content, mood, tags }) => {
 export const deleteNote = async (id) => {
   if (isTauriAvailable()) {
     return invokeTauri("delete_note", { id });
-  }
-  if (isIonicEnabled()) {
-    await requestJson(`/notes/${id}`, { method: "DELETE" });
-    return true;
   }
   const notes = readLocalNotes().filter((note) => note.id !== id);
   writeLocalNotes(notes);

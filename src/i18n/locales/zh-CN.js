@@ -613,6 +613,28 @@ const zhCN = {
   "app.settings.apiKeyHint.clearing": "当前 API Key 会在保存后移除；在桌面运行时里，这也会清掉系统钥匙串中的记录。",
   "app.settings.apiKeyHint.keep": "当前已经有可用的 API Key。留空保存会继续沿用它。",
   "app.settings.model": "模型",
+  "app.settings.providerSecurity.trusted":
+    "已信任 Provider 主机：{host}。",
+  "app.settings.providerSecurity.local":
+    "Provider 主机 {host} 看起来是本地网关。启用后，本地 notes、prompts 和 reminders 上下文可能会发送给它。",
+  "app.settings.providerSecurity.untrusted":
+    "Provider 主机 {host} 不在受信任白名单里。仍然可以保存，但后续模型调用会把 session 历史和本地上下文发送到这个端点。",
+  "app.settings.providerSecurity.invalidUrl":
+    "Base URL 必须是有效的绝对 URL。",
+  "app.settings.providerSecurity.missingHost":
+    "Base URL 必须包含 host。",
+  "app.settings.providerSecurity.unsupportedScheme":
+    "Base URL 只能使用 http 或 https。",
+  "app.settings.providerSecurity.embeddedCredentials":
+    "Base URL 不能内嵌用户名或密码。",
+  "app.settings.providerSecurity.queryOrFragment":
+    "Base URL 不能包含 query 参数或 fragment。",
+  "app.settings.providerSecurity.remoteHttp":
+    "远程 Provider URL 必须使用 https。只有 localhost 或私有网段网关才允许 http。",
+  "app.settings.providerSecurity.confirmUntrusted":
+    "这个 Provider 主机不在受信任白名单里：{host}。仍然要保存，并允许后续模型调用把本地 session 上下文发送到这里吗？",
+  "app.settings.providerSecurity.confirmLocal":
+    "这个 Provider 指向本地网关：{host}。仍然要保存，并允许后续模型调用把本地 session 上下文发送到这里吗？",
   "app.settings.systemPrompt": "系统提示词",
   "app.settings.save": "保存设置",
   "app.settings.quick.eyebrow": "快捷设置",

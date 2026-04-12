@@ -4,10 +4,11 @@ This project now treats provider API keys as secret material across both preview
 
 ## Preview Mode
 
-- Browser preview mode never persists plaintext `apiKey` into `localStorage`.
+- Browser preview mode never persists plaintext `apiKey` into `localStorage`; any legacy preview key found there is removed on load.
 - The active preview key lives only in `volatilePreviewApiKey` inside [src/storage/agent.js](/C:/Users/tutic/IdeaProjects/MMGH/src/storage/agent.js).
 - Saved preview workspace snapshots keep `apiKey: ""`.
-- Preview persistence only keeps a boolean-style signal through `hasApiKey`.
+- Preview persistence does not keep a reusable API key presence signal across reloads.
+- Reloading the preview runtime clears the in-memory key, so operators must re-enter it after a full refresh.
 
 ## Desktop Runtime
 

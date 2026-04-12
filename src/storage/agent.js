@@ -1,4 +1,8 @@
 import { invokeTauri, isTauriAvailable } from "./tauri";
+import {
+  assessProviderBaseUrl,
+  providerBaseUrlErrorMessage,
+} from "../security/provider";
 
 const STORAGE_KEY = "mmgh_agent_workspace_v1";
 const PREVIEW_WRITE_MAX_RETRIES = 4;
@@ -205,7 +209,12 @@ const readPersistedPreviewApiKey = () => {
   }
 
   try {
-    return String(window.localStorage.getItem(PREVIEW_API_KEY_STORAGE_KEY) || "").trim();
+    const legacyValue = String(window.localStorage.getItem(PREVIEW_API_KEY_STORAGE_KEY) || "").trim();
+    if (legacyValue) {
+      // Scrub legacy plaintext preview keys from localStorage on sight.
+      window.localStorage.removeItem(PREVIEW_API_KEY_STORAGE_KEY);
+    }
+    return "";
   } catch (error) {
     console.error("Failed to read preview api key", error);
     return "";
@@ -221,16 +230,12 @@ const writePersistedPreviewApiKey = (apiKey) => {
   }
 
   try {
-    if (normalizedApiKey) {
-      window.localStorage.setItem(PREVIEW_API_KEY_STORAGE_KEY, normalizedApiKey);
-    } else {
-      window.localStorage.removeItem(PREVIEW_API_KEY_STORAGE_KEY);
-    }
+    window.localStorage.removeItem(PREVIEW_API_KEY_STORAGE_KEY);
     volatilePreviewApiKey = normalizedApiKey;
     return normalizedApiKey;
   } catch (error) {
     console.error("Failed to persist preview api key", error);
-    throw new Error("Failed to persist preview api key. Local storage may be full.");
+    throw new Error("Failed to update the preview API key in memory.");
   }
 };
 
@@ -250,7 +255,7 @@ const hydratePreviewSettings = (settings) => {
     ...(settings || {}),
   };
   const persistedApiKey =
-    String(normalized.apiKey || "").trim() || readPersistedPreviewApiKey();
+    String(normalized.apiKey || "").trim() || readPersistedPreviewApiKey() || volatilePreviewApiKey;
   volatilePreviewApiKey = persistedApiKey;
 
   return {
@@ -1228,10 +1233,16 @@ const localDeleteSession = async (sessionId) => {
 };
 
 const localSaveSettings = async ({ settings, activeSessionId }) => {
-  const previousApiKey = readPersistedPreviewApiKey();
+  const previousApiKey = volatilePreviewApiKey;
   const nextApiKey = settings.apiKey?.trim();
   const resolvedApiKey =
     settings.clearApiKey && !nextApiKey ? "" : nextApiKey || previousApiKey;
+  const resolvedBaseUrl = settings.baseUrl?.trim() || "https://api.openai.com/v1";
+  const providerAssessment = assessProviderBaseUrl(resolvedBaseUrl);
+
+  if (providerAssessment.status === "blocked") {
+    throw new Error(providerBaseUrlErrorMessage(providerAssessment));
+  }
 
   try {
     writePersistedPreviewApiKey(resolvedApiKey);
@@ -1239,7 +1250,7 @@ const localSaveSettings = async ({ settings, activeSessionId }) => {
       ...current,
       settings: {
         providerName: settings.providerName?.trim() || "OpenAI Compatible",
-        baseUrl: settings.baseUrl?.trim() || "https://api.openai.com/v1",
+        baseUrl: resolvedBaseUrl,
         clearApiKey: false,
         hasApiKey: Boolean(resolvedApiKey),
         apiKey: "",

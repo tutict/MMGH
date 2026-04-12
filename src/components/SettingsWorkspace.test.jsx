@@ -33,6 +33,8 @@ function SettingsWorkspaceHarness() {
         handleClearApiKey={handleClearApiKey}
         hasUnsavedSettings={settingsForm.clearApiKey || Boolean(settingsForm.apiKey)}
         providerConfigured={settingsForm.hasApiKey}
+        providerSecurityMessage=""
+        providerSecurityStatus="idle"
         settingsForm={settingsForm}
         setSettingsForm={setSettingsForm}
       />
@@ -89,5 +91,36 @@ test("typing a new api key exits clear mode in settings workspace", async () => 
     screen.getByText(
       "No API key is available yet. Enter one and save to start using the provider."
     )
+  ).toBeTruthy();
+});
+
+test("settings workspace shows provider trust guidance when supplied", async () => {
+  render(
+    <I18nProvider initialLang="en-US">
+      <SettingsWorkspace
+        busy=""
+        cacheCards={[]}
+        handleSaveSettings={(event) => event.preventDefault()}
+        handleClearApiKey={() => {}}
+        hasUnsavedSettings={false}
+        providerConfigured={false}
+        providerSecurityMessage="Provider host 'gateway.example.com' is not on the trusted allowlist."
+        providerSecurityStatus="warning"
+        settingsForm={{
+          providerName: "OpenAI Compatible",
+          baseUrl: "https://gateway.example.com/v1",
+          clearApiKey: false,
+          hasApiKey: false,
+          apiKey: "",
+          model: "gpt-4.1-mini",
+          systemPrompt: "test prompt",
+        }}
+        setSettingsForm={() => {}}
+      />
+    </I18nProvider>
+  );
+
+  expect(
+    screen.getByText("Provider host 'gateway.example.com' is not on the trusted allowlist.")
   ).toBeTruthy();
 });

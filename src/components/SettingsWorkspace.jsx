@@ -8,6 +8,8 @@ function SettingsWorkspace({
   handleClearApiKey,
   hasUnsavedSettings,
   providerConfigured,
+  providerSecurityMessage,
+  providerSecurityStatus,
   settingsForm,
   setSettingsForm,
 }) {
@@ -92,6 +94,15 @@ function SettingsWorkspace({
                     }))
                   }
                 />
+                {providerSecurityMessage ? (
+                  <span
+                    className={`section-note ${
+                      providerSecurityStatus === "blocked" ? "danger-copy" : ""
+                    }`}
+                  >
+                    {providerSecurityMessage}
+                  </span>
+                ) : null}
               </label>
               <label className="settings-form__card settings-form__card--wide">
                 <span>{t("app.settings.apiKey")}</span>

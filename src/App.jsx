@@ -34,6 +34,7 @@ import WeatherWorkspace, {
   fetchWeatherSnapshots,
 } from "./components/WeatherWorkspace";
 import { LANG_PERSIST_ERROR_EVENT, useI18n } from "./i18n";
+import { assessProviderBaseUrl } from "./security/provider";
 
 const BUILT_IN_TRACKS = [
   {
@@ -1003,6 +1004,40 @@ function App() {
       settings?.model?.trim()
     );
   }, [workspace]);
+  const providerSecurityAssessment = useMemo(
+    () => assessProviderBaseUrl(settingsForm.baseUrl),
+    [settingsForm.baseUrl]
+  );
+  const providerSecurityMessage = useMemo(() => {
+    switch (providerSecurityAssessment.reason) {
+      case "trustedHost":
+        return t("app.settings.providerSecurity.trusted", {
+          host: providerSecurityAssessment.host,
+        });
+      case "localHost":
+        return t("app.settings.providerSecurity.local", {
+          host: providerSecurityAssessment.host,
+        });
+      case "untrustedHost":
+        return t("app.settings.providerSecurity.untrusted", {
+          host: providerSecurityAssessment.host,
+        });
+      case "invalidUrl":
+        return t("app.settings.providerSecurity.invalidUrl");
+      case "missingHost":
+        return t("app.settings.providerSecurity.missingHost");
+      case "unsupportedScheme":
+        return t("app.settings.providerSecurity.unsupportedScheme");
+      case "embeddedCredentials":
+        return t("app.settings.providerSecurity.embeddedCredentials");
+      case "queryOrFragment":
+        return t("app.settings.providerSecurity.queryOrFragment");
+      case "remoteHttp":
+        return t("app.settings.providerSecurity.remoteHttp");
+      default:
+        return "";
+    }
+  }, [providerSecurityAssessment, t]);
 
   const filteredNotes = useMemo(() => {
     if (!noteSearch.trim()) {
@@ -1689,6 +1724,32 @@ function App() {
 
   async function handleSaveSettings(event) {
     event.preventDefault();
+    if (providerSecurityAssessment.status === "blocked") {
+      setError(providerSecurityMessage);
+      return;
+    }
+    if (
+      providerSecurityAssessment.status === "warning" &&
+      typeof window !== "undefined" &&
+      !window.confirm(
+        t("app.settings.providerSecurity.confirmUntrusted", {
+          host: providerSecurityAssessment.host,
+        })
+      )
+    ) {
+      return;
+    }
+    if (
+      providerSecurityAssessment.status === "local" &&
+      typeof window !== "undefined" &&
+      !window.confirm(
+        t("app.settings.providerSecurity.confirmLocal", {
+          host: providerSecurityAssessment.host,
+        })
+      )
+    ) {
+      return;
+    }
     setBusy("save-settings");
     setError("");
     try {
@@ -3322,6 +3383,8 @@ function App() {
             handleSaveSettings={handleSaveSettings}
             hasUnsavedSettings={hasUnsavedSettings}
             providerConfigured={providerConfigured}
+            providerSecurityMessage={providerSecurityMessage}
+            providerSecurityStatus={providerSecurityAssessment.status}
             settingsForm={settingsForm}
             setSettingsForm={setSettingsForm}
           />

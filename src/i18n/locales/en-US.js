@@ -643,6 +643,28 @@ const enUS = {
   "app.settings.apiKeyHint.keep":
     "A current API key is already available. Leave this blank to keep using it.",
   "app.settings.model": "Model",
+  "app.settings.providerSecurity.trusted":
+    "Provider host '{host}' is on the trusted allowlist.",
+  "app.settings.providerSecurity.local":
+    "Provider host '{host}' looks local. Local gateways can receive notes, prompts, and reminder context once this provider is used.",
+  "app.settings.providerSecurity.untrusted":
+    "Provider host '{host}' is not on the trusted allowlist. Saving is still allowed, but this endpoint will receive session history and staged local context when the model runs.",
+  "app.settings.providerSecurity.invalidUrl":
+    "Base URL must be a valid absolute URL.",
+  "app.settings.providerSecurity.missingHost":
+    "Base URL must include a host.",
+  "app.settings.providerSecurity.unsupportedScheme":
+    "Base URL must use http or https.",
+  "app.settings.providerSecurity.embeddedCredentials":
+    "Base URL must not contain embedded credentials.",
+  "app.settings.providerSecurity.queryOrFragment":
+    "Base URL must not contain query params or fragments.",
+  "app.settings.providerSecurity.remoteHttp":
+    "Remote provider URLs must use https. Plain http is only allowed for localhost or private-network gateways.",
+  "app.settings.providerSecurity.confirmUntrusted":
+    "This provider host is not on the trusted allowlist: {host}. Continue saving and allow future model runs to send local session context there?",
+  "app.settings.providerSecurity.confirmLocal":
+    "This provider points to a local gateway: {host}. Continue saving and allow future model runs to send local session context there?",
   "app.settings.systemPrompt": "System prompt",
   "app.settings.save": "Save settings",
   "app.settings.quick.eyebrow": "Quick settings",

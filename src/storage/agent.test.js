@@ -35,6 +35,7 @@ test("blank save keeps the current preview api key", async () => {
   expect(agent.__previewTestUtils.getResolvedPreviewApiKey(keptSnapshot.settings)).toBe(
     "key-one"
   );
+  expect(window.localStorage.getItem("mmgh_agent_preview_api_key_v1")).toBeNull();
 });
 
 test("entering a new preview api key replaces the active runtime key without persisting plaintext", async () => {
@@ -63,6 +64,7 @@ test("entering a new preview api key replaces the active runtime key without per
   expect(agent.__previewTestUtils.getResolvedPreviewApiKey(overwrittenSnapshot.settings)).toBe(
     "key-two"
   );
+  expect(agent.__previewTestUtils.getPersistedPreviewApiKey()).toBe("");
   expect(agent.__previewTestUtils.getPersistedWorkspaceSettings()).toMatchObject({
     apiKey: "",
     hasApiKey: false,
@@ -93,13 +95,29 @@ test("explicit clear removes the current preview api key", async () => {
 
   expect(clearedSnapshot.settings.hasApiKey).toBe(false);
   expect(agent.__previewTestUtils.getResolvedPreviewApiKey(clearedSnapshot.settings)).toBe("");
+  expect(agent.__previewTestUtils.getPersistedPreviewApiKey()).toBe("");
   expect(agent.__previewTestUtils.getPersistedWorkspaceSettings()).toMatchObject({
     apiKey: "",
     hasApiKey: false,
   });
 });
 
-test("preview api key survives module reloads without leaking into persisted workspace settings", async () => {
+test("preview settings reject remote http provider endpoints", async () => {
+  const agent = await loadAgentModule();
+  const initialSnapshot = await agent.bootstrap();
+
+  await expect(
+    agent.saveSettings({
+      settings: {
+        ...initialSnapshot.settings,
+        baseUrl: "http://example.com/v1",
+      },
+      activeSessionId: initialSnapshot.activeSessionId,
+    })
+  ).rejects.toThrow("https unless it points to localhost or a private network");
+});
+
+test("preview api key does not survive module reloads or leak into localStorage", async () => {
   const agent = await loadAgentModule();
   const initialSnapshot = await agent.bootstrap();
 
@@ -116,15 +134,25 @@ test("preview api key survives module reloads without leaking into persisted wor
   const reloadedAgent = await import("./agent");
   const reloadedSnapshot = await reloadedAgent.bootstrap();
 
-  expect(reloadedSnapshot.settings.hasApiKey).toBe(true);
+  expect(reloadedSnapshot.settings.hasApiKey).toBe(false);
   expect(reloadedSnapshot.settings.apiKey).toBe("");
-  expect(reloadedAgent.__previewTestUtils.getResolvedPreviewApiKey(reloadedSnapshot.settings)).toBe(
-    "key-cross-tab"
-  );
+  expect(reloadedAgent.__previewTestUtils.getResolvedPreviewApiKey(reloadedSnapshot.settings)).toBe("");
+  expect(window.localStorage.getItem("mmgh_agent_preview_api_key_v1")).toBeNull();
   expect(reloadedAgent.__previewTestUtils.getPersistedWorkspaceSettings()).toMatchObject({
     apiKey: "",
     hasApiKey: false,
   });
+});
+
+test("bootstrap scrubs legacy plaintext preview api keys from localStorage", async () => {
+  window.localStorage.setItem("mmgh_agent_preview_api_key_v1", "legacy-preview-key");
+  vi.resetModules();
+  const agent = await import("./agent");
+  const snapshot = await agent.bootstrap();
+
+  expect(snapshot.settings.hasApiKey).toBe(false);
+  expect(agent.__previewTestUtils.getResolvedPreviewApiKey(snapshot.settings)).toBe("");
+  expect(window.localStorage.getItem("mmgh_agent_preview_api_key_v1")).toBeNull();
 });
 
 test("saving a missing preview reminder fails instead of silently succeeding", async () => {

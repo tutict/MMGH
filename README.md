@@ -88,6 +88,12 @@ cargo build --manifest-path src-tauri/Cargo.toml
 - `Model`
 - `System Prompt`
 
+Provider 安全边界：
+- 远程 `Base URL` 默认必须使用 `https`
+- `http` 只允许给 `localhost` 或私有网段网关
+- 如果想给特定域名做受信任白名单，可配置 `VITE_TRUSTED_PROVIDER_HOSTS` 和 `MMGH_TRUSTED_PROVIDER_HOSTS`
+- 如果想强制只允许白名单域名，可额外设置 `VITE_ENFORCE_TRUSTED_PROVIDER_HOSTS=true` 和 `MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS=true`
+
 当上述配置缺失时：
 
 - 桌面模式会回退到本地预览回答逻辑

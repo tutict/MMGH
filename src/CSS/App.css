@@ -952,6 +952,10 @@ textarea::placeholder {
   flex: 0 0 auto;
 }
 
+.danger-copy {
+  color: #d25f57;
+}
+
 .solid-button:hover,
 .ghost-button:hover,
 .icon-button:hover,
