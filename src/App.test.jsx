@@ -13,6 +13,13 @@ const settingsRenderProfile = {
   },
 };
 
+const skillRenderProfile = {
+  count: 0,
+  reset() {
+    this.count = 0;
+  },
+};
+
 const createWorkspaceSnapshot = () => {
   const now = 1_710_000_000_000;
   return {
@@ -242,6 +249,38 @@ vi.mock("./components/SettingsWorkspace", async () => {
   };
 });
 
+function areSkillWorkspaceTestPropsEqual(previousProps, nextProps) {
+  return (
+    previousProps.activeSkill === nextProps.activeSkill &&
+    previousProps.activeSkillId === nextProps.activeSkillId &&
+    previousProps.activeSkillVersions === nextProps.activeSkillVersions &&
+    previousProps.activeSessionRecommendedSkills === nextProps.activeSessionRecommendedSkills &&
+    previousProps.activeSessionTitle === nextProps.activeSessionTitle &&
+    previousProps.busy === nextProps.busy &&
+    previousProps.hasUnsavedSkill === nextProps.hasUnsavedSkill &&
+    previousProps.loading === nextProps.loading &&
+    previousProps.mountedSkillIds === nextProps.mountedSkillIds &&
+    previousProps.providerConfigured === nextProps.providerConfigured &&
+    previousProps.skillDraft === nextProps.skillDraft &&
+    previousProps.skillImportInputRef === nextProps.skillImportInputRef &&
+    previousProps.skillList === nextProps.skillList &&
+    previousProps.skillSearch === nextProps.skillSearch
+  );
+}
+
+vi.mock("./components/SkillWorkspace", async () => {
+  const ReactModule = await import("react");
+  const actual = await vi.importActual("./components/SkillWorkspace");
+  const WrappedSkillWorkspace = ReactModule.memo((props) => {
+    skillRenderProfile.count += 1;
+    return <actual.default {...props} />;
+  }, areSkillWorkspaceTestPropsEqual);
+
+  return {
+    default: WrappedSkillWorkspace,
+  };
+});
+
 perfTest("app settings view skips unrelated clock tick renders", async () => {
   const previousMatchMedia = window.matchMedia;
   const loadSpy = vi
@@ -300,6 +339,72 @@ perfTest("app settings view skips unrelated clock tick renders", async () => {
     console.log(`PERF_REACT settings_clock_tick_render_count=${settingsRenderProfile.count}`);
 
     expect(settingsRenderProfile.count).toBeLessThanOrEqual(1);
+  } finally {
+    window.matchMedia = previousMatchMedia;
+    loadSpy.mockRestore();
+    playSpy.mockRestore();
+    pauseSpy.mockRestore();
+  }
+}, 15000);
+
+perfTest("app skills view skips unrelated clock tick renders", async () => {
+  const previousMatchMedia = window.matchMedia;
+  const loadSpy = vi
+    .spyOn(window.HTMLMediaElement.prototype, "load")
+    .mockImplementation(() => {});
+  const playSpy = vi
+    .spyOn(window.HTMLMediaElement.prototype, "play")
+    .mockImplementation(async () => {});
+  const pauseSpy = vi
+    .spyOn(window.HTMLMediaElement.prototype, "pause")
+    .mockImplementation(() => {});
+
+  window.matchMedia = vi.fn().mockImplementation(() => ({
+    matches: false,
+    media: "",
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }));
+
+  skillRenderProfile.reset();
+
+  try {
+    const { default: App } = await import("./App");
+
+    const mountStart = performance.now();
+    render(
+      <I18nProvider initialLang="en-US">
+        <App />
+      </I18nProvider>
+    );
+
+    await screen.findByRole("heading", { name: "MMGH Agent", level: 1 });
+    const skillsButton = screen.getAllByRole("button", { name: /Skills/i })[0];
+    expect(skillsButton).toBeTruthy();
+    await act(async () => {
+      skillsButton.click();
+    });
+    await screen.findByText("Skill Center");
+    const mountMs = performance.now() - mountStart;
+
+    skillRenderProfile.reset();
+    const tickStart = performance.now();
+    await act(async () => {
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 3100);
+      });
+    });
+    const clockTickWindowMs = performance.now() - tickStart;
+
+    console.log(`PERF_REACT skills_mount_ms=${mountMs.toFixed(3)}`);
+    console.log(`PERF_REACT skills_clock_tick_window_ms=${clockTickWindowMs.toFixed(3)}`);
+    console.log(`PERF_REACT skills_clock_tick_render_count=${skillRenderProfile.count}`);
+
+    expect(skillRenderProfile.count).toBeLessThanOrEqual(1);
   } finally {
     window.matchMedia = previousMatchMedia;
     loadSpy.mockRestore();

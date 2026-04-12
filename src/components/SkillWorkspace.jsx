@@ -928,4 +928,23 @@ function toHistoryReasonKey(reason) {
   return "manualSave";
 }
 
-export default SkillWorkspace;
+function areSkillWorkspacePropsEqual(previousProps, nextProps) {
+  return (
+    previousProps.activeSkill === nextProps.activeSkill &&
+    previousProps.activeSkillId === nextProps.activeSkillId &&
+    previousProps.activeSkillVersions === nextProps.activeSkillVersions &&
+    previousProps.activeSessionRecommendedSkills === nextProps.activeSessionRecommendedSkills &&
+    previousProps.activeSessionTitle === nextProps.activeSessionTitle &&
+    previousProps.busy === nextProps.busy &&
+    previousProps.hasUnsavedSkill === nextProps.hasUnsavedSkill &&
+    previousProps.loading === nextProps.loading &&
+    previousProps.mountedSkillIds === nextProps.mountedSkillIds &&
+    previousProps.providerConfigured === nextProps.providerConfigured &&
+    previousProps.skillDraft === nextProps.skillDraft &&
+    previousProps.skillImportInputRef === nextProps.skillImportInputRef &&
+    previousProps.skillList === nextProps.skillList &&
+    previousProps.skillSearch === nextProps.skillSearch
+  );
+}
+
+export default React.memo(SkillWorkspace, areSkillWorkspacePropsEqual);
