@@ -1,4 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  startTransition,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import "./CSS/App.css";
 import {
   PREVIEW_WORKSPACE_STORAGE_KEY,
@@ -114,6 +122,315 @@ function persistTheme(theme) {
   }
 }
 
+function reuseEqualArray(previousItems, nextItems, isEqual) {
+  if (!Array.isArray(nextItems)) {
+    return nextItems;
+  }
+  if (!Array.isArray(previousItems) || previousItems.length !== nextItems.length) {
+    return nextItems;
+  }
+
+  let changed = false;
+  const mergedItems = nextItems.map((item, index) => {
+    const previousItem = previousItems[index];
+    if (isEqual(previousItem, item)) {
+      return previousItem;
+    }
+    changed = true;
+    return item;
+  });
+
+  return changed ? mergedItems : previousItems;
+}
+
+function reuseEqualItem(previousItem, nextItem, isEqual) {
+  if (!previousItem || !nextItem) {
+    return nextItem;
+  }
+  return isEqual(previousItem, nextItem) ? previousItem : nextItem;
+}
+
+function isSamePrimitiveArray(previousItems, nextItems) {
+  if (previousItems === nextItems) {
+    return true;
+  }
+  if (!Array.isArray(previousItems) || !Array.isArray(nextItems)) {
+    return false;
+  }
+  if (previousItems.length !== nextItems.length) {
+    return false;
+  }
+  return previousItems.every((item, index) => item === nextItems[index]);
+}
+
+function isSameStringArray(previousItems, nextItems) {
+  return isSamePrimitiveArray(previousItems, nextItems);
+}
+
+function isSameCapability(previousItem, nextItem) {
+  return (
+    previousItem?.id === nextItem?.id &&
+    previousItem?.title === nextItem?.title &&
+    previousItem?.description === nextItem?.description &&
+    previousItem?.status === nextItem?.status
+  );
+}
+
+function isSameWorkspaceSettings(previousItem, nextItem) {
+  return (
+    previousItem?.providerName === nextItem?.providerName &&
+    previousItem?.baseUrl === nextItem?.baseUrl &&
+    Boolean(previousItem?.hasApiKey) === Boolean(nextItem?.hasApiKey) &&
+    previousItem?.apiKey === nextItem?.apiKey &&
+    previousItem?.model === nextItem?.model &&
+    previousItem?.systemPrompt === nextItem?.systemPrompt
+  );
+}
+
+function isSameSessionSummary(previousItem, nextItem) {
+  return (
+    previousItem?.id === nextItem?.id &&
+    previousItem?.title === nextItem?.title &&
+    previousItem?.status === nextItem?.status &&
+    previousItem?.updatedAt === nextItem?.updatedAt &&
+    previousItem?.messageCount === nextItem?.messageCount &&
+    previousItem?.lastMessagePreview === nextItem?.lastMessagePreview &&
+    previousItem?.mountedSkillCount === nextItem?.mountedSkillCount
+  );
+}
+
+function isSameMessage(previousItem, nextItem) {
+  return (
+    previousItem?.id === nextItem?.id &&
+    previousItem?.role === nextItem?.role &&
+    previousItem?.content === nextItem?.content &&
+    previousItem?.createdAt === nextItem?.createdAt
+  );
+}
+
+function isSameActivityItem(previousItem, nextItem) {
+  return (
+    previousItem?.id === nextItem?.id &&
+    previousItem?.kind === nextItem?.kind &&
+    previousItem?.title === nextItem?.title &&
+    previousItem?.detail === nextItem?.detail &&
+    previousItem?.status === nextItem?.status &&
+    previousItem?.createdAt === nextItem?.createdAt
+  );
+}
+
+function isSameNoteSummary(previousItem, nextItem) {
+  return (
+    previousItem?.id === nextItem?.id &&
+    previousItem?.icon === nextItem?.icon &&
+    previousItem?.title === nextItem?.title &&
+    previousItem?.summary === nextItem?.summary &&
+    isSameStringArray(previousItem?.tags, nextItem?.tags) &&
+    previousItem?.updatedAt === nextItem?.updatedAt
+  );
+}
+
+function isSameNoteDetail(previousItem, nextItem) {
+  return (
+    previousItem?.id === nextItem?.id &&
+    previousItem?.icon === nextItem?.icon &&
+    previousItem?.title === nextItem?.title &&
+    previousItem?.summary === nextItem?.summary &&
+    previousItem?.body === nextItem?.body &&
+    isSameStringArray(previousItem?.tags, nextItem?.tags) &&
+    previousItem?.createdAt === nextItem?.createdAt &&
+    previousItem?.updatedAt === nextItem?.updatedAt
+  );
+}
+
+function isSameReminderSummary(previousItem, nextItem) {
+  return (
+    previousItem?.id === nextItem?.id &&
+    previousItem?.title === nextItem?.title &&
+    previousItem?.preview === nextItem?.preview &&
+    previousItem?.dueAt === nextItem?.dueAt &&
+    previousItem?.severity === nextItem?.severity &&
+    previousItem?.status === nextItem?.status &&
+    previousItem?.linkedNoteId === nextItem?.linkedNoteId &&
+    previousItem?.updatedAt === nextItem?.updatedAt
+  );
+}
+
+function isSameReminderDetail(previousItem, nextItem) {
+  return (
+    previousItem?.id === nextItem?.id &&
+    previousItem?.title === nextItem?.title &&
+    previousItem?.detail === nextItem?.detail &&
+    previousItem?.preview === nextItem?.preview &&
+    previousItem?.dueAt === nextItem?.dueAt &&
+    previousItem?.severity === nextItem?.severity &&
+    previousItem?.status === nextItem?.status &&
+    previousItem?.linkedNoteId === nextItem?.linkedNoteId &&
+    previousItem?.createdAt === nextItem?.createdAt &&
+    previousItem?.updatedAt === nextItem?.updatedAt
+  );
+}
+
+function isSameSkillSummary(previousItem, nextItem) {
+  return (
+    previousItem?.id === nextItem?.id &&
+    previousItem?.name === nextItem?.name &&
+    previousItem?.summary === nextItem?.summary &&
+    previousItem?.triggerHint === nextItem?.triggerHint &&
+    previousItem?.recommendationReason === nextItem?.recommendationReason &&
+    Boolean(previousItem?.enabled) === Boolean(nextItem?.enabled)
+  );
+}
+
+function isSameSkillDetail(previousItem, nextItem) {
+  return (
+    previousItem?.id === nextItem?.id &&
+    previousItem?.name === nextItem?.name &&
+    previousItem?.summary === nextItem?.summary &&
+    previousItem?.description === nextItem?.description &&
+    previousItem?.instructions === nextItem?.instructions &&
+    previousItem?.triggerHint === nextItem?.triggerHint &&
+    Boolean(previousItem?.enabled) === Boolean(nextItem?.enabled) &&
+    previousItem?.permissionLevel === nextItem?.permissionLevel &&
+    previousItem?.createdAt === nextItem?.createdAt &&
+    previousItem?.updatedAt === nextItem?.updatedAt
+  );
+}
+
+function mergeSessionDetail(previousItem, nextItem) {
+  if (!previousItem || !nextItem) {
+    return nextItem;
+  }
+
+  const mergedSession = reuseEqualItem(previousItem.session, nextItem.session, isSameSessionSummary);
+  const mergedMessages = reuseEqualArray(previousItem.messages, nextItem.messages, isSameMessage);
+  const mergedActivity = reuseEqualArray(
+    previousItem.activity,
+    nextItem.activity,
+    isSameActivityItem
+  );
+  const mergedMountedSkillIds = reuseEqualArray(
+    previousItem.mountedSkillIds,
+    nextItem.mountedSkillIds,
+    (left, right) => left === right
+  );
+  const mergedMountedSkills = reuseEqualArray(
+    previousItem.mountedSkills,
+    nextItem.mountedSkills,
+    isSameSkillSummary
+  );
+  const mergedRecommendedSkills = reuseEqualArray(
+    previousItem.recommendedSkills,
+    nextItem.recommendedSkills,
+    isSameSkillSummary
+  );
+
+  if (
+    previousItem.session === mergedSession &&
+    previousItem.messages === mergedMessages &&
+    previousItem.activity === mergedActivity &&
+    previousItem.mountedSkillIds === mergedMountedSkillIds &&
+    previousItem.mountedSkills === mergedMountedSkills &&
+    previousItem.recommendedSkills === mergedRecommendedSkills
+  ) {
+    return previousItem;
+  }
+
+  return {
+    ...nextItem,
+    session: mergedSession,
+    messages: mergedMessages,
+    activity: mergedActivity,
+    mountedSkillIds: mergedMountedSkillIds,
+    mountedSkills: mergedMountedSkills,
+    recommendedSkills: mergedRecommendedSkills,
+  };
+}
+
+function mergeWorkspaceSnapshot(previousSnapshot, nextSnapshot) {
+  if (!previousSnapshot) {
+    return nextSnapshot;
+  }
+  if (!nextSnapshot) {
+    return nextSnapshot;
+  }
+
+  const mergedSettings = reuseEqualItem(
+    previousSnapshot.settings,
+    nextSnapshot.settings,
+    isSameWorkspaceSettings
+  );
+  const mergedCapabilities = reuseEqualArray(
+    previousSnapshot.capabilities,
+    nextSnapshot.capabilities,
+    isSameCapability
+  );
+  const mergedSessions = reuseEqualArray(
+    previousSnapshot.sessions,
+    nextSnapshot.sessions,
+    isSameSessionSummary
+  );
+  const mergedActiveSession = mergeSessionDetail(
+    previousSnapshot.activeSession,
+    nextSnapshot.activeSession
+  );
+  const mergedNotes = reuseEqualArray(previousSnapshot.notes, nextSnapshot.notes, isSameNoteSummary);
+  const mergedActiveNote = reuseEqualItem(
+    previousSnapshot.activeNote,
+    nextSnapshot.activeNote,
+    isSameNoteDetail
+  );
+  const mergedReminders = reuseEqualArray(
+    previousSnapshot.reminders,
+    nextSnapshot.reminders,
+    isSameReminderSummary
+  );
+  const mergedActiveReminder = reuseEqualItem(
+    previousSnapshot.activeReminder,
+    nextSnapshot.activeReminder,
+    isSameReminderDetail
+  );
+  const mergedSkills = reuseEqualArray(previousSnapshot.skills, nextSnapshot.skills, isSameSkillSummary);
+  const mergedActiveSkill = reuseEqualItem(
+    previousSnapshot.activeSkill,
+    nextSnapshot.activeSkill,
+    isSameSkillDetail
+  );
+
+  if (
+    previousSnapshot.settings === mergedSettings &&
+    previousSnapshot.capabilities === mergedCapabilities &&
+    previousSnapshot.sessions === mergedSessions &&
+    previousSnapshot.activeSessionId === nextSnapshot.activeSessionId &&
+    previousSnapshot.activeSession === mergedActiveSession &&
+    previousSnapshot.notes === mergedNotes &&
+    previousSnapshot.activeNoteId === nextSnapshot.activeNoteId &&
+    previousSnapshot.activeNote === mergedActiveNote &&
+    previousSnapshot.reminders === mergedReminders &&
+    previousSnapshot.activeReminderId === nextSnapshot.activeReminderId &&
+    previousSnapshot.activeReminder === mergedActiveReminder &&
+    previousSnapshot.skills === mergedSkills &&
+    previousSnapshot.activeSkillId === nextSnapshot.activeSkillId &&
+    previousSnapshot.activeSkill === mergedActiveSkill
+  ) {
+    return previousSnapshot;
+  }
+
+  return {
+    ...nextSnapshot,
+    settings: mergedSettings,
+    capabilities: mergedCapabilities,
+    sessions: mergedSessions,
+    activeSession: mergedActiveSession,
+    notes: mergedNotes,
+    activeNote: mergedActiveNote,
+    reminders: mergedReminders,
+    activeReminder: mergedActiveReminder,
+    skills: mergedSkills,
+    activeSkill: mergedActiveSkill,
+  };
+}
+
 function App() {
   const { lang, setLang, t } = useI18n();
   const [workspace, setWorkspace] = useState(null);
@@ -188,6 +505,8 @@ function App() {
   const [lyricsCache, setLyricsCache] = useState(() => readLyricsCache());
   const [lyricsCacheClearMarker, setLyricsCacheClearMarker] = useState(() => readLyricsCacheClearMarker());
   const [lyricsLookupState, setLyricsLookupState] = useState({});
+  const deferredNoteSearch = useDeferredValue(noteSearch);
+  const deferredSessionSearch = useDeferredValue(sessionSearch);
 
   const localizedTracks = useMemo(
     () =>
@@ -347,7 +666,9 @@ function App() {
 
     try {
       const snapshot = await bootstrap();
-      setWorkspace(snapshot);
+      startTransition(() => {
+        setWorkspace((current) => mergeWorkspaceSnapshot(current, snapshot));
+      });
       pendingWorkspaceSyncRef.current = false;
       setError((current) => (current === syncDeferredMessage ? "" : current));
       return true;
@@ -359,6 +680,16 @@ function App() {
       return false;
     }
   }, [t]);
+
+  const commitWorkspaceSnapshot = useCallback((snapshot) => {
+    if (!snapshot) {
+      return;
+    }
+
+    startTransition(() => {
+      setWorkspace((current) => mergeWorkspaceSnapshot(current, snapshot));
+    });
+  }, []);
 
   const syncGalleryCacheFromStorage = useCallback(() => {
     const nextItems = readGalleryItems();
@@ -397,8 +728,33 @@ function App() {
   }, [localizedTracks]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const loadWorkspace = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const snapshot = await bootstrap();
+        if (!cancelled) {
+          commitWorkspaceSnapshot(snapshot);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(normalizeError(err));
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
     void loadWorkspace();
-  }, []);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [commitWorkspaceSnapshot]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -1040,30 +1396,30 @@ function App() {
   }, [providerSecurityAssessment, t]);
 
   const filteredNotes = useMemo(() => {
-    if (!noteSearch.trim()) {
+    if (!deferredNoteSearch.trim()) {
       return noteList;
     }
-    const needle = noteSearch.trim().toLowerCase();
+    const needle = deferredNoteSearch.trim().toLowerCase();
     return noteList.filter((note) =>
       [note.title, note.summary, ...(note.tags || [])]
         .join(" ")
         .toLowerCase()
         .includes(needle)
     );
-  }, [noteList, noteSearch]);
+  }, [deferredNoteSearch, noteList]);
 
   const filteredSessions = useMemo(() => {
-    if (!sessionSearch.trim()) {
+    if (!deferredSessionSearch.trim()) {
       return sessionList;
     }
-    const needle = sessionSearch.trim().toLowerCase();
+    const needle = deferredSessionSearch.trim().toLowerCase();
     return sessionList.filter((session) =>
       [session.title, session.lastMessagePreview, t(`app.status.${session.status}`)]
         .join(" ")
         .toLowerCase()
         .includes(needle)
     );
-  }, [sessionList, sessionSearch, t]);
+  }, [deferredSessionSearch, sessionList, t]);
 
   const groupedSessions = useMemo(() => {
     const groups = {
@@ -1097,25 +1453,13 @@ function App() {
       return false;
     }
     const currentSettings = workspace.settings;
-    const comparableDraft = {
-      providerName: settingsForm.providerName || "",
-      baseUrl: settingsForm.baseUrl || "",
-      hasApiKey: Boolean(currentSettings.hasApiKey),
-      model: settingsForm.model || "",
-      systemPrompt: settingsForm.systemPrompt || "",
-    };
-    const comparableSaved = {
-      providerName: currentSettings.providerName || "",
-      baseUrl: currentSettings.baseUrl || "",
-      hasApiKey: Boolean(currentSettings.hasApiKey),
-      model: currentSettings.model || "",
-      systemPrompt: currentSettings.systemPrompt || "",
-    };
-
     return (
       Boolean(settingsForm.clearApiKey) ||
       Boolean(settingsForm.apiKey?.trim()) ||
-      JSON.stringify(comparableDraft) !== JSON.stringify(comparableSaved)
+      (settingsForm.providerName || "") !== (currentSettings.providerName || "") ||
+      (settingsForm.baseUrl || "") !== (currentSettings.baseUrl || "") ||
+      (settingsForm.model || "") !== (currentSettings.model || "") ||
+      (settingsForm.systemPrompt || "") !== (currentSettings.systemPrompt || "")
     );
   }, [settingsForm, workspace]);
 
@@ -1123,60 +1467,40 @@ function App() {
     if (!activeNote) {
       return false;
     }
-    return JSON.stringify({
-      icon: noteDraft.icon,
-      title: noteDraft.title,
-      body: noteDraft.body,
-      tagsText: noteDraft.tagsText,
-    }) !==
-      JSON.stringify({
-        icon: activeNote.icon || "*",
-        title: activeNote.title || "",
-        body: activeNote.body || "",
-        tagsText: (activeNote.tags || []).join(", "),
-      });
+    return (
+      noteDraft.icon !== (activeNote.icon || "*") ||
+      noteDraft.title !== (activeNote.title || "") ||
+      noteDraft.body !== (activeNote.body || "") ||
+      noteDraft.tagsText !== (activeNote.tags || []).join(", ")
+    );
   }, [activeNote, noteDraft]);
 
   const hasUnsavedReminder = useMemo(() => {
     if (!selectedReminder) {
       return false;
     }
-    return JSON.stringify({
-      title: reminderDraft.title,
-      detail: reminderDraft.detail,
-      dueAt: reminderDraft.dueAt,
-      severity: reminderDraft.severity,
-      status: reminderDraft.status,
-      linkedNoteId: String(reminderDraft.linkedNoteId || ""),
-    }) !==
-      JSON.stringify({
-        title: selectedReminder.title || "",
-        detail: selectedReminder.detail || "",
-        dueAt: selectedReminder.dueAt ? toDateTimeLocalValue(selectedReminder.dueAt) : "",
-        severity: selectedReminder.severity || "medium",
-        status: selectedReminder.status || "scheduled",
-        linkedNoteId: String(selectedReminder.linkedNoteId || ""),
-      });
+    return (
+      reminderDraft.title !== (selectedReminder.title || "") ||
+      reminderDraft.detail !== (selectedReminder.detail || "") ||
+      reminderDraft.dueAt !==
+        (selectedReminder.dueAt ? toDateTimeLocalValue(selectedReminder.dueAt) : "") ||
+      reminderDraft.severity !== (selectedReminder.severity || "medium") ||
+      reminderDraft.status !== (selectedReminder.status || "scheduled") ||
+      String(reminderDraft.linkedNoteId || "") !== String(selectedReminder.linkedNoteId || "")
+    );
   }, [reminderDraft, selectedReminder]);
 
   const hasUnsavedSkill = useMemo(() => {
     if (!activeSkill) {
       return false;
     }
-    return JSON.stringify({
-      name: skillDraft.name,
-      description: skillDraft.description,
-      instructions: skillDraft.instructions,
-      triggerHint: skillDraft.triggerHint,
-      enabled: Boolean(skillDraft.enabled),
-    }) !==
-      JSON.stringify({
-        name: activeSkill.name || "",
-        description: activeSkill.description || "",
-        instructions: activeSkill.instructions || "",
-        triggerHint: activeSkill.triggerHint || "",
-        enabled: Boolean(activeSkill.enabled),
-      });
+    return (
+      skillDraft.name !== (activeSkill.name || "") ||
+      skillDraft.description !== (activeSkill.description || "") ||
+      skillDraft.instructions !== (activeSkill.instructions || "") ||
+      skillDraft.triggerHint !== (activeSkill.triggerHint || "") ||
+      Boolean(skillDraft.enabled) !== Boolean(activeSkill.enabled)
+    );
   }, [activeSkill, skillDraft]);
   const hasUnsavedWorkspaceDrafts =
     hasUnsavedSettings || hasUnsavedNote || hasUnsavedReminder || hasUnsavedSkill;
@@ -1274,7 +1598,7 @@ function App() {
         reminderId,
         activeSessionId,
       });
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
       setSelectedReminderId(snapshot.activeReminderId || reminderId);
       return true;
     } catch (err) {
@@ -1286,6 +1610,7 @@ function App() {
   }, [
     activeSessionId,
     busy,
+    commitWorkspaceSnapshot,
     confirmDiscardWorkspaceDrafts,
     hasUnsavedReminder,
     loading,
@@ -1609,19 +1934,6 @@ function App() {
     }
   }, [busy, clockNow, handleSelectReminder, hasUnsavedWorkspaceDrafts, loading, openView, reminders, t]);
 
-  async function loadWorkspace() {
-    setLoading(true);
-    setError("");
-    try {
-      const snapshot = await bootstrap();
-      setWorkspace(snapshot);
-    } catch (err) {
-      setError(normalizeError(err));
-    } finally {
-      setLoading(false);
-    }
-  }
-
   function handleAddWeatherCity(location) {
     const normalizedLocation = sanitizeWeatherLocation(location);
     if (!normalizedLocation) {
@@ -1680,7 +1992,7 @@ function App() {
     setError("");
     try {
       const snapshot = await openSession(sessionId);
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
       setIsMobileNavOpen(false);
     } catch (err) {
       setError(normalizeError(err));
@@ -1697,7 +2009,7 @@ function App() {
     setError("");
     try {
       const snapshot = await createSession(newSessionTitle || t("app.session.defaultTitle"));
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
       setNewSessionTitle("");
     } catch (err) {
       setError(normalizeError(err));
@@ -1717,7 +2029,7 @@ function App() {
     setError("");
     try {
       const snapshot = await deleteSession(sessionId);
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
     } catch (err) {
       setError(normalizeError(err));
     } finally {
@@ -1786,7 +2098,7 @@ function App() {
         settings: settingsForm,
         activeSessionId,
       });
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
     } catch (err) {
       setError(normalizeError(err));
     } finally {
@@ -1817,7 +2129,7 @@ function App() {
         noteId,
         activeSessionId,
       });
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
       return true;
     } catch (err) {
       setError(normalizeError(err));
@@ -1838,7 +2150,7 @@ function App() {
         title: t("app.knowledge.defaultTitle"),
         activeSessionId,
       });
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
       openView("knowledge");
     } catch (err) {
       setError(normalizeError(err));
@@ -1864,7 +2176,7 @@ function App() {
           tags: parseTags(noteDraft.tagsText),
         },
       });
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
     } catch (err) {
       setError(normalizeError(err));
     } finally {
@@ -1889,7 +2201,7 @@ function App() {
         noteId: activeNoteId,
         activeSessionId,
       });
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
     } catch (err) {
       setError(normalizeError(err));
     } finally {
@@ -1911,7 +2223,7 @@ function App() {
         skillId,
         activeSessionId,
       });
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
       return true;
     } catch (err) {
       setError(normalizeError(err));
@@ -1932,7 +2244,7 @@ function App() {
         name: t("app.skills.defaultTitle"),
         activeSessionId,
       });
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
       openView("skills");
     } catch (err) {
       setError(normalizeError(err));
@@ -1965,7 +2277,7 @@ function App() {
       if (shouldTrackSkillVersion(activeSkill, nextSkill)) {
         updateSkillHistoryMap((prev) => appendSkillHistoryEntry(prev, activeSkill, "manual-save"));
       }
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
     } catch (err) {
       setError(normalizeError(err));
     } finally {
@@ -1984,12 +2296,12 @@ function App() {
         skillId,
         activeSessionId,
       });
-      setWorkspace(rollbackSnapshot);
+      commitWorkspaceSnapshot(rollbackSnapshot);
       return baseMessage;
     } catch (rollbackError) {
       return `${baseMessage} Rollback failed: ${normalizeError(rollbackError)}`;
     }
-  }, [activeSessionId]);
+  }, [activeSessionId, commitWorkspaceSnapshot]);
 
   async function handleInstallSkillTemplate(template) {
     if (!template || !activeSessionId) {
@@ -2023,7 +2335,7 @@ function App() {
           enabled: true,
         },
       });
-      setWorkspace(savedSnapshot);
+      commitWorkspaceSnapshot(savedSnapshot);
       openView("skills");
     } catch (err) {
       setError(await rollbackCreatedSkill(createdSkillId, err));
@@ -2077,7 +2389,7 @@ function App() {
       }
 
       if (latestSnapshot) {
-        setWorkspace(latestSnapshot);
+        commitWorkspaceSnapshot(latestSnapshot);
         openView("skills");
       }
     } catch (err) {
@@ -2093,7 +2405,7 @@ function App() {
         }
 
         if (rollbackSnapshot) {
-          setWorkspace(rollbackSnapshot);
+          commitWorkspaceSnapshot(rollbackSnapshot);
           rollbackMessage = " Imported skills were rolled back.";
         }
       } catch (rollbackError) {
@@ -2200,7 +2512,7 @@ function App() {
         if (shouldTrackSkillVersion(activeSkill, nextSkill)) {
           updateSkillHistoryMap((prev) => appendSkillHistoryEntry(prev, activeSkill, "ai-rewrite"));
         }
-        setWorkspace(savedSnapshot);
+        commitWorkspaceSnapshot(savedSnapshot);
         setNotice(String(generatedSkill.warning || "").trim());
         return;
       }
@@ -2225,7 +2537,7 @@ function App() {
           enabled: true,
         },
       });
-      setWorkspace(savedSnapshot);
+      commitWorkspaceSnapshot(savedSnapshot);
       setNotice(String(generatedSkill.warning || "").trim());
       openView("skills");
     } catch (err) {
@@ -2254,7 +2566,7 @@ function App() {
         activeSessionId,
       });
       updateSkillHistoryMap((prev) => removeSkillHistoryEntries(prev, activeSkillId));
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
     } catch (err) {
       setError(normalizeError(err));
     } finally {
@@ -2279,7 +2591,7 @@ function App() {
         skillIds: nextSkillIds,
         activeSessionId,
       });
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
     } catch (err) {
       setError(normalizeError(err));
     } finally {
@@ -2320,7 +2632,7 @@ function App() {
         skill: nextSkill,
       });
       updateSkillHistoryMap((prev) => appendSkillHistoryEntry(prev, activeSkill, "restore"));
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
       openView("skills");
     } catch (err) {
       setError(normalizeError(err));
@@ -2340,7 +2652,7 @@ function App() {
         title: t("app.reminders.defaultTitle"),
         activeSessionId,
       });
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
       setSelectedReminderId(snapshot.activeReminderId || 0);
       openView("reminders");
     } catch (err) {
@@ -2370,7 +2682,7 @@ function App() {
           linkedNoteId: reminderDraft.linkedNoteId ? Number(reminderDraft.linkedNoteId) : null,
         },
       });
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
       setSelectedReminderId(snapshot.activeReminderId || reminderDraft.id);
     } catch (err) {
       setError(normalizeError(err));
@@ -2401,7 +2713,7 @@ function App() {
         reminderId: selectedReminderId,
         activeSessionId,
       });
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
       setSelectedReminderId(snapshot.activeReminderId || 0);
     } catch (err) {
       setError(normalizeError(err));
@@ -2433,7 +2745,7 @@ function App() {
         sessionId: activeSessionId,
         prompt: draft,
       });
-      setWorkspace(snapshot);
+      commitWorkspaceSnapshot(snapshot);
       setDraft("");
     } catch (err) {
       setError(normalizeError(err));

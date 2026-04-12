@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useDeferredValue, useEffect, useMemo, useRef } from "react";
 import { useI18n } from "../i18n";
 
 function GalleryWorkspace({
@@ -18,6 +18,7 @@ function GalleryWorkspace({
   const { lang, t } = useI18n();
   const viewerCardRef = useRef(null);
   const lastViewerTriggerRef = useRef(null);
+  const deferredGallerySearch = useDeferredValue(gallerySearch);
   const galleryDateFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat(lang, {
@@ -29,7 +30,7 @@ function GalleryWorkspace({
   );
 
   const filteredGalleryItems = useMemo(() => {
-    const needle = gallerySearch.trim().toLowerCase();
+    const needle = deferredGallerySearch.trim().toLowerCase();
     return galleryItems.filter((item) => {
       if (galleryFilter === "favorites" && !item.favorite) {
         return false;
@@ -43,7 +44,7 @@ function GalleryWorkspace({
         .toLowerCase()
         .includes(needle);
     });
-  }, [galleryFilter, galleryItems, gallerySearch]);
+  }, [deferredGallerySearch, galleryFilter, galleryItems]);
   const favoriteCount = useMemo(
     () => filteredGalleryItems.filter((item) => item.favorite).length,
     [filteredGalleryItems]

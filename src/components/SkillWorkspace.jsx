@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useDeferredValue, useMemo, useState } from "react";
 import { useI18n } from "../i18n";
 
 const FILTER_MODES = ["all", "enabled", "mounted", "starter", "workspace"];
@@ -51,6 +51,8 @@ function SkillWorkspace({
   const [filterMode, setFilterMode] = useState("all");
   const [catalogSearch, setCatalogSearch] = useState("");
   const [forgePrompt, setForgePrompt] = useState("");
+  const deferredSkillSearch = useDeferredValue(skillSearch);
+  const deferredCatalogSearch = useDeferredValue(catalogSearch);
 
   const templates = useMemo(() => normalizeStarterTemplates(createSkillTemplates(t)), [t]);
   const templateNameMap = useMemo(
@@ -69,7 +71,7 @@ function SkillWorkspace({
   const mountedSkillSet = useMemo(() => new Set(mountedSkillIds), [mountedSkillIds]);
 
   const searchedSkills = useMemo(() => {
-    const needle = skillSearch.trim().toLowerCase();
+    const needle = deferredSkillSearch.trim().toLowerCase();
     if (!needle) {
       return skillList;
     }
@@ -79,7 +81,7 @@ function SkillWorkspace({
         .toLowerCase()
         .includes(needle)
     );
-  }, [skillList, skillSearch]);
+  }, [deferredSkillSearch, skillList]);
 
   const visibleSkills = useMemo(
     () =>
@@ -117,7 +119,7 @@ function SkillWorkspace({
   );
 
   const catalogSkills = useMemo(() => {
-    const needle = catalogSearch.trim().toLowerCase();
+    const needle = deferredCatalogSearch.trim().toLowerCase();
     return templates.filter((template) => {
       if (!needle) {
         return true;
@@ -127,7 +129,7 @@ function SkillWorkspace({
         .toLowerCase()
         .includes(needle);
     });
-  }, [catalogSearch, templates]);
+  }, [deferredCatalogSearch, templates]);
 
   const activeSkillMeta = activeSkill
     ? getSkillMeta(activeSkill, mountedSkillSet, templateNameMap, t)

@@ -430,14 +430,9 @@ perfTest("preview perf profile reports hot paths", async () => {
   }
   const runAgentMs = (performance.now() - runAgentStart) / runAgentIterations;
 
-  // eslint-disable-next-line no-console
   console.log(`PERF_JS cold_bootstrap_ms=${coldBootstrapMs.toFixed(3)}`);
-  // eslint-disable-next-line no-console
   console.log(`PERF_JS warm_bootstrap_ms=${warmBootstrapMs.toFixed(3)}`);
-  // eslint-disable-next-line no-console
   console.log(`PERF_JS open_note_ms=${openNoteMs.toFixed(3)}`);
-  // eslint-disable-next-line no-console
   console.log(`PERF_JS save_session_skills_ms=${saveSessionSkillsMs.toFixed(3)}`);
-  // eslint-disable-next-line no-console
   console.log(`PERF_JS run_agent_ms=${runAgentMs.toFixed(3)}`);
 });

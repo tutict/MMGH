@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useDeferredValue, useMemo } from "react";
 import { useI18n } from "../i18n";
 
 function ReminderWorkspace({
@@ -20,6 +20,7 @@ function ReminderWorkspace({
   setSelectedReminderId,
 }) {
   const { lang, t } = useI18n();
+  const deferredReminderSearch = useDeferredValue(reminderSearch);
   const reminderDateFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat(lang, {
@@ -32,7 +33,7 @@ function ReminderWorkspace({
   );
 
   const filteredReminders = useMemo(() => {
-    const needle = reminderSearch.trim().toLowerCase();
+    const needle = deferredReminderSearch.trim().toLowerCase();
     return reminders.filter((item) => {
       if (!needle) {
         return true;
@@ -44,7 +45,7 @@ function ReminderWorkspace({
         .toLowerCase()
         .includes(needle);
     });
-  }, [noteList, reminderSearch, reminders]);
+  }, [deferredReminderSearch, noteList, reminders]);
 
   const groups = useMemo(
     () => groupReminders(filteredReminders, clockNow, t),
