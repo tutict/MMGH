@@ -404,7 +404,6 @@ pub fn delete_session(session_id: i64) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     delete_session_in(conn, session_id)?;
-    ensure_seed_session_in(conn)?;
     let seeded_snapshot = seed_snapshot_for_session_delete(cached_snapshot, session_id);
     let can_reuse_session_list = seeded_snapshot
       .as_ref()
@@ -542,7 +541,6 @@ pub fn delete_note(note_id: i64, active_session_id: Option<i64>) -> Result<Works
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     delete_note_in(conn, note_id)?;
-    ensure_seed_note_in(conn)?;
     let seeded_snapshot = seed_snapshot_for_note_delete(cached_snapshot, note_id);
     let can_reuse_note_list = seeded_snapshot
       .as_ref()
@@ -766,7 +764,6 @@ pub fn delete_skill(skill_id: i64, active_session_id: Option<i64>) -> Result<Wor
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     delete_skill_in(conn, skill_id)?;
-    ensure_seed_skill_in(conn)?;
     let seeded_snapshot = seed_snapshot_for_skill_delete(cached_snapshot, skill_id);
     let can_reuse_skill_list = seeded_snapshot
       .as_ref()
@@ -2482,41 +2479,53 @@ fn build_workspace_snapshot_with_seed_snapshot_in(
   } else {
     None
   };
-  let seed_session_id = ensure_seed_session_in(conn)?;
-  let seed_note_id = ensure_seed_note_in(conn)?;
-  let seed_skill_id = ensure_seed_skill_in(conn)?;
-  let sessions = cached_snapshot
+  let mut sessions = cached_snapshot
     .as_ref()
     .filter(|_| reuse_policy.reuse_session_list)
     .map(|snapshot| snapshot.sessions.clone())
     .unwrap_or(list_sessions_in(conn)?);
-  let notes = cached_snapshot
+  let mut seeded_session_detail = None;
+  if sessions.is_empty() {
+    let detail = create_session_detail_in(conn, Some(DEFAULT_SESSION_TITLE.to_string()))?;
+    upsert_session_summary(&mut sessions, detail.session.clone());
+    seeded_session_detail = Some(detail);
+  }
+
+  let mut notes = cached_snapshot
     .as_ref()
     .filter(|_| reuse_policy.reuse_note_list)
     .map(|snapshot| snapshot.notes.clone())
     .unwrap_or(list_notes_in(conn)?);
+  let mut seeded_note_detail = None;
+  if notes.is_empty() {
+    let detail = create_note_detail_in(conn, Some("Welcome note".to_string()))?;
+    upsert_note_summary(&mut notes, build_note_summary_from_detail(&detail));
+    seeded_note_detail = Some(detail);
+  }
+
   let reminders = cached_snapshot
     .as_ref()
     .filter(|_| reuse_policy.reuse_reminder_list)
     .map(|snapshot| snapshot.reminders.clone())
     .unwrap_or(list_reminders_in(conn)?);
-  let skills = cached_snapshot
+  let mut skills = cached_snapshot
     .as_ref()
     .filter(|_| reuse_policy.reuse_skill_list)
     .map(|snapshot| snapshot.skills.clone())
     .unwrap_or(list_skills_in(conn)?);
+  let mut seeded_skill_detail = None;
+  if skills.is_empty() {
+    let detail = create_skill_detail_in(conn, None)?;
+    upsert_skill_summary(&mut skills, build_skill_summary_from_detail(&detail));
+    seeded_skill_detail = Some(detail);
+  }
 
   let active_session_id = preferred_session_id
     .filter(|candidate| sessions.iter().any(|session| session.id == *candidate))
-    .unwrap_or_else(|| {
-      sessions
-        .first()
-        .map(|session| session.id)
-        .unwrap_or(seed_session_id)
-    });
+    .unwrap_or_else(|| sessions.first().map(|session| session.id).unwrap_or(0));
   let active_note_id = preferred_note_id
     .filter(|candidate| notes.iter().any(|note| note.id == *candidate))
-    .unwrap_or_else(|| notes.first().map(|note| note.id).unwrap_or(seed_note_id));
+    .unwrap_or_else(|| notes.first().map(|note| note.id).unwrap_or(0));
   let active_reminder_id = preferred_reminder_id
     .filter(|candidate| reminders.iter().any(|reminder| reminder.id == *candidate))
     .or_else(|| {
@@ -2532,12 +2541,7 @@ fn build_workspace_snapshot_with_seed_snapshot_in(
     .unwrap_or_else(|| reminders.first().map(|reminder| reminder.id).unwrap_or(0));
   let active_skill_id = preferred_skill_id
     .filter(|candidate| skills.iter().any(|skill| skill.id == *candidate))
-    .unwrap_or_else(|| {
-      skills
-        .first()
-        .map(|skill| skill.id)
-        .unwrap_or(seed_skill_id)
-    });
+    .unwrap_or_else(|| skills.first().map(|skill| skill.id).unwrap_or(0));
 
   let active_session_summary = sessions
     .iter()
@@ -2556,19 +2560,39 @@ fn build_workspace_snapshot_with_seed_snapshot_in(
     .filter(|snapshot| snapshot.skills == skills)
     .map(|snapshot| snapshot.skills.as_slice());
 
-  let active_session = build_session_detail_with_summary_in(
-    conn,
-    active_session_summary,
-    preserved_session_timeline,
-    &skills,
-    preserved_skill_catalog,
-  )?;
+  let active_session = if let Some(detail) =
+    seeded_session_detail.filter(|detail| detail.session.id == active_session_id)
+  {
+    let mut detail = detail;
+    detail.mounted_skills = build_mounted_skills_from_catalog(&detail.mounted_skill_ids, &skills);
+    detail.recommended_skills = recommend_session_skills_from_messages(
+      &detail.session.title,
+      &detail.messages,
+      &detail.mounted_skill_ids,
+      4,
+      &skills,
+    );
+    detail
+  } else {
+    build_session_detail_with_summary_in(
+      conn,
+      active_session_summary,
+      preserved_session_timeline,
+      &skills,
+      preserved_skill_catalog,
+    )?
+  };
   let active_note = cached_snapshot
     .as_ref()
     .filter(|snapshot| {
       reuse_policy.reuse_active_note_detail && snapshot.active_note_id == active_note_id
     })
     .map(|snapshot| snapshot.active_note.clone())
+    .or_else(|| {
+      seeded_note_detail
+        .clone()
+        .filter(|detail| detail.id == active_note_id)
+    })
     .unwrap_or(build_note_detail_in(conn, active_note_id)?);
   let active_reminder = cached_snapshot
     .as_ref()
@@ -2590,6 +2614,11 @@ fn build_workspace_snapshot_with_seed_snapshot_in(
       reuse_policy.reuse_active_skill_detail && snapshot.active_skill_id == active_skill_id
     })
     .map(|snapshot| snapshot.active_skill.clone())
+    .or_else(|| {
+      seeded_skill_detail
+        .clone()
+        .filter(|detail| detail.id == active_skill_id)
+    })
     .unwrap_or(build_skill_detail_in(conn, active_skill_id)?);
 
   let snapshot = WorkspaceSnapshot {
@@ -4492,6 +4521,36 @@ mod tests {
       .last_message_preview
       .contains("deliberately long assistant reply"));
     assert!(session.last_message_preview.chars().count() <= 95);
+    Ok(())
+  }
+
+  #[test]
+  fn workspace_snapshot_lazy_seeds_empty_workspace() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = Connection::open_in_memory()?;
+    conn.execute_batch(include_str!("../sql/schema.sql"))?;
+    conn.execute_batch("PRAGMA foreign_keys = ON;")?;
+    run_post_init_migrations_in(&conn)?;
+    clear_snapshot_cache()?;
+    clear_settings_cache()?;
+
+    let snapshot = build_workspace_snapshot_with_policy_in(
+      &conn,
+      None,
+      None,
+      None,
+      None,
+      SnapshotReusePolicy::read_only(),
+    )?;
+
+    assert!(!snapshot.sessions.is_empty());
+    assert!(!snapshot.notes.is_empty());
+    assert!(!snapshot.skills.is_empty());
+    assert!(snapshot.active_session_id > 0);
+    assert!(snapshot.active_note_id > 0);
+    assert!(snapshot.active_skill_id > 0);
     Ok(())
   }
 
