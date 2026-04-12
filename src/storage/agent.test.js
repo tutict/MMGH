@@ -1,10 +1,23 @@
 import { vi } from "vitest";
 
+const PERF_ENABLED = process.env.MMGH_PROFILE === "1";
+const perfTest = PERF_ENABLED ? test : test.skip;
+
 const loadAgentModule = async () => {
   vi.resetModules();
   window.localStorage.clear();
   const agent = await import("./agent");
   agent.__previewTestUtils.resetPreviewState();
+  return agent;
+};
+
+const reloadAgentModuleWithWorkspace = async (workspaceRaw) => {
+  vi.resetModules();
+  window.localStorage.clear();
+  const agent = await import("./agent");
+  if (workspaceRaw) {
+    window.localStorage.setItem(agent.PREVIEW_WORKSPACE_STORAGE_KEY, workspaceRaw);
+  }
   return agent;
 };
 
@@ -294,4 +307,137 @@ test("invalid preview workspace payload is backed up without being overwritten d
   expect(agent.__previewTestUtils.getCorruptWorkspaceBackup()).toMatchObject({
     raw: invalidRaw,
   });
+});
+
+perfTest("preview perf profile reports hot paths", async () => {
+  const agent = await loadAgentModule();
+  const bootstrapSnapshot = await agent.bootstrap();
+  let activeSessionId = bootstrapSnapshot.activeSessionId;
+  const noteIds = [];
+  const reminderIds = [];
+  const skillIds = [];
+
+  for (let index = 0; index < 24; index += 1) {
+    const skillSnapshot = await agent.createSkill({
+      name: `Profile skill ${String(index).padStart(2, "0")}`,
+      activeSessionId,
+    });
+    activeSessionId = skillSnapshot.activeSessionId;
+    skillIds.push(skillSnapshot.activeSkillId);
+  }
+
+  for (let index = 0; index < 40; index += 1) {
+    await agent.createSession(`Archive session ${String(index).padStart(2, "0")}`);
+  }
+
+  for (let index = 0; index < 80; index += 1) {
+    const noteSnapshot = await agent.createKnowledgeNote({
+      title: `Profile note ${String(index).padStart(2, "0")}`,
+      activeSessionId,
+    });
+    const noteId = noteSnapshot.activeNoteId;
+    noteIds.push(noteId);
+    await agent.saveKnowledgeNote({
+      activeSessionId,
+      note: {
+        ...noteSnapshot.activeNote,
+        id: noteId,
+        title: `Profile note ${String(index).padStart(2, "0")}`,
+        body: `Runbook ${index}\nDeploy backend\nVerify alerts\nCapture reminder follow-up`,
+        tags: ["ops", `tag-${String(index).padStart(2, "0")}`],
+      },
+    });
+  }
+
+  for (let index = 0; index < 80; index += 1) {
+    const reminderSnapshot = await agent.createReminder({
+      title: `Profile reminder ${String(index).padStart(2, "0")}`,
+      activeSessionId,
+    });
+    const reminderId = reminderSnapshot.activeReminderId;
+    reminderIds.push(reminderId);
+    await agent.saveReminder({
+      activeSessionId,
+      reminder: {
+        ...reminderSnapshot.activeReminder,
+        id: reminderId,
+        title: `Profile reminder ${String(index).padStart(2, "0")}`,
+        detail: `Reminder detail ${index} for deployment verification`,
+        dueAt: Date.now() + (index + 1) * 60_000,
+        severity: index % 3 === 0 ? "high" : "medium",
+        status: "scheduled",
+        linkedNoteId: noteIds[index % noteIds.length],
+      },
+    });
+  }
+
+  await agent.saveSessionSkills({
+    sessionId: activeSessionId,
+    skillIds: skillIds.slice(0, 8),
+    activeSessionId,
+  });
+
+  for (let index = 0; index < 120; index += 1) {
+    await agent.runAgent({
+      sessionId: activeSessionId,
+      prompt: `Profile active session message ${index} about deployment reminders and skills`,
+    });
+  }
+
+  const workspaceRaw = window.localStorage.getItem(agent.PREVIEW_WORKSPACE_STORAGE_KEY);
+  expect(workspaceRaw).toBeTruthy();
+
+  const coldAgent = await reloadAgentModuleWithWorkspace(workspaceRaw);
+  const coldStart = performance.now();
+  await coldAgent.bootstrap();
+  const coldBootstrapMs = performance.now() - coldStart;
+
+  const warmIterations = 120;
+  const warmStart = performance.now();
+  for (let index = 0; index < warmIterations; index += 1) {
+    await coldAgent.bootstrap();
+  }
+  const warmBootstrapMs = (performance.now() - warmStart) / warmIterations;
+
+  const openNoteIterations = 120;
+  const openNoteStart = performance.now();
+  for (let index = 0; index < openNoteIterations; index += 1) {
+    await coldAgent.openKnowledgeNote({
+      noteId: noteIds[index % noteIds.length],
+      activeSessionId,
+    });
+  }
+  const openNoteMs = (performance.now() - openNoteStart) / openNoteIterations;
+
+  const mountIterations = 100;
+  const mountStart = performance.now();
+  for (let index = 0; index < mountIterations; index += 1) {
+    await coldAgent.saveSessionSkills({
+      sessionId: activeSessionId,
+      skillIds: skillIds.slice(0, 4 + (index % 6)),
+      activeSessionId,
+    });
+  }
+  const saveSessionSkillsMs = (performance.now() - mountStart) / mountIterations;
+
+  const runAgentIterations = 40;
+  const runAgentStart = performance.now();
+  for (let index = 0; index < runAgentIterations; index += 1) {
+    await coldAgent.runAgent({
+      sessionId: activeSessionId,
+      prompt: `Profile mission ${index}: verify release state`,
+    });
+  }
+  const runAgentMs = (performance.now() - runAgentStart) / runAgentIterations;
+
+  // eslint-disable-next-line no-console
+  console.log(`PERF_JS cold_bootstrap_ms=${coldBootstrapMs.toFixed(3)}`);
+  // eslint-disable-next-line no-console
+  console.log(`PERF_JS warm_bootstrap_ms=${warmBootstrapMs.toFixed(3)}`);
+  // eslint-disable-next-line no-console
+  console.log(`PERF_JS open_note_ms=${openNoteMs.toFixed(3)}`);
+  // eslint-disable-next-line no-console
+  console.log(`PERF_JS save_session_skills_ms=${saveSessionSkillsMs.toFixed(3)}`);
+  // eslint-disable-next-line no-console
+  console.log(`PERF_JS run_agent_ms=${runAgentMs.toFixed(3)}`);
 });
