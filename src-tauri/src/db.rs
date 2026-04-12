@@ -779,9 +779,13 @@ pub fn save_session_skills(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
-    save_session_skills_in(conn, session_id, skill_ids)?;
-    build_workspace_snapshot_with_policy_in(
+    let mounted_skill_ids = save_session_skills_in(conn, session_id, skill_ids)?;
+    let session = load_session_summary_in(conn, session_id)?;
+    let seeded_snapshot =
+      seed_snapshot_for_session_skills_save(cached_snapshot, session.clone(), mounted_skill_ids);
+    build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       active_session_id.or(Some(session_id)),
       None,
@@ -798,6 +802,7 @@ pub fn save_session_skills(
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
+      seeded_snapshot,
     )
   })
 }
@@ -2306,7 +2311,11 @@ fn save_skill_detail_in(conn: &Connection, input: SkillInput) -> Result<SkillDet
   ))
 }
 
-fn save_session_skills_in(conn: &Connection, session_id: i64, skill_ids: Vec<i64>) -> Result<()> {
+fn save_session_skills_in(
+  conn: &Connection,
+  session_id: i64,
+  skill_ids: Vec<i64>,
+) -> Result<Vec<i64>> {
   let session_exists = conn
     .query_row(
       "SELECT EXISTS(SELECT 1 FROM sessions WHERE id = ?1)",
@@ -2342,7 +2351,7 @@ fn save_session_skills_in(conn: &Connection, session_id: i64, skill_ids: Vec<i64
 
   let current_skill_ids = list_session_skill_ids_in(conn, session_id)?;
   if current_skill_ids == next_skill_ids {
-    return Ok(());
+    return Ok(next_skill_ids);
   }
 
   conn.execute(
@@ -2365,7 +2374,7 @@ fn save_session_skills_in(conn: &Connection, session_id: i64, skill_ids: Vec<i64
     params![base_timestamp + next_skill_ids.len() as i64, session_id],
   )?;
 
-  Ok(())
+  Ok(next_skill_ids)
 }
 
 fn build_workspace_snapshot_with_policy_in(
@@ -2935,55 +2944,58 @@ fn build_session_detail_with_summary_in(
   preserved_skill_catalog: Option<&[SkillSummary]>,
 ) -> Result<SessionDetail> {
   let session_id = session.id;
-  let (messages, activity) =
-    if let Some(detail) = preserved_timeline.filter(|detail| detail.session.id == session_id) {
-      (detail.messages.clone(), detail.activity.clone())
-    } else {
-      let mut messages_stmt = conn.prepare(
-        "SELECT id, role, content, created_at
+  let preserved_detail = preserved_timeline.filter(|detail| detail.session.id == session_id);
+  let (messages, activity) = if let Some(detail) = preserved_detail {
+    (detail.messages.clone(), detail.activity.clone())
+  } else {
+    let mut messages_stmt = conn.prepare(
+      "SELECT id, role, content, created_at
          FROM messages
          WHERE session_id = ?1
          ORDER BY created_at ASC, id ASC",
-      )?;
-      let message_rows = messages_stmt.query_map(params![session_id], |row| {
-        Ok(ChatMessage {
-          id: row.get(0)?,
-          role: row.get(1)?,
-          content: row.get(2)?,
-          created_at: row.get(3)?,
-        })
-      })?;
-      let mut messages = Vec::new();
-      for row in message_rows {
-        messages.push(row?);
-      }
+    )?;
+    let message_rows = messages_stmt.query_map(params![session_id], |row| {
+      Ok(ChatMessage {
+        id: row.get(0)?,
+        role: row.get(1)?,
+        content: row.get(2)?,
+        created_at: row.get(3)?,
+      })
+    })?;
+    let mut messages = Vec::new();
+    for row in message_rows {
+      messages.push(row?);
+    }
 
-      let mut activity_stmt = conn.prepare(
-        "SELECT id, kind, title, detail, status, created_at
+    let mut activity_stmt = conn.prepare(
+      "SELECT id, kind, title, detail, status, created_at
          FROM activity
          WHERE session_id = ?1
          ORDER BY created_at DESC, id DESC
          LIMIT 24",
-      )?;
-      let activity_rows = activity_stmt.query_map(params![session_id], |row| {
-        Ok(ActivityItem {
-          id: row.get(0)?,
-          kind: row.get(1)?,
-          title: row.get(2)?,
-          detail: row.get(3)?,
-          status: row.get(4)?,
-          created_at: row.get(5)?,
-        })
-      })?;
-      let mut activity = Vec::new();
-      for row in activity_rows {
-        activity.push(row?);
-      }
+    )?;
+    let activity_rows = activity_stmt.query_map(params![session_id], |row| {
+      Ok(ActivityItem {
+        id: row.get(0)?,
+        kind: row.get(1)?,
+        title: row.get(2)?,
+        detail: row.get(3)?,
+        status: row.get(4)?,
+        created_at: row.get(5)?,
+      })
+    })?;
+    let mut activity = Vec::new();
+    for row in activity_rows {
+      activity.push(row?);
+    }
 
-      (messages, activity)
-    };
-  let mounted_skill_ids = list_session_skill_ids_in(conn, session_id)?;
-  let can_reuse_skill_views = preserved_timeline
+    (messages, activity)
+  };
+  let mounted_skill_ids = preserved_detail
+    .filter(|detail| detail.session == session)
+    .map(|detail| detail.mounted_skill_ids.clone())
+    .unwrap_or(list_session_skill_ids_in(conn, session_id)?);
+  let can_reuse_skill_views = preserved_detail
     .zip(preserved_skill_catalog)
     .map(|(detail, cached_skills)| {
       detail.session == session
@@ -2993,7 +3005,7 @@ fn build_session_detail_with_summary_in(
     .unwrap_or(false);
 
   let (mounted_skills, recommended_skills) = if can_reuse_skill_views {
-    let detail = preserved_timeline.context("missing preserved session detail")?;
+    let detail = preserved_detail.context("missing preserved session detail")?;
     (
       detail.mounted_skills.clone(),
       detail.recommended_skills.clone(),
@@ -3212,6 +3224,31 @@ fn seed_snapshot_for_skill_delete(
   if snapshot.active_skill_id == skill_id {
     snapshot.active_skill_id = snapshot.skills.first().map(|skill| skill.id).unwrap_or(0);
   }
+  Some(snapshot)
+}
+
+fn seed_snapshot_for_session_skills_save(
+  cached_snapshot: Option<WorkspaceSnapshot>,
+  session: SessionSummary,
+  mounted_skill_ids: Vec<i64>,
+) -> Option<WorkspaceSnapshot> {
+  let mut snapshot = cached_snapshot?;
+  upsert_session_summary(&mut snapshot.sessions, session.clone());
+  if snapshot.active_session_id != session.id || snapshot.active_session.session.id != session.id {
+    return Some(snapshot);
+  }
+
+  snapshot.active_session.session = session.clone();
+  snapshot.active_session.mounted_skill_ids = mounted_skill_ids;
+  snapshot.active_session.mounted_skills =
+    build_mounted_skills_from_catalog(&snapshot.active_session.mounted_skill_ids, &snapshot.skills);
+  snapshot.active_session.recommended_skills = recommend_session_skills_from_messages(
+    &session.title,
+    &snapshot.active_session.messages,
+    &snapshot.active_session.mounted_skill_ids,
+    4,
+    &snapshot.skills,
+  );
   Some(snapshot)
 }
 
@@ -3784,6 +3821,17 @@ fn upsert_note_summary(notes: &mut Vec<KnowledgeNoteSummary>, summary: Knowledge
   notes.retain(|note| note.id != summary.id);
   notes.push(summary);
   notes.sort_by(|left, right| {
+    right
+      .updated_at
+      .cmp(&left.updated_at)
+      .then_with(|| right.id.cmp(&left.id))
+  });
+}
+
+fn upsert_session_summary(sessions: &mut Vec<SessionSummary>, summary: SessionSummary) {
+  sessions.retain(|session| session.id != summary.id);
+  sessions.push(summary);
+  sessions.sort_by(|left, right| {
     right
       .updated_at
       .cmp(&left.updated_at)
@@ -4655,6 +4703,66 @@ mod tests {
       .active_session
       .mounted_skill_ids
       .contains(&skill.id));
+    Ok(())
+  }
+
+  #[test]
+  fn seeded_snapshot_preserves_session_skill_mount_updates() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let session_id = create_session_in(&conn, Some("Mount update".to_string()))?;
+    let first_skill = create_skill_detail_in(&conn, Some("Alpha mount".to_string()))?;
+    let second_skill = create_skill_detail_in(&conn, Some("Beta mount".to_string()))?;
+    let base_snapshot = build_workspace_snapshot_with_policy_in(
+      &conn,
+      Some(session_id),
+      None,
+      None,
+      Some(first_skill.id),
+      SnapshotReusePolicy::read_only(),
+    )?;
+
+    let mounted_skill_ids =
+      save_session_skills_in(&conn, session_id, vec![first_skill.id, second_skill.id])?;
+    let updated_session = load_session_summary_in(&conn, session_id)?;
+    let snapshot = build_workspace_snapshot_with_seed_snapshot_in(
+      &conn,
+      Some(session_id),
+      None,
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_session_list: true,
+        reuse_active_session_timeline: true,
+        reuse_note_list: true,
+        reuse_active_note_detail: true,
+        reuse_reminder_list: true,
+        reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
+        reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+      seed_snapshot_for_session_skills_save(
+        Some(base_snapshot),
+        updated_session.clone(),
+        mounted_skill_ids.clone(),
+      ),
+    )?;
+
+    assert_eq!(snapshot.active_session.session, updated_session);
+    assert_eq!(snapshot.active_session.mounted_skill_ids, mounted_skill_ids);
+    assert_eq!(
+      snapshot
+        .active_session
+        .mounted_skills
+        .iter()
+        .map(|skill| skill.id)
+        .collect::<Vec<_>>(),
+      mounted_skill_ids
+    );
     Ok(())
   }
 
