@@ -317,10 +317,40 @@ pub struct WorkspaceSnapshot {
 
 #[derive(Debug, Clone, Copy, Default)]
 struct SnapshotReusePolicy {
+  reuse_session_list: bool,
   reuse_active_session_timeline: bool,
+  reuse_note_list: bool,
   reuse_active_note_detail: bool,
+  reuse_reminder_list: bool,
   reuse_active_reminder_detail: bool,
+  reuse_skill_list: bool,
   reuse_active_skill_detail: bool,
+}
+
+impl SnapshotReusePolicy {
+  fn read_only() -> Self {
+    Self {
+      reuse_session_list: true,
+      reuse_active_session_timeline: true,
+      reuse_note_list: true,
+      reuse_active_note_detail: true,
+      reuse_reminder_list: true,
+      reuse_active_reminder_detail: true,
+      reuse_skill_list: true,
+      reuse_active_skill_detail: true,
+    }
+  }
+
+  fn uses_cached_snapshot(self) -> bool {
+    self.reuse_session_list
+      || self.reuse_active_session_timeline
+      || self.reuse_note_list
+      || self.reuse_active_note_detail
+      || self.reuse_reminder_list
+      || self.reuse_active_reminder_detail
+      || self.reuse_skill_list
+      || self.reuse_active_skill_detail
+  }
 }
 
 pub fn bootstrap() -> Result<WorkspaceSnapshot> {
@@ -336,13 +366,7 @@ pub fn open_session(session_id: i64) -> Result<WorkspaceSnapshot> {
       None,
       None,
       None,
-      SnapshotReusePolicy {
-        reuse_active_session_timeline: true,
-        reuse_active_note_detail: true,
-        reuse_active_reminder_detail: true,
-        reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
-      },
+      SnapshotReusePolicy::read_only(),
     )
   })
 }
@@ -357,8 +381,11 @@ pub fn create_session(title: Option<String>) -> Result<WorkspaceSnapshot> {
       None,
       None,
       SnapshotReusePolicy {
+        reuse_note_list: true,
         reuse_active_note_detail: true,
+        reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
@@ -377,8 +404,11 @@ pub fn delete_session(session_id: i64) -> Result<WorkspaceSnapshot> {
       None,
       None,
       SnapshotReusePolicy {
+        reuse_note_list: true,
         reuse_active_note_detail: true,
+        reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
@@ -401,12 +431,7 @@ pub fn save_settings(
       None,
       None,
       None,
-      SnapshotReusePolicy {
-        reuse_active_session_timeline: true,
-        reuse_active_note_detail: true,
-        reuse_active_reminder_detail: true,
-        reuse_active_skill_detail: true,
-      },
+      SnapshotReusePolicy::read_only(),
     )
   })
 }
@@ -421,12 +446,7 @@ pub fn open_note(note_id: i64, active_session_id: Option<i64>) -> Result<Workspa
       Some(note_id),
       None,
       None,
-      SnapshotReusePolicy {
-        reuse_active_session_timeline: true,
-        reuse_active_reminder_detail: true,
-        reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
-      },
+      SnapshotReusePolicy::read_only(),
     )
   })
 }
@@ -445,8 +465,11 @@ pub fn create_note(
       None,
       None,
       SnapshotReusePolicy {
+        reuse_session_list: true,
         reuse_active_session_timeline: true,
+        reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
@@ -468,8 +491,11 @@ pub fn save_note(
       None,
       None,
       SnapshotReusePolicy {
+        reuse_session_list: true,
         reuse_active_session_timeline: true,
+        reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
@@ -489,8 +515,9 @@ pub fn delete_note(note_id: i64, active_session_id: Option<i64>) -> Result<Works
       None,
       None,
       SnapshotReusePolicy {
+        reuse_session_list: true,
         reuse_active_session_timeline: true,
-        reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
@@ -511,13 +538,7 @@ pub fn open_reminder(
       None,
       Some(reminder_id),
       None,
-      SnapshotReusePolicy {
-        reuse_active_session_timeline: true,
-        reuse_active_note_detail: true,
-        reuse_active_reminder_detail: true,
-        reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
-      },
+      SnapshotReusePolicy::read_only(),
     )
   })
 }
@@ -536,10 +557,13 @@ pub fn create_reminder(
       Some(reminder_id),
       None,
       SnapshotReusePolicy {
+        reuse_session_list: true,
         reuse_active_session_timeline: true,
+        reuse_note_list: true,
         reuse_active_note_detail: true,
-        reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
         reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
       },
     )
   })
@@ -559,10 +583,13 @@ pub fn save_reminder(
       Some(input.id),
       None,
       SnapshotReusePolicy {
+        reuse_session_list: true,
         reuse_active_session_timeline: true,
+        reuse_note_list: true,
         reuse_active_note_detail: true,
-        reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
         reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
       },
     )
   })
@@ -582,10 +609,13 @@ pub fn delete_reminder(
       None,
       None,
       SnapshotReusePolicy {
+        reuse_session_list: true,
         reuse_active_session_timeline: true,
+        reuse_note_list: true,
         reuse_active_note_detail: true,
-        reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
         reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
       },
     )
   })
@@ -601,12 +631,7 @@ pub fn open_skill(skill_id: i64, active_session_id: Option<i64>) -> Result<Works
       None,
       None,
       Some(skill_id),
-      SnapshotReusePolicy {
-        reuse_active_session_timeline: true,
-        reuse_active_note_detail: true,
-        reuse_active_reminder_detail: true,
-        ..SnapshotReusePolicy::default()
-      },
+      SnapshotReusePolicy::read_only(),
     )
   })
 }
@@ -626,7 +651,9 @@ pub fn create_skill(
       Some(skill_id),
       SnapshotReusePolicy {
         reuse_active_session_timeline: true,
+        reuse_note_list: true,
         reuse_active_note_detail: true,
+        reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
         ..SnapshotReusePolicy::default()
       },
@@ -646,7 +673,9 @@ pub fn save_skill(input: SkillInput, active_session_id: Option<i64>) -> Result<W
       Some(input.id),
       SnapshotReusePolicy {
         reuse_active_session_timeline: true,
+        reuse_note_list: true,
         reuse_active_note_detail: true,
+        reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
         ..SnapshotReusePolicy::default()
       },
@@ -667,7 +696,9 @@ pub fn delete_skill(skill_id: i64, active_session_id: Option<i64>) -> Result<Wor
       None,
       SnapshotReusePolicy {
         reuse_active_session_timeline: true,
+        reuse_note_list: true,
         reuse_active_note_detail: true,
+        reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
         ..SnapshotReusePolicy::default()
       },
@@ -690,10 +721,15 @@ pub fn save_session_skills(
       None,
       None,
       SnapshotReusePolicy {
+        reuse_session_list: true,
         reuse_active_session_timeline: true,
+        reuse_note_list: true,
         reuse_active_note_detail: true,
+        reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
         reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
       },
     )
   })
@@ -778,8 +814,13 @@ pub fn persist_agent_run(
       None,
       None,
       SnapshotReusePolicy {
+        reuse_session_list: true,
+        reuse_active_session_timeline: true,
+        reuse_note_list: true,
         reuse_active_note_detail: true,
+        reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
@@ -842,7 +883,7 @@ pub fn workspace_snapshot(preferred_session_id: Option<i64>) -> Result<Workspace
       None,
       None,
       None,
-      SnapshotReusePolicy::default(),
+      SnapshotReusePolicy::read_only(),
     )
   })
 }
@@ -2201,11 +2242,7 @@ fn build_workspace_snapshot_with_seed_snapshot_in(
 ) -> Result<WorkspaceSnapshot> {
   let cached_snapshot = if let Some(snapshot) = cached_snapshot_override {
     Some(snapshot)
-  } else if reuse_policy.reuse_active_session_timeline
-    || reuse_policy.reuse_active_note_detail
-    || reuse_policy.reuse_active_reminder_detail
-    || reuse_policy.reuse_active_skill_detail
-  {
+  } else if reuse_policy.uses_cached_snapshot() {
     read_snapshot_cache()?
   } else {
     None
@@ -2213,10 +2250,26 @@ fn build_workspace_snapshot_with_seed_snapshot_in(
   let seed_session_id = ensure_seed_session_in(conn)?;
   let seed_note_id = ensure_seed_note_in(conn)?;
   let seed_skill_id = ensure_seed_skill_in(conn)?;
-  let sessions = list_sessions_in(conn)?;
-  let notes = list_notes_in(conn)?;
-  let reminders = list_reminders_in(conn)?;
-  let skills = list_skills_in(conn)?;
+  let sessions = cached_snapshot
+    .as_ref()
+    .filter(|_| reuse_policy.reuse_session_list)
+    .map(|snapshot| snapshot.sessions.clone())
+    .unwrap_or(list_sessions_in(conn)?);
+  let notes = cached_snapshot
+    .as_ref()
+    .filter(|_| reuse_policy.reuse_note_list)
+    .map(|snapshot| snapshot.notes.clone())
+    .unwrap_or(list_notes_in(conn)?);
+  let reminders = cached_snapshot
+    .as_ref()
+    .filter(|_| reuse_policy.reuse_reminder_list)
+    .map(|snapshot| snapshot.reminders.clone())
+    .unwrap_or(list_reminders_in(conn)?);
+  let skills = cached_snapshot
+    .as_ref()
+    .filter(|_| reuse_policy.reuse_skill_list)
+    .map(|snapshot| snapshot.skills.clone())
+    .unwrap_or(list_skills_in(conn)?);
 
   let active_session_id = preferred_session_id
     .filter(|candidate| sessions.iter().any(|session| session.id == *candidate))
@@ -3909,6 +3962,59 @@ mod tests {
       snapshot.active_session.activity[1].title,
       input_activity.title
     );
+    Ok(())
+  }
+
+  #[test]
+  fn snapshot_policy_reuses_only_requested_region_lists() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let base_snapshot = build_workspace_snapshot_with_policy_in(
+      &conn,
+      None,
+      None,
+      None,
+      None,
+      SnapshotReusePolicy::read_only(),
+    )?;
+    let preferred_reminder_id =
+      (base_snapshot.active_reminder_id > 0).then_some(base_snapshot.active_reminder_id);
+    let note_id = create_note_in(&conn, Some("Fresh cache bypass".to_string()))?;
+
+    let reused_snapshot = build_workspace_snapshot_with_policy_in(
+      &conn,
+      Some(base_snapshot.active_session_id),
+      Some(base_snapshot.active_note_id),
+      preferred_reminder_id,
+      Some(base_snapshot.active_skill_id),
+      SnapshotReusePolicy::read_only(),
+    )?;
+    assert!(reused_snapshot.notes.iter().all(|note| note.id != note_id));
+
+    let refreshed_snapshot = build_workspace_snapshot_with_policy_in(
+      &conn,
+      Some(base_snapshot.active_session_id),
+      Some(base_snapshot.active_note_id),
+      preferred_reminder_id,
+      Some(base_snapshot.active_skill_id),
+      SnapshotReusePolicy {
+        reuse_session_list: true,
+        reuse_active_session_timeline: true,
+        reuse_active_note_detail: true,
+        reuse_reminder_list: true,
+        reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
+        reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+    )?;
+    assert!(refreshed_snapshot
+      .notes
+      .iter()
+      .any(|note| note.id == note_id));
     Ok(())
   }
 
