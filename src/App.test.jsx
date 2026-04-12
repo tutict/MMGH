@@ -261,6 +261,7 @@ function areSkillWorkspaceTestPropsEqual(previousProps, nextProps) {
     previousProps.loading === nextProps.loading &&
     previousProps.mountedSkillIds === nextProps.mountedSkillIds &&
     previousProps.providerConfigured === nextProps.providerConfigured &&
+    previousProps.skillActionContextKey === nextProps.skillActionContextKey &&
     previousProps.skillDraft === nextProps.skillDraft &&
     previousProps.skillImportInputRef === nextProps.skillImportInputRef &&
     previousProps.skillList === nextProps.skillList &&

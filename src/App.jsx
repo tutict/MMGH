@@ -1517,6 +1517,21 @@ function App() {
   }, [activeSkill, skillDraft]);
   const hasUnsavedWorkspaceDrafts =
     hasUnsavedSettings || hasUnsavedNote || hasUnsavedReminder || hasUnsavedSkill;
+  const skillActionContextKey = useMemo(
+    () =>
+      JSON.stringify({
+        activeSessionId: activeSessionId || 0,
+        hasUnsavedWorkspaceDrafts,
+        providerName: settingsForm.providerName || "",
+        baseUrl: settingsForm.baseUrl || "",
+        clearApiKey: Boolean(settingsForm.clearApiKey),
+        hasApiKey: Boolean(settingsForm.hasApiKey),
+        apiKey: settingsForm.apiKey || "",
+        model: settingsForm.model || "",
+        systemPrompt: settingsForm.systemPrompt || "",
+      }),
+    [activeSessionId, hasUnsavedWorkspaceDrafts, settingsForm]
+  );
 
   useEffect(() => {
     hasUnsavedWorkspaceDraftsRef.current = hasUnsavedWorkspaceDrafts;
@@ -3773,6 +3788,7 @@ function App() {
             mountedSkillIds={activeSessionSkillIds}
             setSkillDraft={setSkillDraft}
             setSkillSearch={setSkillSearch}
+            skillActionContextKey={skillActionContextKey}
             skillDraft={skillDraft}
             skillSearch={skillSearch}
           />
