@@ -4071,6 +4071,8 @@ fn capability_catalog() -> Vec<Capability> {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use std::hint::black_box;
+  use std::time::Instant;
 
   static TEST_STATE_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
@@ -4551,6 +4553,286 @@ mod tests {
     assert!(snapshot.active_session_id > 0);
     assert!(snapshot.active_note_id > 0);
     assert!(snapshot.active_skill_id > 0);
+    Ok(())
+  }
+
+  #[test]
+  #[ignore]
+  fn db_perf_profile_reports_hot_paths() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let active_session_id = create_session_in(&conn, Some("Profile active session".to_string()))?;
+    let mut mounted_skill_ids = Vec::new();
+    for index in 0..24 {
+      let skill_id = create_skill_in(&conn, Some(format!("Profile skill {index:02}")))?;
+      if index < 8 {
+        mounted_skill_ids.push(skill_id);
+      }
+    }
+    save_session_skills_in(&conn, active_session_id, mounted_skill_ids.clone())?;
+
+    for index in 0..40 {
+      let session_id = create_session_in(&conn, Some(format!("Archive session {index:02}")))?;
+      for message_index in 0..6 {
+        append_message_in(
+          &conn,
+          session_id,
+          if message_index % 2 == 0 {
+            "user"
+          } else {
+            "assistant"
+          },
+          &format!("Archived session {index} message {message_index}"),
+        )?;
+      }
+    }
+
+    for index in 0..120 {
+      append_message_in(
+        &conn,
+        active_session_id,
+        if index % 2 == 0 { "user" } else { "assistant" },
+        &format!("Profile active session message {index} about deployment reminders and skills"),
+      )?;
+      if index < 48 {
+        append_activity_in(
+          &conn,
+          active_session_id,
+          "system",
+          &format!("Activity {index}"),
+          "Profiling timeline payload",
+          "completed",
+        )?;
+      }
+    }
+
+    let mut note_ids = Vec::new();
+    for index in 0..80 {
+      let note_id = create_note_in(&conn, Some(format!("Profile note {index:02}")))?;
+      save_note_in(
+        &conn,
+        KnowledgeNoteInput {
+          id: note_id,
+          icon: "*".to_string(),
+          title: format!("Profile note {index:02}"),
+          body: format!(
+            "Runbook {index}\nDeploy backend\nVerify alerts\nCapture reminder follow-up"
+          ),
+          tags: vec!["ops".to_string(), format!("tag-{index:02}")],
+        },
+      )?;
+      note_ids.push(note_id);
+    }
+
+    let mut reminder_ids = Vec::new();
+    for index in 0..80 {
+      let reminder_id = create_reminder_in(&conn, Some(format!("Profile reminder {index:02}")))?;
+      save_reminder_in(
+        &conn,
+        ReminderInput {
+          id: reminder_id,
+          title: format!("Profile reminder {index:02}"),
+          detail: format!("Reminder detail {index} for deployment verification"),
+          due_at: Some(now_millis() + (index as i64 + 1) * 60_000),
+          severity: if index % 3 == 0 {
+            "high".to_string()
+          } else {
+            "medium".to_string()
+          },
+          status: "scheduled".to_string(),
+          linked_note_id: note_ids.get(index % note_ids.len()).copied(),
+        },
+      )?;
+      reminder_ids.push(reminder_id);
+    }
+
+    let skill_ids = list_skills_in(&conn)?
+      .into_iter()
+      .take(12)
+      .map(|skill| skill.id)
+      .collect::<Vec<_>>();
+
+    black_box(build_workspace_snapshot_with_policy_in(
+      &conn,
+      Some(active_session_id),
+      note_ids.first().copied(),
+      reminder_ids.first().copied(),
+      skill_ids.first().copied(),
+      SnapshotReusePolicy::read_only(),
+    )?);
+
+    let cold_start = Instant::now();
+    clear_snapshot_cache()?;
+    black_box(build_workspace_snapshot_with_policy_in(
+      &conn,
+      Some(active_session_id),
+      note_ids.first().copied(),
+      reminder_ids.first().copied(),
+      skill_ids.first().copied(),
+      SnapshotReusePolicy::read_only(),
+    )?);
+    let cold_snapshot_ms = cold_start.elapsed().as_secs_f64() * 1000.0;
+
+    let warm_iterations = 250;
+    let warm_start = Instant::now();
+    for _ in 0..warm_iterations {
+      black_box(build_workspace_snapshot_with_policy_in(
+        &conn,
+        Some(active_session_id),
+        note_ids.first().copied(),
+        reminder_ids.first().copied(),
+        skill_ids.first().copied(),
+        SnapshotReusePolicy::read_only(),
+      )?);
+    }
+    let warm_snapshot_ms = warm_start.elapsed().as_secs_f64() * 1000.0 / warm_iterations as f64;
+
+    let note_open_iterations = 200;
+    let note_open_start = Instant::now();
+    for index in 0..note_open_iterations {
+      black_box(build_workspace_snapshot_with_policy_in(
+        &conn,
+        Some(active_session_id),
+        Some(note_ids[index % note_ids.len()]),
+        reminder_ids.first().copied(),
+        skill_ids.first().copied(),
+        SnapshotReusePolicy::read_only(),
+      )?);
+    }
+    let open_note_ms =
+      note_open_start.elapsed().as_secs_f64() * 1000.0 / note_open_iterations as f64;
+
+    let skill_toggle_iterations = 120;
+    let skill_toggle_start = Instant::now();
+    for index in 0..skill_toggle_iterations {
+      let limit = 4 + (index % 6);
+      let next_ids = skill_ids.iter().copied().take(limit).collect::<Vec<_>>();
+      let mounted_skill_ids = save_session_skills_in(&conn, active_session_id, next_ids)?;
+      let updated_session = load_session_summary_in(&conn, active_session_id)?;
+      let cached_snapshot = read_snapshot_cache()?;
+      black_box(build_workspace_snapshot_with_seed_snapshot_in(
+        &conn,
+        Some(active_session_id),
+        note_ids.first().copied(),
+        reminder_ids.first().copied(),
+        None,
+        SnapshotReusePolicy {
+          reuse_session_list: true,
+          reuse_active_session_timeline: true,
+          reuse_note_list: true,
+          reuse_active_note_detail: true,
+          reuse_reminder_list: true,
+          reuse_active_reminder_detail: true,
+          reuse_skill_list: true,
+          reuse_active_skill_detail: true,
+          ..SnapshotReusePolicy::default()
+        },
+        seed_snapshot_for_session_skills_save(cached_snapshot, updated_session, mounted_skill_ids),
+      )?);
+    }
+    let save_session_skills_ms =
+      skill_toggle_start.elapsed().as_secs_f64() * 1000.0 / skill_toggle_iterations as f64;
+
+    let agent_run_iterations = 40;
+    let agent_run_start = Instant::now();
+    for index in 0..agent_run_iterations {
+      let cached_snapshot = read_snapshot_cache()?;
+      touch_session_in(&conn, active_session_id, "running")?;
+      let prompt = format!("Profile mission {index}: verify release state");
+      let user_message = append_message_in(&conn, active_session_id, "user", &prompt)?;
+      ensure_session_title_in(&conn, active_session_id, &prompt)?;
+      let input_activity = append_activity_in(
+        &conn,
+        active_session_id,
+        "input",
+        "Mission received",
+        &format!("New mission captured: {}", preview_text(&prompt, 120)),
+        "completed",
+      )?;
+      let runtime_activity = append_activity_in(
+        &conn,
+        active_session_id,
+        "system",
+        "Runtime context staged",
+        "Runtime context: profile mode",
+        "completed",
+      )?;
+      let plan_activity = append_activity_in(
+        &conn,
+        active_session_id,
+        "plan",
+        "Execution plan drafted",
+        "1. Check cache\n2. Reuse active detail\n3. Persist output",
+        "completed",
+      )?;
+      let model_activity = append_activity_in(
+        &conn,
+        active_session_id,
+        "model",
+        "profile-model",
+        "Model call skipped for local perf test",
+        "completed",
+      )?;
+      let assistant_message = append_message_in(
+        &conn,
+        active_session_id,
+        "assistant",
+        "Profile reply persisted",
+      )?;
+      let output_activity = append_activity_in(
+        &conn,
+        active_session_id,
+        "output",
+        "Reply persisted",
+        "Assistant output has been stored in the session log.",
+        "completed",
+      )?;
+      touch_session_in(&conn, active_session_id, "ready")?;
+      let updated_session = load_session_summary_in(&conn, active_session_id)?;
+      let seeded_snapshot = seed_snapshot_for_persisted_run(
+        cached_snapshot,
+        active_session_id,
+        updated_session,
+        &[user_message, assistant_message],
+        &[
+          input_activity,
+          runtime_activity,
+          plan_activity,
+          model_activity,
+          output_activity,
+        ],
+      );
+      black_box(build_workspace_snapshot_with_seed_snapshot_in(
+        &conn,
+        Some(active_session_id),
+        note_ids.first().copied(),
+        reminder_ids.first().copied(),
+        skill_ids.first().copied(),
+        SnapshotReusePolicy {
+          reuse_session_list: true,
+          reuse_active_session_timeline: true,
+          reuse_note_list: true,
+          reuse_active_note_detail: true,
+          reuse_reminder_list: true,
+          reuse_active_reminder_detail: true,
+          reuse_skill_list: true,
+          reuse_active_skill_detail: true,
+          ..SnapshotReusePolicy::default()
+        },
+        seeded_snapshot,
+      )?);
+    }
+    let persist_agent_run_ms =
+      agent_run_start.elapsed().as_secs_f64() * 1000.0 / agent_run_iterations as f64;
+
+    println!("PERF cold_workspace_snapshot_ms={cold_snapshot_ms:.3}");
+    println!("PERF warm_workspace_snapshot_ms={warm_snapshot_ms:.3}");
+    println!("PERF open_note_ms={open_note_ms:.3}");
+    println!("PERF save_session_skills_ms={save_session_skills_ms:.3}");
+    println!("PERF persist_agent_run_ms={persist_agent_run_ms:.3}");
     Ok(())
   }
 
