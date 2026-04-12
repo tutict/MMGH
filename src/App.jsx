@@ -537,6 +537,9 @@ function App() {
   const weatherRequestIdRef = useRef(0);
   const weatherAbortControllerRef = useRef(null);
   const lyricsRequestVersionRef = useRef({});
+  const runAgentRequestVersionRef = useRef(0);
+  const forgeSkillRequestVersionRef = useRef(0);
+  const forgeSkillAbortControllerRef = useRef(null);
   const openView = useCallback(
     (viewId) => {
       if (!viewId) {
@@ -778,6 +781,16 @@ function App() {
       weatherRequestIdRef.current += 1;
       weatherAbortControllerRef.current?.abort();
       weatherAbortControllerRef.current = null;
+    },
+    []
+  );
+
+  useEffect(
+    () => () => {
+      runAgentRequestVersionRef.current += 1;
+      forgeSkillRequestVersionRef.current += 1;
+      forgeSkillAbortControllerRef.current?.abort();
+      forgeSkillAbortControllerRef.current = null;
     },
     []
   );
@@ -2490,6 +2503,12 @@ function App() {
       return;
     }
 
+    const requestVersion = forgeSkillRequestVersionRef.current + 1;
+    forgeSkillRequestVersionRef.current = requestVersion;
+    forgeSkillAbortControllerRef.current?.abort();
+    const controller = new AbortController();
+    forgeSkillAbortControllerRef.current = controller;
+
     setBusy("forge-skill");
     setError("");
     setNotice("");
@@ -2499,9 +2518,13 @@ function App() {
         existingSkill: mode === "rewrite" ? activeSkill : null,
         lang,
         prompt,
+        signal: controller.signal,
         settings: settingsForm,
         t,
       });
+      if (forgeSkillRequestVersionRef.current !== requestVersion) {
+        return;
+      }
 
       if (mode === "rewrite" && activeSkillId) {
         const nextSkill = {
@@ -2519,6 +2542,9 @@ function App() {
         if (shouldTrackSkillVersion(activeSkill, nextSkill)) {
           updateSkillHistoryMap((prev) => appendSkillHistoryEntry(prev, activeSkill, "ai-rewrite"));
         }
+        if (forgeSkillRequestVersionRef.current !== requestVersion) {
+          return;
+        }
         commitWorkspaceSnapshot(savedSnapshot);
         setNotice(String(generatedSkill.warning || "").trim());
         return;
@@ -2532,6 +2558,10 @@ function App() {
       if (!createdSkillId) {
         throw new Error(t("app.skills.forge.createFailed"));
       }
+      if (forgeSkillRequestVersionRef.current !== requestVersion) {
+        await rollbackCreatedSkill(createdSkillId, createAbortError("Skill generation was cancelled."));
+        return;
+      }
 
       const savedSnapshot = await saveSkill({
         activeSessionId,
@@ -2544,14 +2574,28 @@ function App() {
           enabled: true,
         },
       });
+      if (forgeSkillRequestVersionRef.current !== requestVersion) {
+        await rollbackCreatedSkill(createdSkillId, createAbortError("Skill generation was cancelled."));
+        return;
+      }
       commitWorkspaceSnapshot(savedSnapshot);
       setNotice(String(generatedSkill.warning || "").trim());
       openView("skills");
     } catch (err) {
+      if (err?.name === "AbortError") {
+        return;
+      }
       setNotice("");
-      setError(await rollbackCreatedSkill(createdSkillId, err));
+      if (forgeSkillRequestVersionRef.current === requestVersion) {
+        setError(await rollbackCreatedSkill(createdSkillId, err));
+      }
     } finally {
-      setBusy("");
+      if (forgeSkillAbortControllerRef.current === controller) {
+        forgeSkillAbortControllerRef.current = null;
+      }
+      if (forgeSkillRequestVersionRef.current === requestVersion) {
+        setBusy("");
+      }
     }
   }
 
@@ -2745,6 +2789,8 @@ function App() {
       return;
     }
 
+    const requestVersion = runAgentRequestVersionRef.current + 1;
+    runAgentRequestVersionRef.current = requestVersion;
     setBusy("run");
     setError("");
     try {
@@ -2752,12 +2798,19 @@ function App() {
         sessionId: activeSessionId,
         prompt: draft,
       });
+      if (runAgentRequestVersionRef.current !== requestVersion) {
+        return;
+      }
       commitWorkspaceSnapshot(snapshot);
       setDraft("");
     } catch (err) {
-      setError(normalizeError(err));
+      if (runAgentRequestVersionRef.current === requestVersion) {
+        setError(normalizeError(err));
+      }
     } finally {
-      setBusy("");
+      if (runAgentRequestVersionRef.current === requestVersion) {
+        setBusy("");
+      }
     }
   }
 
@@ -5235,12 +5288,13 @@ function formatShortClock(value, lang = "en-US") {
   });
 }
 
-async function generateSkillDraft({ existingSkill, lang, prompt, settings, t }) {
+async function generateSkillDraft({ existingSkill, lang, prompt, settings, signal, t }) {
   return forgeSkill({
     existingSkill,
     lang,
     prompt,
     settings,
+    signal,
   });
 }
 
@@ -5819,6 +5873,15 @@ function normalizeError(error) {
     return error.message;
   }
   return "Unknown error";
+}
+
+function createAbortError(message) {
+  if (typeof DOMException === "function") {
+    return new DOMException(message, "AbortError");
+  }
+  const error = new Error(message);
+  error.name = "AbortError";
+  return error;
 }
 
 export default App;

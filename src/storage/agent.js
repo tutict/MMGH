@@ -6,6 +6,7 @@ import {
 
 const STORAGE_KEY = "mmgh_agent_workspace_v1";
 const PREVIEW_WRITE_MAX_RETRIES = 4;
+const MODEL_REQUEST_TIMEOUT_MS = 45_000;
 const LANG_STORAGE_KEY = "mmgh-lang";
 const PREVIEW_API_KEY_STORAGE_KEY = "mmgh_agent_preview_api_key_v1";
 const CORRUPT_WORKSPACE_BACKUP_STORAGE_KEY = "mmgh_agent_workspace_v1.corrupt_backup";
@@ -1640,10 +1641,13 @@ const localSaveSessionSkills = async ({ sessionId, skillIds, activeSessionId }) 
   );
 };
 
-const localForgeSkill = async ({ existingSkill, lang, prompt, settings }) => {
+const localForgeSkill = async ({ existingSkill, lang, prompt, settings, signal }) => {
   const text = String(prompt || "").trim();
   if (!text) {
     throw new Error(storageT("promptRequired"));
+  }
+  if (signal?.aborted) {
+    throw signal.reason || createAbortError("Skill generation was cancelled.");
   }
 
   if (isSkillGenerationReady(settings)) {
@@ -1653,9 +1657,13 @@ const localForgeSkill = async ({ existingSkill, lang, prompt, settings }) => {
         lang,
         prompt: text,
         settings,
+        signal,
       });
       return sanitizeGeneratedSkill(generated, existingSkill, lang);
     } catch (error) {
+      if (error?.name === "AbortError") {
+        throw error;
+      }
       console.error("Model skill generation failed, falling back to local draft", error);
       return sanitizeGeneratedSkill(
         {
@@ -1790,66 +1798,104 @@ const localRunAgent = async ({ sessionId, prompt }) => {
 const isSkillGenerationReady = (settings) =>
   Boolean(settings?.baseUrl?.trim() && resolvePreviewApiKey(settings) && settings?.model?.trim());
 
-const requestSkillDraftFromModel = async ({ existingSkill, lang, prompt, settings }) => {
+const createAbortError = (message) => {
+  if (typeof DOMException === "function") {
+    return new DOMException(message, "AbortError");
+  }
+  const error = new Error(message);
+  error.name = "AbortError";
+  return error;
+};
+
+const requestSkillDraftFromModel = async ({ existingSkill, lang, prompt, settings, signal }) => {
+  const controller = new AbortController();
+  const timeoutId =
+    typeof window !== "undefined"
+      ? window.setTimeout(() => {
+          controller.abort(createAbortError("Skill generation timed out."));
+        }, MODEL_REQUEST_TIMEOUT_MS)
+      : 0;
+  const handleAbort = () => {
+    controller.abort(signal?.reason || createAbortError("Skill generation was cancelled."));
+  };
+
+  if (signal) {
+    if (signal.aborted) {
+      controller.abort(signal.reason || createAbortError("Skill generation was cancelled."));
+    } else {
+      signal.addEventListener("abort", handleAbort, { once: true });
+    }
+  }
+
   const endpoint = `${String(settings.baseUrl || "").replace(/\/+$/, "")}/chat/completions`;
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resolvePreviewApiKey(settings)}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: settings.model,
-      temperature: 0.4,
-      messages: [
-        {
-          role: "system",
-          content:
-            lang === "zh-CN"
-              ? [
-                  "You are a skill designer. Output a reusable low-permission skill based on the user request.",
-                  "Return JSON only. Do not output markdown.",
-                  "JSON fields must be name, description, triggerHint, instructions.",
-                  "name must be under 40 characters.",
-                  "description should summarize the skill value in 1-2 sentences.",
-                  "triggerHint should describe the requests where this skill should activate.",
-                  "instructions should be reusable, explicit, and actionable.",
-                ].join("\n")
-              : [
-                  "You are designing a reusable low-permission skill for an agent workspace.",
-                  "Return JSON only. No markdown.",
-                  "The JSON fields must be: name, description, triggerHint, instructions.",
-                  "Keep name under 40 characters.",
-                  "Description should explain the value of the skill in 1-2 sentences.",
-                  "triggerHint should explain when this skill should activate.",
-                  "instructions should be a reusable instruction block with concrete operational guidance.",
-                ].join("\n"),
-        },
-        {
-          role: "user",
-          content: [
-            `User request: ${prompt}`,
-            existingSkill
-              ? `Existing skill for rewrite reference: ${JSON.stringify(existingSkill)}`
-              : "This is for a brand new skill.",
-          ].join("\n"),
-        },
-      ],
-    }),
-  });
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resolvePreviewApiKey(settings)}`,
+        "Content-Type": "application/json",
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: settings.model,
+        temperature: 0.4,
+        messages: [
+          {
+            role: "system",
+            content:
+              lang === "zh-CN"
+                ? [
+                    "You are a skill designer. Output a reusable low-permission skill based on the user request.",
+                    "Return JSON only. Do not output markdown.",
+                    "JSON fields must be name, description, triggerHint, instructions.",
+                    "name must be under 40 characters.",
+                    "description should summarize the skill value in 1-2 sentences.",
+                    "triggerHint should describe the requests where this skill should activate.",
+                    "instructions should be reusable, explicit, and actionable.",
+                  ].join("\n")
+                : [
+                    "You are designing a reusable low-permission skill for an agent workspace.",
+                    "Return JSON only. No markdown.",
+                    "The JSON fields must be: name, description, triggerHint, instructions.",
+                    "Keep name under 40 characters.",
+                    "Description should explain the value of the skill in 1-2 sentences.",
+                    "triggerHint should explain when this skill should activate.",
+                    "instructions should be a reusable instruction block with concrete operational guidance.",
+                  ].join("\n"),
+          },
+          {
+            role: "user",
+            content: [
+              `User request: ${prompt}`,
+              existingSkill
+                ? `Existing skill for rewrite reference: ${JSON.stringify(existingSkill)}`
+                : "This is for a brand new skill.",
+            ].join("\n"),
+          },
+        ],
+      }),
+    });
 
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || "Skill generation request failed.");
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || "Skill generation request failed.");
+    }
+
+    const payload = await response.json();
+    const content = payload?.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error("The model returned an empty skill draft.");
+    }
+
+    return parseGeneratedSkill(content);
+  } finally {
+    if (signal) {
+      signal.removeEventListener("abort", handleAbort);
+    }
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
   }
-
-  const payload = await response.json();
-  const content = payload?.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error("The model returned an empty skill draft.");
-  }
-
-  return parseGeneratedSkill(content);
 };
 
 const parseGeneratedSkill = (content) => {
@@ -2000,10 +2046,15 @@ export const saveSessionSkills = async ({ sessionId, skillIds, activeSessionId }
     ? invokeTauri("save_session_skills", { sessionId, skillIds, activeSessionId })
     : localSaveSessionSkills({ sessionId, skillIds, activeSessionId });
 
-export const forgeSkill = async ({ existingSkill, lang, prompt, settings }) =>
-  isTauriAvailable()
+export const forgeSkill = async ({ existingSkill, lang, prompt, settings, signal }) => {
+  if (signal?.aborted) {
+    throw signal.reason || createAbortError("Skill generation was cancelled.");
+  }
+
+  return isTauriAvailable()
     ? invokeTauri("forge_skill", { existingSkill, lang, prompt, settings })
-    : localForgeSkill({ existingSkill, lang, prompt, settings });
+    : localForgeSkill({ existingSkill, lang, prompt, settings, signal });
+};
 
 export const runAgent = async ({ sessionId, prompt }) =>
   isTauriAvailable()

@@ -295,6 +295,32 @@ test("preview skill generation surfaces a warning when model generation falls ba
   fetchSpy.mockRestore();
 });
 
+test("preview skill generation can be cancelled before the network request starts", async () => {
+  const agent = await loadAgentModule();
+  const controller = new AbortController();
+  const fetchSpy = vi.spyOn(window, "fetch");
+  controller.abort();
+
+  await expect(
+    agent.forgeSkill({
+      existingSkill: null,
+      lang: "en-US",
+      prompt: "Create a review skill for React components",
+      signal: controller.signal,
+      settings: {
+        baseUrl: "https://example.com/v1",
+        apiKey: "preview-key",
+        model: "gpt-test",
+      },
+    })
+  ).rejects.toMatchObject({
+    name: "AbortError",
+  });
+
+  expect(fetchSpy).not.toHaveBeenCalled();
+  fetchSpy.mockRestore();
+});
+
 test("invalid preview workspace payload is backed up without being overwritten during bootstrap", async () => {
   const agent = await loadAgentModule();
   const invalidRaw = "{\"sessions\":}";
