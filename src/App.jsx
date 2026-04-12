@@ -2063,7 +2063,7 @@ function App() {
     }));
   }
 
-  async function handleSaveSettings(event) {
+  const handleSaveSettings = useCallback(async (event) => {
     event.preventDefault();
     if (providerSecurityAssessment.status === "blocked") {
       setError(providerSecurityMessage);
@@ -2104,16 +2104,23 @@ function App() {
     } finally {
       setBusy("");
     }
-  }
+  }, [
+    activeSessionId,
+    commitWorkspaceSnapshot,
+    providerSecurityAssessment,
+    providerSecurityMessage,
+    settingsForm,
+    t,
+  ]);
 
-  function handleClearApiKey() {
+  const handleClearApiKey = useCallback(() => {
     setSettingsForm((prev) => ({
       ...prev,
       clearApiKey: !prev.clearApiKey,
       hasApiKey: prev.clearApiKey ? Boolean(workspace?.settings?.hasApiKey) : false,
       apiKey: "",
     }));
-  }
+  }, [workspace?.settings?.hasApiKey]);
 
   async function handleOpenNote(noteId) {
     if (!noteId || noteId === activeNoteId) {
@@ -2809,7 +2816,7 @@ function App() {
     event.target.value = "";
   }
 
-  async function handleGalleryUpload(event) {
+  const handleGalleryUpload = useCallback(async (event) => {
     const files = Array.from(event.target.files || []);
     if (files.length === 0) {
       return;
@@ -2837,17 +2844,17 @@ function App() {
     } finally {
       event.target.value = "";
     }
-  }
+  }, [updateGalleryItems]);
 
-  function handleToggleFavoriteGalleryItem(itemId) {
+  const handleToggleFavoriteGalleryItem = useCallback((itemId) => {
     updateGalleryItems((prev) =>
       prev.map((item) =>
         item.id === itemId ? { ...item, favorite: !item.favorite } : item
       )
     );
-  }
+  }, [updateGalleryItems]);
 
-  function handleDeleteGalleryItem(itemId) {
+  const handleDeleteGalleryItem = useCallback((itemId) => {
     if (typeof window !== "undefined" && !window.confirm(t("app.gallery.deleteConfirm"))) {
       return;
     }
@@ -2857,7 +2864,7 @@ function App() {
       return;
     }
     setGalleryViewerId((prev) => (prev === itemId ? "" : prev));
-  }
+  }, [t, updateGalleryItems]);
 
   function handleClearMediaCache() {
     if (

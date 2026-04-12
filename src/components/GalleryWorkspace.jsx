@@ -411,4 +411,4 @@ function formatGalleryTime(value, lang) {
   });
 }
 
-export default GalleryWorkspace;
+export default React.memo(GalleryWorkspace);

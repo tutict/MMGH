@@ -217,4 +217,4 @@ function SettingsWorkspace({
   );
 }
 
-export default SettingsWorkspace;
+export default React.memo(SettingsWorkspace);
