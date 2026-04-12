@@ -456,23 +456,28 @@ pub fn create_note(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
-    let note_id = create_note_in(conn, title)?;
-    build_workspace_snapshot_with_policy_in(
+    let note = create_note_detail_in(conn, title)?;
+    let seeded_snapshot = seed_snapshot_for_note_upsert(cached_snapshot, note.clone());
+    build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       active_session_id,
-      Some(note_id),
+      Some(note.id),
       None,
       None,
       SnapshotReusePolicy {
         reuse_session_list: true,
         reuse_active_session_timeline: true,
+        reuse_note_list: true,
+        reuse_active_note_detail: true,
         reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
+      seeded_snapshot,
     )
   })
 }
@@ -482,23 +487,28 @@ pub fn save_note(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
-    save_note_in(conn, input.clone())?;
-    build_workspace_snapshot_with_policy_in(
+    let note = save_note_detail_in(conn, input)?;
+    let seeded_snapshot = seed_snapshot_for_note_upsert(cached_snapshot, note.clone());
+    build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       active_session_id,
-      Some(input.id),
+      Some(note.id),
       None,
       None,
       SnapshotReusePolicy {
         reuse_session_list: true,
         reuse_active_session_timeline: true,
+        reuse_note_list: true,
+        reuse_active_note_detail: true,
         reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
+      seeded_snapshot,
     )
   })
 }
@@ -548,23 +558,28 @@ pub fn create_reminder(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
-    let reminder_id = create_reminder_in(conn, title)?;
-    build_workspace_snapshot_with_policy_in(
+    let reminder = create_reminder_detail_in(conn, title)?;
+    let seeded_snapshot = seed_snapshot_for_reminder_upsert(cached_snapshot, reminder.clone());
+    build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       active_session_id,
       None,
-      Some(reminder_id),
+      Some(reminder.id),
       None,
       SnapshotReusePolicy {
         reuse_session_list: true,
         reuse_active_session_timeline: true,
         reuse_note_list: true,
         reuse_active_note_detail: true,
+        reuse_reminder_list: true,
+        reuse_active_reminder_detail: true,
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
+      seeded_snapshot,
     )
   })
 }
@@ -574,23 +589,28 @@ pub fn save_reminder(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
-    save_reminder_in(conn, input.clone())?;
-    build_workspace_snapshot_with_policy_in(
+    let reminder = save_reminder_detail_in(conn, input)?;
+    let seeded_snapshot = seed_snapshot_for_reminder_upsert(cached_snapshot, reminder.clone());
+    build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       active_session_id,
       None,
-      Some(input.id),
+      Some(reminder.id),
       None,
       SnapshotReusePolicy {
         reuse_session_list: true,
         reuse_active_session_timeline: true,
         reuse_note_list: true,
         reuse_active_note_detail: true,
+        reuse_reminder_list: true,
+        reuse_active_reminder_detail: true,
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
+      seeded_snapshot,
     )
   })
 }
@@ -641,44 +661,54 @@ pub fn create_skill(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
-    let skill_id = create_skill_for_active_session_in(conn, name, active_session_id)?;
-    build_workspace_snapshot_with_policy_in(
+    let skill = create_skill_detail_for_active_session_in(conn, name, active_session_id)?;
+    let seeded_snapshot = seed_snapshot_for_skill_upsert(cached_snapshot, skill.clone());
+    build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       active_session_id,
       None,
       None,
-      Some(skill_id),
+      Some(skill.id),
       SnapshotReusePolicy {
         reuse_active_session_timeline: true,
         reuse_note_list: true,
         reuse_active_note_detail: true,
         reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
+        reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
+      seeded_snapshot,
     )
   })
 }
 
 pub fn save_skill(input: SkillInput, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
-    save_skill_in(conn, input.clone())?;
-    build_workspace_snapshot_with_policy_in(
+    let skill = save_skill_detail_in(conn, input)?;
+    let seeded_snapshot = seed_snapshot_for_skill_upsert(cached_snapshot, skill.clone());
+    build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       active_session_id,
       None,
       None,
-      Some(input.id),
+      Some(skill.id),
       SnapshotReusePolicy {
         reuse_active_session_timeline: true,
         reuse_note_list: true,
         reuse_active_note_detail: true,
         reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
+        reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
+      seeded_snapshot,
     )
   })
 }
@@ -1714,6 +1744,10 @@ fn create_session_in(conn: &Connection, title: Option<String>) -> Result<i64> {
 }
 
 fn create_note_in(conn: &Connection, title: Option<String>) -> Result<i64> {
+  Ok(create_note_detail_in(conn, title)?.id)
+}
+
+fn create_note_detail_in(conn: &Connection, title: Option<String>) -> Result<KnowledgeNoteDetail> {
   let now = now_millis();
   let note_title = title
     .as_deref()
@@ -1730,13 +1764,25 @@ fn create_note_in(conn: &Connection, title: Option<String>) -> Result<i64> {
   conn.execute(
     "INSERT INTO notes (icon, title, body, tags, created_at, updated_at)
      VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-    params!["*", note_title, body, "[]", now, now],
+    params!["*", &note_title, &body, "[]", now, now],
   )?;
 
-  Ok(conn.last_insert_rowid())
+  Ok(build_note_detail(
+    conn.last_insert_rowid(),
+    "*".to_string(),
+    note_title,
+    body,
+    Vec::new(),
+    now,
+    now,
+  ))
 }
 
 fn create_reminder_in(conn: &Connection, title: Option<String>) -> Result<i64> {
+  Ok(create_reminder_detail_in(conn, title)?.id)
+}
+
+fn create_reminder_detail_in(conn: &Connection, title: Option<String>) -> Result<ReminderDetail> {
   let now = now_millis();
   let reminder_title = title
     .as_deref()
@@ -1767,10 +1813,24 @@ fn create_reminder_in(conn: &Connection, title: Option<String>) -> Result<i64> {
     ],
   )?;
 
-  Ok(conn.last_insert_rowid())
+  Ok(build_reminder_detail(
+    conn.last_insert_rowid(),
+    reminder_title,
+    "Capture the next action, attach a note, and set when it should surface again.".to_string(),
+    Some(now + 60 * 60 * 1000),
+    "medium".to_string(),
+    "scheduled".to_string(),
+    linked_note_id,
+    now,
+    now,
+  ))
 }
 
 fn create_skill_in(conn: &Connection, name: Option<String>) -> Result<i64> {
+  Ok(create_skill_detail_in(conn, name)?.id)
+}
+
+fn create_skill_detail_in(conn: &Connection, name: Option<String>) -> Result<SkillDetail> {
   let now = now_millis();
   let skill_name = name
     .as_deref()
@@ -1799,38 +1859,58 @@ fn create_skill_in(conn: &Connection, name: Option<String>) -> Result<i64> {
   conn.execute(
     "INSERT INTO skills (name, description, instructions, trigger_hint, enabled, permission_level, created_at, updated_at)
      VALUES (?1, ?2, ?3, ?4, 1, 'low', ?5, ?6)",
-    params![skill_name, description, instructions, trigger_hint, now, now],
+    params![&skill_name, &description, &instructions, &trigger_hint, now, now],
   )?;
 
-  Ok(conn.last_insert_rowid())
+  Ok(build_skill_detail(
+    conn.last_insert_rowid(),
+    skill_name,
+    description,
+    instructions,
+    trigger_hint,
+    true,
+    "low".to_string(),
+    now,
+    now,
+  ))
 }
 
 fn save_note_in(conn: &Connection, input: KnowledgeNoteInput) -> Result<()> {
-  let icon = if input.icon.trim().is_empty() {
-    "*".to_string()
-  } else {
-    input.icon.trim().chars().take(2).collect::<String>()
-  };
-  let title = if input.title.trim().is_empty() {
-    "Untitled note".to_string()
-  } else {
-    input.title.trim().to_string()
-  };
+  save_note_detail_in(conn, input).map(|_| ())
+}
+
+fn save_note_detail_in(
+  conn: &Connection,
+  input: KnowledgeNoteInput,
+) -> Result<KnowledgeNoteDetail> {
+  let icon = normalize_note_icon(&input.icon);
+  let title = normalize_note_title(&input.title);
   let body = input.body.trim().to_string();
-  let tags = encode_tags(input.tags);
+  let tags = normalize_tags(input.tags);
+  let updated_at = now_millis();
+  let created_at = load_note_created_at_in(conn, input.id)?;
 
   let changed = conn.execute(
     "UPDATE notes
      SET icon = ?1, title = ?2, body = ?3, tags = ?4, updated_at = ?5
      WHERE id = ?6",
-    params![icon, title, body, tags, now_millis(), input.id],
+    params![
+      &icon,
+      &title,
+      &body,
+      serde_json::to_string(&tags).unwrap_or_else(|_| "[]".to_string()),
+      updated_at,
+      input.id
+    ],
   )?;
 
   if changed == 0 {
     return Err(anyhow!("note not found"));
   }
 
-  Ok(())
+  Ok(build_note_detail(
+    input.id, icon, title, body, tags, created_at, updated_at,
+  ))
 }
 
 fn delete_session_in(conn: &Connection, session_id: i64) -> Result<()> {
@@ -1858,6 +1938,10 @@ fn delete_note_in(conn: &Connection, note_id: i64) -> Result<()> {
 }
 
 fn save_reminder_in(conn: &Connection, input: ReminderInput) -> Result<()> {
+  save_reminder_detail_in(conn, input).map(|_| ())
+}
+
+fn save_reminder_detail_in(conn: &Connection, input: ReminderInput) -> Result<ReminderDetail> {
   let title = if input.title.trim().is_empty() {
     "New reminder".to_string()
   } else {
@@ -1879,6 +1963,8 @@ fn save_reminder_in(conn: &Connection, input: ReminderInput) -> Result<()> {
     Some(note_id) if note_exists_in(conn, note_id)? => Some(note_id),
     _ => None,
   };
+  let updated_at = now_millis();
+  let created_at = load_reminder_created_at_in(conn, input.id)?;
 
   let changed = conn.execute(
     "UPDATE reminders
@@ -1891,13 +1977,13 @@ fn save_reminder_in(conn: &Connection, input: ReminderInput) -> Result<()> {
          updated_at = ?7
      WHERE id = ?8",
     params![
-      title,
-      detail,
+      &title,
+      &detail,
       input.due_at,
       severity,
       status,
       linked_note_id,
-      now_millis(),
+      updated_at,
       input.id
     ],
   )?;
@@ -1906,7 +1992,17 @@ fn save_reminder_in(conn: &Connection, input: ReminderInput) -> Result<()> {
     return Err(anyhow!("reminder not found"));
   }
 
-  Ok(())
+  Ok(build_reminder_detail(
+    input.id,
+    title,
+    detail,
+    input.due_at,
+    severity.to_string(),
+    status.to_string(),
+    linked_note_id,
+    created_at,
+    updated_at,
+  ))
 }
 
 fn delete_reminder_in(conn: &Connection, reminder_id: i64) -> Result<()> {
@@ -2016,17 +2112,25 @@ fn create_skill_for_active_session_in(
   name: Option<String>,
   active_session_id: Option<i64>,
 ) -> Result<i64> {
+  Ok(create_skill_detail_for_active_session_in(conn, name, active_session_id)?.id)
+}
+
+fn create_skill_detail_for_active_session_in(
+  conn: &Connection,
+  name: Option<String>,
+  active_session_id: Option<i64>,
+) -> Result<SkillDetail> {
   if let Some(session_id) = active_session_id {
     ensure_session_exists_in(conn, session_id)?;
   }
 
-  let skill_id = create_skill_in(conn, name)?;
+  let skill = create_skill_detail_in(conn, name)?;
   if let Some(session_id) = active_session_id {
     let mut skill_ids = list_session_skill_ids_in(conn, session_id)?;
-    skill_ids.push(skill_id);
+    skill_ids.push(skill.id);
     save_session_skills_in(conn, session_id, skill_ids)?;
   }
-  Ok(skill_id)
+  Ok(skill)
 }
 
 fn ensure_session_title_in(conn: &Connection, session_id: i64, prompt: &str) -> Result<()> {
@@ -2087,6 +2191,10 @@ fn delete_skill_in(conn: &Connection, skill_id: i64) -> Result<()> {
 }
 
 fn save_skill_in(conn: &Connection, input: SkillInput) -> Result<()> {
+  save_skill_detail_in(conn, input).map(|_| ())
+}
+
+fn save_skill_detail_in(conn: &Connection, input: SkillInput) -> Result<SkillDetail> {
   let name = if input.name.trim().is_empty() {
     "New skill".to_string()
   } else {
@@ -2096,6 +2204,7 @@ fn save_skill_in(conn: &Connection, input: SkillInput) -> Result<()> {
   let instructions = input.instructions.trim().to_string();
   let trigger_hint = input.trigger_hint.trim().to_string();
   let updated_at = now_millis();
+  let created_at = load_skill_created_at_in(conn, input.id)?;
 
   let changed = conn.execute(
     "UPDATE skills
@@ -2108,10 +2217,10 @@ fn save_skill_in(conn: &Connection, input: SkillInput) -> Result<()> {
          updated_at = ?6
      WHERE id = ?7",
     params![
-      name,
-      description,
-      instructions,
-      trigger_hint,
+      &name,
+      &description,
+      &instructions,
+      &trigger_hint,
       if input.enabled { 1 } else { 0 },
       updated_at,
       input.id
@@ -2147,7 +2256,17 @@ fn save_skill_in(conn: &Connection, input: SkillInput) -> Result<()> {
     }
   }
 
-  Ok(())
+  Ok(build_skill_detail(
+    input.id,
+    name,
+    description,
+    instructions,
+    trigger_hint,
+    input.enabled,
+    "low".to_string(),
+    created_at,
+    updated_at,
+  ))
 }
 
 fn save_session_skills_in(conn: &Connection, session_id: i64, skill_ids: Vec<i64>) -> Result<()> {
@@ -2945,6 +3064,54 @@ fn seed_snapshot_for_persisted_run(
   Some(snapshot)
 }
 
+fn seed_snapshot_for_note_upsert(
+  cached_snapshot: Option<WorkspaceSnapshot>,
+  detail: KnowledgeNoteDetail,
+) -> Option<WorkspaceSnapshot> {
+  let mut snapshot = cached_snapshot?;
+  upsert_note_summary(&mut snapshot.notes, build_note_summary_from_detail(&detail));
+  snapshot.active_note_id = detail.id;
+  snapshot.active_note = detail;
+  Some(snapshot)
+}
+
+fn seed_snapshot_for_reminder_upsert(
+  cached_snapshot: Option<WorkspaceSnapshot>,
+  detail: ReminderDetail,
+) -> Option<WorkspaceSnapshot> {
+  let mut snapshot = cached_snapshot?;
+  upsert_reminder_summary(
+    &mut snapshot.reminders,
+    build_reminder_summary_from_detail(&detail),
+  );
+  snapshot.active_reminder_id = detail.id;
+  snapshot.active_reminder = detail;
+  Some(snapshot)
+}
+
+fn seed_snapshot_for_skill_upsert(
+  cached_snapshot: Option<WorkspaceSnapshot>,
+  detail: SkillDetail,
+) -> Option<WorkspaceSnapshot> {
+  let mut snapshot = cached_snapshot?;
+  upsert_skill_summary(
+    &mut snapshot.skills,
+    build_skill_summary_from_detail(&detail),
+  );
+  snapshot.active_skill_id = detail.id;
+  snapshot.active_skill = detail;
+  snapshot.active_session.mounted_skills =
+    build_mounted_skills_from_catalog(&snapshot.active_session.mounted_skill_ids, &snapshot.skills);
+  snapshot.active_session.recommended_skills = recommend_session_skills_from_messages(
+    &snapshot.active_session.session.title,
+    &snapshot.active_session.messages,
+    &snapshot.active_session.mounted_skill_ids,
+    4,
+    &snapshot.skills,
+  );
+  Some(snapshot)
+}
+
 fn extract_recommendation_keywords(text: &str) -> Vec<String> {
   let mut keywords = text
     .split(|ch: char| !ch.is_alphanumeric() && !is_cjk_character(ch))
@@ -3345,13 +3512,202 @@ fn decode_tags(raw: String) -> Vec<String> {
   serde_json::from_str::<Vec<String>>(&raw).unwrap_or_default()
 }
 
-fn encode_tags(tags: Vec<String>) -> String {
-  let cleaned = tags
+fn normalize_tags(tags: Vec<String>) -> Vec<String> {
+  tags
     .into_iter()
     .map(|tag| tag.trim().to_string())
     .filter(|tag| !tag.is_empty())
-    .collect::<Vec<_>>();
-  serde_json::to_string(&cleaned).unwrap_or_else(|_| "[]".to_string())
+    .collect()
+}
+
+fn normalize_note_icon(icon: &str) -> String {
+  if icon.trim().is_empty() {
+    "*".to_string()
+  } else {
+    icon.trim().chars().take(2).collect::<String>()
+  }
+}
+
+fn normalize_note_title(title: &str) -> String {
+  if title.trim().is_empty() {
+    "Untitled note".to_string()
+  } else {
+    title.trim().to_string()
+  }
+}
+
+fn build_note_detail(
+  id: i64,
+  icon: String,
+  title: String,
+  body: String,
+  tags: Vec<String>,
+  created_at: i64,
+  updated_at: i64,
+) -> KnowledgeNoteDetail {
+  KnowledgeNoteDetail {
+    id,
+    icon,
+    title,
+    summary: preview_text(&body, 120),
+    body,
+    tags,
+    created_at,
+    updated_at,
+  }
+}
+
+fn build_note_summary_from_detail(detail: &KnowledgeNoteDetail) -> KnowledgeNoteSummary {
+  KnowledgeNoteSummary {
+    id: detail.id,
+    icon: detail.icon.clone(),
+    title: detail.title.clone(),
+    summary: detail.summary.clone(),
+    tags: detail.tags.clone(),
+    updated_at: detail.updated_at,
+  }
+}
+
+fn build_reminder_detail(
+  id: i64,
+  title: String,
+  detail: String,
+  due_at: Option<i64>,
+  severity: String,
+  status: String,
+  linked_note_id: Option<i64>,
+  created_at: i64,
+  updated_at: i64,
+) -> ReminderDetail {
+  ReminderDetail {
+    id,
+    title,
+    preview: preview_text(&detail, 120),
+    detail,
+    due_at,
+    severity,
+    status,
+    linked_note_id,
+    created_at,
+    updated_at,
+  }
+}
+
+fn build_reminder_summary_from_detail(detail: &ReminderDetail) -> ReminderSummary {
+  ReminderSummary {
+    id: detail.id,
+    title: detail.title.clone(),
+    preview: detail.preview.clone(),
+    due_at: detail.due_at,
+    severity: detail.severity.clone(),
+    status: detail.status.clone(),
+    linked_note_id: detail.linked_note_id,
+    updated_at: detail.updated_at,
+  }
+}
+
+fn build_skill_detail(
+  id: i64,
+  name: String,
+  description: String,
+  instructions: String,
+  trigger_hint: String,
+  enabled: bool,
+  permission_level: String,
+  created_at: i64,
+  updated_at: i64,
+) -> SkillDetail {
+  SkillDetail {
+    id,
+    name,
+    description: description.clone(),
+    summary: preview_text(&description, 120),
+    instructions,
+    trigger_hint,
+    enabled,
+    permission_level,
+    created_at,
+    updated_at,
+  }
+}
+
+fn build_skill_summary_from_detail(detail: &SkillDetail) -> SkillSummary {
+  SkillSummary {
+    id: detail.id,
+    name: detail.name.clone(),
+    summary: detail.summary.clone(),
+    trigger_hint: detail.trigger_hint.clone(),
+    recommendation_reason: None,
+    enabled: detail.enabled,
+    permission_level: detail.permission_level.clone(),
+    updated_at: detail.updated_at,
+  }
+}
+
+fn load_note_created_at_in(conn: &Connection, note_id: i64) -> Result<i64> {
+  conn
+    .query_row(
+      "SELECT created_at FROM notes WHERE id = ?1",
+      params![note_id],
+      |row| row.get(0),
+    )
+    .optional()?
+    .context("note not found")
+}
+
+fn load_reminder_created_at_in(conn: &Connection, reminder_id: i64) -> Result<i64> {
+  conn
+    .query_row(
+      "SELECT created_at FROM reminders WHERE id = ?1",
+      params![reminder_id],
+      |row| row.get(0),
+    )
+    .optional()?
+    .context("reminder not found")
+}
+
+fn load_skill_created_at_in(conn: &Connection, skill_id: i64) -> Result<i64> {
+  conn
+    .query_row(
+      "SELECT created_at FROM skills WHERE id = ?1",
+      params![skill_id],
+      |row| row.get(0),
+    )
+    .optional()?
+    .context("skill not found")
+}
+
+fn upsert_note_summary(notes: &mut Vec<KnowledgeNoteSummary>, summary: KnowledgeNoteSummary) {
+  notes.retain(|note| note.id != summary.id);
+  notes.push(summary);
+  notes.sort_by(|left, right| {
+    right
+      .updated_at
+      .cmp(&left.updated_at)
+      .then_with(|| right.id.cmp(&left.id))
+  });
+}
+
+fn upsert_reminder_summary(reminders: &mut Vec<ReminderSummary>, summary: ReminderSummary) {
+  reminders.retain(|reminder| reminder.id != summary.id);
+  reminders.push(summary);
+  reminders.sort_by(|left, right| {
+    right
+      .updated_at
+      .cmp(&left.updated_at)
+      .then_with(|| right.id.cmp(&left.id))
+  });
+}
+
+fn upsert_skill_summary(skills: &mut Vec<SkillSummary>, summary: SkillSummary) {
+  skills.retain(|skill| skill.id != summary.id);
+  skills.push(summary);
+  skills.sort_by(|left, right| {
+    right
+      .updated_at
+      .cmp(&left.updated_at)
+      .then_with(|| right.id.cmp(&left.id))
+  });
 }
 
 fn preview_text(content: &str, limit: usize) -> String {
@@ -4015,6 +4371,68 @@ mod tests {
       .notes
       .iter()
       .any(|note| note.id == note_id));
+    Ok(())
+  }
+
+  #[test]
+  fn seeded_snapshot_preserves_note_reminder_and_skill_upserts() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let base_snapshot = build_workspace_snapshot_with_policy_in(
+      &conn,
+      None,
+      None,
+      None,
+      None,
+      SnapshotReusePolicy::read_only(),
+    )?;
+    let preferred_reminder_id =
+      (base_snapshot.active_reminder_id > 0).then_some(base_snapshot.active_reminder_id);
+
+    let note = create_note_detail_in(&conn, Some("Seeded note".to_string()))?;
+    let note_snapshot = build_workspace_snapshot_with_seed_snapshot_in(
+      &conn,
+      Some(base_snapshot.active_session_id),
+      Some(note.id),
+      preferred_reminder_id,
+      Some(base_snapshot.active_skill_id),
+      SnapshotReusePolicy::read_only(),
+      seed_snapshot_for_note_upsert(Some(base_snapshot.clone()), note.clone()),
+    )?;
+    assert_eq!(note_snapshot.active_note.id, note.id);
+    assert!(note_snapshot.notes.iter().any(|item| item.id == note.id));
+
+    let reminder = create_reminder_detail_in(&conn, Some("Seeded reminder".to_string()))?;
+    let reminder_snapshot = build_workspace_snapshot_with_seed_snapshot_in(
+      &conn,
+      Some(base_snapshot.active_session_id),
+      Some(base_snapshot.active_note_id),
+      Some(reminder.id),
+      Some(base_snapshot.active_skill_id),
+      SnapshotReusePolicy::read_only(),
+      seed_snapshot_for_reminder_upsert(Some(base_snapshot.clone()), reminder.clone()),
+    )?;
+    assert_eq!(reminder_snapshot.active_reminder.id, reminder.id);
+    assert!(reminder_snapshot
+      .reminders
+      .iter()
+      .any(|item| item.id == reminder.id));
+
+    let skill = create_skill_detail_in(&conn, Some("Seeded skill".to_string()))?;
+    let skill_snapshot = build_workspace_snapshot_with_seed_snapshot_in(
+      &conn,
+      Some(base_snapshot.active_session_id),
+      Some(base_snapshot.active_note_id),
+      preferred_reminder_id,
+      Some(skill.id),
+      SnapshotReusePolicy::read_only(),
+      seed_snapshot_for_skill_upsert(Some(base_snapshot), skill.clone()),
+    )?;
+    assert_eq!(skill_snapshot.active_skill.id, skill.id);
+    assert!(skill_snapshot.skills.iter().any(|item| item.id == skill.id));
     Ok(())
   }
 
