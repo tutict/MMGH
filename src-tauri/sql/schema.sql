@@ -64,6 +64,9 @@ CREATE INDEX IF NOT EXISTS idx_sessions_updated_at
 CREATE INDEX IF NOT EXISTS idx_messages_session_id_created_at
   ON messages(session_id, created_at ASC);
 
+CREATE INDEX IF NOT EXISTS idx_messages_session_id_id_desc
+  ON messages(session_id, id DESC);
+
 CREATE INDEX IF NOT EXISTS idx_activity_session_id_created_at
   ON activity(session_id, created_at DESC);
 
@@ -72,6 +75,9 @@ CREATE INDEX IF NOT EXISTS idx_notes_updated_at
 
 CREATE INDEX IF NOT EXISTS idx_reminders_due_at
   ON reminders(due_at ASC, updated_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_reminders_status_due_at_updated_at
+  ON reminders(status, due_at ASC, updated_at DESC);
 
 CREATE TABLE IF NOT EXISTS skills (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -88,6 +94,9 @@ CREATE TABLE IF NOT EXISTS skills (
 CREATE INDEX IF NOT EXISTS idx_skills_updated_at
   ON skills(updated_at DESC);
 
+CREATE INDEX IF NOT EXISTS idx_skills_enabled_updated_at
+  ON skills(enabled, updated_at DESC);
+
 CREATE TABLE IF NOT EXISTS session_skills (
   session_id INTEGER NOT NULL,
   skill_id INTEGER NOT NULL,
@@ -99,6 +108,9 @@ CREATE TABLE IF NOT EXISTS session_skills (
 
 CREATE INDEX IF NOT EXISTS idx_session_skills_session_id
   ON session_skills(session_id);
+
+CREATE INDEX IF NOT EXISTS idx_session_skills_session_id_created_at
+  ON session_skills(session_id, created_at ASC, skill_id ASC);
 
 CREATE INDEX IF NOT EXISTS idx_session_skills_skill_id
   ON session_skills(skill_id);

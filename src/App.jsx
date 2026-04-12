@@ -12,6 +12,7 @@ import {
   deleteKnowledgeNote,
   deleteSession,
   openKnowledgeNote,
+  openReminder,
   openSkill,
   openSession,
   runAgent,
@@ -989,8 +990,7 @@ function App() {
     }
   }
 
-  const selectedReminder =
-    reminders.find((reminder) => reminder.id === selectedReminderId) || reminders[0] || null;
+  const selectedReminder = workspace?.activeReminder || null;
   const lastAssistantMessageId = useMemo(() => {
     const lastMessage = activeSession?.messages?.[activeSession.messages.length - 1];
     return lastMessage?.role === "assistant" ? lastMessage.id : null;
@@ -1254,7 +1254,7 @@ function App() {
     return window.confirm(t("app.common.discardChangesConfirm"));
   }, [hasUnsavedWorkspaceDrafts, t]);
 
-  const handleSelectReminder = useCallback((reminderId, options = {}) => {
+  const handleSelectReminder = useCallback(async (reminderId, options = {}) => {
     if (!reminderId || reminderId === selectedReminderId) {
       return false;
     }
@@ -1267,9 +1267,30 @@ function App() {
       return false;
     }
 
-    setSelectedReminderId(reminderId);
-    return true;
-  }, [busy, confirmDiscardWorkspaceDrafts, hasUnsavedReminder, loading, selectedReminderId]);
+    setBusy("open-reminder");
+    setError("");
+    try {
+      const snapshot = await openReminder({
+        reminderId,
+        activeSessionId,
+      });
+      setWorkspace(snapshot);
+      setSelectedReminderId(snapshot.activeReminderId || reminderId);
+      return true;
+    } catch (err) {
+      setError(normalizeError(err));
+      return false;
+    } finally {
+      setBusy("");
+    }
+  }, [
+    activeSessionId,
+    busy,
+    confirmDiscardWorkspaceDrafts,
+    hasUnsavedReminder,
+    loading,
+    selectedReminderId,
+  ]);
 
   const activeSkillVersions = useMemo(
     () => getSkillHistoryEntries(skillHistoryMap, activeSkillId),
@@ -1508,10 +1529,16 @@ function App() {
       return;
     }
 
+    const workspaceReminderId = workspace?.activeReminderId || 0;
+    if (workspaceReminderId && workspaceReminderId !== selectedReminderId) {
+      setSelectedReminderId(workspaceReminderId);
+      return;
+    }
+
     if (!reminders.some((reminder) => reminder.id === selectedReminderId)) {
       setSelectedReminderId(reminders[0].id);
     }
-  }, [reminders, selectedReminderId]);
+  }, [reminders, selectedReminderId, workspace?.activeReminderId]);
 
   useEffect(() => {
     if (!selectedReminder) {
@@ -1551,16 +1578,18 @@ function App() {
       return;
     }
 
-    if (!handleSelectReminder(dueReminder.id, { force: true })) {
-      return;
-    }
-
     const alertKey = `${dueReminder.id}:${dueReminder.updatedAt}:${dueReminder.status}`;
     const triggeredReminderKeys = triggeredRemindersRef.current;
     triggeredReminderKeys.add(alertKey);
     setNotice("");
     setIsInspectorOpen(false);
     openView("reminders");
+
+    void handleSelectReminder(dueReminder.id, { force: true }).then((opened) => {
+      if (!opened) {
+        triggeredReminderKeys.delete(alertKey);
+      }
+    });
 
     if (typeof window !== "undefined") {
       const audio = new Audio("/reply-pulse.mp3");
@@ -2312,7 +2341,7 @@ function App() {
         activeSessionId,
       });
       setWorkspace(snapshot);
-      setSelectedReminderId(snapshot.reminders?.[0]?.id || 0);
+      setSelectedReminderId(snapshot.activeReminderId || 0);
       openView("reminders");
     } catch (err) {
       setError(normalizeError(err));
@@ -2342,7 +2371,7 @@ function App() {
         },
       });
       setWorkspace(snapshot);
-      setSelectedReminderId(reminderDraft.id);
+      setSelectedReminderId(snapshot.activeReminderId || reminderDraft.id);
     } catch (err) {
       setError(normalizeError(err));
     } finally {
@@ -2373,7 +2402,7 @@ function App() {
         activeSessionId,
       });
       setWorkspace(snapshot);
-      setSelectedReminderId(snapshot.reminders?.[0]?.id || 0);
+      setSelectedReminderId(snapshot.activeReminderId || 0);
     } catch (err) {
       setError(normalizeError(err));
     } finally {

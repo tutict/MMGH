@@ -7,14 +7,16 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use anyhow::{anyhow, Context, Result};
 use once_cell::sync::Lazy;
 use reqwest::Url;
-use rusqlite::{params, Connection, OptionalExtension, Transaction};
+use rusqlite::{params, Connection, OptionalExtension, Row, Transaction};
 use serde::{Deserialize, Serialize};
 
 use crate::cmd::{AgentSettingsInput, KnowledgeNoteInput, ReminderInput, SkillInput};
 
-static DB_CONN: Lazy<Mutex<Option<Connection>>> = Lazy::new(|| Mutex::new(None));
+static SNAPSHOT_CACHE: Lazy<Mutex<Option<WorkspaceSnapshot>>> = Lazy::new(|| Mutex::new(None));
 static RUNTIME_API_KEY: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
 static APP_DATA_DIR: Lazy<Mutex<Option<PathBuf>>> = Lazy::new(|| Mutex::new(None));
+static DB_INIT_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+static DB_INIT_PATH: Lazy<Mutex<Option<PathBuf>>> = Lazy::new(|| Mutex::new(None));
 const SETTINGS_KEY: &str = "agent_settings_v1";
 #[cfg_attr(test, allow(dead_code))]
 const API_KEYRING_SERVICE: &str = "mmgh-agent-desktop";
@@ -137,7 +139,7 @@ impl AgentSettings {
   }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionSummary {
   pub id: i64,
@@ -189,6 +191,14 @@ pub struct SessionDetail {
   pub recommended_skills: Vec<SkillSummary>,
 }
 
+#[derive(Debug, Clone)]
+pub struct AgentSessionContext {
+  pub title: String,
+  pub status: String,
+  pub message_count: usize,
+  pub mounted_skill_names: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct KnowledgeNoteSummary {
@@ -213,9 +223,39 @@ pub struct KnowledgeNoteDetail {
   pub updated_at: i64,
 }
 
+#[derive(Debug, Clone)]
+pub struct KnowledgeNoteContext {
+  pub title: String,
+  pub summary: String,
+  pub body_excerpt: String,
+  pub tags: Vec<String>,
+  pub updated_at: i64,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ReminderItem {
+pub struct ReminderSummary {
+  pub id: i64,
+  pub title: String,
+  pub preview: String,
+  pub due_at: Option<i64>,
+  pub severity: String,
+  pub status: String,
+  pub linked_note_id: Option<i64>,
+  pub updated_at: i64,
+}
+
+#[derive(Debug, Clone)]
+pub struct ReminderContextItem {
+  pub title: String,
+  pub severity: String,
+  pub due_at: Option<i64>,
+  pub linked_note_title: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReminderDetail {
   pub id: i64,
   pub title: String,
   pub detail: String,
@@ -228,7 +268,7 @@ pub struct ReminderItem {
   pub updated_at: i64,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct SkillSummary {
   pub id: i64,
@@ -266,11 +306,21 @@ pub struct WorkspaceSnapshot {
   pub notes: Vec<KnowledgeNoteSummary>,
   pub active_note_id: i64,
   pub active_note: KnowledgeNoteDetail,
-  pub reminders: Vec<ReminderItem>,
+  pub reminders: Vec<ReminderSummary>,
+  pub active_reminder_id: i64,
+  pub active_reminder: ReminderDetail,
   pub skills: Vec<SkillSummary>,
   pub active_skill_id: i64,
   pub active_skill: SkillDetail,
   pub capabilities: Vec<Capability>,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct SnapshotReusePolicy {
+  reuse_active_session_timeline: bool,
+  reuse_active_note_detail: bool,
+  reuse_active_reminder_detail: bool,
+  reuse_active_skill_detail: bool,
 }
 
 pub fn bootstrap() -> Result<WorkspaceSnapshot> {
@@ -280,14 +330,39 @@ pub fn bootstrap() -> Result<WorkspaceSnapshot> {
 pub fn open_session(session_id: i64) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
     ensure_session_exists_in(conn, session_id)?;
-    build_workspace_snapshot_in(conn, Some(session_id), None, None)
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      Some(session_id),
+      None,
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_note_detail: true,
+        reuse_active_reminder_detail: true,
+        reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+    )
   })
 }
 
 pub fn create_session(title: Option<String>) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
     let session_id = create_session_in(conn, title)?;
-    build_workspace_snapshot_in(conn, Some(session_id), None, None)
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      Some(session_id),
+      None,
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_active_note_detail: true,
+        reuse_active_reminder_detail: true,
+        reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+    )
   })
 }
 
@@ -295,7 +370,19 @@ pub fn delete_session(session_id: i64) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
     delete_session_in(conn, session_id)?;
     ensure_seed_session_in(conn)?;
-    build_workspace_snapshot_in(conn, None, None, None)
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      None,
+      None,
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_active_note_detail: true,
+        reuse_active_reminder_detail: true,
+        reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+    )
   })
 }
 
@@ -308,7 +395,19 @@ pub fn save_settings(
     let settings = merge_settings_input(load_settings_in(conn)?, input);
     validate_provider_base_url(&settings.base_url)?;
     store_settings_in(conn, &settings)?;
-    build_workspace_snapshot_in(conn, active_session_id, None, None)
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      active_session_id,
+      None,
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_note_detail: true,
+        reuse_active_reminder_detail: true,
+        reuse_active_skill_detail: true,
+      },
+    )
   })
 }
 
@@ -316,7 +415,19 @@ pub fn open_note(note_id: i64, active_session_id: Option<i64>) -> Result<Workspa
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     ensure_note_exists_in(conn, note_id)?;
-    build_workspace_snapshot_in(conn, active_session_id, Some(note_id), None)
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      active_session_id,
+      Some(note_id),
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_reminder_detail: true,
+        reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+    )
   })
 }
 
@@ -327,7 +438,19 @@ pub fn create_note(
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let note_id = create_note_in(conn, title)?;
-    build_workspace_snapshot_in(conn, active_session_id, Some(note_id), None)
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      active_session_id,
+      Some(note_id),
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_reminder_detail: true,
+        reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+    )
   })
 }
 
@@ -338,7 +461,19 @@ pub fn save_note(
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     save_note_in(conn, input.clone())?;
-    build_workspace_snapshot_in(conn, active_session_id, Some(input.id), None)
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      active_session_id,
+      Some(input.id),
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_reminder_detail: true,
+        reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+    )
   })
 }
 
@@ -347,7 +482,43 @@ pub fn delete_note(note_id: i64, active_session_id: Option<i64>) -> Result<Works
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     delete_note_in(conn, note_id)?;
     ensure_seed_note_in(conn)?;
-    build_workspace_snapshot_in(conn, active_session_id, None, None)
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      active_session_id,
+      None,
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_reminder_detail: true,
+        reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+    )
+  })
+}
+
+pub fn open_reminder(
+  reminder_id: i64,
+  active_session_id: Option<i64>,
+) -> Result<WorkspaceSnapshot> {
+  with_connection(|conn| {
+    let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
+    ensure_reminder_exists_in(conn, reminder_id)?;
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      active_session_id,
+      None,
+      Some(reminder_id),
+      None,
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_note_detail: true,
+        reuse_active_reminder_detail: true,
+        reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+    )
   })
 }
 
@@ -357,8 +528,20 @@ pub fn create_reminder(
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
-    create_reminder_in(conn, title)?;
-    build_workspace_snapshot_in(conn, active_session_id, None, None)
+    let reminder_id = create_reminder_in(conn, title)?;
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      active_session_id,
+      None,
+      Some(reminder_id),
+      None,
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_note_detail: true,
+        reuse_active_reminder_detail: true,
+        reuse_active_skill_detail: true,
+      },
+    )
   })
 }
 
@@ -368,8 +551,20 @@ pub fn save_reminder(
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
-    save_reminder_in(conn, input)?;
-    build_workspace_snapshot_in(conn, active_session_id, None, None)
+    save_reminder_in(conn, input.clone())?;
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      active_session_id,
+      None,
+      Some(input.id),
+      None,
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_note_detail: true,
+        reuse_active_reminder_detail: true,
+        reuse_active_skill_detail: true,
+      },
+    )
   })
 }
 
@@ -380,7 +575,19 @@ pub fn delete_reminder(
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     delete_reminder_in(conn, reminder_id)?;
-    build_workspace_snapshot_in(conn, active_session_id, None, None)
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      active_session_id,
+      None,
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_note_detail: true,
+        reuse_active_reminder_detail: true,
+        reuse_active_skill_detail: true,
+      },
+    )
   })
 }
 
@@ -388,7 +595,19 @@ pub fn open_skill(skill_id: i64, active_session_id: Option<i64>) -> Result<Works
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     ensure_skill_exists_in(conn, skill_id)?;
-    build_workspace_snapshot_in(conn, active_session_id, None, Some(skill_id))
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      active_session_id,
+      None,
+      None,
+      Some(skill_id),
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_note_detail: true,
+        reuse_active_reminder_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+    )
   })
 }
 
@@ -399,18 +618,39 @@ pub fn create_skill(
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let skill_id = create_skill_for_active_session_in(conn, name, active_session_id)?;
-    build_workspace_snapshot_in(conn, active_session_id, None, Some(skill_id))
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      active_session_id,
+      None,
+      None,
+      Some(skill_id),
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_note_detail: true,
+        reuse_active_reminder_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+    )
   })
 }
 
-pub fn save_skill(
-  input: SkillInput,
-  active_session_id: Option<i64>,
-) -> Result<WorkspaceSnapshot> {
+pub fn save_skill(input: SkillInput, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     save_skill_in(conn, input.clone())?;
-    build_workspace_snapshot_in(conn, active_session_id, None, Some(input.id))
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      active_session_id,
+      None,
+      None,
+      Some(input.id),
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_note_detail: true,
+        reuse_active_reminder_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+    )
   })
 }
 
@@ -419,7 +659,19 @@ pub fn delete_skill(skill_id: i64, active_session_id: Option<i64>) -> Result<Wor
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     delete_skill_in(conn, skill_id)?;
     ensure_seed_skill_in(conn)?;
-    build_workspace_snapshot_in(conn, active_session_id, None, None)
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      active_session_id,
+      None,
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_note_detail: true,
+        reuse_active_reminder_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+    )
   })
 }
 
@@ -431,7 +683,19 @@ pub fn save_session_skills(
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     save_session_skills_in(conn, session_id, skill_ids)?;
-    build_workspace_snapshot_in(conn, active_session_id.or(Some(session_id)), None, None)
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      active_session_id.or(Some(session_id)),
+      None,
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_active_note_detail: true,
+        reuse_active_reminder_detail: true,
+        reuse_active_skill_detail: true,
+      },
+    )
   })
 }
 
@@ -446,11 +710,12 @@ pub fn persist_agent_run(
   reply: &str,
 ) -> Result<WorkspaceSnapshot> {
   with_transaction(|tx| {
+    let cached_snapshot = read_snapshot_cache()?;
     ensure_session_exists_in(tx, session_id)?;
     touch_session_in(tx, session_id, "running")?;
-    append_message_in(tx, session_id, "user", prompt)?;
+    let user_message = append_message_in(tx, session_id, "user", prompt)?;
     ensure_session_title_in(tx, session_id, prompt)?;
-    append_activity_in(
+    let input_activity = append_activity_in(
       tx,
       session_id,
       "input",
@@ -458,7 +723,7 @@ pub fn persist_agent_run(
       &format!("New mission captured: {}", preview_text(prompt, 120)),
       "completed",
     )?;
-    append_activity_in(
+    let runtime_activity = append_activity_in(
       tx,
       session_id,
       "system",
@@ -466,7 +731,7 @@ pub fn persist_agent_run(
       runtime_context_detail,
       "completed",
     )?;
-    append_activity_in(
+    let plan_activity = append_activity_in(
       tx,
       session_id,
       "plan",
@@ -474,9 +739,16 @@ pub fn persist_agent_run(
       plan,
       "completed",
     )?;
-    append_activity_in(tx, session_id, "model", model_title, model_detail, model_status)?;
-    append_message_in(tx, session_id, "assistant", reply)?;
-    append_activity_in(
+    let model_activity = append_activity_in(
+      tx,
+      session_id,
+      "model",
+      model_title,
+      model_detail,
+      model_status,
+    )?;
+    let assistant_message = append_message_in(tx, session_id, "assistant", reply)?;
+    let output_activity = append_activity_in(
       tx,
       session_id,
       "output",
@@ -485,7 +757,34 @@ pub fn persist_agent_run(
       "completed",
     )?;
     touch_session_in(tx, session_id, "ready")?;
-    build_workspace_snapshot_in(tx, Some(session_id), None, None)
+    let updated_session = load_session_summary_in(tx, session_id)?;
+    let seeded_snapshot = seed_snapshot_for_persisted_run(
+      cached_snapshot,
+      session_id,
+      updated_session,
+      &[user_message, assistant_message],
+      &[
+        input_activity,
+        runtime_activity,
+        plan_activity,
+        model_activity,
+        output_activity,
+      ],
+    );
+    build_workspace_snapshot_with_seed_snapshot_in(
+      tx,
+      Some(session_id),
+      None,
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_active_note_detail: true,
+        reuse_active_reminder_detail: true,
+        reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+      seeded_snapshot,
+    )
   })
 }
 
@@ -508,12 +807,44 @@ pub fn resolve_settings_override(input: Option<AgentSettingsInput>) -> Result<Ag
   }
 }
 
+#[cfg_attr(test, allow(dead_code))]
 pub fn recent_note_details(limit: usize) -> Result<Vec<KnowledgeNoteDetail>> {
   with_connection(|conn| list_note_details_in(conn, limit))
 }
 
+pub fn recent_note_context(
+  limit: usize,
+  body_char_limit: usize,
+) -> Result<Vec<KnowledgeNoteContext>> {
+  with_connection(|conn| list_note_context_in(conn, limit, body_char_limit))
+}
+
+pub fn agent_session_context(session_id: i64) -> Result<AgentSessionContext> {
+  with_connection(|conn| load_agent_session_context_in(conn, session_id))
+}
+
+pub fn open_reminder_context(limit: usize) -> Result<Vec<ReminderContextItem>> {
+  with_connection(|conn| list_open_reminder_context_in(conn, limit))
+}
+
+pub fn capability_titles() -> Vec<String> {
+  capability_catalog()
+    .into_iter()
+    .map(|capability| capability.title)
+    .collect()
+}
+
 pub fn workspace_snapshot(preferred_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| build_workspace_snapshot_in(conn, preferred_session_id, None, None))
+  with_connection(|conn| {
+    build_workspace_snapshot_with_policy_in(
+      conn,
+      preferred_session_id,
+      None,
+      None,
+      None,
+      SnapshotReusePolicy::default(),
+    )
+  })
 }
 
 pub fn recent_messages(session_id: i64, limit: usize) -> Result<Vec<ChatMessage>> {
@@ -547,41 +878,90 @@ fn with_connection<T, F>(action: F) -> Result<T>
 where
   F: FnOnce(&Connection) -> Result<T>,
 {
-  let mut guard = DB_CONN
-    .lock()
-    .map_err(|_| anyhow!("database mutex poisoned"))?;
+  let conn = open_database_connection()?;
+  action(&conn)
+}
 
-  if guard.is_none() {
-    let path = db_path()?;
-    let conn = Connection::open(path)?;
-    conn.execute_batch(include_str!("../sql/schema.sql"))?;
-    conn.execute_batch("PRAGMA foreign_keys = ON;")?;
-    run_post_init_migrations_in(&conn)?;
-    *guard = Some(conn);
+fn read_snapshot_cache() -> Result<Option<WorkspaceSnapshot>> {
+  let guard = SNAPSHOT_CACHE
+    .lock()
+    .map_err(|_| anyhow!("snapshot cache mutex poisoned"))?;
+  Ok(guard.clone())
+}
+
+fn store_snapshot_cache(snapshot: &WorkspaceSnapshot) -> Result<()> {
+  let mut guard = SNAPSHOT_CACHE
+    .lock()
+    .map_err(|_| anyhow!("snapshot cache mutex poisoned"))?;
+  *guard = Some(snapshot.clone());
+  Ok(())
+}
+
+fn clear_snapshot_cache() -> Result<()> {
+  let mut guard = SNAPSHOT_CACHE
+    .lock()
+    .map_err(|_| anyhow!("snapshot cache mutex poisoned"))?;
+  *guard = None;
+  Ok(())
+}
+
+fn clear_db_init_path() -> Result<()> {
+  let mut guard = DB_INIT_PATH
+    .lock()
+    .map_err(|_| anyhow!("database init path mutex poisoned"))?;
+  *guard = None;
+  Ok(())
+}
+
+fn open_database_connection() -> Result<Connection> {
+  let path = db_path()?;
+  let conn = Connection::open(&path)?;
+  conn.busy_timeout(std::time::Duration::from_secs(5))?;
+  conn.execute_batch("PRAGMA foreign_keys = ON;")?;
+  ensure_database_initialized(&conn, &path)?;
+  Ok(conn)
+}
+
+fn ensure_database_initialized(conn: &Connection, path: &PathBuf) -> Result<()> {
+  let initialized = {
+    let guard = DB_INIT_PATH
+      .lock()
+      .map_err(|_| anyhow!("database init path mutex poisoned"))?;
+    guard.as_ref().is_some_and(|current| current == path)
+  };
+  if initialized {
+    return Ok(());
   }
 
-  let conn = guard.as_ref().context("database connection not initialized")?;
-  action(conn)
+  let _init_guard = DB_INIT_LOCK
+    .lock()
+    .map_err(|_| anyhow!("database init mutex poisoned"))?;
+
+  let already_initialized = {
+    let guard = DB_INIT_PATH
+      .lock()
+      .map_err(|_| anyhow!("database init path mutex poisoned"))?;
+    guard.as_ref().is_some_and(|current| current == path)
+  };
+  if already_initialized {
+    return Ok(());
+  }
+
+  conn.execute_batch(include_str!("../sql/schema.sql"))?;
+  run_post_init_migrations_in(conn)?;
+
+  let mut guard = DB_INIT_PATH
+    .lock()
+    .map_err(|_| anyhow!("database init path mutex poisoned"))?;
+  *guard = Some(path.clone());
+  Ok(())
 }
 
 fn with_transaction<T, F>(action: F) -> Result<T>
 where
   F: FnOnce(&Transaction<'_>) -> Result<T>,
 {
-  let mut guard = DB_CONN
-    .lock()
-    .map_err(|_| anyhow!("database mutex poisoned"))?;
-
-  if guard.is_none() {
-    let path = db_path()?;
-    let conn = Connection::open(path)?;
-    conn.execute_batch(include_str!("../sql/schema.sql"))?;
-    conn.execute_batch("PRAGMA foreign_keys = ON;")?;
-    run_post_init_migrations_in(&conn)?;
-    *guard = Some(conn);
-  }
-
-  let conn = guard.as_mut().context("database connection not initialized")?;
+  let mut conn = open_database_connection()?;
   let tx = conn.transaction()?;
   let result = action(&tx)?;
   tx.commit()?;
@@ -593,6 +973,8 @@ pub fn set_app_data_dir(path: PathBuf) -> Result<()> {
     .lock()
     .map_err(|_| anyhow!("app data dir mutex poisoned"))?;
   *guard = Some(path);
+  clear_snapshot_cache()?;
+  clear_db_init_path()?;
   Ok(())
 }
 
@@ -601,9 +983,8 @@ fn app_data_dir() -> Option<PathBuf> {
 }
 
 fn db_path() -> Result<PathBuf> {
-  let base_dir = app_data_dir().unwrap_or_else(|| {
-    std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-  });
+  let base_dir = app_data_dir()
+    .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
   let mut dir = base_dir;
   dir.push("data");
   fs::create_dir_all(&dir)?;
@@ -642,7 +1023,11 @@ fn store_runtime_api_key(value: String) -> Result<()> {
   let mut guard = RUNTIME_API_KEY
     .lock()
     .map_err(|_| anyhow!("runtime api key mutex poisoned"))?;
-  *guard = if value.trim().is_empty() { None } else { Some(value) };
+  *guard = if value.trim().is_empty() {
+    None
+  } else {
+    Some(value)
+  };
   Ok(())
 }
 
@@ -785,7 +1170,10 @@ fn is_private_ipv4_host(host: &str) -> bool {
     .filter_map(|part| part.parse::<u8>().ok())
     .collect::<Vec<_>>();
 
-  if matches!(octets.as_slice(), [10, ..] | [127, ..] | [192, 168, ..] | [169, 254, ..]) {
+  if matches!(
+    octets.as_slice(),
+    [10, ..] | [127, ..] | [192, 168, ..] | [169, 254, ..]
+  ) {
     return true;
   }
 
@@ -803,9 +1191,9 @@ fn is_local_provider_host(host: &str) -> bool {
 
 fn provider_host_matches_allowlist(host: &str, allowlist: &[String]) -> bool {
   let normalized_host = normalize_provider_host(host);
-  allowlist.iter().any(|allowed| {
-    normalized_host == *allowed || normalized_host.ends_with(&format!(".{allowed}"))
-  })
+  allowlist
+    .iter()
+    .any(|allowed| normalized_host == *allowed || normalized_host.ends_with(&format!(".{allowed}")))
 }
 
 fn validate_provider_base_url(base_url: &str) -> Result<()> {
@@ -821,11 +1209,15 @@ fn validate_provider_base_url(base_url: &str) -> Result<()> {
   }
 
   if !parsed.username().is_empty() || parsed.password().is_some() {
-    return Err(anyhow!("provider base url must not contain embedded credentials"));
+    return Err(anyhow!(
+      "provider base url must not contain embedded credentials"
+    ));
   }
 
   if parsed.query().is_some() || parsed.fragment().is_some() {
-    return Err(anyhow!("provider base url must not contain query params or fragments"));
+    return Err(anyhow!(
+      "provider base url must not contain query params or fragments"
+    ));
   }
 
   let host = parsed
@@ -1058,7 +1450,8 @@ fn run_post_init_migrations_in(conn: &Connection) -> Result<()> {
 
   if migration_done.is_none() {
     let mut enabled_skill_ids = Vec::new();
-    let mut skills_stmt = conn.prepare("SELECT id FROM skills WHERE enabled = 1 ORDER BY id ASC")?;
+    let mut skills_stmt =
+      conn.prepare("SELECT id FROM skills WHERE enabled = 1 ORDER BY id ASC")?;
     let skill_rows = skills_stmt.query_map([], |row| row.get::<_, i64>(0))?;
     for row in skill_rows {
       enabled_skill_ids.push(row?);
@@ -1400,8 +1793,14 @@ fn save_note_in(conn: &Connection, input: KnowledgeNoteInput) -> Result<()> {
 }
 
 fn delete_session_in(conn: &Connection, session_id: i64) -> Result<()> {
-  conn.execute("DELETE FROM activity WHERE session_id = ?1", params![session_id])?;
-  conn.execute("DELETE FROM messages WHERE session_id = ?1", params![session_id])?;
+  conn.execute(
+    "DELETE FROM activity WHERE session_id = ?1",
+    params![session_id],
+  )?;
+  conn.execute(
+    "DELETE FROM messages WHERE session_id = ?1",
+    params![session_id],
+  )?;
   let changed = conn.execute("DELETE FROM sessions WHERE id = ?1", params![session_id])?;
   if changed == 0 {
     return Err(anyhow!("session not found"));
@@ -1499,6 +1898,17 @@ fn note_exists_in(conn: &Connection, note_id: i64) -> Result<bool> {
     .map_err(Into::into)
 }
 
+fn reminder_exists_in(conn: &Connection, reminder_id: i64) -> Result<bool> {
+  conn
+    .query_row(
+      "SELECT EXISTS(SELECT 1 FROM reminders WHERE id = ?1)",
+      params![reminder_id],
+      |row| row.get::<_, i64>(0),
+    )
+    .map(|value| value != 0)
+    .map_err(Into::into)
+}
+
 fn skill_exists_in(conn: &Connection, skill_id: i64) -> Result<bool> {
   conn
     .query_row(
@@ -1531,6 +1941,13 @@ fn resolve_active_session_id_in(
 fn ensure_note_exists_in(conn: &Connection, note_id: i64) -> Result<()> {
   if !note_exists_in(conn, note_id)? {
     return Err(anyhow!("note not found"));
+  }
+  Ok(())
+}
+
+fn ensure_reminder_exists_in(conn: &Connection, reminder_id: i64) -> Result<()> {
+  if !reminder_exists_in(conn, reminder_id)? {
+    return Err(anyhow!("reminder not found"));
   }
   Ok(())
 }
@@ -1754,12 +2171,45 @@ fn save_session_skills_in(conn: &Connection, session_id: i64, skill_ids: Vec<i64
   Ok(())
 }
 
-fn build_workspace_snapshot_in(
+fn build_workspace_snapshot_with_policy_in(
   conn: &Connection,
   preferred_session_id: Option<i64>,
   preferred_note_id: Option<i64>,
+  preferred_reminder_id: Option<i64>,
   preferred_skill_id: Option<i64>,
+  reuse_policy: SnapshotReusePolicy,
 ) -> Result<WorkspaceSnapshot> {
+  build_workspace_snapshot_with_seed_snapshot_in(
+    conn,
+    preferred_session_id,
+    preferred_note_id,
+    preferred_reminder_id,
+    preferred_skill_id,
+    reuse_policy,
+    None,
+  )
+}
+
+fn build_workspace_snapshot_with_seed_snapshot_in(
+  conn: &Connection,
+  preferred_session_id: Option<i64>,
+  preferred_note_id: Option<i64>,
+  preferred_reminder_id: Option<i64>,
+  preferred_skill_id: Option<i64>,
+  reuse_policy: SnapshotReusePolicy,
+  cached_snapshot_override: Option<WorkspaceSnapshot>,
+) -> Result<WorkspaceSnapshot> {
+  let cached_snapshot = if let Some(snapshot) = cached_snapshot_override {
+    Some(snapshot)
+  } else if reuse_policy.reuse_active_session_timeline
+    || reuse_policy.reuse_active_note_detail
+    || reuse_policy.reuse_active_reminder_detail
+    || reuse_policy.reuse_active_skill_detail
+  {
+    read_snapshot_cache()?
+  } else {
+    None
+  };
   let seed_session_id = ensure_seed_session_in(conn)?;
   let seed_note_id = ensure_seed_note_in(conn)?;
   let seed_skill_id = ensure_seed_skill_in(conn)?;
@@ -1770,19 +2220,91 @@ fn build_workspace_snapshot_in(
 
   let active_session_id = preferred_session_id
     .filter(|candidate| sessions.iter().any(|session| session.id == *candidate))
-    .unwrap_or_else(|| sessions.first().map(|session| session.id).unwrap_or(seed_session_id));
+    .unwrap_or_else(|| {
+      sessions
+        .first()
+        .map(|session| session.id)
+        .unwrap_or(seed_session_id)
+    });
   let active_note_id = preferred_note_id
     .filter(|candidate| notes.iter().any(|note| note.id == *candidate))
     .unwrap_or_else(|| notes.first().map(|note| note.id).unwrap_or(seed_note_id));
+  let active_reminder_id = preferred_reminder_id
+    .filter(|candidate| reminders.iter().any(|reminder| reminder.id == *candidate))
+    .or_else(|| {
+      cached_snapshot.as_ref().and_then(|snapshot| {
+        let candidate = snapshot.active_reminder_id;
+        if candidate > 0 && reminders.iter().any(|reminder| reminder.id == candidate) {
+          Some(candidate)
+        } else {
+          None
+        }
+      })
+    })
+    .unwrap_or_else(|| reminders.first().map(|reminder| reminder.id).unwrap_or(0));
   let active_skill_id = preferred_skill_id
     .filter(|candidate| skills.iter().any(|skill| skill.id == *candidate))
-    .unwrap_or_else(|| skills.first().map(|skill| skill.id).unwrap_or(seed_skill_id));
+    .unwrap_or_else(|| {
+      skills
+        .first()
+        .map(|skill| skill.id)
+        .unwrap_or(seed_skill_id)
+    });
 
-  let active_session = build_session_detail_in(conn, active_session_id)?;
-  let active_note = build_note_detail_in(conn, active_note_id)?;
-  let active_skill = build_skill_detail_in(conn, active_skill_id)?;
+  let active_session_summary = sessions
+    .iter()
+    .find(|session| session.id == active_session_id)
+    .cloned()
+    .context("active session not found")?;
 
-  Ok(WorkspaceSnapshot {
+  let preserved_session_timeline = cached_snapshot
+    .as_ref()
+    .filter(|snapshot| {
+      reuse_policy.reuse_active_session_timeline && snapshot.active_session_id == active_session_id
+    })
+    .map(|snapshot| &snapshot.active_session);
+  let preserved_skill_catalog = cached_snapshot
+    .as_ref()
+    .filter(|snapshot| snapshot.skills == skills)
+    .map(|snapshot| snapshot.skills.as_slice());
+
+  let active_session = build_session_detail_with_summary_in(
+    conn,
+    active_session_summary,
+    preserved_session_timeline,
+    &skills,
+    preserved_skill_catalog,
+  )?;
+  let active_note = cached_snapshot
+    .as_ref()
+    .filter(|snapshot| {
+      reuse_policy.reuse_active_note_detail && snapshot.active_note_id == active_note_id
+    })
+    .map(|snapshot| snapshot.active_note.clone())
+    .unwrap_or(build_note_detail_in(conn, active_note_id)?);
+  let active_reminder = cached_snapshot
+    .as_ref()
+    .filter(|snapshot| {
+      reuse_policy.reuse_active_reminder_detail && snapshot.active_reminder_id == active_reminder_id
+    })
+    .map(|snapshot| snapshot.active_reminder.clone())
+    .or_else(|| {
+      if active_reminder_id > 0 {
+        build_reminder_detail_in(conn, active_reminder_id).ok()
+      } else {
+        None
+      }
+    })
+    .unwrap_or_else(empty_reminder_detail);
+  let active_skill = cached_snapshot
+    .as_ref()
+    .filter(|snapshot| {
+      reuse_policy.reuse_active_skill_detail && snapshot.active_skill_id == active_skill_id
+    })
+    .map(|snapshot| snapshot.active_skill.clone())
+    .unwrap_or(build_skill_detail_in(conn, active_skill_id)?);
+
+  let snapshot = WorkspaceSnapshot {
     settings: sanitize_settings_for_client(&load_settings_in(conn)?),
     sessions,
     active_session_id,
@@ -1791,40 +2313,87 @@ fn build_workspace_snapshot_in(
     active_note_id,
     active_note,
     reminders,
+    active_reminder_id,
+    active_reminder,
     skills,
     active_skill_id,
     active_skill,
     capabilities: capability_catalog(),
-  })
+  };
+  store_snapshot_cache(&snapshot)?;
+  Ok(snapshot)
 }
 
 fn list_sessions_in(conn: &Connection) -> Result<Vec<SessionSummary>> {
   let mut stmt = conn.prepare(
-    "SELECT id, title, status, updated_at
-     FROM sessions
-     ORDER BY updated_at DESC, id DESC",
+    "SELECT s.id,
+            s.title,
+            s.status,
+            s.updated_at,
+            COALESCE(message_stats.message_count, 0) AS message_count,
+            COALESCE(substr(last_message.content, 1, 256), '') AS last_message_preview,
+            COALESCE(skill_stats.mounted_skill_count, 0) AS mounted_skill_count
+     FROM sessions s
+     LEFT JOIN (
+       SELECT session_id, COUNT(*) AS message_count, MAX(id) AS last_message_id
+       FROM messages
+       GROUP BY session_id
+     ) AS message_stats ON message_stats.session_id = s.id
+     LEFT JOIN messages AS last_message ON last_message.id = message_stats.last_message_id
+     LEFT JOIN (
+       SELECT ss.session_id, COUNT(*) AS mounted_skill_count
+       FROM session_skills ss
+       INNER JOIN skills s ON s.id = ss.skill_id
+       WHERE s.enabled = 1
+       GROUP BY ss.session_id
+     ) AS skill_stats ON skill_stats.session_id = s.id
+     ORDER BY s.updated_at DESC, s.id DESC",
   )?;
-  let rows = stmt.query_map([], |row| {
-    Ok((
-      row.get::<_, i64>(0)?,
-      row.get::<_, String>(1)?,
-      row.get::<_, String>(2)?,
-      row.get::<_, i64>(3)?,
-    ))
-  })?;
+  let rows = stmt.query_map([], map_session_summary_row)?;
 
   let mut sessions = Vec::new();
   for row in rows {
-    let (id, title, status, updated_at) = row?;
-    sessions.push(build_session_summary_in(conn, id, title, status, updated_at)?);
+    sessions.push(row?);
   }
 
   Ok(sessions)
 }
 
+fn load_session_summary_in(conn: &Connection, session_id: i64) -> Result<SessionSummary> {
+  conn
+    .query_row(
+      "SELECT s.id,
+              s.title,
+              s.status,
+              s.updated_at,
+              COALESCE(message_stats.message_count, 0) AS message_count,
+              COALESCE(substr(last_message.content, 1, 256), '') AS last_message_preview,
+              COALESCE(skill_stats.mounted_skill_count, 0) AS mounted_skill_count
+       FROM sessions s
+       LEFT JOIN (
+         SELECT session_id, COUNT(*) AS message_count, MAX(id) AS last_message_id
+         FROM messages
+         GROUP BY session_id
+       ) AS message_stats ON message_stats.session_id = s.id
+       LEFT JOIN messages AS last_message ON last_message.id = message_stats.last_message_id
+       LEFT JOIN (
+         SELECT ss.session_id, COUNT(*) AS mounted_skill_count
+         FROM session_skills ss
+         INNER JOIN skills s ON s.id = ss.skill_id
+         WHERE s.enabled = 1
+         GROUP BY ss.session_id
+       ) AS skill_stats ON skill_stats.session_id = s.id
+       WHERE s.id = ?1",
+      params![session_id],
+      map_session_summary_row,
+    )
+    .optional()?
+    .context("session not found")
+}
+
 fn list_notes_in(conn: &Connection) -> Result<Vec<KnowledgeNoteSummary>> {
   let mut stmt = conn.prepare(
-    "SELECT id, icon, title, body, tags, updated_at
+    "SELECT id, icon, title, substr(body, 1, 512), tags, updated_at
      FROM notes
      ORDER BY updated_at DESC, id DESC",
   )?;
@@ -1847,6 +2416,7 @@ fn list_notes_in(conn: &Connection) -> Result<Vec<KnowledgeNoteSummary>> {
   Ok(notes)
 }
 
+#[cfg_attr(test, allow(dead_code))]
 fn list_note_details_in(conn: &Connection, limit: usize) -> Result<Vec<KnowledgeNoteDetail>> {
   let mut stmt = conn.prepare(
     "SELECT id, icon, title, body, tags, created_at, updated_at
@@ -1877,25 +2447,112 @@ fn list_note_details_in(conn: &Connection, limit: usize) -> Result<Vec<Knowledge
   Ok(notes)
 }
 
-fn list_reminders_in(conn: &Connection) -> Result<Vec<ReminderItem>> {
+fn list_note_context_in(
+  conn: &Connection,
+  limit: usize,
+  body_char_limit: usize,
+) -> Result<Vec<KnowledgeNoteContext>> {
   let mut stmt = conn.prepare(
-    "SELECT id, title, detail, due_at, severity, status, linked_note_id, created_at, updated_at
+    "SELECT title, substr(body, 1, ?2), tags, updated_at
+     FROM notes
+     ORDER BY updated_at DESC, id DESC
+     LIMIT ?1",
+  )?;
+  let rows = stmt.query_map(params![limit as i64, body_char_limit as i64], |row| {
+    let body_excerpt: String = row.get(1)?;
+    let tags_json: String = row.get(2)?;
+    Ok(KnowledgeNoteContext {
+      title: row.get(0)?,
+      summary: preview_text(&body_excerpt, 120),
+      body_excerpt,
+      tags: decode_tags(tags_json),
+      updated_at: row.get(3)?,
+    })
+  })?;
+
+  let mut notes = Vec::new();
+  for row in rows {
+    notes.push(row?);
+  }
+
+  Ok(notes)
+}
+
+fn list_reminders_in(conn: &Connection) -> Result<Vec<ReminderSummary>> {
+  let mut stmt = conn.prepare(
+    "SELECT id, title, substr(detail, 1, 512), due_at, severity, status, linked_note_id, updated_at
      FROM reminders
      ORDER BY updated_at DESC, id DESC",
   )?;
   let rows = stmt.query_map([], |row| {
     let detail: String = row.get(2)?;
-    Ok(ReminderItem {
+    Ok(ReminderSummary {
       id: row.get(0)?,
       title: row.get(1)?,
-      detail: detail.clone(),
       preview: preview_text(&detail, 120),
       due_at: row.get(3)?,
       severity: row.get(4)?,
       status: row.get(5)?,
       linked_note_id: row.get(6)?,
-      created_at: row.get(7)?,
-      updated_at: row.get(8)?,
+      updated_at: row.get(7)?,
+    })
+  })?;
+
+  let mut reminders = Vec::new();
+  for row in rows {
+    reminders.push(row?);
+  }
+
+  Ok(reminders)
+}
+
+fn build_reminder_detail_in(conn: &Connection, reminder_id: i64) -> Result<ReminderDetail> {
+  conn
+    .query_row(
+      "SELECT id, title, detail, due_at, severity, status, linked_note_id, created_at, updated_at
+       FROM reminders
+       WHERE id = ?1",
+      params![reminder_id],
+      |row| {
+        let detail: String = row.get(2)?;
+        Ok(ReminderDetail {
+          id: row.get(0)?,
+          title: row.get(1)?,
+          preview: preview_text(&detail, 120),
+          detail,
+          due_at: row.get(3)?,
+          severity: row.get(4)?,
+          status: row.get(5)?,
+          linked_note_id: row.get(6)?,
+          created_at: row.get(7)?,
+          updated_at: row.get(8)?,
+        })
+      },
+    )
+    .optional()?
+    .context("reminder not found")
+}
+
+fn list_open_reminder_context_in(
+  conn: &Connection,
+  limit: usize,
+) -> Result<Vec<ReminderContextItem>> {
+  let mut stmt = conn.prepare(
+    "SELECT r.title, r.severity, r.due_at, n.title
+     FROM reminders r
+     LEFT JOIN notes n ON n.id = r.linked_note_id
+     WHERE r.status != 'done'
+     ORDER BY CASE WHEN r.due_at IS NULL THEN 1 ELSE 0 END ASC,
+              r.due_at ASC,
+              r.updated_at DESC
+     LIMIT ?1",
+  )?;
+  let rows = stmt.query_map(params![limit as i64], |row| {
+    Ok(ReminderContextItem {
+      title: row.get(0)?,
+      severity: row.get(1)?,
+      due_at: row.get(2)?,
+      linked_note_title: row.get(3)?,
     })
   })?;
 
@@ -1909,7 +2566,7 @@ fn list_reminders_in(conn: &Connection) -> Result<Vec<ReminderItem>> {
 
 fn list_skills_in(conn: &Connection) -> Result<Vec<SkillSummary>> {
   let mut stmt = conn.prepare(
-    "SELECT id, name, description, trigger_hint, enabled, permission_level, updated_at
+    "SELECT id, name, substr(description, 1, 512), trigger_hint, enabled, permission_level, updated_at
      FROM skills
      ORDER BY updated_at DESC, id DESC",
   )?;
@@ -1987,141 +2644,162 @@ fn list_session_skill_ids_in(conn: &Connection, session_id: i64) -> Result<Vec<i
   Ok(skill_ids)
 }
 
-fn list_session_skills_in(conn: &Connection, session_id: i64) -> Result<Vec<SkillSummary>> {
-  let mut stmt = conn.prepare(
-    "SELECT s.id, s.name, s.description, s.trigger_hint, s.enabled, s.permission_level, s.updated_at
-     FROM skills s
-     INNER JOIN session_skills ss ON ss.skill_id = s.id
-     WHERE ss.session_id = ?1
-       AND s.enabled = 1
-     ORDER BY ss.created_at ASC, s.id ASC",
-  )?;
-  let rows = stmt.query_map(params![session_id], |row| {
-    let description: String = row.get(2)?;
-    Ok(SkillSummary {
-      id: row.get(0)?,
-      name: row.get(1)?,
-      summary: preview_text(&description, 120),
-      trigger_hint: row.get(3)?,
-      recommendation_reason: None,
-      enabled: row.get::<_, i64>(4)? != 0,
-      permission_level: row.get(5)?,
-      updated_at: row.get(6)?,
-    })
-  })?;
-
-  let mut skills = Vec::new();
-  for row in rows {
-    skills.push(row?);
-  }
-
-  Ok(skills)
+fn build_mounted_skills_from_catalog(
+  mounted_skill_ids: &[i64],
+  all_skills: &[SkillSummary],
+) -> Vec<SkillSummary> {
+  mounted_skill_ids
+    .iter()
+    .filter_map(|skill_id| all_skills.iter().find(|skill| skill.id == *skill_id))
+    .cloned()
+    .collect()
 }
 
-fn build_session_summary_in(
-  conn: &Connection,
-  id: i64,
-  title: String,
-  status: String,
-  updated_at: i64,
-) -> Result<SessionSummary> {
-  let message_count: i64 = conn.query_row(
-    "SELECT COUNT(*) FROM messages WHERE session_id = ?1",
-    params![id],
-    |row| row.get(0),
-  )?;
-
-  let last_message_preview = conn
-    .query_row(
-      "SELECT content FROM messages WHERE session_id = ?1 ORDER BY id DESC LIMIT 1",
-      params![id],
-      |row| row.get::<_, String>(0),
-    )
-    .optional()?
-    .unwrap_or_default();
-  let mounted_skill_count: i64 = conn.query_row(
-    "SELECT COUNT(*)
-     FROM session_skills ss
-     INNER JOIN skills s ON s.id = ss.skill_id
-     WHERE ss.session_id = ?1
-       AND s.enabled = 1",
-    params![id],
-    |row| row.get(0),
-  )?;
-
+fn map_session_summary_row(row: &Row<'_>) -> rusqlite::Result<SessionSummary> {
+  let last_message_preview: String = row.get(5)?;
   Ok(SessionSummary {
-    id,
-    title,
-    status,
-    updated_at,
-    message_count,
+    id: row.get(0)?,
+    title: row.get(1)?,
+    status: row.get(2)?,
+    updated_at: row.get(3)?,
+    message_count: row.get(4)?,
     last_message_preview: preview_text(&last_message_preview, 92),
-    mounted_skill_count,
+    mounted_skill_count: row.get(6)?,
   })
 }
 
-fn build_session_detail_in(conn: &Connection, session_id: i64) -> Result<SessionDetail> {
-  let base = conn
+fn load_agent_session_context_in(
+  conn: &Connection,
+  session_id: i64,
+) -> Result<AgentSessionContext> {
+  let (title, status, message_count) = conn
     .query_row(
-      "SELECT id, title, status, updated_at FROM sessions WHERE id = ?1",
+      "SELECT s.title,
+              s.status,
+              COALESCE((
+                SELECT COUNT(*)
+                FROM messages m
+                WHERE m.session_id = s.id
+              ), 0) AS message_count
+       FROM sessions s
+       WHERE s.id = ?1",
       params![session_id],
       |row| {
         Ok((
-          row.get::<_, i64>(0)?,
+          row.get::<_, String>(0)?,
           row.get::<_, String>(1)?,
-          row.get::<_, String>(2)?,
-          row.get::<_, i64>(3)?,
+          row.get::<_, i64>(2)?,
         ))
       },
     )
     .optional()?
     .context("session not found")?;
 
-  let session = build_session_summary_in(conn, base.0, base.1, base.2, base.3)?;
-
-  let mut messages_stmt = conn.prepare(
-    "SELECT id, role, content, created_at
-     FROM messages
-     WHERE session_id = ?1
-     ORDER BY created_at ASC, id ASC",
+  let mut stmt = conn.prepare(
+    "SELECT s.name
+     FROM skills s
+     INNER JOIN session_skills ss ON ss.skill_id = s.id
+     WHERE ss.session_id = ?1
+       AND s.enabled = 1
+     ORDER BY ss.created_at ASC, s.id ASC",
   )?;
-  let message_rows = messages_stmt.query_map(params![session_id], |row| {
-    Ok(ChatMessage {
-      id: row.get(0)?,
-      role: row.get(1)?,
-      content: row.get(2)?,
-      created_at: row.get(3)?,
-    })
-  })?;
-  let mut messages = Vec::new();
-  for row in message_rows {
-    messages.push(row?);
+  let rows = stmt.query_map(params![session_id], |row| row.get::<_, String>(0))?;
+
+  let mut mounted_skill_names = Vec::new();
+  for row in rows {
+    mounted_skill_names.push(row?);
   }
 
-  let mut activity_stmt = conn.prepare(
-    "SELECT id, kind, title, detail, status, created_at
-     FROM activity
-     WHERE session_id = ?1
-     ORDER BY created_at DESC, id DESC
-     LIMIT 24",
-  )?;
-  let activity_rows = activity_stmt.query_map(params![session_id], |row| {
-    Ok(ActivityItem {
-      id: row.get(0)?,
-      kind: row.get(1)?,
-      title: row.get(2)?,
-      detail: row.get(3)?,
-      status: row.get(4)?,
-      created_at: row.get(5)?,
-    })
-  })?;
-  let mut activity = Vec::new();
-  for row in activity_rows {
-    activity.push(row?);
-  }
+  Ok(AgentSessionContext {
+    title,
+    status,
+    message_count: message_count.max(0) as usize,
+    mounted_skill_names,
+  })
+}
+
+fn build_session_detail_with_summary_in(
+  conn: &Connection,
+  session: SessionSummary,
+  preserved_timeline: Option<&SessionDetail>,
+  all_skills: &[SkillSummary],
+  preserved_skill_catalog: Option<&[SkillSummary]>,
+) -> Result<SessionDetail> {
+  let session_id = session.id;
+  let (messages, activity) =
+    if let Some(detail) = preserved_timeline.filter(|detail| detail.session.id == session_id) {
+      (detail.messages.clone(), detail.activity.clone())
+    } else {
+      let mut messages_stmt = conn.prepare(
+        "SELECT id, role, content, created_at
+         FROM messages
+         WHERE session_id = ?1
+         ORDER BY created_at ASC, id ASC",
+      )?;
+      let message_rows = messages_stmt.query_map(params![session_id], |row| {
+        Ok(ChatMessage {
+          id: row.get(0)?,
+          role: row.get(1)?,
+          content: row.get(2)?,
+          created_at: row.get(3)?,
+        })
+      })?;
+      let mut messages = Vec::new();
+      for row in message_rows {
+        messages.push(row?);
+      }
+
+      let mut activity_stmt = conn.prepare(
+        "SELECT id, kind, title, detail, status, created_at
+         FROM activity
+         WHERE session_id = ?1
+         ORDER BY created_at DESC, id DESC
+         LIMIT 24",
+      )?;
+      let activity_rows = activity_stmt.query_map(params![session_id], |row| {
+        Ok(ActivityItem {
+          id: row.get(0)?,
+          kind: row.get(1)?,
+          title: row.get(2)?,
+          detail: row.get(3)?,
+          status: row.get(4)?,
+          created_at: row.get(5)?,
+        })
+      })?;
+      let mut activity = Vec::new();
+      for row in activity_rows {
+        activity.push(row?);
+      }
+
+      (messages, activity)
+    };
   let mounted_skill_ids = list_session_skill_ids_in(conn, session_id)?;
-  let mounted_skills = list_session_skills_in(conn, session_id)?;
-  let recommended_skills = recommend_session_skills_in(conn, session_id, &mounted_skill_ids, 4)?;
+  let can_reuse_skill_views = preserved_timeline
+    .zip(preserved_skill_catalog)
+    .map(|(detail, cached_skills)| {
+      detail.session == session
+        && detail.mounted_skill_ids == mounted_skill_ids
+        && cached_skills == all_skills
+    })
+    .unwrap_or(false);
+
+  let (mounted_skills, recommended_skills) = if can_reuse_skill_views {
+    let detail = preserved_timeline.context("missing preserved session detail")?;
+    (
+      detail.mounted_skills.clone(),
+      detail.recommended_skills.clone(),
+    )
+  } else {
+    let mounted_skills = build_mounted_skills_from_catalog(&mounted_skill_ids, all_skills);
+    let recommended_skills = recommend_session_skills_from_messages(
+      &session.title,
+      &messages,
+      &mounted_skill_ids,
+      4,
+      all_skills,
+    );
+    (mounted_skills, recommended_skills)
+  };
 
   Ok(SessionDetail {
     session,
@@ -2133,41 +2811,27 @@ fn build_session_detail_in(conn: &Connection, session_id: i64) -> Result<Session
   })
 }
 
-fn recommend_session_skills_in(
-  conn: &Connection,
-  session_id: i64,
+fn recommend_session_skills_from_messages(
+  session_title: &str,
+  messages: &[ChatMessage],
   mounted_skill_ids: &[i64],
   limit: usize,
-) -> Result<Vec<SkillSummary>> {
-  let session_summary = conn
-    .query_row(
-      "SELECT title FROM sessions WHERE id = ?1",
-      params![session_id],
-      |row| row.get::<_, String>(0),
-    )
-    .optional()?
-    .unwrap_or_default();
-
-  let mut stmt = conn.prepare(
-    "SELECT content
-     FROM messages
-     WHERE session_id = ?1
-     ORDER BY created_at DESC, id DESC
-     LIMIT 10",
-  )?;
-  let rows = stmt.query_map(params![session_id], |row| row.get::<_, String>(0))?;
-  let mut message_fragments = Vec::new();
-  for row in rows {
-    message_fragments.push(row?);
-  }
+  all_skills: &[SkillSummary],
+) -> Vec<SkillSummary> {
+  let mut message_fragments = messages
+    .iter()
+    .rev()
+    .take(10)
+    .map(|message| message.content.as_str())
+    .collect::<Vec<_>>();
   message_fragments.reverse();
 
-  let session_text = format!("{} {}", session_summary, message_fragments.join(" "));
+  let session_text = format!("{} {}", session_title, message_fragments.join(" "));
   let session_haystack = session_text.to_lowercase();
   let keywords = extract_recommendation_keywords(&session_haystack);
-  let skills = list_skills_in(conn)?;
-
-  let mut ranked = skills
+  let mut ranked = all_skills
+    .iter()
+    .cloned()
     .into_iter()
     .filter(|skill| skill.enabled && !mounted_skill_ids.contains(&skill.id))
     .map(|mut skill| {
@@ -2186,7 +2850,46 @@ fn recommend_session_skills_in(
       .then_with(|| right.1.updated_at.cmp(&left.1.updated_at))
   });
 
-  Ok(ranked.into_iter().take(limit).map(|(_, skill)| skill).collect())
+  ranked
+    .into_iter()
+    .take(limit)
+    .map(|(_, skill)| skill)
+    .collect()
+}
+
+fn seed_snapshot_for_persisted_run(
+  cached_snapshot: Option<WorkspaceSnapshot>,
+  session_id: i64,
+  updated_session: SessionSummary,
+  appended_messages: &[ChatMessage],
+  appended_activity: &[ActivityItem],
+) -> Option<WorkspaceSnapshot> {
+  let mut snapshot = cached_snapshot?;
+  if snapshot.active_session_id != session_id || snapshot.active_session.session.id != session_id {
+    return None;
+  }
+
+  snapshot.active_session.session = updated_session.clone();
+  snapshot
+    .active_session
+    .messages
+    .extend(appended_messages.iter().cloned());
+
+  let mut recent_activity = appended_activity.iter().rev().cloned().collect::<Vec<_>>();
+  recent_activity.extend(snapshot.active_session.activity);
+  recent_activity.truncate(24);
+  snapshot.active_session.activity = recent_activity;
+  snapshot.active_session.mounted_skills =
+    build_mounted_skills_from_catalog(&snapshot.active_session.mounted_skill_ids, &snapshot.skills);
+  snapshot.active_session.recommended_skills = recommend_session_skills_from_messages(
+    &updated_session.title,
+    &snapshot.active_session.messages,
+    &snapshot.active_session.mounted_skill_ids,
+    4,
+    &snapshot.skills,
+  );
+
+  Some(snapshot)
 }
 
 fn extract_recommendation_keywords(text: &str) -> Vec<String> {
@@ -2235,7 +2938,8 @@ fn score_skill_recommendation_stable(
     }
   }
 
-  score += score_skill_recommendation_from_intent_stable(skill, session_haystack, &mut matched_terms);
+  score +=
+    score_skill_recommendation_from_intent_stable(skill, session_haystack, &mut matched_terms);
   matched_terms.sort();
   matched_terms.dedup();
 
@@ -2269,7 +2973,15 @@ fn score_skill_recommendation_from_intent_stable(
     || skill_name.contains("local note recall")
     || skill_name.contains("笔记召回")
   {
-    return if capture_match(&["note", "notes", "knowledge", "context", "文档", "笔记", "知识"]) {
+    return if capture_match(&[
+      "note",
+      "notes",
+      "knowledge",
+      "context",
+      "文档",
+      "笔记",
+      "知识",
+    ]) {
       8
     } else {
       0
@@ -2277,7 +2989,15 @@ fn score_skill_recommendation_from_intent_stable(
   }
 
   if skill_name.contains("knowledge librarian") || skill_name.contains("知识整理员") {
-    return if capture_match(&["summary", "summarize", "整理", "归档", "note", "沉淀", "知识库"]) {
+    return if capture_match(&[
+      "summary",
+      "summarize",
+      "整理",
+      "归档",
+      "note",
+      "沉淀",
+      "知识库",
+    ]) {
       8
     } else {
       0
@@ -2285,7 +3005,16 @@ fn score_skill_recommendation_from_intent_stable(
   }
 
   if skill_name.contains("reminder radar") || skill_name.contains("提醒雷达") {
-    return if capture_match(&["todo", "deadline", "follow-up", "follow up", "remind", "待办", "截止", "提醒"]) {
+    return if capture_match(&[
+      "todo",
+      "deadline",
+      "follow-up",
+      "follow up",
+      "remind",
+      "待办",
+      "截止",
+      "提醒",
+    ]) {
       8
     } else {
       0
@@ -2293,7 +3022,17 @@ fn score_skill_recommendation_from_intent_stable(
   }
 
   if skill_name.contains("weather brief") || skill_name.contains("天气简报") {
-    return if capture_match(&["weather", "forecast", "temperature", "rain", "travel", "天气", "降雨", "温度", "出行"]) {
+    return if capture_match(&[
+      "weather",
+      "forecast",
+      "temperature",
+      "rain",
+      "travel",
+      "天气",
+      "降雨",
+      "温度",
+      "出行",
+    ]) {
       8
     } else {
       0
@@ -2301,7 +3040,9 @@ fn score_skill_recommendation_from_intent_stable(
   }
 
   if skill_name.contains("music companion") || skill_name.contains("音乐陪听") {
-    return if capture_match(&["music", "playlist", "song", "track", "mood", "音乐", "歌单", "曲目", "氛围"]) {
+    return if capture_match(&[
+      "music", "playlist", "song", "track", "mood", "音乐", "歌单", "曲目", "氛围",
+    ]) {
       8
     } else {
       0
@@ -2309,7 +3050,9 @@ fn score_skill_recommendation_from_intent_stable(
   }
 
   if skill_name.contains("gallery curator") || skill_name.contains("画廊策展") {
-    return if capture_match(&["gallery", "album", "photo", "image", "caption", "图库", "相册", "照片", "图片"]) {
+    return if capture_match(&[
+      "gallery", "album", "photo", "image", "caption", "图库", "相册", "照片", "图片",
+    ]) {
       8
     } else {
       0
@@ -2317,7 +3060,9 @@ fn score_skill_recommendation_from_intent_stable(
   }
 
   if skill_name.contains("settings steward") || skill_name.contains("设置管家") {
-    return if capture_match(&["setting", "provider", "api key", "cache", "配置", "设置", "缓存", "网关"]) {
+    return if capture_match(&[
+      "setting", "provider", "api key", "cache", "配置", "设置", "缓存", "网关",
+    ]) {
       8
     } else {
       0
@@ -2325,7 +3070,17 @@ fn score_skill_recommendation_from_intent_stable(
   }
 
   if skill_name.contains("release guard") || skill_name.contains("发布守卫") {
-    return if capture_match(&["deploy", "migration", "auth", "billing", "delete", "发布", "迁移", "鉴权", "删除"]) {
+    return if capture_match(&[
+      "deploy",
+      "migration",
+      "auth",
+      "billing",
+      "delete",
+      "发布",
+      "迁移",
+      "鉴权",
+      "删除",
+    ]) {
       7
     } else {
       0
@@ -2333,7 +3088,9 @@ fn score_skill_recommendation_from_intent_stable(
   }
 
   if skill_name.contains("ui polish") || skill_name.contains("界面打磨") {
-    return if capture_match(&["ui", "layout", "css", "frontend", "design", "界面", "布局", "前端", "样式"]) {
+    return if capture_match(&[
+      "ui", "layout", "css", "frontend", "design", "界面", "布局", "前端", "样式",
+    ]) {
       7
     } else {
       0
@@ -2341,7 +3098,9 @@ fn score_skill_recommendation_from_intent_stable(
   }
 
   if skill_name.contains("research mode") || skill_name.contains("研究模式") {
-    return if capture_match(&["research", "source", "docs", "verify", "citation", "文档", "校验", "出处", "来源"]) {
+    return if capture_match(&[
+      "research", "source", "docs", "verify", "citation", "文档", "校验", "出处", "来源",
+    ]) {
       7
     } else {
       0
@@ -2349,7 +3108,16 @@ fn score_skill_recommendation_from_intent_stable(
   }
 
   if skill_name.contains("task router") || skill_name.contains("任务路由") {
-    return if capture_match(&["plan", "steps", "multi-step", "complex", "规划", "步骤", "复杂", "拆解"]) {
+    return if capture_match(&[
+      "plan",
+      "steps",
+      "multi-step",
+      "complex",
+      "规划",
+      "步骤",
+      "复杂",
+      "拆解",
+    ]) {
       6
     } else {
       0
@@ -2413,6 +3181,21 @@ fn build_note_detail_in(conn: &Connection, note_id: i64) -> Result<KnowledgeNote
   Ok(note)
 }
 
+fn empty_reminder_detail() -> ReminderDetail {
+  ReminderDetail {
+    id: 0,
+    title: String::new(),
+    detail: String::new(),
+    preview: String::new(),
+    due_at: None,
+    severity: "medium".to_string(),
+    status: "scheduled".to_string(),
+    linked_note_id: None,
+    created_at: 0,
+    updated_at: 0,
+  }
+}
+
 fn build_skill_detail_in(conn: &Connection, skill_id: i64) -> Result<SkillDetail> {
   let skill = conn
     .query_row(
@@ -2442,18 +3225,30 @@ fn build_skill_detail_in(conn: &Connection, skill_id: i64) -> Result<SkillDetail
   Ok(skill)
 }
 
-fn append_message_in(conn: &Connection, session_id: i64, role: &str, content: &str) -> Result<()> {
+fn append_message_in(
+  conn: &Connection,
+  session_id: i64,
+  role: &str,
+  content: &str,
+) -> Result<ChatMessage> {
   let now = now_millis();
+  let trimmed = content.trim();
   conn.execute(
     "INSERT INTO messages (session_id, role, content, created_at)
      VALUES (?1, ?2, ?3, ?4)",
-    params![session_id, role, content.trim(), now],
+    params![session_id, role, trimmed, now],
   )?;
+  let message = ChatMessage {
+    id: conn.last_insert_rowid(),
+    role: role.to_string(),
+    content: trimmed.to_string(),
+    created_at: now,
+  };
   conn.execute(
     "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
     params![now, session_id],
   )?;
-  Ok(())
+  Ok(message)
 }
 
 fn append_activity_in(
@@ -2463,18 +3258,26 @@ fn append_activity_in(
   title: &str,
   detail: &str,
   status: &str,
-) -> Result<()> {
+) -> Result<ActivityItem> {
   let now = now_millis();
   conn.execute(
     "INSERT INTO activity (session_id, kind, title, detail, status, created_at)
      VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
     params![session_id, kind, title, detail, status, now],
   )?;
+  let activity = ActivityItem {
+    id: conn.last_insert_rowid(),
+    kind: kind.to_string(),
+    title: title.to_string(),
+    detail: detail.to_string(),
+    status: status.to_string(),
+    created_at: now,
+  };
   conn.execute(
     "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
     params![now, session_id],
   )?;
-  Ok(())
+  Ok(activity)
 }
 
 fn touch_session_in(conn: &Connection, session_id: i64, status: &str) -> Result<()> {
@@ -2534,7 +3337,8 @@ fn capability_catalog() -> Vec<Capability> {
     Capability {
       id: "trace".to_string(),
       title: "Execution Trace".to_string(),
-      description: "Each mission stores input, plan, model result and persistence state.".to_string(),
+      description: "Each mission stores input, plan, model result and persistence state."
+        .to_string(),
       status: "ready".to_string(),
     },
     Capability {
@@ -2610,6 +3414,7 @@ mod tests {
   }
 
   fn test_connection() -> Result<Connection> {
+    clear_snapshot_cache()?;
     let conn = Connection::open_in_memory()?;
     conn.execute_batch(include_str!("../sql/schema.sql"))?;
     conn.execute_batch("PRAGMA foreign_keys = ON;")?;
@@ -2721,7 +3526,11 @@ mod tests {
     reset_secret_state()?;
 
     let conn = test_connection()?;
-    upsert_setting_value_in(&conn, SETTINGS_KEY, &serde_json::to_string(&sample_settings("legacy-key"))?)?;
+    upsert_setting_value_in(
+      &conn,
+      SETTINGS_KEY,
+      &serde_json::to_string(&sample_settings("legacy-key"))?,
+    )?;
 
     let loaded = load_settings_in(&conn)?;
     let persisted = persisted_settings(&conn)?;
@@ -2747,7 +3556,14 @@ mod tests {
     let settings = merge_settings_input(load_settings_in(&conn)?, input_with_api_key("key-one"));
     store_settings_in(&conn, &settings)?;
 
-    let snapshot = build_workspace_snapshot_in(&conn, None, None, None)?;
+    let snapshot = build_workspace_snapshot_with_policy_in(
+      &conn,
+      None,
+      None,
+      None,
+      None,
+      SnapshotReusePolicy::default(),
+    )?;
 
     assert!(snapshot.settings.has_api_key);
     assert_eq!(snapshot.settings.api_key, "");
@@ -2769,7 +3585,14 @@ mod tests {
     let settings = merge_settings_input(load_settings_in(&conn)?, blank_input(true));
     store_settings_in(&conn, &settings)?;
 
-    let snapshot = build_workspace_snapshot_in(&conn, None, None, None)?;
+    let snapshot = build_workspace_snapshot_with_policy_in(
+      &conn,
+      None,
+      None,
+      None,
+      None,
+      SnapshotReusePolicy::default(),
+    )?;
 
     assert!(!snapshot.settings.has_api_key);
     assert_eq!(snapshot.settings.api_key, "");
@@ -2856,7 +3679,8 @@ mod tests {
       .map_err(|_| anyhow!("test state mutex poisoned"))?;
     let conn = test_connection()?;
 
-    let error = save_session_skills_in(&conn, 999, vec![1]).expect_err("missing session should fail");
+    let error =
+      save_session_skills_in(&conn, 999, vec![1]).expect_err("missing session should fail");
 
     assert!(error.to_string().contains("session not found"));
     Ok(())
@@ -2869,11 +3693,21 @@ mod tests {
       .map_err(|_| anyhow!("test state mutex poisoned"))?;
     let conn = test_connection()?;
 
-    let error = (|| build_workspace_snapshot_in(&conn, Some(999), None, None))()
-      .expect("snapshot fallback should still be available");
+    let error = (|| {
+      build_workspace_snapshot_with_policy_in(
+        &conn,
+        Some(999),
+        None,
+        None,
+        None,
+        SnapshotReusePolicy::default(),
+      )
+    })()
+    .expect("snapshot fallback should still be available");
     assert_ne!(error.active_session_id, 999);
 
-    let direct_error = ensure_session_exists_in(&conn, 999).expect_err("missing session should fail");
+    let direct_error =
+      ensure_session_exists_in(&conn, 999).expect_err("missing session should fail");
     assert!(direct_error.to_string().contains("session not found"));
     Ok(())
   }
@@ -2915,8 +3749,7 @@ mod tests {
     let note_error = delete_note_in(&conn, 999).expect_err("missing note should fail");
     assert!(note_error.to_string().contains("note not found"));
 
-    let reminder_error =
-      delete_reminder_in(&conn, 999).expect_err("missing reminder should fail");
+    let reminder_error = delete_reminder_in(&conn, 999).expect_err("missing reminder should fail");
     assert!(reminder_error.to_string().contains("reminder not found"));
 
     let skill_error = delete_skill_in(&conn, 999).expect_err("missing skill should fail");
@@ -2951,6 +3784,200 @@ mod tests {
       |row| row.get(0),
     )?;
     assert_eq!(linked_note_id, None);
+    Ok(())
+  }
+
+  #[test]
+  fn list_sessions_in_aggregates_message_and_skill_stats() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let session_id = create_session_in(&conn, Some("Perf target".to_string()))?;
+    append_message_in(&conn, session_id, "user", "First mission input")?;
+    append_message_in(
+      &conn,
+      session_id,
+      "assistant",
+      "This is a deliberately long assistant reply that should be trimmed in session previews.",
+    )?;
+
+    let skill_id = create_skill_in(&conn, Some("Fast path".to_string()))?;
+    save_session_skills_in(&conn, session_id, vec![skill_id])?;
+
+    let sessions = list_sessions_in(&conn)?;
+    let session = sessions
+      .into_iter()
+      .find(|item| item.id == session_id)
+      .context("expected session summary")?;
+
+    assert_eq!(session.title, "Perf target");
+    assert_eq!(session.status, "idle");
+    assert_eq!(session.message_count, 3);
+    assert_eq!(session.mounted_skill_count, 1);
+    assert!(session
+      .last_message_preview
+      .contains("deliberately long assistant reply"));
+    assert!(session.last_message_preview.chars().count() <= 95);
+    Ok(())
+  }
+
+  #[test]
+  fn seeded_snapshot_preserves_incremental_session_timeline() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let session_id = create_session_in(&conn, Some("Seeded run".to_string()))?;
+    let base_snapshot = build_workspace_snapshot_with_policy_in(
+      &conn,
+      Some(session_id),
+      None,
+      None,
+      None,
+      SnapshotReusePolicy::default(),
+    )?;
+
+    let user_message = append_message_in(&conn, session_id, "user", "Need a release checklist")?;
+    let input_activity = append_activity_in(
+      &conn,
+      session_id,
+      "input",
+      "Mission received",
+      "New mission captured: Need a release checklist",
+      "completed",
+    )?;
+    let assistant_message = append_message_in(
+      &conn,
+      session_id,
+      "assistant",
+      "Start with migrations, smoke tests, and rollback prep.",
+    )?;
+    let output_activity = append_activity_in(
+      &conn,
+      session_id,
+      "output",
+      "Reply persisted",
+      "Assistant output has been stored in the session log.",
+      "completed",
+    )?;
+    let updated_session = load_session_summary_in(&conn, session_id)?;
+    let seeded_snapshot = seed_snapshot_for_persisted_run(
+      Some(base_snapshot),
+      session_id,
+      updated_session.clone(),
+      &[user_message.clone(), assistant_message.clone()],
+      &[input_activity.clone(), output_activity.clone()],
+    )
+    .context("expected seeded snapshot")?;
+
+    let snapshot = build_workspace_snapshot_with_seed_snapshot_in(
+      &conn,
+      Some(session_id),
+      None,
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        ..SnapshotReusePolicy::default()
+      },
+      Some(seeded_snapshot),
+    )?;
+
+    assert_eq!(snapshot.active_session.session, updated_session);
+    assert_eq!(
+      snapshot
+        .active_session
+        .messages
+        .iter()
+        .rev()
+        .take(2)
+        .map(|message| message.content.as_str())
+        .collect::<Vec<_>>(),
+      vec![
+        assistant_message.content.as_str(),
+        user_message.content.as_str(),
+      ],
+    );
+    assert_eq!(
+      snapshot.active_session.activity[0].title,
+      output_activity.title
+    );
+    assert_eq!(
+      snapshot.active_session.activity[1].title,
+      input_activity.title
+    );
+    Ok(())
+  }
+
+  #[test]
+  fn lightweight_runtime_context_queries_return_scoped_results() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let session_id = create_session_in(&conn, Some("Context run".to_string()))?;
+    append_message_in(&conn, session_id, "user", "Need the deployment runbook")?;
+
+    let skill_id = create_skill_in(&conn, Some("Deploy helper".to_string()))?;
+    save_session_skills_in(&conn, session_id, vec![skill_id])?;
+
+    let note_id = create_note_in(&conn, Some("Deployment runbook".to_string()))?;
+    save_note_in(
+      &conn,
+      KnowledgeNoteInput {
+        id: note_id,
+        icon: "*".to_string(),
+        title: "Deployment runbook".to_string(),
+        body: "Deploy checklist\nShip backend\nVerify logs\nRollback if error".to_string(),
+        tags: vec!["ops".to_string(), "deploy".to_string()],
+      },
+    )?;
+
+    let reminder_id = create_reminder_in(&conn, Some("Ship release".to_string()))?;
+    save_reminder_in(
+      &conn,
+      ReminderInput {
+        id: reminder_id,
+        title: "Ship release".to_string(),
+        detail: "Verify deployment runbook first".to_string(),
+        due_at: Some(now_millis() + 30 * 60 * 1000),
+        severity: "high".to_string(),
+        status: "scheduled".to_string(),
+        linked_note_id: Some(note_id),
+      },
+    )?;
+
+    let session = load_agent_session_context_in(&conn, session_id)?;
+    assert_eq!(session.title, "Context run");
+    assert_eq!(session.status, "idle");
+    assert_eq!(session.message_count, 2);
+    assert_eq!(
+      session.mounted_skill_names,
+      vec!["Deploy helper".to_string()]
+    );
+
+    let notes = list_note_context_in(&conn, 8, 24)?;
+    let note = notes
+      .into_iter()
+      .find(|item| item.title == "Deployment runbook")
+      .context("expected note context")?;
+    assert!(note.body_excerpt.chars().count() <= 24);
+    assert_eq!(note.tags, vec!["ops".to_string(), "deploy".to_string()]);
+
+    let reminders = list_open_reminder_context_in(&conn, 4)?;
+    let reminder = reminders
+      .into_iter()
+      .find(|item| item.title == "Ship release")
+      .context("expected reminder context")?;
+    assert_eq!(reminder.severity, "high");
+    assert_eq!(
+      reminder.linked_note_title,
+      Some("Deployment runbook".to_string())
+    );
     Ok(())
   }
 

@@ -36,6 +36,7 @@ fn main() {
       cmd::create_knowledge_note,
       cmd::save_knowledge_note,
       cmd::delete_knowledge_note,
+      cmd::open_reminder,
       cmd::create_reminder,
       cmd::save_reminder,
       cmd::delete_reminder,

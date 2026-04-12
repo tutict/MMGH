@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Context, Result};
+use once_cell::sync::Lazy;
 use reqwest::blocking::Client;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
@@ -6,6 +7,13 @@ use serde_json::Value;
 
 use crate::cmd;
 use crate::db;
+
+static HTTP_CLIENT: Lazy<Client> = Lazy::new(|| {
+  Client::builder()
+    .timeout(std::time::Duration::from_secs(90))
+    .build()
+    .expect("failed to build shared HTTP client")
+});
 
 #[derive(Debug, Clone)]
 struct AgentRuntimeContext {
@@ -225,12 +233,7 @@ fn request_completion(
   };
 
   let endpoint = completion_endpoint(&settings.base_url);
-  let client = Client::builder()
-    .timeout(std::time::Duration::from_secs(90))
-    .build()
-    .context("failed to build HTTP client")?;
-
-  let response = client
+  let response = HTTP_CLIENT
     .post(endpoint)
     .header(CONTENT_TYPE, "application/json")
     .header(AUTHORIZATION, format!("Bearer {}", settings.api_key))
@@ -239,9 +242,15 @@ fn request_completion(
     .context("failed to send completion request")?;
 
   let status = response.status();
-  let body = response.text().context("failed to read completion response")?;
+  let body = response
+    .text()
+    .context("failed to read completion response")?;
   if !status.is_success() {
-    return Err(anyhow!("provider returned {}: {}", status, shorten(&body, 240)));
+    return Err(anyhow!(
+      "provider returned {}: {}",
+      status,
+      shorten(&body, 240)
+    ));
   }
 
   let parsed: ChatCompletionResponse =
@@ -314,12 +323,7 @@ fn request_skill_draft_from_model(
   };
 
   let endpoint = completion_endpoint(&settings.base_url);
-  let client = Client::builder()
-    .timeout(std::time::Duration::from_secs(90))
-    .build()
-    .context("failed to build HTTP client")?;
-
-  let response = client
+  let response = HTTP_CLIENT
     .post(endpoint)
     .header(CONTENT_TYPE, "application/json")
     .header(AUTHORIZATION, format!("Bearer {}", settings.api_key))
@@ -328,7 +332,9 @@ fn request_skill_draft_from_model(
     .context("failed to send skill generation request")?;
 
   let status = response.status();
-  let body = response.text().context("failed to read skill generation response")?;
+  let body = response
+    .text()
+    .context("failed to read skill generation response")?;
   if !status.is_success() {
     return Err(anyhow!(
       "provider returned {} while generating skill: {}",
@@ -570,32 +576,18 @@ fn trim_for_template(value: &str, limit: usize) -> String {
 }
 
 fn build_runtime_context(session_id: i64, prompt: &str) -> Result<AgentRuntimeContext> {
-  let workspace = db::workspace_snapshot(Some(session_id))?;
-  let notes = db::recent_note_details(12)?;
-  let note_titles = workspace
-    .notes
-    .iter()
-    .map(|note| (note.id, note.title.clone()))
-    .collect::<std::collections::HashMap<_, _>>();
+  let session = db::agent_session_context(session_id)?;
+  let notes = db::recent_note_context(12, 1600)?;
+  let reminders = db::open_reminder_context(4)?;
 
   Ok(AgentRuntimeContext {
-    session_title: workspace.active_session.session.title.clone(),
-    session_status: workspace.active_session.session.status.clone(),
-    message_count: workspace.active_session.messages.len(),
-    mounted_skill_names: workspace
-      .active_session
-      .mounted_skills
-      .iter()
-      .filter(|skill| skill.enabled)
-      .map(|skill| skill.name.clone())
-      .collect(),
+    session_title: session.title,
+    session_status: session.status,
+    message_count: session.message_count,
+    mounted_skill_names: session.mounted_skill_names,
     relevant_notes: select_relevant_notes(prompt, &notes, 3),
-    open_reminders: select_open_reminders(&workspace.reminders, &note_titles, 4),
-    capability_titles: workspace
-      .capabilities
-      .iter()
-      .map(|capability| capability.title.clone())
-      .collect(),
+    open_reminders: select_open_reminders(&reminders),
+    capability_titles: db::capability_titles(),
   })
 }
 
@@ -683,7 +675,7 @@ fn render_runtime_context_block(context: &AgentRuntimeContext) -> String {
 
 fn select_relevant_notes(
   prompt: &str,
-  notes: &[db::KnowledgeNoteDetail],
+  notes: &[db::KnowledgeNoteContext],
   limit: usize,
 ) -> Vec<ContextNote> {
   let keywords = extract_keywords(prompt);
@@ -693,7 +685,7 @@ fn select_relevant_notes(
       let haystack = format!(
         "{} {} {}",
         note.title.to_lowercase(),
-        note.body.to_lowercase(),
+        note.body_excerpt.to_lowercase(),
         note.tags.join(" ").to_lowercase()
       );
 
@@ -717,20 +709,14 @@ fn select_relevant_notes(
         note.updated_at,
         ContextNote {
           title: note.title.clone(),
-          excerpt: first_non_empty_line(&note.body)
-            .unwrap_or_else(|| note.summary.clone()),
+          excerpt: first_non_empty_line(&note.body_excerpt).unwrap_or_else(|| note.summary.clone()),
           tags: note.tags.clone(),
         },
       )
     })
     .collect::<Vec<_>>();
 
-  ranked.sort_by(|left, right| {
-    right
-      .0
-      .cmp(&left.0)
-      .then_with(|| right.1.cmp(&left.1))
-  });
+  ranked.sort_by(|left, right| right.0.cmp(&left.0).then_with(|| right.1.cmp(&left.1)));
 
   ranked
     .into_iter()
@@ -740,34 +726,14 @@ fn select_relevant_notes(
     .collect()
 }
 
-fn select_open_reminders(
-  reminders: &[db::ReminderItem],
-  note_titles: &std::collections::HashMap<i64, String>,
-  limit: usize,
-) -> Vec<ContextReminder> {
-  let mut open_items = reminders
+fn select_open_reminders(reminders: &[db::ReminderContextItem]) -> Vec<ContextReminder> {
+  reminders
     .iter()
-    .filter(|reminder| reminder.status != "done")
-    .collect::<Vec<_>>();
-
-  open_items.sort_by(|left, right| {
-    left
-      .due_at
-      .unwrap_or(i64::MAX)
-      .cmp(&right.due_at.unwrap_or(i64::MAX))
-      .then_with(|| right.updated_at.cmp(&left.updated_at))
-  });
-
-  open_items
-    .into_iter()
-    .take(limit)
     .map(|reminder| ContextReminder {
       title: reminder.title.clone(),
       severity: reminder.severity.clone(),
       due_label: render_due_label(reminder.due_at),
-      linked_note_title: reminder
-        .linked_note_id
-        .and_then(|note_id| note_titles.get(&note_id).cloned()),
+      linked_note_title: reminder.linked_note_title.clone(),
     })
     .collect()
 }
@@ -786,10 +752,7 @@ fn extract_keywords(input: &str) -> Vec<String> {
     })
     .collect::<Vec<_>>();
 
-  let cjk_only = lowered
-    .chars()
-    .filter(|ch| is_cjk(*ch))
-    .collect::<String>();
+  let cjk_only = lowered.chars().filter(|ch| is_cjk(*ch)).collect::<String>();
   if cjk_only.chars().count() >= 4 {
     let chars = cjk_only.chars().collect::<Vec<_>>();
     for width in [2usize, 3usize] {
@@ -908,7 +871,9 @@ fn local_fallback_reply(
       shorten(reason, 120)
     ),
     None if settings.is_ready() => "The runtime is in local preview mode.".to_string(),
-    None => "No provider is configured yet, so the runtime is using local preview mode.".to_string(),
+    None => {
+      "No provider is configured yet, so the runtime is using local preview mode.".to_string()
+    }
   };
   let staged_notes = if context.relevant_notes.is_empty() {
     "No relevant notes were staged.".to_string()
@@ -939,7 +904,10 @@ fn local_fallback_reply(
   let mounted_skills = if context.mounted_skill_names.is_empty() {
     "Mounted skills: none.".to_string()
   } else {
-    format!("Mounted skills: {}.", context.mounted_skill_names.join(", "))
+    format!(
+      "Mounted skills: {}.",
+      context.mounted_skill_names.join(", ")
+    )
   };
 
   format!(

@@ -654,6 +654,7 @@ const createInitialWorkspace = () => {
     nextSkillId: starterSkills.length + 1,
     activeSessionId: 1,
     activeNoteId: 1,
+    activeReminderId: 0,
     activeSkillId: 1,
     sessions: [createSeedSession(1)],
     notes: [note],
@@ -839,6 +840,7 @@ const hydrateWorkspace = (raw) => {
     nextSkillId,
     activeSessionId: resolveActiveId(parsed.activeSessionId, sessions),
     activeNoteId: resolveActiveId(parsed.activeNoteId, notes),
+    activeReminderId: resolveActiveId(parsed.activeReminderId, reminders),
     activeSkillId: resolveActiveId(parsed.activeSkillId, skills),
     sessions,
     notes,
@@ -921,6 +923,7 @@ const serializeWorkspace = (workspace) =>
     nextSkillId: workspace.nextSkillId,
     activeSessionId: workspace.activeSessionId,
     activeNoteId: workspace.activeNoteId,
+    activeReminderId: workspace.activeReminderId,
     activeSkillId: workspace.activeSkillId,
     sessions: workspace.sessions,
     notes: workspace.notes,
@@ -951,6 +954,17 @@ const noteSummary = (note) => ({
 });
 
 const reminderSummary = (reminder) => ({
+  id: reminder.id,
+  title: reminder.title,
+  preview: toPreview(reminder.detail, 120),
+  dueAt: reminder.dueAt,
+  severity: reminder.severity,
+  status: reminder.status,
+  linkedNoteId: reminder.linkedNoteId,
+  updatedAt: reminder.updatedAt,
+});
+
+const reminderDetail = (reminder) => ({
   ...reminder,
   preview: toPreview(reminder.detail, 120),
 });
@@ -1063,6 +1077,7 @@ const buildSnapshot = (
   workspace,
   preferredSessionId = workspace.activeSessionId,
   preferredNoteId = workspace.activeNoteId,
+  preferredReminderId = workspace.activeReminderId,
   preferredSkillId = workspace.activeSkillId
 ) => {
   const orderedSessions = [...workspace.sessions].sort(
@@ -1086,6 +1101,10 @@ const buildSnapshot = (
     preferredNoteId && orderedNotes.some((note) => note.id === preferredNoteId)
       ? preferredNoteId
       : orderedNotes[0].id;
+  const activeReminderId =
+    preferredReminderId && orderedReminders.some((reminder) => reminder.id === preferredReminderId)
+      ? preferredReminderId
+      : orderedReminders[0]?.id || 0;
   const activeSkillId =
     preferredSkillId && orderedSkills.some((skill) => skill.id === preferredSkillId)
       ? preferredSkillId
@@ -1094,6 +1113,8 @@ const buildSnapshot = (
   const activeSession =
     orderedSessions.find((session) => session.id === activeSessionId) || orderedSessions[0];
   const activeNote = orderedNotes.find((note) => note.id === activeNoteId) || orderedNotes[0];
+  const activeReminder =
+    orderedReminders.find((reminder) => reminder.id === activeReminderId) || null;
   const activeSkill =
     orderedSkills.find((skill) => skill.id === activeSkillId) || orderedSkills[0];
   const activeSessionSkillIds = dedupeIds(activeSession.skillIds).filter((skillId) =>
@@ -1146,6 +1167,8 @@ const buildSnapshot = (
       summary: toPreview(activeNote.body, 120),
     },
     reminders: orderedReminders.map(reminderSummary),
+    activeReminderId,
+    activeReminder: activeReminder ? reminderDetail(activeReminder) : null,
     skills: orderedSkills.map(skillSummary),
     activeSkillId,
     activeSkill: {
@@ -1278,7 +1301,9 @@ const localOpenKnowledgeNote = async ({ noteId, activeSessionId }) =>
       activeNoteId: ensureExistingItem(workspace.notes, noteId, "Knowledge note"),
     })),
     activeSessionId,
-    noteId
+    noteId,
+    undefined,
+    undefined
   );
 
 const localCreateKnowledgeNote = async ({ title, activeSessionId }) => {
@@ -1338,7 +1363,21 @@ const localDeleteKnowledgeNote = async ({ noteId, activeSessionId }) => {
       activeNoteId: notes[0].id,
     };
   });
-  return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId);
+  return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId, workspace.activeReminderId);
+};
+
+const localOpenReminder = async ({ reminderId, activeSessionId }) => {
+  const workspace = updateWorkspace((current) => ({
+    ...current,
+    activeReminderId: ensureExistingItem(current.reminders, reminderId, "Reminder"),
+  }));
+  return buildSnapshot(
+    workspace,
+    activeSessionId,
+    workspace.activeNoteId,
+    reminderId,
+    workspace.activeSkillId
+  );
 };
 
 const localCreateReminder = async ({ title, activeSessionId }) => {
@@ -1360,10 +1399,11 @@ const localCreateReminder = async ({ title, activeSessionId }) => {
     return {
       ...current,
       nextReminderId: reminderId + 1,
+      activeReminderId: reminderId,
       reminders: [reminder, ...current.reminders],
     };
   });
-  return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId);
+  return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId, workspace.activeReminderId);
 };
 
 const localSaveReminder = async ({ reminder, activeSessionId }) => {
@@ -1396,12 +1436,13 @@ const localSaveReminder = async ({ reminder, activeSessionId }) => {
 
     return {
       ...current,
+      activeReminderId: reminderId,
       reminders: current.reminders.map((item) =>
         item.id === reminderId ? nextReminder : item
       ),
     };
   });
-  return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId);
+  return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId, workspace.activeReminderId);
 };
 
 const localDeleteReminder = async ({ reminderId, activeSessionId }) => {
@@ -1409,10 +1450,14 @@ const localDeleteReminder = async ({ reminderId, activeSessionId }) => {
     const ensuredReminderId = ensureExistingItem(current.reminders, reminderId, "Reminder");
     return {
       ...current,
+      activeReminderId:
+        current.activeReminderId === ensuredReminderId
+          ? current.reminders.filter((reminder) => reminder.id !== ensuredReminderId)[0]?.id || 0
+          : current.activeReminderId,
       reminders: current.reminders.filter((reminder) => reminder.id !== ensuredReminderId),
     };
   });
-  return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId);
+  return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId, workspace.activeReminderId);
 };
 
 const localOpenSkill = async ({ skillId, activeSessionId }) => {
@@ -1420,7 +1465,13 @@ const localOpenSkill = async ({ skillId, activeSessionId }) => {
     ...current,
     activeSkillId: ensureExistingItem(current.skills, skillId, "Skill"),
   }));
-  return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId, skillId);
+  return buildSnapshot(
+    workspace,
+    activeSessionId,
+    workspace.activeNoteId,
+    workspace.activeReminderId,
+    skillId
+  );
 };
 
 const localCreateSkill = async ({ name, activeSessionId }) => {
@@ -1443,7 +1494,13 @@ const localCreateSkill = async ({ name, activeSessionId }) => {
       ),
     };
   });
-  return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId, workspace.activeSkillId);
+  return buildSnapshot(
+    workspace,
+    activeSessionId,
+    workspace.activeNoteId,
+    workspace.activeReminderId,
+    workspace.activeSkillId
+  );
 };
 
 const localSaveSkill = async ({ skill, activeSessionId }) => {
@@ -1483,7 +1540,13 @@ const localSaveSkill = async ({ skill, activeSessionId }) => {
       }),
     };
   });
-  return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId, skill.id);
+  return buildSnapshot(
+    workspace,
+    activeSessionId,
+    workspace.activeNoteId,
+    workspace.activeReminderId,
+    skill.id
+  );
 };
 
 const localDeleteSkill = async ({ skillId, activeSessionId }) => {
@@ -1525,7 +1588,13 @@ const localDeleteSkill = async ({ skillId, activeSessionId }) => {
         : skills[0].id,
     };
   });
-  return buildSnapshot(workspace, activeSessionId, workspace.activeNoteId, workspace.activeSkillId);
+  return buildSnapshot(
+    workspace,
+    activeSessionId,
+    workspace.activeNoteId,
+    workspace.activeReminderId,
+    workspace.activeSkillId
+  );
 };
 
 const localSaveSessionSkills = async ({ sessionId, skillIds, activeSessionId }) => {
@@ -1566,6 +1635,7 @@ const localSaveSessionSkills = async ({ sessionId, skillIds, activeSessionId }) 
     workspace,
     activeSessionId || sessionId,
     workspace.activeNoteId,
+    workspace.activeReminderId,
     workspace.activeSkillId
   );
 };
@@ -1708,7 +1778,13 @@ const localRunAgent = async ({ sessionId, prompt }) => {
     };
   });
 
-  return buildSnapshot(workspace, sessionId, workspace.activeNoteId, workspace.activeSkillId);
+  return buildSnapshot(
+    workspace,
+    sessionId,
+    workspace.activeNoteId,
+    workspace.activeReminderId,
+    workspace.activeSkillId
+  );
 };
 
 const isSkillGenerationReady = (settings) =>
@@ -1878,6 +1954,11 @@ export const deleteKnowledgeNote = async ({ noteId, activeSessionId }) =>
   isTauriAvailable()
     ? invokeTauri("delete_knowledge_note", { noteId, activeSessionId })
     : localDeleteKnowledgeNote({ noteId, activeSessionId });
+
+export const openReminder = async ({ reminderId, activeSessionId }) =>
+  isTauriAvailable()
+    ? invokeTauri("open_reminder", { reminderId, activeSessionId })
+    : localOpenReminder({ reminderId, activeSessionId });
 
 export const createReminder = async ({ title, activeSessionId }) =>
   isTauriAvailable()

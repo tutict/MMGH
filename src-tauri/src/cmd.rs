@@ -69,6 +69,14 @@ pub fn delete_knowledge_note(
 }
 
 #[tauri::command]
+pub fn open_reminder(
+  reminder_id: i64,
+  active_session_id: Option<i64>,
+) -> CommandResult<db::WorkspaceSnapshot> {
+  db::open_reminder(reminder_id, active_session_id).map_err(into_command_error)
+}
+
+#[tauri::command]
 pub fn create_reminder(
   title: Option<String>,
   active_session_id: Option<i64>,

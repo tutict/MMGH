@@ -39,7 +39,7 @@ function ReminderWorkspace({
       }
       const linkedTitle =
         noteList.find((note) => note.id === item.linkedNoteId)?.title || "";
-      return [item.title, item.detail, linkedTitle, item.severity, item.status]
+      return [item.title, item.preview, linkedTitle, item.severity, item.status]
         .join(" ")
         .toLowerCase()
         .includes(needle);
