@@ -515,10 +515,20 @@ pub fn save_note(
 
 pub fn delete_note(note_id: i64, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     delete_note_in(conn, note_id)?;
     ensure_seed_note_in(conn)?;
-    build_workspace_snapshot_with_policy_in(
+    let seeded_snapshot = seed_snapshot_for_note_delete(cached_snapshot, note_id);
+    let can_reuse_note_list = seeded_snapshot
+      .as_ref()
+      .map(|snapshot| !snapshot.notes.is_empty())
+      .unwrap_or(false);
+    let can_reuse_active_note_detail = seeded_snapshot
+      .as_ref()
+      .map(|snapshot| can_reuse_note_list && snapshot.active_note.id == snapshot.active_note_id)
+      .unwrap_or(false);
+    build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       active_session_id,
       None,
@@ -527,10 +537,15 @@ pub fn delete_note(note_id: i64, active_session_id: Option<i64>) -> Result<Works
       SnapshotReusePolicy {
         reuse_session_list: true,
         reuse_active_session_timeline: true,
+        reuse_note_list: can_reuse_note_list,
+        reuse_active_note_detail: can_reuse_active_note_detail,
+        reuse_reminder_list: true,
+        reuse_active_reminder_detail: true,
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
+      seeded_snapshot,
     )
   })
 }
@@ -620,9 +635,15 @@ pub fn delete_reminder(
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     delete_reminder_in(conn, reminder_id)?;
-    build_workspace_snapshot_with_policy_in(
+    let seeded_snapshot = seed_snapshot_for_reminder_delete(cached_snapshot, reminder_id);
+    let can_reuse_active_reminder_detail = seeded_snapshot
+      .as_ref()
+      .map(|snapshot| snapshot.active_reminder.id == snapshot.active_reminder_id)
+      .unwrap_or(false);
+    build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       active_session_id,
       None,
@@ -633,10 +654,13 @@ pub fn delete_reminder(
         reuse_active_session_timeline: true,
         reuse_note_list: true,
         reuse_active_note_detail: true,
+        reuse_reminder_list: true,
+        reuse_active_reminder_detail: can_reuse_active_reminder_detail,
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
+      seeded_snapshot,
     )
   })
 }
@@ -715,10 +739,20 @@ pub fn save_skill(input: SkillInput, active_session_id: Option<i64>) -> Result<W
 
 pub fn delete_skill(skill_id: i64, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     delete_skill_in(conn, skill_id)?;
     ensure_seed_skill_in(conn)?;
-    build_workspace_snapshot_with_policy_in(
+    let seeded_snapshot = seed_snapshot_for_skill_delete(cached_snapshot, skill_id);
+    let can_reuse_skill_list = seeded_snapshot
+      .as_ref()
+      .map(|snapshot| !snapshot.skills.is_empty())
+      .unwrap_or(false);
+    let can_reuse_active_skill_detail = seeded_snapshot
+      .as_ref()
+      .map(|snapshot| can_reuse_skill_list && snapshot.active_skill.id == snapshot.active_skill_id)
+      .unwrap_or(false);
+    build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       active_session_id,
       None,
@@ -730,8 +764,11 @@ pub fn delete_skill(skill_id: i64, active_session_id: Option<i64>) -> Result<Wor
         reuse_active_note_detail: true,
         reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
+        reuse_skill_list: can_reuse_skill_list,
+        reuse_active_skill_detail: can_reuse_active_skill_detail,
         ..SnapshotReusePolicy::default()
       },
+      seeded_snapshot,
     )
   })
 }
@@ -3112,6 +3149,72 @@ fn seed_snapshot_for_skill_upsert(
   Some(snapshot)
 }
 
+fn seed_snapshot_for_note_delete(
+  cached_snapshot: Option<WorkspaceSnapshot>,
+  note_id: i64,
+) -> Option<WorkspaceSnapshot> {
+  let mut snapshot = cached_snapshot?;
+  snapshot.notes.retain(|note| note.id != note_id);
+  for reminder in &mut snapshot.reminders {
+    if reminder.linked_note_id == Some(note_id) {
+      reminder.linked_note_id = None;
+    }
+  }
+  if snapshot.active_reminder.linked_note_id == Some(note_id) {
+    snapshot.active_reminder.linked_note_id = None;
+  }
+
+  if snapshot.active_note_id == note_id {
+    snapshot.active_note_id = snapshot.notes.first().map(|note| note.id).unwrap_or(0);
+  }
+  Some(snapshot)
+}
+
+fn seed_snapshot_for_reminder_delete(
+  cached_snapshot: Option<WorkspaceSnapshot>,
+  reminder_id: i64,
+) -> Option<WorkspaceSnapshot> {
+  let mut snapshot = cached_snapshot?;
+  snapshot
+    .reminders
+    .retain(|reminder| reminder.id != reminder_id);
+  if snapshot.active_reminder_id == reminder_id {
+    if let Some(next_reminder) = snapshot.reminders.first() {
+      snapshot.active_reminder_id = next_reminder.id;
+    } else {
+      snapshot.active_reminder_id = 0;
+      snapshot.active_reminder = empty_reminder_detail();
+    }
+  }
+  Some(snapshot)
+}
+
+fn seed_snapshot_for_skill_delete(
+  cached_snapshot: Option<WorkspaceSnapshot>,
+  skill_id: i64,
+) -> Option<WorkspaceSnapshot> {
+  let mut snapshot = cached_snapshot?;
+  snapshot.skills.retain(|skill| skill.id != skill_id);
+  snapshot
+    .active_session
+    .mounted_skill_ids
+    .retain(|mounted_skill_id| *mounted_skill_id != skill_id);
+  snapshot.active_session.mounted_skills =
+    build_mounted_skills_from_catalog(&snapshot.active_session.mounted_skill_ids, &snapshot.skills);
+  snapshot.active_session.recommended_skills = recommend_session_skills_from_messages(
+    &snapshot.active_session.session.title,
+    &snapshot.active_session.messages,
+    &snapshot.active_session.mounted_skill_ids,
+    4,
+    &snapshot.skills,
+  );
+
+  if snapshot.active_skill_id == skill_id {
+    snapshot.active_skill_id = snapshot.skills.first().map(|skill| skill.id).unwrap_or(0);
+  }
+  Some(snapshot)
+}
+
 fn extract_recommendation_keywords(text: &str) -> Vec<String> {
   let mut keywords = text
     .split(|ch: char| !ch.is_alphanumeric() && !is_cjk_character(ch))
@@ -4433,6 +4536,125 @@ mod tests {
     )?;
     assert_eq!(skill_snapshot.active_skill.id, skill.id);
     assert!(skill_snapshot.skills.iter().any(|item| item.id == skill.id));
+    Ok(())
+  }
+
+  #[test]
+  fn seeded_snapshot_preserves_note_delete_and_linked_reminder_updates() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let active_session_id = ensure_seed_session_in(&conn)?;
+    let note = create_note_detail_in(&conn, Some("Delete target note".to_string()))?;
+    let reminder = create_reminder_detail_in(&conn, Some("Linked reminder".to_string()))?;
+    assert_eq!(reminder.linked_note_id, Some(note.id));
+
+    let seeded_base_snapshot = build_workspace_snapshot_with_policy_in(
+      &conn,
+      Some(active_session_id),
+      Some(note.id),
+      Some(reminder.id),
+      None,
+      SnapshotReusePolicy::default(),
+    )?;
+
+    delete_note_in(&conn, note.id)?;
+    ensure_seed_note_in(&conn)?;
+
+    let seeded_snapshot = seed_snapshot_for_note_delete(Some(seeded_base_snapshot), note.id);
+    let can_reuse_active_note_detail = seeded_snapshot
+      .as_ref()
+      .map(|snapshot| snapshot.active_note.id == snapshot.active_note_id)
+      .unwrap_or(false);
+    let snapshot = build_workspace_snapshot_with_seed_snapshot_in(
+      &conn,
+      Some(active_session_id),
+      None,
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_session_list: true,
+        reuse_active_session_timeline: true,
+        reuse_note_list: true,
+        reuse_active_note_detail: can_reuse_active_note_detail,
+        reuse_reminder_list: true,
+        reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
+        reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+      seeded_snapshot,
+    )?;
+
+    assert!(snapshot.notes.iter().all(|item| item.id != note.id));
+    assert!(snapshot
+      .reminders
+      .iter()
+      .all(|item| item.linked_note_id != Some(note.id)));
+    assert_ne!(snapshot.active_note_id, note.id);
+    Ok(())
+  }
+
+  #[test]
+  fn seeded_snapshot_preserves_skill_delete_for_active_session_mounts() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let active_session_id = ensure_seed_session_in(&conn)?;
+    let skill = create_skill_detail_for_active_session_in(
+      &conn,
+      Some("Mounted delete target".to_string()),
+      Some(active_session_id),
+    )?;
+    let seeded_base_snapshot = build_workspace_snapshot_with_policy_in(
+      &conn,
+      Some(active_session_id),
+      None,
+      None,
+      Some(skill.id),
+      SnapshotReusePolicy::default(),
+    )?;
+    assert!(seeded_base_snapshot
+      .active_session
+      .mounted_skill_ids
+      .contains(&skill.id));
+
+    delete_skill_in(&conn, skill.id)?;
+    ensure_seed_skill_in(&conn)?;
+
+    let seeded_snapshot = seed_snapshot_for_skill_delete(Some(seeded_base_snapshot), skill.id);
+    let can_reuse_active_skill_detail = seeded_snapshot
+      .as_ref()
+      .map(|snapshot| snapshot.active_skill.id == snapshot.active_skill_id)
+      .unwrap_or(false);
+    let snapshot = build_workspace_snapshot_with_seed_snapshot_in(
+      &conn,
+      Some(active_session_id),
+      None,
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_active_session_timeline: true,
+        reuse_note_list: true,
+        reuse_active_note_detail: true,
+        reuse_reminder_list: true,
+        reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
+        reuse_active_skill_detail: can_reuse_active_skill_detail,
+        ..SnapshotReusePolicy::default()
+      },
+      seeded_snapshot,
+    )?;
+
+    assert!(snapshot.skills.iter().all(|item| item.id != skill.id));
+    assert!(!snapshot
+      .active_session
+      .mounted_skill_ids
+      .contains(&skill.id));
     Ok(())
   }
 
