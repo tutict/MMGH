@@ -13,10 +13,12 @@ use serde::{Deserialize, Serialize};
 use crate::cmd::{AgentSettingsInput, KnowledgeNoteInput, ReminderInput, SkillInput};
 
 static SNAPSHOT_CACHE: Lazy<Mutex<Option<WorkspaceSnapshot>>> = Lazy::new(|| Mutex::new(None));
+static SETTINGS_CACHE: Lazy<Mutex<Option<AgentSettings>>> = Lazy::new(|| Mutex::new(None));
 static RUNTIME_API_KEY: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
 static APP_DATA_DIR: Lazy<Mutex<Option<PathBuf>>> = Lazy::new(|| Mutex::new(None));
 static DB_INIT_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 static DB_INIT_PATH: Lazy<Mutex<Option<PathBuf>>> = Lazy::new(|| Mutex::new(None));
+static CAPABILITY_CATALOG: Lazy<Vec<Capability>> = Lazy::new(build_capability_catalog);
 const SETTINGS_KEY: &str = "agent_settings_v1";
 #[cfg_attr(test, allow(dead_code))]
 const API_KEYRING_SERVICE: &str = "mmgh-agent-desktop";
@@ -373,14 +375,18 @@ pub fn open_session(session_id: i64) -> Result<WorkspaceSnapshot> {
 
 pub fn create_session(title: Option<String>) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
-    let session_id = create_session_in(conn, title)?;
-    build_workspace_snapshot_with_policy_in(
+    let cached_snapshot = read_snapshot_cache()?;
+    let session = create_session_detail_in(conn, title)?;
+    let seeded_snapshot = seed_snapshot_for_session_create(cached_snapshot, session.clone());
+    build_workspace_snapshot_with_seed_snapshot_in(
       conn,
-      Some(session_id),
+      Some(session.session.id),
       None,
       None,
       None,
       SnapshotReusePolicy {
+        reuse_session_list: true,
+        reuse_active_session_timeline: true,
         reuse_note_list: true,
         reuse_active_note_detail: true,
         reuse_reminder_list: true,
@@ -389,21 +395,38 @@ pub fn create_session(title: Option<String>) -> Result<WorkspaceSnapshot> {
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
+      seeded_snapshot,
     )
   })
 }
 
 pub fn delete_session(session_id: i64) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
+    let cached_snapshot = read_snapshot_cache()?;
     delete_session_in(conn, session_id)?;
     ensure_seed_session_in(conn)?;
-    build_workspace_snapshot_with_policy_in(
+    let seeded_snapshot = seed_snapshot_for_session_delete(cached_snapshot, session_id);
+    let can_reuse_session_list = seeded_snapshot
+      .as_ref()
+      .map(|snapshot| !snapshot.sessions.is_empty())
+      .unwrap_or(false);
+    let can_reuse_active_session_timeline = seeded_snapshot
+      .as_ref()
+      .map(|snapshot| {
+        can_reuse_session_list
+          && snapshot.active_session_id > 0
+          && snapshot.active_session.session.id == snapshot.active_session_id
+      })
+      .unwrap_or(false);
+    build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       None,
       None,
       None,
       None,
       SnapshotReusePolicy {
+        reuse_session_list: can_reuse_session_list,
+        reuse_active_session_timeline: can_reuse_active_session_timeline,
         reuse_note_list: true,
         reuse_active_note_detail: true,
         reuse_reminder_list: true,
@@ -412,6 +435,7 @@ pub fn delete_session(session_id: i64) -> Result<WorkspaceSnapshot> {
         reuse_active_skill_detail: true,
         ..SnapshotReusePolicy::default()
       },
+      seeded_snapshot,
     )
   })
 }
@@ -1002,6 +1026,13 @@ fn read_snapshot_cache() -> Result<Option<WorkspaceSnapshot>> {
   Ok(guard.clone())
 }
 
+fn read_settings_cache() -> Result<Option<AgentSettings>> {
+  let guard = SETTINGS_CACHE
+    .lock()
+    .map_err(|_| anyhow!("settings cache mutex poisoned"))?;
+  Ok(guard.clone())
+}
+
 fn store_snapshot_cache(snapshot: &WorkspaceSnapshot) -> Result<()> {
   let mut guard = SNAPSHOT_CACHE
     .lock()
@@ -1010,10 +1041,26 @@ fn store_snapshot_cache(snapshot: &WorkspaceSnapshot) -> Result<()> {
   Ok(())
 }
 
+fn store_settings_cache(settings: &AgentSettings) -> Result<()> {
+  let mut guard = SETTINGS_CACHE
+    .lock()
+    .map_err(|_| anyhow!("settings cache mutex poisoned"))?;
+  *guard = Some(settings.clone());
+  Ok(())
+}
+
 fn clear_snapshot_cache() -> Result<()> {
   let mut guard = SNAPSHOT_CACHE
     .lock()
     .map_err(|_| anyhow!("snapshot cache mutex poisoned"))?;
+  *guard = None;
+  Ok(())
+}
+
+fn clear_settings_cache() -> Result<()> {
+  let mut guard = SETTINGS_CACHE
+    .lock()
+    .map_err(|_| anyhow!("settings cache mutex poisoned"))?;
   *guard = None;
   Ok(())
 }
@@ -1087,6 +1134,7 @@ pub fn set_app_data_dir(path: PathBuf) -> Result<()> {
     .map_err(|_| anyhow!("app data dir mutex poisoned"))?;
   *guard = Some(path);
   clear_snapshot_cache()?;
+  clear_settings_cache()?;
   clear_db_init_path()?;
   Ok(())
 }
@@ -1412,6 +1460,12 @@ fn merge_settings_input(current: AgentSettings, input: AgentSettingsInput) -> Ag
 }
 
 fn load_settings_in(conn: &Connection) -> Result<AgentSettings> {
+  if let Some(mut cached) = read_settings_cache()? {
+    cached.api_key = resolve_effective_api_key(None)?;
+    cached.has_api_key = !cached.api_key.trim().is_empty();
+    return Ok(cached);
+  }
+
   let raw = load_setting_value_in(conn, SETTINGS_KEY)?;
 
   match raw {
@@ -1419,19 +1473,21 @@ fn load_settings_in(conn: &Connection) -> Result<AgentSettings> {
       let mut settings =
         serde_json::from_str::<AgentSettings>(&value).unwrap_or_else(|_| default_settings());
       let legacy_api_key = settings.api_key.trim().to_string();
+      let sanitized_settings = sanitize_settings_for_persistence(&settings);
 
       if !legacy_api_key.is_empty() {
-        let sanitized_payload =
-          serde_json::to_string(&sanitize_settings_for_persistence(&settings))?;
+        let sanitized_payload = serde_json::to_string(&sanitized_settings)?;
         upsert_setting_value_in(conn, SETTINGS_KEY, &sanitized_payload)?;
       }
 
+      store_settings_cache(&sanitized_settings)?;
       settings.api_key = resolve_effective_api_key(Some(&legacy_api_key))?;
       settings.has_api_key = !settings.api_key.trim().is_empty();
       Ok(settings)
     }
     None => {
       let mut settings = default_settings();
+      store_settings_cache(&sanitize_settings_for_persistence(&settings))?;
       settings.api_key = resolve_effective_api_key(None)?;
       settings.has_api_key = !settings.api_key.trim().is_empty();
       Ok(settings)
@@ -1446,8 +1502,10 @@ fn store_settings_in(conn: &Connection, settings: &AgentSettings) -> Result<()> 
     store_api_key_in_keyring(&settings.api_key)?;
   }
   store_runtime_api_key(settings.api_key.clone())?;
-  let payload = serde_json::to_string(&sanitize_settings_for_persistence(settings))?;
-  upsert_setting_value_in(conn, SETTINGS_KEY, &payload)
+  let sanitized = sanitize_settings_for_persistence(settings);
+  let payload = serde_json::to_string(&sanitized)?;
+  upsert_setting_value_in(conn, SETTINGS_KEY, &payload)?;
+  store_settings_cache(&sanitized)
 }
 
 fn load_setting_value_in(conn: &Connection, key: &str) -> Result<Option<String>> {
@@ -1752,6 +1810,10 @@ fn ensure_seed_skill_in(conn: &Connection) -> Result<i64> {
 }
 
 fn create_session_in(conn: &Connection, title: Option<String>) -> Result<i64> {
+  Ok(create_session_detail_in(conn, title)?.session.id)
+}
+
+fn create_session_detail_in(conn: &Connection, title: Option<String>) -> Result<SessionDetail> {
   let now = now_millis();
   let session_title = title
     .as_deref()
@@ -1767,13 +1829,13 @@ fn create_session_in(conn: &Connection, title: Option<String>) -> Result<i64> {
   )?;
   let session_id = conn.last_insert_rowid();
 
-  append_message_in(
+  let message = append_message_in(
     conn,
     session_id,
     "assistant",
     "Workspace ready. Configure an OpenAI-compatible endpoint to use the real Rust model path. Until then the runtime will return local preview responses.",
   )?;
-  append_activity_in(
+  let activity = append_activity_in(
     conn,
     session_id,
     "system",
@@ -1781,8 +1843,16 @@ fn create_session_in(conn: &Connection, title: Option<String>) -> Result<i64> {
     "A new agent session has been created.",
     "completed",
   )?;
+  let session = load_session_summary_in(conn, session_id)?;
 
-  Ok(session_id)
+  Ok(SessionDetail {
+    session,
+    messages: vec![message],
+    activity: vec![activity],
+    mounted_skill_ids: Vec::new(),
+    mounted_skills: Vec::new(),
+    recommended_skills: Vec::new(),
+  })
 }
 
 fn create_note_in(conn: &Connection, title: Option<String>) -> Result<i64> {
@@ -3113,6 +3183,43 @@ fn seed_snapshot_for_persisted_run(
   Some(snapshot)
 }
 
+fn seed_snapshot_for_session_create(
+  cached_snapshot: Option<WorkspaceSnapshot>,
+  mut detail: SessionDetail,
+) -> Option<WorkspaceSnapshot> {
+  let mut snapshot = cached_snapshot?;
+  detail.mounted_skills =
+    build_mounted_skills_from_catalog(&detail.mounted_skill_ids, &snapshot.skills);
+  detail.recommended_skills = recommend_session_skills_from_messages(
+    &detail.session.title,
+    &detail.messages,
+    &detail.mounted_skill_ids,
+    4,
+    &snapshot.skills,
+  );
+  upsert_session_summary(&mut snapshot.sessions, detail.session.clone());
+  snapshot.active_session_id = detail.session.id;
+  snapshot.active_session = detail;
+  Some(snapshot)
+}
+
+fn seed_snapshot_for_session_delete(
+  cached_snapshot: Option<WorkspaceSnapshot>,
+  session_id: i64,
+) -> Option<WorkspaceSnapshot> {
+  let mut snapshot = cached_snapshot?;
+  let deleted_active_session = snapshot.active_session_id == session_id;
+  snapshot.sessions.retain(|session| session.id != session_id);
+  if deleted_active_session {
+    snapshot.active_session_id = snapshot
+      .sessions
+      .first()
+      .map(|session| session.id)
+      .unwrap_or(0);
+  }
+  Some(snapshot)
+}
+
 fn seed_snapshot_for_note_upsert(
   cached_snapshot: Option<WorkspaceSnapshot>,
   detail: KnowledgeNoteDetail,
@@ -3880,7 +3987,7 @@ fn infer_title(prompt: &str) -> String {
   }
 }
 
-fn capability_catalog() -> Vec<Capability> {
+fn build_capability_catalog() -> Vec<Capability> {
   vec![
     Capability {
       id: "runtime".to_string(),
@@ -3926,6 +4033,10 @@ fn capability_catalog() -> Vec<Capability> {
       status: "ready".to_string(),
     },
   ]
+}
+
+fn capability_catalog() -> Vec<Capability> {
+  CAPABILITY_CATALOG.clone()
 }
 
 #[cfg(test)]
@@ -3975,6 +4086,7 @@ mod tests {
 
   fn test_connection() -> Result<Connection> {
     clear_snapshot_cache()?;
+    clear_settings_cache()?;
     let conn = Connection::open_in_memory()?;
     conn.execute_batch(include_str!("../sql/schema.sql"))?;
     conn.execute_batch("PRAGMA foreign_keys = ON;")?;
@@ -4703,6 +4815,111 @@ mod tests {
       .active_session
       .mounted_skill_ids
       .contains(&skill.id));
+    Ok(())
+  }
+
+  #[test]
+  fn seeded_snapshot_preserves_session_create() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let base_snapshot = build_workspace_snapshot_with_policy_in(
+      &conn,
+      None,
+      None,
+      None,
+      None,
+      SnapshotReusePolicy::read_only(),
+    )?;
+    let session = create_session_detail_in(&conn, Some("Seeded session".to_string()))?;
+    let snapshot = build_workspace_snapshot_with_seed_snapshot_in(
+      &conn,
+      Some(session.session.id),
+      Some(base_snapshot.active_note_id),
+      (base_snapshot.active_reminder_id > 0).then_some(base_snapshot.active_reminder_id),
+      Some(base_snapshot.active_skill_id),
+      SnapshotReusePolicy {
+        reuse_session_list: true,
+        reuse_active_session_timeline: true,
+        reuse_note_list: true,
+        reuse_active_note_detail: true,
+        reuse_reminder_list: true,
+        reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
+        reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+      seed_snapshot_for_session_create(Some(base_snapshot), session.clone()),
+    )?;
+
+    assert_eq!(snapshot.active_session_id, session.session.id);
+    assert_eq!(snapshot.active_session.session, session.session);
+    assert!(snapshot
+      .sessions
+      .iter()
+      .any(|item| item.id == session.session.id));
+    Ok(())
+  }
+
+  #[test]
+  fn seeded_snapshot_preserves_session_delete_with_remaining_session() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = test_connection()?;
+
+    let keep_session = create_session_in(&conn, Some("Keep session".to_string()))?;
+    let delete_session = create_session_in(&conn, Some("Delete session".to_string()))?;
+    let base_snapshot = build_workspace_snapshot_with_policy_in(
+      &conn,
+      Some(delete_session),
+      None,
+      None,
+      None,
+      SnapshotReusePolicy::read_only(),
+    )?;
+
+    delete_session_in(&conn, delete_session)?;
+    let seeded_snapshot = seed_snapshot_for_session_delete(Some(base_snapshot), delete_session);
+    let can_reuse_session_list = seeded_snapshot
+      .as_ref()
+      .map(|snapshot| !snapshot.sessions.is_empty())
+      .unwrap_or(false);
+    let can_reuse_active_session_timeline = seeded_snapshot
+      .as_ref()
+      .map(|snapshot| {
+        can_reuse_session_list
+          && snapshot.active_session_id > 0
+          && snapshot.active_session.session.id == snapshot.active_session_id
+      })
+      .unwrap_or(false);
+    let snapshot = build_workspace_snapshot_with_seed_snapshot_in(
+      &conn,
+      None,
+      None,
+      None,
+      None,
+      SnapshotReusePolicy {
+        reuse_session_list: can_reuse_session_list,
+        reuse_active_session_timeline: can_reuse_active_session_timeline,
+        reuse_note_list: true,
+        reuse_active_note_detail: true,
+        reuse_reminder_list: true,
+        reuse_active_reminder_detail: true,
+        reuse_skill_list: true,
+        reuse_active_skill_detail: true,
+        ..SnapshotReusePolicy::default()
+      },
+      seeded_snapshot,
+    )?;
+
+    assert!(snapshot
+      .sessions
+      .iter()
+      .all(|item| item.id != delete_session));
+    assert_eq!(snapshot.active_session_id, keep_session);
     Ok(())
   }
 
