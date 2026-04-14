@@ -1,4 +1,6 @@
 import React, {
+  Suspense,
+  lazy,
   startTransition,
   useCallback,
   useDeferredValue,
@@ -31,19 +33,61 @@ import {
   saveKnowledgeNote,
   saveSettings,
 } from "./storage/agent";
-import GalleryWorkspace from "./components/GalleryWorkspace";
 import MiniPlayerBar from "./components/MiniPlayerBar";
-import MusicWorkspace from "./components/MusicWorkspace";
-import ReminderWorkspace from "./components/ReminderWorkspace";
-import SettingsWorkspace from "./components/SettingsWorkspace";
-import SkillWorkspace from "./components/SkillWorkspace";
-import WeatherWorkspace, {
+import {
   WEATHER_LOCATIONS,
   createInitialWeatherCities,
   fetchWeatherSnapshots,
-} from "./components/WeatherWorkspace";
+} from "./components/weatherData";
 import { LANG_PERSIST_ERROR_EVENT, useI18n } from "./i18n";
 import { assessProviderBaseUrl } from "./security/provider";
+import {
+  appendNoteSection,
+  buildDefaultFollowUpTitle,
+  buildFollowUpReminderDetail,
+  buildFollowUpReminderDueAt,
+  buildRecurringPatternSkillInstructions,
+  buildRecurringPatternSkillName,
+  buildReminderCompletionDetail,
+  buildReminderCompletionNoteEntry,
+  buildSessionCaptureDraft,
+  createReminderCompletionDraft,
+  findNoteIdByTitle,
+  formatTime,
+  mergeUniqueTags,
+  normalizeReminderPatternKey,
+  resolvePatternStatusTone,
+  resolveReminderUrgency,
+  resolveRuleActionTone,
+  resolveRuleEffectivenessTone,
+  toDateTimeLocalValue,
+} from "./utils/todayWorkflow";
+import {
+  buildRecurringPatternInsights,
+  buildRuleActionRecommendations,
+  buildRuleEffectivenessInsights,
+  buildRuleEffectivenessSignals,
+  buildRuntimeRecommendedSkills,
+  buildTodayReviewSignals,
+  selectCompletedTodayItems,
+  selectContinueSessionItems,
+  selectDueReminderCount,
+  selectOpenReminderCount,
+  selectRecentCaptureItems,
+  selectRecurringReminderPatterns,
+  selectTodayReminderItems,
+} from "./utils/todayInsights";
+
+const GalleryWorkspace = lazy(() => import("./components/GalleryWorkspace"));
+const KnowledgeVault = lazy(() => import("./components/KnowledgeVault"));
+const MusicWorkspace = lazy(() => import("./components/MusicWorkspace"));
+const ReminderWorkspace = lazy(() => import("./components/ReminderWorkspace"));
+const ReminderCompletionDialog = lazy(() => import("./components/ReminderCompletionDialog"));
+const RuntimeWorkspace = lazy(() => import("./components/RuntimeWorkspace"));
+const SettingsWorkspace = lazy(() => import("./components/SettingsWorkspace"));
+const SkillWorkspace = lazy(() => import("./components/SkillWorkspace"));
+const TodayWorkspace = lazy(() => import("./components/TodayWorkspace"));
+const WeatherWorkspace = lazy(() => import("./components/WeatherWorkspace"));
 
 const BUILT_IN_TRACKS = [
   {
@@ -91,6 +135,16 @@ const EMPTY_SKILL_DRAFT = {
   instructions: "",
   triggerHint: "",
   enabled: true,
+};
+const EMPTY_REMINDER_COMPLETION_DRAFT = {
+  reminderId: 0,
+  reminderTitle: "",
+  linkedNoteId: "",
+  result: "",
+  saveToNote: true,
+  createFollowUp: false,
+  followUpTitle: "",
+  followUpDueAt: "",
 };
 const EMPTY_LIST = [];
 const LOCAL_CACHE_WRITE_MAX_RETRIES = 5;
@@ -434,7 +488,7 @@ function mergeWorkspaceSnapshot(previousSnapshot, nextSnapshot) {
 function App() {
   const { lang, setLang, t } = useI18n();
   const [workspace, setWorkspace] = useState(null);
-  const [currentView, setCurrentView] = useState("agent");
+  const [currentView, setCurrentView] = useState("today");
   const [theme, setTheme] = useState(() => {
     const savedTheme = readStoredTheme();
     if (savedTheme === "light" || savedTheme === "dark") {
@@ -473,6 +527,10 @@ function App() {
   const [isSessionLibraryCollapsed, setIsSessionLibraryCollapsed] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isReminderCompletionOpen, setIsReminderCompletionOpen] = useState(false);
+  const [reminderCompletionDraft, setReminderCompletionDraft] = useState({
+    ...EMPTY_REMINDER_COMPLETION_DRAFT,
+  });
   const [activeInspectorTab, setActiveInspectorTab] = useState("runtime");
   const [collapsedSessionGroups, setCollapsedSessionGroups] = useState({});
   const [collapsedSessionPreviews, setCollapsedSessionPreviews] = useState({});
@@ -532,8 +590,10 @@ function App() {
   const loadingRef = useRef(true);
   const mobileDrawerPanelRef = useRef(null);
   const inspectorDrawerPanelRef = useRef(null);
+  const reminderCompletionPanelRef = useRef(null);
   const lastMobileNavTriggerRef = useRef(null);
   const lastInspectorTriggerRef = useRef(null);
+  const lastReminderCompletionTriggerRef = useRef(null);
   const weatherRequestIdRef = useRef(0);
   const weatherAbortControllerRef = useRef(null);
   const lyricsRequestVersionRef = useRef({});
@@ -952,16 +1012,22 @@ function App() {
 
   useEffect(
     () => {
-      if (!isInspectorOpen && !isMobileNavOpen) {
+      if (!isInspectorOpen && !isMobileNavOpen && !isReminderCompletionOpen) {
         return undefined;
       }
 
-      const activePanel = isInspectorOpen
-        ? inspectorDrawerPanelRef.current
-        : mobileDrawerPanelRef.current;
+      const activePanel = isReminderCompletionOpen
+        ? reminderCompletionPanelRef.current
+        : isInspectorOpen
+          ? inspectorDrawerPanelRef.current
+          : mobileDrawerPanelRef.current;
 
       const handleKeyDown = (event) => {
         if (event.key === "Escape") {
+          if (isReminderCompletionOpen) {
+            setIsReminderCompletionOpen(false);
+            return;
+          }
           setIsInspectorOpen(false);
           setIsMobileNavOpen(false);
           return;
@@ -997,7 +1063,7 @@ function App() {
         }
       };
     },
-    [isInspectorOpen, isMobileNavOpen]
+    [isInspectorOpen, isMobileNavOpen, isReminderCompletionOpen]
   );
 
   useEffect(() => {
@@ -1011,6 +1077,18 @@ function App() {
     }
     lastMobileNavTriggerRef.current = null;
   }, [isMobileNavOpen]);
+
+  useEffect(() => {
+    if (isReminderCompletionOpen) {
+      return;
+    }
+
+    const trigger = lastReminderCompletionTriggerRef.current;
+    if (trigger?.isConnected) {
+      trigger.focus();
+    }
+    lastReminderCompletionTriggerRef.current = null;
+  }, [isReminderCompletionOpen]);
 
   useEffect(() => {
     if (isInspectorOpen) {
@@ -1666,17 +1744,85 @@ function App() {
     weatherCities.find((city) => city.id === selectedWeatherCityId) || weatherCities[0] || WEATHER_LOCATIONS[0];
   const mountedSkillCount = activeSession?.session?.mountedSkillCount || activeSessionSkills.length;
 
-  const openReminderCount = useMemo(
-    () => reminders.filter((item) => item.status !== "done").length,
-    [reminders]
-  );
+  const openReminderCount = useMemo(() => selectOpenReminderCount(reminders), [reminders]);
 
   const dueReminderCount = useMemo(
-    () =>
-      reminders.filter(
-        (item) => item.status !== "done" && item.dueAt && item.dueAt <= clockNow
-      ).length,
+    () => selectDueReminderCount(reminders, clockNow),
     [clockNow, reminders]
+  );
+  const todayReminderItems = useMemo(
+    () => selectTodayReminderItems(reminders, clockNow),
+    [clockNow, reminders]
+  );
+  const completedTodayItems = useMemo(
+    () => selectCompletedTodayItems(reminders, clockNow),
+    [clockNow, reminders]
+  );
+  const recurringReminderPatterns = useMemo(
+    () => selectRecurringReminderPatterns(reminders, clockNow),
+    [clockNow, reminders]
+  );
+  const recurringPatternInsights = useMemo(
+    () =>
+      buildRecurringPatternInsights({
+        activeSessionSkillIds,
+        clockNow,
+        recurringReminderPatterns,
+        reminders,
+        skillList,
+      }),
+    [activeSessionSkillIds, clockNow, recurringReminderPatterns, reminders, skillList]
+  );
+  const todayReviewSignals = useMemo(
+    () =>
+      buildTodayReviewSignals({
+        clockNow,
+        noteList,
+        recurringPatternInsights,
+        reminders,
+        t,
+      }),
+    [clockNow, noteList, recurringPatternInsights, reminders, t]
+  );
+  const ruleEffectivenessInsights = useMemo(
+    () =>
+      buildRuleEffectivenessInsights({
+        clockNow,
+        recurringPatternInsights,
+        reminders,
+      }),
+    [clockNow, recurringPatternInsights, reminders]
+  );
+  const ruleEffectivenessSignals = useMemo(
+    () => buildRuleEffectivenessSignals({ ruleEffectivenessInsights, t }),
+    [ruleEffectivenessInsights, t]
+  );
+  const ruleActionRecommendations = useMemo(
+    () => buildRuleActionRecommendations({ ruleEffectivenessInsights, t }),
+    [ruleEffectivenessInsights, t]
+  );
+  const runtimeCaptureDraft = useMemo(
+    () => buildSessionCaptureDraft({ activeSession, t }),
+    [activeSession, t]
+  );
+  const runtimeRecommendedSkills = useMemo(
+    () =>
+      buildRuntimeRecommendedSkills({
+        activeSessionRecommendedSkills,
+        activeSessionSkillIds,
+        recurringPatternInsights,
+        skillList,
+        t,
+      }),
+    [activeSessionRecommendedSkills, activeSessionSkillIds, recurringPatternInsights, skillList, t]
+  );
+  const continueSessionItems = useMemo(
+    () => selectContinueSessionItems(sessionList, activeSessionId),
+    [activeSessionId, sessionList]
+  );
+  const recentCaptureItems = useMemo(
+    () => selectRecentCaptureItems(noteList, reminders),
+    [noteList, reminders]
   );
   const mediaCacheCount = useMemo(
     () => galleryItems.length + getStoredArrayLength(LEGACY_ALBUM_STORAGE_KEY),
@@ -1728,6 +1874,12 @@ function App() {
         id: "workspace",
         label: t("app.nav.group.workspace"),
         items: [
+          {
+            id: "today",
+            label: t("app.mode.today"),
+            meta: t("app.view.today.eyebrow"),
+            badge: `${openReminderCount}`,
+          },
           {
             id: "agent",
             label: t("app.mode.agent"),
@@ -1809,7 +1961,7 @@ function App() {
   );
   const mobileDockItems = useMemo(
     () =>
-      ["agent", "knowledge", "music", "weather"]
+      ["today", "agent", "knowledge", "weather"]
         .map((id) => allNavigationItems.find((item) => item.id === id))
         .filter(Boolean),
     [allNavigationItems]
@@ -2338,6 +2490,42 @@ function App() {
     }
   }, [activeSessionId, commitWorkspaceSnapshot]);
 
+  const rollbackCreatedNote = useCallback(async (noteId, error) => {
+    const baseMessage = normalizeError(error);
+    if (!noteId || !activeSessionId) {
+      return baseMessage;
+    }
+
+    try {
+      const rollbackSnapshot = await deleteKnowledgeNote({
+        noteId,
+        activeSessionId,
+      });
+      commitWorkspaceSnapshot(rollbackSnapshot);
+      return baseMessage;
+    } catch (rollbackError) {
+      return `${baseMessage} Rollback failed: ${normalizeError(rollbackError)}`;
+    }
+  }, [activeSessionId, commitWorkspaceSnapshot]);
+
+  const rollbackCreatedReminder = useCallback(async (reminderId, error) => {
+    const baseMessage = normalizeError(error);
+    if (!reminderId || !activeSessionId) {
+      return baseMessage;
+    }
+
+    try {
+      const rollbackSnapshot = await deleteReminder({
+        reminderId,
+        activeSessionId,
+      });
+      commitWorkspaceSnapshot(rollbackSnapshot);
+      return baseMessage;
+    } catch (rollbackError) {
+      return `${baseMessage} Rollback failed: ${normalizeError(rollbackError)}`;
+    }
+  }, [activeSessionId, commitWorkspaceSnapshot]);
+
   async function handleInstallSkillTemplate(template) {
     if (!template || !activeSessionId) {
       return;
@@ -2645,12 +2833,15 @@ function App() {
       return;
     }
 
-    const nextSkillIds = activeSessionSkillIds.includes(skillId)
+    const isMounted = activeSessionSkillIds.includes(skillId);
+    const nextSkillIds = isMounted
       ? activeSessionSkillIds.filter((id) => id !== skillId)
       : [...activeSessionSkillIds, skillId];
+    const toggledSkill = skillList.find((item) => item.id === skillId);
 
     setBusy("save-session-skills");
     setError("");
+    setNotice("");
     try {
       const snapshot = await saveSessionSkills({
         sessionId: activeSessionId,
@@ -2658,6 +2849,11 @@ function App() {
         activeSessionId,
       });
       commitWorkspaceSnapshot(snapshot);
+      setNotice(
+        t(isMounted ? "app.today.review.rule.notice.unmounted" : "app.today.review.rule.notice.mounted", {
+          title: toggledSkill?.name || t("app.skills.defaultTitle"),
+        })
+      );
     } catch (err) {
       setError(normalizeError(err));
     } finally {
@@ -2757,6 +2953,260 @@ function App() {
     }
   }
 
+  function closeReminderCompletionDialog() {
+    setIsReminderCompletionOpen(false);
+    setReminderCompletionDraft({ ...EMPTY_REMINDER_COMPLETION_DRAFT });
+  }
+
+  async function loadReminderDetailForAction(reminder) {
+    if (!reminder?.id) {
+      return null;
+    }
+    if (selectedReminder?.id === reminder.id && typeof selectedReminder.detail === "string") {
+      return selectedReminder;
+    }
+
+    const snapshot = await openReminder({
+      reminderId: reminder.id,
+      activeSessionId,
+    });
+    commitWorkspaceSnapshot(snapshot);
+    return snapshot?.activeReminder || null;
+  }
+
+  async function openReminderNoteForCompletion(reminder, createIfMissing = false) {
+    const fallbackTitle = reminder?.title?.trim() || t("app.knowledge.defaultTitle");
+    const noteId = reminder?.linkedNoteId || findNoteIdByTitle(noteList, fallbackTitle);
+
+    if (noteId) {
+      const snapshot = await openKnowledgeNote({
+        noteId,
+        activeSessionId,
+      });
+      commitWorkspaceSnapshot(snapshot);
+      return snapshot?.activeNote || null;
+    }
+
+    if (!createIfMissing) {
+      return null;
+    }
+
+    const createdSnapshot = await createKnowledgeNote({
+      title: fallbackTitle,
+      activeSessionId,
+    });
+    commitWorkspaceSnapshot(createdSnapshot);
+    return createdSnapshot?.activeNote || null;
+  }
+
+  async function handleToggleTodayReminderStatus(reminder) {
+    if (!reminder?.id || busy !== "" || loading) {
+      return false;
+    }
+    if (hasUnsavedWorkspaceDrafts && !confirmDiscardWorkspaceDrafts()) {
+      return false;
+    }
+
+    if (reminder.status === "done") {
+      setBusy("toggle-reminder-status");
+      setError("");
+      setNotice("");
+      try {
+        const detailedReminder = await loadReminderDetailForAction(reminder);
+        if (!detailedReminder) {
+          throw new Error(t("app.today.review.errorMissingReminder"));
+        }
+
+        const snapshot = await saveReminder({
+          activeSessionId,
+          reminder: {
+            id: detailedReminder.id,
+            title: detailedReminder.title,
+            detail: detailedReminder.detail,
+            dueAt: normalizeReminderDueAt(detailedReminder.dueAt),
+            severity: detailedReminder.severity,
+            status: "scheduled",
+            linkedNoteId: detailedReminder.linkedNoteId ? Number(detailedReminder.linkedNoteId) : null,
+          },
+        });
+        commitWorkspaceSnapshot(snapshot);
+        setSelectedReminderId(snapshot.activeReminderId || detailedReminder.id);
+        setNotice(
+          t("app.today.notice.reopened", {
+            title: detailedReminder.title || t("app.reminders.defaultTitle"),
+          })
+        );
+        return true;
+      } catch (err) {
+        setError(normalizeError(err));
+        return false;
+      } finally {
+        setBusy("");
+      }
+    }
+
+    if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+      lastReminderCompletionTriggerRef.current = document.activeElement;
+    }
+    setIsInspectorOpen(false);
+    setIsMobileNavOpen(false);
+    setError("");
+    setNotice("");
+    setReminderCompletionDraft(
+      createReminderCompletionDraft(
+        {
+          ...reminder,
+          linkedNoteId: reminder.linkedNoteId || findNoteIdByTitle(noteList, reminder.title),
+        },
+        clockNow
+      )
+    );
+    setIsReminderCompletionOpen(true);
+    return true;
+  }
+
+  async function handleSubmitReminderCompletion() {
+    if (!reminderCompletionDraft.reminderId || busy !== "" || loading) {
+      return;
+    }
+
+    setBusy("complete-reminder");
+    setError("");
+    setNotice("");
+
+    try {
+      const detailedReminder = await loadReminderDetailForAction({
+        id: reminderCompletionDraft.reminderId,
+      });
+      if (!detailedReminder) {
+        throw new Error(t("app.today.review.errorMissingReminder"));
+      }
+
+      const completionResult = reminderCompletionDraft.result.trim();
+      let linkedNote = null;
+
+      if (reminderCompletionDraft.saveToNote) {
+        linkedNote = await openReminderNoteForCompletion(detailedReminder, true);
+        if (!linkedNote) {
+          throw new Error(t("app.today.review.errorMissingNote"));
+        }
+
+        const savedNoteSnapshot = await saveKnowledgeNote({
+          activeSessionId,
+          note: {
+            id: linkedNote.id,
+            icon: linkedNote.icon || "*",
+            title:
+              linkedNote.title?.trim() || detailedReminder.title || t("app.knowledge.defaultTitle"),
+            body: appendNoteSection(
+              linkedNote.body,
+              buildReminderCompletionNoteEntry({
+                completedAt: clockNow,
+                followUpDueAt: reminderCompletionDraft.createFollowUp
+                  ? normalizeReminderDueAt(reminderCompletionDraft.followUpDueAt) ||
+                    buildFollowUpReminderDueAt(clockNow)
+                  : null,
+                followUpTitle: reminderCompletionDraft.createFollowUp
+                  ? reminderCompletionDraft.followUpTitle.trim() ||
+                    buildDefaultFollowUpTitle(detailedReminder.title, t)
+                  : "",
+                lang,
+                reminderTitle: detailedReminder.title,
+                result: completionResult,
+                t,
+              })
+            ),
+            tags: mergeUniqueTags(
+              linkedNote.tags,
+              ["reminder", "completion"],
+              reminderCompletionDraft.createFollowUp ? ["follow-up"] : EMPTY_LIST
+            ),
+          },
+        });
+        commitWorkspaceSnapshot(savedNoteSnapshot);
+        linkedNote = savedNoteSnapshot?.activeNote || linkedNote;
+      } else if (reminderCompletionDraft.createFollowUp) {
+        linkedNote = await openReminderNoteForCompletion(detailedReminder, false);
+      }
+
+      if (reminderCompletionDraft.createFollowUp) {
+        const followUpTitle =
+          reminderCompletionDraft.followUpTitle.trim() ||
+          buildDefaultFollowUpTitle(detailedReminder.title, t);
+        const followUpDueAt =
+          normalizeReminderDueAt(reminderCompletionDraft.followUpDueAt) ||
+          buildFollowUpReminderDueAt(clockNow);
+
+        const createdSnapshot = await createReminder({
+          title: followUpTitle,
+          activeSessionId,
+        });
+        commitWorkspaceSnapshot(createdSnapshot);
+        const createdReminderId =
+          createdSnapshot?.activeReminder?.id || createdSnapshot?.activeReminderId || 0;
+
+        if (!createdReminderId) {
+          throw new Error(t("app.agent.quick.createReminderFailed"));
+        }
+
+        const savedFollowUpSnapshot = await saveReminder({
+          activeSessionId,
+          reminder: {
+            id: createdReminderId,
+            title: followUpTitle,
+            detail: buildFollowUpReminderDetail({
+              reminderTitle: detailedReminder.title,
+              result: completionResult,
+              summary: detailedReminder.preview || "",
+              t,
+            }),
+            dueAt: followUpDueAt,
+            severity: detailedReminder.severity,
+            status: "scheduled",
+            linkedNoteId: linkedNote?.id || detailedReminder.linkedNoteId || null,
+          },
+        });
+        commitWorkspaceSnapshot(savedFollowUpSnapshot);
+      }
+
+      const completedSnapshot = await saveReminder({
+        activeSessionId,
+        reminder: {
+          id: detailedReminder.id,
+          title: detailedReminder.title,
+          detail: buildReminderCompletionDetail({
+            completedAt: clockNow,
+            currentDetail: detailedReminder.detail,
+            lang,
+            result: completionResult,
+            t,
+          }),
+          dueAt: normalizeReminderDueAt(detailedReminder.dueAt),
+          severity: detailedReminder.severity,
+          status: "done",
+          linkedNoteId: linkedNote?.id || detailedReminder.linkedNoteId || null,
+        },
+      });
+      commitWorkspaceSnapshot(completedSnapshot);
+      setSelectedReminderId(completedSnapshot.activeReminderId || detailedReminder.id);
+      closeReminderCompletionDialog();
+      setNotice(
+        t(
+          reminderCompletionDraft.createFollowUp
+            ? "app.today.notice.doneWithFollowUp"
+            : "app.today.notice.done",
+          {
+            title: detailedReminder.title || t("app.reminders.defaultTitle"),
+          }
+        )
+      );
+    } catch (err) {
+      setError(normalizeError(err));
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function handleDeleteReminder() {
     if (!selectedReminderId) {
       return;
@@ -2788,6 +3238,116 @@ function App() {
     }
   }
 
+  const handleCaptureSessionNote = useCallback(async () => {
+    if (!activeSessionId) {
+      return;
+    }
+    const captureDraft = buildSessionCaptureDraft({ activeSession, t });
+    if (!captureDraft) {
+      return;
+    }
+    if (!confirmDiscardWorkspaceDrafts()) {
+      return;
+    }
+
+    setBusy("capture-note");
+    setError("");
+    setNotice("");
+    let createdNoteId = 0;
+    try {
+      const createdSnapshot = await createKnowledgeNote({
+        title: captureDraft.noteTitle,
+        activeSessionId,
+      });
+      createdNoteId = createdSnapshot?.activeNote?.id || createdSnapshot?.activeNoteId || 0;
+      if (!createdNoteId) {
+        throw new Error(t("app.agent.quick.createNoteFailed"));
+      }
+
+      const savedSnapshot = await saveKnowledgeNote({
+        activeSessionId,
+        note: {
+          id: createdNoteId,
+          icon: "*",
+          title: captureDraft.noteTitle,
+          body: captureDraft.noteBody,
+          tags: captureDraft.tags,
+        },
+      });
+      commitWorkspaceSnapshot(savedSnapshot);
+      setNotice(t("app.agent.quick.noteSaved", { title: captureDraft.noteTitle }));
+    } catch (err) {
+      setError(await rollbackCreatedNote(createdNoteId, err));
+    } finally {
+      setBusy("");
+    }
+  }, [
+    activeSession,
+    activeSessionId,
+    commitWorkspaceSnapshot,
+    confirmDiscardWorkspaceDrafts,
+    rollbackCreatedNote,
+    t,
+  ]);
+
+  const handleCaptureSessionReminder = useCallback(async () => {
+    if (!activeSessionId) {
+      return;
+    }
+    const captureDraft = buildSessionCaptureDraft({ activeSession, t });
+    if (!captureDraft) {
+      return;
+    }
+    if (!confirmDiscardWorkspaceDrafts()) {
+      return;
+    }
+
+    setBusy("capture-reminder");
+    setError("");
+    setNotice("");
+    let createdReminderId = 0;
+    const linkedNoteId = findNoteIdByTitle(noteList, captureDraft.noteTitle);
+    try {
+      const createdSnapshot = await createReminder({
+        title: captureDraft.reminderTitle,
+        activeSessionId,
+      });
+      createdReminderId =
+        createdSnapshot?.activeReminder?.id || createdSnapshot?.activeReminderId || 0;
+      if (!createdReminderId) {
+        throw new Error(t("app.agent.quick.createReminderFailed"));
+      }
+
+      const savedSnapshot = await saveReminder({
+        activeSessionId,
+        reminder: {
+          id: createdReminderId,
+          title: captureDraft.reminderTitle,
+          detail: captureDraft.reminderDetail,
+          dueAt: captureDraft.reminderDueAt,
+          severity: "medium",
+          status: "scheduled",
+          linkedNoteId,
+        },
+      });
+      commitWorkspaceSnapshot(savedSnapshot);
+      setSelectedReminderId(savedSnapshot.activeReminderId || createdReminderId);
+      setNotice(t("app.agent.quick.reminderSaved", { title: captureDraft.reminderTitle }));
+    } catch (err) {
+      setError(await rollbackCreatedReminder(createdReminderId, err));
+    } finally {
+      setBusy("");
+    }
+  }, [
+    activeSession,
+    activeSessionId,
+    commitWorkspaceSnapshot,
+    confirmDiscardWorkspaceDrafts,
+    noteList,
+    rollbackCreatedReminder,
+    t,
+  ]);
+
   async function handleOpenReminderNote(noteId) {
     if (!noteId) {
       return;
@@ -2795,6 +3355,94 @@ function App() {
     const opened = await handleOpenNote(noteId);
     if (opened) {
       openView("knowledge");
+    }
+  }
+
+  async function handleOpenReminderPattern(patternTitle) {
+    const normalizedPattern = normalizeReminderPatternKey(patternTitle);
+    if (!normalizedPattern || busy !== "" || loading) {
+      return false;
+    }
+    if (!confirmDiscardWorkspaceDrafts()) {
+      return false;
+    }
+
+    const matchedReminder = [...reminders]
+      .filter((item) => normalizeReminderPatternKey(item.title) === normalizedPattern)
+      .sort((left, right) => right.updatedAt - left.updatedAt)[0];
+
+    setReminderSearch(patternTitle);
+    openView("reminders");
+
+    if (!matchedReminder) {
+      return true;
+    }
+
+    if (matchedReminder.id === selectedReminderId) {
+      return true;
+    }
+
+    return handleSelectReminder(matchedReminder.id, { force: true });
+  }
+
+  async function handlePromoteReminderPattern(pattern) {
+    if (!pattern?.title || !activeSessionId || busy !== "" || loading) {
+      return false;
+    }
+    if (!confirmDiscardWorkspaceDrafts()) {
+      return false;
+    }
+
+    setBusy("promote-pattern-skill");
+    setError("");
+    setNotice("");
+    let createdSkillId = 0;
+
+    try {
+      const skillName = buildRecurringPatternSkillName(pattern.title, t);
+      const createdSnapshot = await createSkill({
+        name: skillName,
+        activeSessionId,
+      });
+      createdSkillId = createdSnapshot?.activeSkill?.id || createdSnapshot?.activeSkillId || 0;
+      if (!createdSkillId) {
+        throw new Error(t("app.skills.forge.createFailed"));
+      }
+      commitWorkspaceSnapshot(createdSnapshot);
+
+      const savedSnapshot = await saveSkill({
+        activeSessionId,
+        skill: {
+          id: createdSkillId,
+          name: skillName,
+          description: t("app.today.review.skill.description", {
+            count: pattern.count,
+            title: pattern.title,
+          }),
+          triggerHint: t("app.today.review.skill.trigger", {
+            title: pattern.title,
+          }),
+          instructions: buildRecurringPatternSkillInstructions({
+            count: pattern.count,
+            patternTitle: pattern.title,
+            t,
+          }),
+          enabled: true,
+        },
+      });
+      commitWorkspaceSnapshot(savedSnapshot);
+      openView("skills");
+      setNotice(
+        t("app.today.review.skill.notice", {
+          title: pattern.title,
+        })
+      );
+      return true;
+    } catch (err) {
+      setError(await rollbackCreatedSkill(createdSkillId, err));
+      return false;
+    } finally {
+      setBusy("");
     }
   }
 
@@ -3053,6 +3701,16 @@ function App() {
   }
 
   const viewMeta = {
+    today: {
+      eyebrow: t("app.view.today.eyebrow"),
+      title: t("app.view.today.title"),
+      description: t("app.view.today.description"),
+      badges: [
+        { label: t("app.view.today.badge.focus"), value: `${todayReminderItems.length}` },
+        { label: t("app.view.today.badge.due"), value: `${dueReminderCount}` },
+        { label: t("app.view.today.badge.flow"), value: `${sessionList.length}` },
+      ],
+    },
     agent: {
       eyebrow: t("app.view.agent.eyebrow"),
       title: activeSession?.session?.title || t("app.common.loading"),
@@ -3202,7 +3860,7 @@ function App() {
   ];
   const activeInspectorMeta =
     inspectorTabs.find((tab) => tab.id === activeInspectorTab) || inspectorTabs[0];
-  const isModalOpen = isInspectorOpen || isMobileNavOpen;
+  const isModalOpen = isInspectorOpen || isMobileNavOpen || isReminderCompletionOpen;
   const modalBackgroundProps = isModalOpen ? { "aria-hidden": "true", inert: "" } : {};
 
   function openInspector(tab = "runtime") {
@@ -3514,6 +4172,8 @@ function App() {
     </div>
   );
 
+  const workspaceLoadingFallback = <WorkspaceLoadingState label={t("app.common.loading")} />;
+
   return (
     <div
       className={`agent-app theme-${theme} view-${currentView} ${
@@ -3662,170 +4322,251 @@ function App() {
         {notice ? <div className="notice-banner">{notice}</div> : null}
         {error ? <div className="error-banner">{error}</div> : null}
 
-        {currentView === "agent" ? (
-          <RuntimeWorkspace
-            activeSession={activeSession}
-            activeSessionId={activeSessionId}
-            activeSessionRecommendedSkills={activeSessionRecommendedSkills}
-            activeSessionSkills={activeSessionSkills}
-            busy={busy}
-            draft={draft}
-            handleOpenSession={handleOpenSession}
-            handleOpenSkill={handleOpenSkill}
-            handleRunAgent={handleRunAgent}
-            isInspectorOpen={isInspectorOpen}
-            lang={lang}
-            loading={loading}
-            openInspector={openInspector}
-            openView={openView}
-            providerConfigured={providerConfigured}
-            sessionList={sessionList}
-            setDraft={setDraft}
-          />
+        {currentView === "today" ? (
+          <Suspense fallback={workspaceLoadingFallback}>
+            <TodayWorkspace
+              activeSession={activeSession}
+              activeSessionId={activeSessionId}
+              activeWeatherCity={activeWeatherCity}
+              busy={busy}
+              clockNow={clockNow}
+              completedTodayItems={completedTodayItems}
+              continueSessionItems={continueSessionItems}
+              dueReminderCount={dueReminderCount}
+              formatShortClock={formatShortClock}
+              formatTime={formatTime}
+              handleOpenNote={handleOpenNote}
+              handleOpenLinkedNote={handleOpenReminderNote}
+              handleOpenReminderPattern={handleOpenReminderPattern}
+              handleOpenSession={handleOpenSession}
+              handleOpenSkill={handleOpenSkill}
+              handlePromoteReminderPattern={handlePromoteReminderPattern}
+              handleSelectReminder={handleSelectReminder}
+              handleToggleSkillMounted={handleToggleSkillMounted}
+              handleToggleTodayReminderStatus={handleToggleTodayReminderStatus}
+              lang={lang}
+              loading={loading}
+              noteList={noteList}
+              openReminderCount={openReminderCount}
+              openView={openView}
+              providerConfigured={providerConfigured}
+              recentCaptureItems={recentCaptureItems}
+              recurringPatternInsights={recurringPatternInsights}
+              resolvePatternStatusTone={resolvePatternStatusTone}
+              resolveReminderUrgency={resolveReminderUrgency}
+              resolveRuleActionTone={resolveRuleActionTone}
+              resolveRuleEffectivenessTone={resolveRuleEffectivenessTone}
+              ruleActionRecommendations={ruleActionRecommendations}
+              ruleEffectivenessInsights={ruleEffectivenessInsights}
+              ruleEffectivenessSignals={ruleEffectivenessSignals}
+              todayReminderItems={todayReminderItems}
+              todayReviewSignals={todayReviewSignals}
+              weatherStatus={weatherStatus}
+            />
+          </Suspense>
+        ) : currentView === "agent" ? (
+          <Suspense fallback={workspaceLoadingFallback}>
+            <RuntimeWorkspace
+              activeSession={activeSession}
+              activeSessionId={activeSessionId}
+              activeSessionRecommendedSkills={runtimeRecommendedSkills}
+              activeSessionSkills={activeSessionSkills}
+              busy={busy}
+              captureDraft={runtimeCaptureDraft}
+              draft={draft}
+              formatTime={formatTime}
+              handleCaptureSessionNote={handleCaptureSessionNote}
+              handleCaptureSessionReminder={handleCaptureSessionReminder}
+              handleOpenSession={handleOpenSession}
+              handleOpenSkill={handleOpenSkill}
+              handleRunAgent={handleRunAgent}
+              handleToggleSkillMounted={handleToggleSkillMounted}
+              isInspectorOpen={isInspectorOpen}
+              lang={lang}
+              loading={loading}
+              mountedSkillIds={activeSessionSkillIds}
+              normalizeActivityKind={normalizeActivityKind}
+              openInspector={openInspector}
+              openView={openView}
+              PanelIcon={PanelIcon}
+              providerConfigured={providerConfigured}
+              sessionList={sessionList}
+              setDraft={setDraft}
+            />
+          </Suspense>
         ) : currentView === "knowledge" ? (
-          <KnowledgeVault
-            activeNote={activeNote}
-            activeNoteId={activeNoteId}
-            busy={busy}
-            filteredNotes={filteredNotes}
-            handleCreateNote={handleCreateNote}
-            handleDeleteNote={handleDeleteNote}
-            handleOpenNote={handleOpenNote}
-            handleSaveNote={handleSaveNote}
-            loading={loading}
-            noteDraft={noteDraft}
-            noteSearch={noteSearch}
-            setNoteDraft={setNoteDraft}
-            setNoteSearch={setNoteSearch}
-            hasUnsavedNote={hasUnsavedNote}
-          />
+          <Suspense fallback={workspaceLoadingFallback}>
+            <KnowledgeVault
+              activeNote={activeNote}
+              activeNoteId={activeNoteId}
+              busy={busy}
+              filteredNotes={filteredNotes}
+              formatTime={formatTime}
+              handleCreateNote={handleCreateNote}
+              handleDeleteNote={handleDeleteNote}
+              handleOpenNote={handleOpenNote}
+              handleSaveNote={handleSaveNote}
+              loading={loading}
+              noteDraft={noteDraft}
+              noteSearch={noteSearch}
+              setNoteDraft={setNoteDraft}
+              setNoteSearch={setNoteSearch}
+              hasUnsavedNote={hasUnsavedNote}
+            />
+          </Suspense>
         ) : currentView === "gallery" ? (
-          <GalleryWorkspace
-            galleryFilter={galleryFilter}
-            galleryItems={galleryItems}
-            gallerySearch={gallerySearch}
-            galleryUploadInputRef={galleryUploadInputRef}
-            galleryViewerId={galleryViewerId}
-            handleDeleteGalleryItem={handleDeleteGalleryItem}
-            handleGalleryUpload={handleGalleryUpload}
-            handleToggleFavoriteGalleryItem={handleToggleFavoriteGalleryItem}
-            openGalleryViewer={setGalleryViewerId}
-            setGalleryFilter={setGalleryFilter}
-            setGallerySearch={setGallerySearch}
-            setGalleryViewerId={setGalleryViewerId}
-          />
+          <Suspense fallback={workspaceLoadingFallback}>
+            <GalleryWorkspace
+              galleryFilter={galleryFilter}
+              galleryItems={galleryItems}
+              gallerySearch={gallerySearch}
+              galleryUploadInputRef={galleryUploadInputRef}
+              galleryViewerId={galleryViewerId}
+              handleDeleteGalleryItem={handleDeleteGalleryItem}
+              handleGalleryUpload={handleGalleryUpload}
+              handleToggleFavoriteGalleryItem={handleToggleFavoriteGalleryItem}
+              openGalleryViewer={setGalleryViewerId}
+              setGalleryFilter={setGalleryFilter}
+              setGallerySearch={setGallerySearch}
+              setGalleryViewerId={setGalleryViewerId}
+            />
+          </Suspense>
         ) : currentView === "music" ? (
-          <MusicWorkspace
-            autoPlayOnReply={autoPlayOnReply}
-            currentTime={currentTime}
-            duration={duration}
-            handleCyclePlayMode={handleCyclePlayMode}
-            handlePlayNextTrack={handlePlayNextTrack}
-            handlePlayPreviousTrack={handlePlayPreviousTrack}
-            handleRestartTrack={handleRestartTrack}
-            handleSeek={handleSeek}
-            handleSelectTrack={handleSelectTrack}
-            handleTogglePlayback={handleTogglePlayback}
-            isPlaying={isPlaying}
-            lyricsError={selectedTrackLyricsError}
-            lyricsLines={selectedTrackLyrics}
-            lyricsSource={selectedTrackLyricsSource}
-            lyricsStatus={selectedTrackLyricsStatus}
-            onRefreshLyrics={() => void handleRefreshLyrics({ force: true, initiatedBy: "manual" })}
-            onUploadLyricsFile={handleUploadLyricsFile}
-            localizedTracks={localizedTracks}
-            playMode={playMode}
-            playerAudioElement={playerAudioElement}
-            selectedTrack={selectedTrack}
-            selectedTrackId={selectedTrackId}
-            selectedTrackSource={selectedTrackSource}
-            setAutoPlayOnReply={setAutoPlayOnReply}
-            setVolume={setVolume}
-            lyricsUploadInputRef={lyricsUploadInputRef}
-            uploadInputRef={uploadInputRef}
-            volume={volume}
-          />
+          <Suspense fallback={workspaceLoadingFallback}>
+            <MusicWorkspace
+              autoPlayOnReply={autoPlayOnReply}
+              currentTime={currentTime}
+              duration={duration}
+              handleCyclePlayMode={handleCyclePlayMode}
+              handlePlayNextTrack={handlePlayNextTrack}
+              handlePlayPreviousTrack={handlePlayPreviousTrack}
+              handleRestartTrack={handleRestartTrack}
+              handleSeek={handleSeek}
+              handleSelectTrack={handleSelectTrack}
+              handleTogglePlayback={handleTogglePlayback}
+              isPlaying={isPlaying}
+              lyricsError={selectedTrackLyricsError}
+              lyricsLines={selectedTrackLyrics}
+              lyricsSource={selectedTrackLyricsSource}
+              lyricsStatus={selectedTrackLyricsStatus}
+              onRefreshLyrics={() => void handleRefreshLyrics({ force: true, initiatedBy: "manual" })}
+              onUploadLyricsFile={handleUploadLyricsFile}
+              localizedTracks={localizedTracks}
+              playMode={playMode}
+              playerAudioElement={playerAudioElement}
+              selectedTrack={selectedTrack}
+              selectedTrackId={selectedTrackId}
+              selectedTrackSource={selectedTrackSource}
+              setAutoPlayOnReply={setAutoPlayOnReply}
+              setVolume={setVolume}
+              lyricsUploadInputRef={lyricsUploadInputRef}
+              uploadInputRef={uploadInputRef}
+              volume={volume}
+            />
+          </Suspense>
         ) : currentView === "weather" ? (
-          <WeatherWorkspace
-            auxiliaryCacheVersion={weatherAuxCacheVersion}
-            clockNow={clockNow}
-            onLocalCacheError={(message) => setError(message)}
-            selectedCityId={selectedWeatherCityId}
-            setSelectedCityId={setSelectedWeatherCityId}
-            weatherCities={weatherCities}
-            weatherError={weatherError}
-            weatherStatus={weatherStatus}
-            weatherUpdatedAt={weatherUpdatedAt}
-            onAddCity={handleAddWeatherCity}
-            onRefresh={() => void loadWeatherSnapshotData(weatherLocations)}
-            onRemoveCity={handleRemoveWeatherCity}
-          />
+          <Suspense fallback={workspaceLoadingFallback}>
+            <WeatherWorkspace
+              auxiliaryCacheVersion={weatherAuxCacheVersion}
+              clockNow={clockNow}
+              onLocalCacheError={(message) => setError(message)}
+              selectedCityId={selectedWeatherCityId}
+              setSelectedCityId={setSelectedWeatherCityId}
+              weatherCities={weatherCities}
+              weatherError={weatherError}
+              weatherStatus={weatherStatus}
+              weatherUpdatedAt={weatherUpdatedAt}
+              onAddCity={handleAddWeatherCity}
+              onRefresh={() => void loadWeatherSnapshotData(weatherLocations)}
+              onRemoveCity={handleRemoveWeatherCity}
+            />
+          </Suspense>
         ) : currentView === "skills" ? (
-          <SkillWorkspace
-            activeSkill={activeSkill}
-            activeSkillId={activeSkillId}
-            activeSkillVersions={activeSkillVersions}
-            activeSessionRecommendedSkills={activeSessionRecommendedSkills}
-            activeSessionTitle={activeSession?.session?.title || t("app.skills.currentSession")}
-            busy={busy}
-            providerConfigured={providerConfigured}
-            skillList={skillList}
-            skillImportInputRef={skillImportInputRef}
-            handleCreateSkill={handleCreateSkill}
-            handleDeleteSkill={handleDeleteSkill}
-            handleExportAllSkills={handleExportAllSkills}
-            handleExportSkill={handleExportSkill}
-            handleForgeSkill={handleForgeSkill}
-            handleImportSkills={handleImportSkills}
-            handleLoadSkillVersion={handleLoadSkillVersion}
-            handleOpenSkill={handleOpenSkill}
-            handleRestoreSkillVersion={handleRestoreSkillVersion}
-            handleSaveSkill={handleSaveSkill}
-            handleInstallSkillTemplate={handleInstallSkillTemplate}
-            handleToggleSkillMounted={handleToggleSkillMounted}
-            hasUnsavedSkill={hasUnsavedSkill}
-            loading={loading}
-            mountedSkillIds={activeSessionSkillIds}
-            setSkillDraft={setSkillDraft}
-            setSkillSearch={setSkillSearch}
-            skillActionContextKey={skillActionContextKey}
-            skillDraft={skillDraft}
-            skillSearch={skillSearch}
-          />
+          <Suspense fallback={workspaceLoadingFallback}>
+            <SkillWorkspace
+              activeSkill={activeSkill}
+              activeSkillId={activeSkillId}
+              activeSkillVersions={activeSkillVersions}
+              activeSessionRecommendedSkills={runtimeRecommendedSkills}
+              activeSessionTitle={activeSession?.session?.title || t("app.skills.currentSession")}
+              busy={busy}
+              providerConfigured={providerConfigured}
+              skillList={skillList}
+              skillImportInputRef={skillImportInputRef}
+              handleCreateSkill={handleCreateSkill}
+              handleDeleteSkill={handleDeleteSkill}
+              handleExportAllSkills={handleExportAllSkills}
+              handleExportSkill={handleExportSkill}
+              handleForgeSkill={handleForgeSkill}
+              handleImportSkills={handleImportSkills}
+              handleLoadSkillVersion={handleLoadSkillVersion}
+              handleOpenSkill={handleOpenSkill}
+              handleRestoreSkillVersion={handleRestoreSkillVersion}
+              handleSaveSkill={handleSaveSkill}
+              handleInstallSkillTemplate={handleInstallSkillTemplate}
+              handleToggleSkillMounted={handleToggleSkillMounted}
+              hasUnsavedSkill={hasUnsavedSkill}
+              loading={loading}
+              mountedSkillIds={activeSessionSkillIds}
+              setSkillDraft={setSkillDraft}
+              setSkillSearch={setSkillSearch}
+              skillActionContextKey={skillActionContextKey}
+              skillDraft={skillDraft}
+              skillSearch={skillSearch}
+            />
+          </Suspense>
         ) : currentView === "settings" ? (
-          <SettingsWorkspace
-            busy={busy}
-            cacheCards={cacheCards}
-            handleClearApiKey={handleClearApiKey}
-            handleSaveSettings={handleSaveSettings}
-            hasUnsavedSettings={hasUnsavedSettings}
-            providerConfigured={providerConfigured}
-            providerSecurityMessage={providerSecurityMessage}
-            providerSecurityStatus={providerSecurityAssessment.status}
-            settingsForm={settingsForm}
-            setSettingsForm={setSettingsForm}
-          />
+          <Suspense fallback={workspaceLoadingFallback}>
+            <SettingsWorkspace
+              busy={busy}
+              cacheCards={cacheCards}
+              handleClearApiKey={handleClearApiKey}
+              handleSaveSettings={handleSaveSettings}
+              hasUnsavedSettings={hasUnsavedSettings}
+              providerConfigured={providerConfigured}
+              providerSecurityMessage={providerSecurityMessage}
+              providerSecurityStatus={providerSecurityAssessment.status}
+              settingsForm={settingsForm}
+              setSettingsForm={setSettingsForm}
+            />
+          </Suspense>
         ) : (
-          <ReminderWorkspace
-            busy={busy}
-            clockNow={clockNow}
-            handleCreateReminder={handleCreateReminder}
-            handleDeleteReminder={handleDeleteReminder}
-            handleOpenLinkedNote={handleOpenReminderNote}
-            handleSaveReminder={handleSaveReminder}
-            hasUnsavedReminder={hasUnsavedReminder}
-            loading={loading}
-            noteList={noteList}
-            reminderDraft={reminderDraft}
-            reminderSearch={reminderSearch}
-            reminders={reminders}
-            selectedReminderId={selectedReminderId}
-            setSelectedReminderId={handleSelectReminder}
-            setReminderDraft={setReminderDraft}
-            setReminderSearch={setReminderSearch}
-          />
+          <Suspense fallback={workspaceLoadingFallback}>
+            <ReminderWorkspace
+              busy={busy}
+              clockNow={clockNow}
+              handleCreateReminder={handleCreateReminder}
+              handleDeleteReminder={handleDeleteReminder}
+              handleOpenLinkedNote={handleOpenReminderNote}
+              handleSaveReminder={handleSaveReminder}
+              hasUnsavedReminder={hasUnsavedReminder}
+              loading={loading}
+              noteList={noteList}
+              reminderDraft={reminderDraft}
+              reminderSearch={reminderSearch}
+              reminders={reminders}
+              selectedReminderId={selectedReminderId}
+              setSelectedReminderId={handleSelectReminder}
+              setReminderDraft={setReminderDraft}
+              setReminderSearch={setReminderSearch}
+            />
+          </Suspense>
         )}
       </main>
+
+      {isReminderCompletionOpen ? (
+        <Suspense fallback={null}>
+          <ReminderCompletionDialog
+            busy={busy}
+            draft={reminderCompletionDraft}
+            noteList={noteList}
+            onClose={closeReminderCompletionDialog}
+            onSubmit={handleSubmitReminderCompletion}
+            panelRef={reminderCompletionPanelRef}
+            setDraft={setReminderCompletionDraft}
+          />
+        </Suspense>
+      ) : null}
 
       {isInspectorOpen ? (
         <div className="inspector-drawer is-open">
@@ -4251,6 +4992,8 @@ function getNavGroupIconType(groupId) {
 
 function getNavIconType(viewId) {
   switch (viewId) {
+    case "today":
+      return "today";
     case "agent":
       return "runtime";
     case "knowledge":
@@ -4310,6 +5053,17 @@ function PanelIcon({ type }) {
 
 function getPanelIconPath(type) {
   switch (type) {
+    case "today":
+      return (
+        <>
+          <rect x="4.5" y="5" width="15" height="14" rx="3" />
+          <path d="M8 3.8v2.4" />
+          <path d="M16 3.8v2.4" />
+          <path d="M4.5 9.5h15" />
+          <path d="M8.5 13h3" />
+          <path d="M13.5 13h2" />
+        </>
+      );
     case "runtime":
       return (
         <>
@@ -4474,527 +5228,10 @@ function getPanelIconPath(type) {
   }
 }
 
-function RuntimeWorkspace({
-  activeSession,
-  activeSessionId,
-  activeSessionRecommendedSkills,
-  activeSessionSkills,
-  busy,
-  draft,
-  handleOpenSession,
-  handleOpenSkill,
-  handleRunAgent,
-  isInspectorOpen,
-  lang,
-  loading,
-  openInspector,
-  openView,
-  providerConfigured,
-  sessionList,
-  setDraft,
-}) {
-  const { t } = useI18n();
-  const messages = activeSession?.messages || [];
-  const activityItems = activeSession?.activity || [];
-  const recentActivity = activityItems.slice(-4).reverse();
-  const recentSessions = sessionList.slice(0, 6);
-  const activeStatus = activeSession?.session?.status || "idle";
-  const activeTitle = activeSession?.session?.title || t("app.session.defaultTitle");
-  const updatedAt =
-    activeSession?.session?.updatedAt || messages[messages.length - 1]?.createdAt || 0;
-  const isRunning = busy === "run";
-
+function WorkspaceLoadingState({ label }) {
   return (
-    <section className="runtime-workspace">
-      <div className="runtime-overview-grid">
-        <article className="panel-surface runtime-overview-card runtime-overview-card--primary">
-          <span className="runtime-overview-card__label">{t("app.view.agent.badge.session")}</span>
-          <strong>{activeTitle}</strong>
-          <div className="runtime-overview-card__meta">
-            <span className={`status-chip status-${activeStatus}`}>
-              {t(`app.status.${activeStatus}`)}
-            </span>
-          </div>
-        </article>
-
-        <article className="panel-surface runtime-overview-card">
-          <span className="runtime-overview-card__label">{t("app.agent.conversation.title")}</span>
-          <strong>{t("app.agent.conversation.entries", { count: messages.length })}</strong>
-          <span className="runtime-overview-card__meta-text">
-            {updatedAt ? formatTime(updatedAt, lang) : t("app.common.loading")}
-          </span>
-        </article>
-
-        <article className="panel-surface runtime-overview-card runtime-overview-card--compact">
-          <span className="runtime-overview-card__label">{t("app.view.agent.badge.mounted")}</span>
-          <strong>{t("app.agent.history.skillCount", { count: activeSessionSkills.length })}</strong>
-          <span className="runtime-overview-card__meta-text">{t("app.permission.low")}</span>
-        </article>
-
-        <article className="panel-surface runtime-overview-card runtime-overview-card--compact">
-          <span className="runtime-overview-card__label">{t("app.view.agent.badge.gateway")}</span>
-          <strong>{t(`app.provider.${providerConfigured ? "configured" : "pending"}`)}</strong>
-          <span
-            className={`status-chip ${
-              providerConfigured ? "status-completed" : "status-warning"
-            }`}
-          >
-            {providerConfigured ? t("app.status.ready") : t("app.status.idle")}
-          </span>
-        </article>
-      </div>
-
-      <div className="runtime-layout">
-        <div className="runtime-main-column">
-          <article className="panel-surface runtime-stage-card">
-            <div className="section-head runtime-stage-card__head">
-              <div>
-                <span className="eyebrow">{t("app.agent.conversation.eyebrow")}</span>
-                <h3>{t("app.agent.conversation.title")}</h3>
-              </div>
-              <div className="runtime-stage-card__meta">
-                <span className={`status-chip status-${activeStatus}`}>
-                  {t(`app.status.${activeStatus}`)}
-                </span>
-                <span className="section-note">
-                  {updatedAt ? formatTime(updatedAt, lang) : t("app.common.loading")}
-                </span>
-              </div>
-            </div>
-
-            <div className="runtime-thread">
-              <div className="message-list runtime-message-list runtime-thread__frame">
-                {messages.length > 0 ? (
-                  messages.map((message, index) => {
-                    const messageRole = message.role === "user" ? "user" : "assistant";
-                    const roleLabel = t(
-                      messageRole === "user"
-                        ? "app.agent.message.operator"
-                        : "app.agent.message.agent"
-                    );
-
-                    return (
-                      <article
-                        key={message.id}
-                        className={`message-card role-${messageRole}`}
-                      >
-                        <div className="message-card__meta">
-                          <div className="message-card__identity">
-                            <span className={`message-card__badge role-${messageRole}`}>
-                              {roleLabel}
-                            </span>
-                            <span className="message-card__sequence">
-                              {String(index + 1).padStart(2, "0")}
-                            </span>
-                          </div>
-                          <span className="message-card__time">
-                            {formatTime(message.createdAt, lang)}
-                          </span>
-                        </div>
-                        <div className="message-card__body">
-                          <pre>{message.content}</pre>
-                        </div>
-                      </article>
-                    );
-                  })
-                ) : (
-                  <div className="runtime-empty-state">
-                    <strong>{t("app.session.emptyMessages")}</strong>
-                    <p>{t("app.agent.composer.placeholder")}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </article>
-
-          <form className="composer runtime-composer" onSubmit={handleRunAgent}>
-            <div className="runtime-composer__head">
-              <div>
-                <span className="eyebrow">{t("app.agent.message.operator")}</span>
-                <h4>{t("app.common.send")}</h4>
-              </div>
-              <span
-                className={`status-chip ${
-                  providerConfigured ? "status-completed" : "status-warning"
-                }`}
-              >
-                {t(`app.provider.${providerConfigured ? "configured" : "pending"}`)}
-              </span>
-            </div>
-            <textarea
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder={t("app.agent.composer.placeholder")}
-              rows={6}
-            />
-            <div className="composer__actions runtime-composer__actions">
-              <span>
-                {providerConfigured
-                  ? t("app.agent.composer.providerConfigured")
-                  : t("app.agent.composer.providerPending")}
-              </span>
-              <button
-                type="submit"
-                className="solid-button"
-                disabled={busy !== "" || loading || !draft.trim()}
-              >
-                {isRunning ? t("app.common.sending") : t("app.common.send")}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <aside className="runtime-sidebar">
-          <section className="panel-surface runtime-sidebar-card">
-            <div className="runtime-sidebar-card__head">
-              <div>
-                <span className="eyebrow">{t("app.agent.mount.eyebrow")}</span>
-                <h4>
-                  {activeSessionSkills.length > 0
-                    ? t("app.agent.mount.title")
-                    : t("app.agent.mount.emptyTitle")}
-                </h4>
-              </div>
-              <button
-                type="button"
-                className="ghost-button runtime-sidebar-card__action"
-                onClick={() => openView("skills")}
-              >
-                {t("app.mode.skills")}
-              </button>
-            </div>
-
-            {activeSessionSkills.length > 0 ? (
-              <div className="runtime-chip-list">
-                {activeSessionSkills.map((skill) => (
-                  <button
-                    key={skill.id}
-                    type="button"
-                    className={`chip-button ${skill.enabled ? "is-active" : ""}`}
-                    onClick={async () => {
-                      const opened = await handleOpenSkill(skill.id);
-                      if (opened) {
-                        openView("skills");
-                      }
-                    }}
-                  >
-                    {skill.name}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="section-note runtime-sidebar-copy">
-                {t("app.agent.mount.emptyDescription")}
-              </p>
-            )}
-          </section>
-
-          <section className="panel-surface runtime-sidebar-card">
-            <div className="runtime-sidebar-card__head">
-              <div>
-                <span className="eyebrow">{t("app.agent.recommend.eyebrow")}</span>
-                <h4>
-                  {activeSessionRecommendedSkills.length > 0
-                    ? t("app.agent.recommend.title")
-                    : t("app.agent.recommend.emptyTitle")}
-                </h4>
-              </div>
-              <button
-                type="button"
-                className="ghost-button runtime-sidebar-card__action"
-                onClick={() => openView("skills")}
-              >
-                {t("app.mode.skills")}
-              </button>
-            </div>
-
-            {activeSessionRecommendedSkills.length > 0 ? (
-              <div className="runtime-recommend-list">
-                {activeSessionRecommendedSkills.map((skill) => (
-                  <button
-                    key={skill.id}
-                    type="button"
-                    className="runtime-recommend-card"
-                    onClick={async () => {
-                      const opened = await handleOpenSkill(skill.id);
-                      if (opened) {
-                        openView("skills");
-                      }
-                    }}
-                  >
-                    <strong>{skill.name}</strong>
-                    <span>{skill.recommendationReason || skill.triggerHint}</span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="section-note runtime-sidebar-copy">
-                {t("app.agent.recommend.emptyDescription")}
-              </p>
-            )}
-          </section>
-
-          <section className="panel-surface runtime-sidebar-card">
-            <div className="runtime-sidebar-card__head">
-              <div>
-                <span className="eyebrow">{t("app.activity.eyebrow")}</span>
-                <h4>{t("app.activity.title")}</h4>
-              </div>
-              <button
-                type="button"
-                className={`ghost-button runtime-sidebar-card__action ${
-                  isInspectorOpen ? "is-active" : ""
-                }`}
-                onClick={() => openInspector("activity")}
-              >
-                {t("app.inspector.group.activity.title")}
-              </button>
-            </div>
-
-            {recentActivity.length > 0 ? (
-              <div className="runtime-activity-list">
-                {recentActivity.map((item) => {
-                  const normalizedKind = normalizeActivityKind(item.kind);
-
-                  return (
-                    <article key={item.id} className="runtime-activity-item">
-                      <div className="runtime-activity-item__head">
-                        <div className="runtime-activity-item__title">
-                          <span
-                            className={`runtime-activity-item__icon runtime-activity-item__icon--${normalizedKind}`}
-                          >
-                            <PanelIcon type={normalizedKind} />
-                          </span>
-                          <div>
-                            <strong>{item.title}</strong>
-                            <span>{t(`app.activity.kind.${normalizedKind}`)}</span>
-                          </div>
-                        </div>
-                        <span className={`status-chip status-${item.status}`}>
-                          {t(`app.status.${item.status}`)}
-                        </span>
-                      </div>
-                      <p>{item.detail}</p>
-                      <span className="section-note">{formatTime(item.createdAt, lang)}</span>
-                    </article>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="section-note runtime-sidebar-copy">{t("app.status.idle")}</p>
-            )}
-          </section>
-
-          <section className="panel-surface runtime-sidebar-card">
-            <div className="runtime-sidebar-card__head">
-              <div>
-                <span className="eyebrow">{t("app.agent.history.eyebrow")}</span>
-                <h4>{t("app.agent.history.title")}</h4>
-              </div>
-              <span className="section-note">
-                {t("app.agent.history.total", { count: sessionList.length })}
-              </span>
-            </div>
-
-            <div className="runtime-session-list">
-              {recentSessions.map((session) => (
-                <button
-                  key={session.id}
-                  type="button"
-                  className={`runtime-session-card ${
-                    session.id === activeSessionId ? "is-active" : ""
-                  }`}
-                  onClick={() => handleOpenSession(session.id)}
-                >
-                  <div className="runtime-session-card__head">
-                    <strong>{session.title}</strong>
-                    <span className={`status-chip status-${session.status}`}>
-                      {t(`app.status.${session.status}`)}
-                    </span>
-                  </div>
-                  <p>{session.lastMessagePreview || t("app.session.emptyMessages")}</p>
-                  <span className="section-note">{formatTime(session.updatedAt, lang)}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-        </aside>
-      </div>
-    </section>
-  );
-}
-
-function KnowledgeVault({
-  activeNote,
-  activeNoteId,
-  busy,
-  filteredNotes,
-  handleCreateNote,
-  handleDeleteNote,
-  handleOpenNote,
-  handleSaveNote,
-  loading,
-  noteDraft,
-  noteSearch,
-  setNoteDraft,
-  setNoteSearch,
-  hasUnsavedNote,
-}) {
-  const { lang, t } = useI18n();
-  const activeNoteUpdatedAt = activeNote?.updatedAt || 0;
-
-  return (
-    <section className="knowledge-panel panel-surface">
-      <div className="knowledge-sidebar">
-        <div className="knowledge-sidebar__intro">
-          <div className="section-head knowledge-head">
-            <div>
-              <span className="eyebrow">{t("app.knowledge.eyebrow")}</span>
-              <h3>{t("app.knowledge.title")}</h3>
-            </div>
-            <button
-              type="button"
-              className="solid-button"
-              onClick={handleCreateNote}
-              disabled={busy !== "" || loading}
-            >
-              {t("app.knowledge.newPage")}
-            </button>
-          </div>
-          <div className="knowledge-sidebar__summary">
-            <article className="knowledge-summary-card">
-              <span>{t("app.stats.notes")}</span>
-              <strong>{filteredNotes.length}</strong>
-            </article>
-            <article className="knowledge-summary-card knowledge-summary-card--wide">
-              <span>{t("app.knowledge.editor.eyebrow")}</span>
-              <strong>{activeNote?.title || t("app.knowledge.defaultTitle")}</strong>
-              <p>
-                {activeNoteUpdatedAt
-                  ? formatTime(activeNoteUpdatedAt, lang)
-                  : t("app.knowledge.editor.description")}
-              </p>
-            </article>
-          </div>
-        </div>
-
-        <input
-          className="field-input"
-          value={noteSearch}
-          onChange={(event) => setNoteSearch(event.target.value)}
-          placeholder={t("app.knowledge.search")}
-        />
-
-        <div className="knowledge-note-list">
-          {filteredNotes.map((note) => (
-            <button
-              key={note.id}
-              type="button"
-              className={`knowledge-note-card ${note.id === activeNoteId ? "is-active" : ""}`}
-              onClick={() => handleOpenNote(note.id)}
-            >
-              <div className="knowledge-note-card__head">
-                <span className="knowledge-note-icon">{note.icon || "*"}</span>
-                <div className="knowledge-note-card__title-block">
-                  <strong>{note.title}</strong>
-                  <span>{formatTime(note.updatedAt, lang)}</span>
-                </div>
-              </div>
-              <p>{note.summary}</p>
-              <div className="knowledge-note-card__meta">
-                <span>{(note.tags || []).slice(0, 2).join(" | ") || t("app.knowledge.noTags")}</span>
-                <span>{t("app.knowledge.editor.eyebrow")}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="knowledge-editor">
-        <div className="knowledge-editor__toolbar">
-          <div className="knowledge-editor__stamp">
-            <span className="eyebrow">{t("app.knowledge.editor.eyebrow")}</span>
-            <p>{t("app.knowledge.editor.description")}</p>
-          </div>
-          <div className="knowledge-editor__actions">
-            <button
-              type="button"
-              className="ghost-button"
-              onClick={handleDeleteNote}
-              disabled={!activeNote || busy !== "" || loading}
-            >
-              {t("app.common.delete")}
-            </button>
-            <button
-              type="button"
-              className="solid-button"
-              onClick={handleSaveNote}
-              disabled={!hasUnsavedNote || busy !== "" || loading}
-            >
-              {busy === "save-note" ? t("app.common.saving") : t("app.knowledge.savePage")}
-            </button>
-          </div>
-        </div>
-
-        <div className="knowledge-editor__form">
-          <div className="knowledge-editor__hero">
-            <div className="knowledge-editor__hero-icon">{noteDraft.icon || "*"}</div>
-            <div className="knowledge-editor__hero-copy">
-              <span className="eyebrow">{t("app.knowledge.editor.eyebrow")}</span>
-              <strong>{noteDraft.title || t("app.knowledge.defaultTitle")}</strong>
-              <p>{t("app.knowledge.editor.description")}</p>
-            </div>
-          </div>
-          <div className="knowledge-editor__title-row">
-            <input
-              className="knowledge-icon-input"
-              value={noteDraft.icon}
-              maxLength={2}
-              onChange={(event) =>
-                setNoteDraft((prev) => ({
-                  ...prev,
-                  icon: event.target.value,
-                }))
-              }
-            />
-            <input
-              className="knowledge-title-input"
-              value={noteDraft.title}
-              onChange={(event) =>
-                setNoteDraft((prev) => ({
-                  ...prev,
-                  title: event.target.value,
-                }))
-              }
-              placeholder={t("app.knowledge.defaultTitle")}
-            />
-          </div>
-
-          <input
-            className="field-input"
-            value={noteDraft.tagsText}
-            onChange={(event) =>
-              setNoteDraft((prev) => ({
-                ...prev,
-                tagsText: event.target.value,
-              }))
-            }
-            placeholder={t("app.knowledge.tags")}
-          />
-
-          <textarea
-            className="knowledge-body-input"
-            value={noteDraft.body}
-            onChange={(event) =>
-              setNoteDraft((prev) => ({
-                ...prev,
-                body: event.target.value,
-              }))
-            }
-            placeholder={t("app.knowledge.bodyPlaceholder")}
-          />
-        </div>
-      </div>
+    <section className="panel-surface today-section today-section--compact">
+      <p className="section-note runtime-sidebar-copy">{label}</p>
     </section>
   );
 }
@@ -5265,35 +5502,12 @@ function fileToDataUrl(file) {
   });
 }
 
-function toDateTimeLocalValue(value) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-  const offset = date.getTimezoneOffset();
-  const local = new Date(date.getTime() - offset * 60 * 1000);
-  return local.toISOString().slice(0, 16);
-}
-
 function normalizeReminderDueAt(value) {
   if (!value) {
     return null;
   }
   const timestamp = new Date(value).getTime();
   return Number.isFinite(timestamp) ? timestamp : null;
-}
-
-function formatTime(value, lang = "en-US") {
-  if (!value) {
-    return "--";
-  }
-  return new Date(value).toLocaleString(lang, {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
 }
 
 function formatShortClock(value, lang = "en-US") {
@@ -5901,5 +6115,7 @@ function createAbortError(message) {
 }
 
 export default App;
+
+
 
 

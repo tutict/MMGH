@@ -482,7 +482,25 @@ pub fn create_note(
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let note = create_note_detail_in(conn, title)?;
-    let seeded_snapshot = seed_snapshot_for_note_upsert(cached_snapshot, note.clone());
+    let seeded_snapshot = if let Some(session_id) = active_session_id {
+      let activity = append_activity_in(
+        conn,
+        session_id,
+        "system",
+        "Knowledge note created",
+        &format!("Added '{}' to the Knowledge Vault.", preview_text(&note.title, 48)),
+        "completed",
+      )?;
+      let updated_session = load_session_summary_in(conn, session_id)?;
+      seed_snapshot_for_session_activity(
+        seed_snapshot_for_note_upsert(cached_snapshot, note.clone()),
+        session_id,
+        updated_session,
+        &[activity],
+      )
+    } else {
+      seed_snapshot_for_note_upsert(cached_snapshot, note.clone())
+    };
     build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       active_session_id,
@@ -513,7 +531,29 @@ pub fn save_note(
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let note = save_note_detail_in(conn, input)?;
-    let seeded_snapshot = seed_snapshot_for_note_upsert(cached_snapshot, note.clone());
+    let seeded_snapshot = if let Some(session_id) = active_session_id {
+      let activity = append_activity_in(
+        conn,
+        session_id,
+        "system",
+        "Knowledge note saved",
+        &format!(
+          "Saved '{}' with {} tags.",
+          preview_text(&note.title, 48),
+          note.tags.len()
+        ),
+        "completed",
+      )?;
+      let updated_session = load_session_summary_in(conn, session_id)?;
+      seed_snapshot_for_session_activity(
+        seed_snapshot_for_note_upsert(cached_snapshot, note.clone()),
+        session_id,
+        updated_session,
+        &[activity],
+      )
+    } else {
+      seed_snapshot_for_note_upsert(cached_snapshot, note.clone())
+    };
     build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       active_session_id,
@@ -540,8 +580,30 @@ pub fn delete_note(note_id: i64, active_session_id: Option<i64>) -> Result<Works
   with_connection(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
+    let deleted_note = build_note_detail_in(conn, note_id)?;
     delete_note_in(conn, note_id)?;
-    let seeded_snapshot = seed_snapshot_for_note_delete(cached_snapshot, note_id);
+    let seeded_snapshot = if let Some(session_id) = active_session_id {
+      let activity = append_activity_in(
+        conn,
+        session_id,
+        "system",
+        "Knowledge note deleted",
+        &format!(
+          "Removed '{}' from the Knowledge Vault.",
+          preview_text(&deleted_note.title, 48)
+        ),
+        "completed",
+      )?;
+      let updated_session = load_session_summary_in(conn, session_id)?;
+      seed_snapshot_for_session_activity(
+        seed_snapshot_for_note_delete(cached_snapshot, note_id),
+        session_id,
+        updated_session,
+        &[activity],
+      )
+    } else {
+      seed_snapshot_for_note_delete(cached_snapshot, note_id)
+    };
     let can_reuse_note_list = seeded_snapshot
       .as_ref()
       .map(|snapshot| !snapshot.notes.is_empty())
@@ -598,7 +660,25 @@ pub fn create_reminder(
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let reminder = create_reminder_detail_in(conn, title)?;
-    let seeded_snapshot = seed_snapshot_for_reminder_upsert(cached_snapshot, reminder.clone());
+    let seeded_snapshot = if let Some(session_id) = active_session_id {
+      let activity = append_activity_in(
+        conn,
+        session_id,
+        "system",
+        "Reminder created",
+        &format!("Created reminder '{}'.", preview_text(&reminder.title, 48)),
+        "completed",
+      )?;
+      let updated_session = load_session_summary_in(conn, session_id)?;
+      seed_snapshot_for_session_activity(
+        seed_snapshot_for_reminder_upsert(cached_snapshot, reminder.clone()),
+        session_id,
+        updated_session,
+        &[activity],
+      )
+    } else {
+      seed_snapshot_for_reminder_upsert(cached_snapshot, reminder.clone())
+    };
     build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       active_session_id,
@@ -629,7 +709,29 @@ pub fn save_reminder(
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let reminder = save_reminder_detail_in(conn, input)?;
-    let seeded_snapshot = seed_snapshot_for_reminder_upsert(cached_snapshot, reminder.clone());
+    let seeded_snapshot = if let Some(session_id) = active_session_id {
+      let activity = append_activity_in(
+        conn,
+        session_id,
+        "system",
+        "Reminder saved",
+        &format!(
+          "Saved reminder '{}' as {}.",
+          preview_text(&reminder.title, 48),
+          reminder.status
+        ),
+        "completed",
+      )?;
+      let updated_session = load_session_summary_in(conn, session_id)?;
+      seed_snapshot_for_session_activity(
+        seed_snapshot_for_reminder_upsert(cached_snapshot, reminder.clone()),
+        session_id,
+        updated_session,
+        &[activity],
+      )
+    } else {
+      seed_snapshot_for_reminder_upsert(cached_snapshot, reminder.clone())
+    };
     build_workspace_snapshot_with_seed_snapshot_in(
       conn,
       active_session_id,
@@ -659,8 +761,30 @@ pub fn delete_reminder(
   with_connection(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
+    let deleted_reminder = build_reminder_detail_in(conn, reminder_id)?;
     delete_reminder_in(conn, reminder_id)?;
-    let seeded_snapshot = seed_snapshot_for_reminder_delete(cached_snapshot, reminder_id);
+    let seeded_snapshot = if let Some(session_id) = active_session_id {
+      let activity = append_activity_in(
+        conn,
+        session_id,
+        "system",
+        "Reminder deleted",
+        &format!(
+          "Deleted reminder '{}'.",
+          preview_text(&deleted_reminder.title, 48)
+        ),
+        "completed",
+      )?;
+      let updated_session = load_session_summary_in(conn, session_id)?;
+      seed_snapshot_for_session_activity(
+        seed_snapshot_for_reminder_delete(cached_snapshot, reminder_id),
+        session_id,
+        updated_session,
+        &[activity],
+      )
+    } else {
+      seed_snapshot_for_reminder_delete(cached_snapshot, reminder_id)
+    };
     let can_reuse_active_reminder_detail = seeded_snapshot
       .as_ref()
       .map(|snapshot| snapshot.active_reminder.id == snapshot.active_reminder_id)
@@ -3209,6 +3333,26 @@ fn seed_snapshot_for_persisted_run(
     &snapshot.skills,
   );
 
+  Some(snapshot)
+}
+
+fn seed_snapshot_for_session_activity(
+  cached_snapshot: Option<WorkspaceSnapshot>,
+  session_id: i64,
+  updated_session: SessionSummary,
+  appended_activity: &[ActivityItem],
+) -> Option<WorkspaceSnapshot> {
+  let mut snapshot = cached_snapshot?;
+  upsert_session_summary(&mut snapshot.sessions, updated_session.clone());
+  if snapshot.active_session_id != session_id || snapshot.active_session.session.id != session_id {
+    return Some(snapshot);
+  }
+
+  snapshot.active_session.session = updated_session;
+  let mut recent_activity = appended_activity.iter().rev().cloned().collect::<Vec<_>>();
+  recent_activity.extend(snapshot.active_session.activity);
+  recent_activity.truncate(24);
+  snapshot.active_session.activity = recent_activity;
   Some(snapshot)
 }
 
