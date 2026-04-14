@@ -1,45 +1,53 @@
 # MMGH Agent Deck
 
-API key handling notes: [docs/API_KEY_HANDLING.md](docs/API_KEY_HANDLING.md)
+MMGH Agent Deck 是一个基于 `Rust + Tauri + React` 的本地 Agent 桌面工作台。项目围绕会话、知识、提醒、技能和多个辅助工作区组织，目标是把“对话 + 上下文 + 可执行后续”收在同一个桌面产品里。
 
-一个基于 `Rust + Tauri + React` 的桌面 Agent 工作台。项目已经从早期的工具集合，收敛成一个以会话、知识、提醒、技能和工作区面板为核心的本地 Agent 桌面应用。
+相关文档：
 
-## 当前能力
+- API Key 安全说明：[docs/API_KEY_HANDLING.md](docs/API_KEY_HANDLING.md)
+- 发布与打包说明：[docs/RELEASE.md](docs/RELEASE.md)
 
-- Agent Workspace
-  - 会话列表、消息区、执行轨迹和运行状态整合在一个桌面工作区里。
-  - Rust 端负责会话持久化、近期消息读取、执行轨迹写入和模型调用。
-  - 浏览器预览模式保留一套本地存储实现，便于纯前端开发。
+## 产品概览
 
-- Knowledge + Reminder
-  - 本地知识笔记可作为稳定上下文参与 Agent 运行。
-  - 提醒事项和笔记关联后，会被一起纳入运行时上下文整理。
-  - Agent 会在运行前拼装会话标题、挂载技能、相关笔记和未完成提醒。
-
-- Skills
-  - 支持自定义 skill 的创建、编辑、启用/禁用、导入/导出和版本历史。
-  - 支持通过 `Skill Forge` 用模型或本地回退逻辑生成低权限 skill 草稿。
-  - 会话支持挂载 skill；Agent 实际运行时只读取已挂载且已启用的 skill。
-  - 会话会根据最近标题和消息内容推荐 skill，并给出可解释的推荐理由。
-
-- Frontend Workspaces
-  - Agent、Knowledge、Settings、Skills、Weather、Music、Gallery、Reminder 等页面已经统一到同一套密度和表面语言下。
-  - 移动端版式做过压缩和重排，重点页面不再依赖桌面宽度才能成立。
-  - Weather 页面增加了基于天气状态、昼夜和温度的氛围动画层。
+- Today Workspace：把今日待办、会话续接、闭环信号和最近沉淀集中到一个入口。
+- Runtime Workspace：负责会话执行、消息线程、挂载技能、推荐技能和快速沉淀。
+- Knowledge Vault：本地知识页，用来保存稳定事实、提示词、运行笔记和产品上下文。
+- Reminder Workspace：提醒项支持状态流转、关联笔记、完成回写和后续提醒。
+- Skill Workspace：支持技能创建、编辑、启停、导入导出、版本历史和 Skill Forge 草拟。
+- Weather / Music / Gallery：作为辅助工作区提供环境信息和媒体能力，不伪装成真实系统工具调用。
 
 ## 当前边界
 
-- Weather、Music、Gallery 目前仍以前端工作区为主，不是 Rust 侧的真实工具调用。
-- Agent 可以感知这些页面在会话中的语义上下文，但不会凭空声明自己读到了实时天气、音频内容或图片像素。
-- Skill 是低权限提示能力，不会绕过运行时边界直接获得额外系统权限。
+- Agent 的真实执行核心仍然聚焦在会话、技能、提醒和知识上下文。
+- Weather、Music、Gallery 主要是前端工作区，不代表 Agent 已直接读取真实设备状态或媒体内容。
+- Skill 是低权限提示能力，不绕过运行时边界，不直接授予额外系统权限。
 
-## 目录
+## 技术栈
 
-- `src/`: React 前端工作区、各类 workspace 组件、样式和多语言文案
-- `src-tauri/`: Tauri/Rust 运行时、SQLite 持久化、Agent 调度与命令桥接
+- 前端：React 18 + Vite
+- 桌面运行时：Tauri 2
+- 后端：Rust
+- 本地存储：SQLite + 系统 keyring
+- 模型接入：OpenAI-compatible provider
+
+## 目录结构
+
+- `src/`: React 前端、工作区组件、样式、多语言文案
+- `src/components/`: 各工作区 UI 组件
+- `src/storage/`: 预览模式和桌面模式共享的数据访问层
+- `src/utils/`: Today/Runtime 等工作流逻辑与派生数据
+- `src-tauri/`: Tauri/Rust 运行时、命令桥接、SQLite 持久化
 - `src-tauri/sql/schema.sql`: SQLite 结构定义
+- `docs/`: 安全和发布文档
 
-## 开发
+## 开发环境
+
+建议环境：
+
+- Node.js 18+
+- npm 9+
+- Rust stable
+- Tauri 2 构建依赖
 
 安装依赖：
 
@@ -47,11 +55,7 @@ API key handling notes: [docs/API_KEY_HANDLING.md](docs/API_KEY_HANDLING.md)
 npm install
 ```
 
-桌面模式：
-
-```bash
-npm run dev:tauri
-```
+## 本地开发
 
 纯前端预览：
 
@@ -59,7 +63,13 @@ npm run dev:tauri
 npm run dev:web
 ```
 
-## 构建与校验
+桌面开发模式：
+
+```bash
+npm run dev:tauri
+```
+
+## 构建与验证
 
 前端构建：
 
@@ -67,21 +77,45 @@ npm run dev:web
 npm run build
 ```
 
-Rust 校验：
+桌面发布构建：
 
 ```bash
-cargo check --manifest-path src-tauri/Cargo.toml
+npm run build:desktop
 ```
 
-桌面打包：
+桌面调试构建：
 
 ```bash
-cargo build --manifest-path src-tauri/Cargo.toml
+npm run build:desktop:debug
 ```
+
+完整发布前校验：
+
+```bash
+npm run release:check
+```
+
+也可以分别执行：
+
+```bash
+npm run lint
+npm run test:unit
+npm run test:rust
+```
+
+## 发布产物
+
+桌面打包完成后，Tauri 产物默认位于：
+
+```text
+src-tauri/target/release/bundle/
+```
+
+常见产物取决于当前平台和工具链，Windows 下通常会看到安装包或可分发目录。
 
 ## 模型配置
 
-如果要接入真实模型，请在 Settings 页面填写：
+如需接入真实模型，请在 Settings 页面填写：
 
 - `Base URL`
 - `API Key`
@@ -89,21 +123,36 @@ cargo build --manifest-path src-tauri/Cargo.toml
 - `System Prompt`
 
 Provider 安全边界：
-- 远程 `Base URL` 默认必须使用 `https`
-- `http` 只允许给 `localhost` 或私有网段网关
-- 如果想给特定域名做受信任白名单，可配置 `VITE_TRUSTED_PROVIDER_HOSTS` 和 `MMGH_TRUSTED_PROVIDER_HOSTS`
-- 如果想强制只允许白名单域名，可额外设置 `VITE_ENFORCE_TRUSTED_PROVIDER_HOSTS=true` 和 `MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS=true`
 
-当上述配置缺失时：
+- 远程 `Base URL` 默认要求 `https`
+- `http` 仅允许 `localhost` 或私有网段
+- 可通过 `VITE_TRUSTED_PROVIDER_HOSTS` 和 `MMGH_TRUSTED_PROVIDER_HOSTS` 配置受信任域名
+- 若要强制只允许白名单域名，可额外设置：
+  - `VITE_ENFORCE_TRUSTED_PROVIDER_HOSTS=true`
+  - `MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS=true`
 
-- 桌面模式会回退到本地预览回答逻辑
-- Skill Forge 会回退到本地草稿生成
+未配置模型时：
 
-## 近期实现重点
+- 桌面模式会退回本地预览回复逻辑
+- Skill Forge 会退回本地草稿生成
 
-- 全站页面密度与移动端适配重做
-- Weather 页的天气实况动效、昼夜联动和温度联动
-- Skill Workspace 的拥挤度整理、推荐区和模板区重构
-- 会话级 skill 推荐与推荐理由解释
-- Rust 侧运行时上下文拼装
-- Skill Forge 的前后端联通与本地回退
+## API Key 处理
+
+项目当前对 API Key 的处理原则：
+
+- 浏览器预览模式不把明文 API Key 持久化到 `localStorage`
+- Tauri 桌面模式把 API Key 存在系统 keyring，而不是 SQLite
+- 前端收到的设置快照中，`apiKey` 始终为空字符串，是否已配置通过 `hasApiKey` 表达
+
+详细说明见：[docs/API_KEY_HANDLING.md](docs/API_KEY_HANDLING.md)
+
+## 发布建议
+
+正式发版前建议至少完成：
+
+1. 更新版本号
+2. 运行 `npm run release:check`
+3. 运行 `npm run build:desktop`
+4. 检查安装包、首屏、Settings、Today、Runtime、Knowledge、Reminder 主路径
+
+更完整的步骤见：[docs/RELEASE.md](docs/RELEASE.md)

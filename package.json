@@ -16,6 +16,9 @@
     "dev:web": "vite",
     "dev:tauri": "tauri dev",
     "build": "vite build",
+    "build:desktop": "tauri build",
+    "build:desktop:debug": "tauri build --debug",
+    "release:check": "npm test",
     "serve": "vite preview"
   },
   "browserslist": {
