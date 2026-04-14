@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="zh-CN" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="TauriLanguage">2052</String>
+  <String Id="TauriCodepage">936</String>
+  <String Id="LaunchApp">启动 MMGH Agent Deck</String>
+  <String Id="DowngradeErrorMessage">系统中已安装更新版本的 MMGH Agent Deck。</String>
+  <String Id="PathEnvVarFeature">将 MMGH Agent Deck 可执行文件所在目录加入 PATH 环境变量，便于在任意位置调用。</String>
+  <String Id="InstallAppFeature">安装 MMGH Agent Deck。</String>
+</WixLocalization>

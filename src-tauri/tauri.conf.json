@@ -36,6 +36,26 @@
     ],
     "category": "DeveloperTool",
     "shortDescription": "Desktop agent workspace powered by Rust and Tauri.",
-    "longDescription": "MMGH Agent Deck is a Rust-first desktop agent workspace with persistent sessions, execution traces and an OpenAI-compatible gateway."
+    "longDescription": "MMGH Agent Deck is a Rust-first desktop agent workspace with persistent sessions, execution traces and an OpenAI-compatible gateway.",
+    "windows": {
+      "nsis": {
+        "languages": [
+          "SimpChinese",
+          "English"
+        ],
+        "customLanguageFiles": {
+          "SimpChinese": "windows/nsis/SimpChinese.nsh"
+        },
+        "displayLanguageSelector": true
+      },
+      "wix": {
+        "language": {
+          "en-US": {},
+          "zh-CN": {
+            "localePath": "windows/wix/zh-CN.wxl"
+          }
+        }
+      }
+    }
   }
 }
