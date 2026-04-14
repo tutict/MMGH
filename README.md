@@ -1,101 +1,103 @@
 # MMGH Agent Deck
 
-MMGH Agent Deck 是一个基于 `Rust + Tauri + React` 的本地 Agent 桌面工作台。项目围绕会话、知识、提醒、技能和多个辅助工作区组织，目标是把“对话 + 上下文 + 可执行后续”收在同一个桌面产品里。
+MMGH Agent Deck is a local desktop agent workspace built with `Rust + Tauri + React`.
 
-相关文档：
+The product is organized around sessions, knowledge, reminders, skills, and a set of supporting workspaces so that conversation, durable context, and follow-up actions stay in one desktop surface.
 
-- API Key 安全说明：[docs/API_KEY_HANDLING.md](docs/API_KEY_HANDLING.md)
-- 发布与打包说明：[docs/RELEASE.md](docs/RELEASE.md)
+## Docs
 
-## 产品概览
+- API key handling: [docs/API_KEY_HANDLING.md](docs/API_KEY_HANDLING.md)
+- Release guide: [docs/RELEASE.md](docs/RELEASE.md)
+- Changelog: [CHANGELOG.md](CHANGELOG.md)
 
-- Today Workspace：把今日待办、会话续接、闭环信号和最近沉淀集中到一个入口。
-- Runtime Workspace：负责会话执行、消息线程、挂载技能、推荐技能和快速沉淀。
-- Knowledge Vault：本地知识页，用来保存稳定事实、提示词、运行笔记和产品上下文。
-- Reminder Workspace：提醒项支持状态流转、关联笔记、完成回写和后续提醒。
-- Skill Workspace：支持技能创建、编辑、启停、导入导出、版本历史和 Skill Forge 草拟。
-- Weather / Music / Gallery：作为辅助工作区提供环境信息和媒体能力，不伪装成真实系统工具调用。
+## Product Areas
 
-## 当前边界
+- `Today Workspace`: daily queue, session continuation, loop signals, and recent captures
+- `Runtime Workspace`: conversation thread, execution context, mounted skills, and quick capture
+- `Knowledge Vault`: local notes, reusable prompts, runbooks, and product facts
+- `Reminder Workspace`: reminders with note linking, completion write-back, and follow-up creation
+- `Skill Workspace`: skill authoring, editing, version history, import/export, and forge flow
+- `Weather / Music / Gallery`: supporting front-end workspaces for context and media
 
-- Agent 的真实执行核心仍然聚焦在会话、技能、提醒和知识上下文。
-- Weather、Music、Gallery 主要是前端工作区，不代表 Agent 已直接读取真实设备状态或媒体内容。
-- Skill 是低权限提示能力，不绕过运行时边界，不直接授予额外系统权限。
+## Current Scope
 
-## 技术栈
+- The core runtime still focuses on sessions, reminders, knowledge, and skill context.
+- Weather, Music, and Gallery are product workspaces, not native runtime tools.
+- Skills are low-permission prompt capabilities and do not grant extra system privileges.
 
-- 前端：React 18 + Vite
-- 桌面运行时：Tauri 2
-- 后端：Rust
-- 本地存储：SQLite + 系统 keyring
-- 模型接入：OpenAI-compatible provider
+## Tech Stack
 
-## 目录结构
+- Frontend: React 18 + Vite
+- Desktop runtime: Tauri 2
+- Backend: Rust
+- Local persistence: SQLite + system keyring
+- Model gateway: OpenAI-compatible provider
 
-- `src/`: React 前端、工作区组件、样式、多语言文案
-- `src/components/`: 各工作区 UI 组件
-- `src/storage/`: 预览模式和桌面模式共享的数据访问层
-- `src/utils/`: Today/Runtime 等工作流逻辑与派生数据
-- `src-tauri/`: Tauri/Rust 运行时、命令桥接、SQLite 持久化
-- `src-tauri/sql/schema.sql`: SQLite 结构定义
-- `docs/`: 安全和发布文档
+## Repository Layout
 
-## 开发环境
+- `src/`: React app, workspaces, styles, i18n strings
+- `src/components/`: main workspace UI components
+- `src/storage/`: preview-mode and desktop-mode data access
+- `src/utils/`: Today/Runtime workflow logic and derived state helpers
+- `src-tauri/`: Tauri runtime, Rust commands, SQLite persistence
+- `src-tauri/sql/schema.sql`: SQLite schema
+- `docs/`: security and release docs
+- `release/`: versioned release metadata
 
-建议环境：
+## Prerequisites
 
 - Node.js 18+
 - npm 9+
 - Rust stable
-- Tauri 2 构建依赖
+- Tauri 2 build prerequisites for your platform
 
-安装依赖：
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-## 本地开发
+## Local Development
 
-纯前端预览：
+Web preview:
 
 ```bash
 npm run dev:web
 ```
 
-桌面开发模式：
+Desktop development:
 
 ```bash
 npm run dev:tauri
 ```
 
-## 构建与验证
+## Build And Validation
 
-前端构建：
+Frontend build:
 
 ```bash
 npm run build
 ```
 
-桌面发布构建：
+Desktop release build:
 
 ```bash
 npm run build:desktop
 ```
 
-桌面调试构建：
+Desktop debug build:
 
 ```bash
 npm run build:desktop:debug
 ```
 
-完整发布前校验：
+Release validation:
 
 ```bash
 npm run release:check
 ```
 
-也可以分别执行：
+You can also run checks individually:
 
 ```bash
 npm run lint
@@ -103,56 +105,62 @@ npm run test:unit
 npm run test:rust
 ```
 
-## 发布产物
+## Build Artifacts
 
-桌面打包完成后，Tauri 产物默认位于：
+Desktop bundle output is produced under:
 
 ```text
 src-tauri/target/release/bundle/
 ```
 
-常见产物取决于当前平台和工具链，Windows 下通常会看到安装包或可分发目录。
+On Windows, the most relevant outputs are usually:
 
-## 模型配置
+- `msi`
+- `nsis`
 
-如需接入真实模型，请在 Settings 页面填写：
+## Provider Configuration
+
+Configure the model provider in `Settings`:
 
 - `Base URL`
 - `API Key`
 - `Model`
 - `System Prompt`
 
-Provider 安全边界：
+Security rules:
 
-- 远程 `Base URL` 默认要求 `https`
-- `http` 仅允许 `localhost` 或私有网段
-- 可通过 `VITE_TRUSTED_PROVIDER_HOSTS` 和 `MMGH_TRUSTED_PROVIDER_HOSTS` 配置受信任域名
-- 若要强制只允许白名单域名，可额外设置：
+- Remote `Base URL` values are expected to use `https`
+- `http` is only allowed for `localhost` or private network ranges
+- Trusted hosts can be configured through:
+  - `VITE_TRUSTED_PROVIDER_HOSTS`
+  - `MMGH_TRUSTED_PROVIDER_HOSTS`
+- Strict host allowlisting can be enabled with:
   - `VITE_ENFORCE_TRUSTED_PROVIDER_HOSTS=true`
   - `MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS=true`
 
-未配置模型时：
+If no live provider is configured:
 
-- 桌面模式会退回本地预览回复逻辑
-- Skill Forge 会退回本地草稿生成
+- the desktop app falls back to local preview reply logic
+- Skill Forge falls back to local draft generation
 
-## API Key 处理
+## API Key Contract
 
-项目当前对 API Key 的处理原则：
+- Browser preview mode does not persist plaintext API keys in `localStorage`
+- Tauri desktop mode stores the active key in the system keyring, not SQLite
+- Client-facing settings snapshots always expose a blank `apiKey`
+- Frontend code must rely on `hasApiKey`, not secret round-tripping
 
-- 浏览器预览模式不把明文 API Key 持久化到 `localStorage`
-- Tauri 桌面模式把 API Key 存在系统 keyring，而不是 SQLite
-- 前端收到的设置快照中，`apiKey` 始终为空字符串，是否已配置通过 `hasApiKey` 表达
+See [docs/API_KEY_HANDLING.md](docs/API_KEY_HANDLING.md) for details.
 
-详细说明见：[docs/API_KEY_HANDLING.md](docs/API_KEY_HANDLING.md)
+## Release Pointers
 
-## 发布建议
+For published builds, see:
 
-正式发版前建议至少完成：
+- version metadata: `release/<version>/README.md`
+- user-facing notes: `release/<version>/RELEASE_NOTES.md`
+- installer checksums: `release/<version>/SHA256SUMS.txt`
 
-1. 更新版本号
-2. 运行 `npm run release:check`
-3. 运行 `npm run build:desktop`
-4. 检查安装包、首屏、Settings、Today、Runtime、Knowledge、Reminder 主路径
+The first packaged desktop release is tracked under:
 
-更完整的步骤见：[docs/RELEASE.md](docs/RELEASE.md)
+- [release/0.1.0/README.md](release/0.1.0/README.md)
+- [release/0.1.0/RELEASE_NOTES.md](release/0.1.0/RELEASE_NOTES.md)

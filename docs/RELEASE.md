@@ -1,80 +1,81 @@
 # Release Guide
 
-本项目当前通过 Tauri 生成桌面安装包。本文档整理发版前检查、版本更新点、构建命令、产物位置和交付建议。
+This project currently ships desktop installers through Tauri. This guide covers release checks, version bumps, packaging commands, artifact locations, and delivery conventions.
 
-## 1. 发版前检查
+## 1. Pre-Release Check
 
-确认工作区干净：
+Confirm the worktree is clean:
 
 ```bash
 git status --short
 ```
 
-执行完整校验：
+Run the full validation chain:
 
 ```bash
 npm run release:check
 ```
 
-这一步会串行执行：
+This runs:
 
 - `npm run lint`
 - `npm run test:unit`
 - `npm run build`
 - `npm run test:rust`
 
-## 2. 更新版本号
+## 2. Update Version Numbers
 
-发版前需要同步以下文件中的版本号：
+Keep these files in sync before a release:
 
 - `package.json`
 - `src-tauri/tauri.conf.json`
 - `src-tauri/Cargo.toml`
 
-建议同时检查：
+Also review:
 
-- `src-tauri/tauri.conf.json` 中的产品名和描述
-- 根 `README.md` 是否仍与当前版本能力一致
-- `release/<version>/` 中的元数据是否已经准备好
+- product name and bundle description in `src-tauri/tauri.conf.json`
+- `README.md`
+- `CHANGELOG.md`
+- `release/<version>/` metadata
 
-## 3. 桌面打包
+## 3. Build Desktop Packages
 
-正式构建：
+Release build:
 
 ```bash
 npm run build:desktop
 ```
 
-调试构建：
+Debug build:
 
 ```bash
 npm run build:desktop:debug
 ```
 
-Tauri 会先执行前端构建，再生成桌面分发包。
+Tauri runs the frontend build first, then produces desktop bundles.
 
-## 4. 产物位置
+## 4. Artifact Locations
 
-正式构建后的桌面产物默认位于：
+Release bundles:
 
 ```text
 src-tauri/target/release/bundle/
 ```
 
-调试构建产物通常位于：
+Debug output:
 
 ```text
 src-tauri/target/debug/
 ```
 
-具体文件类型取决于当前平台。Windows 下通常重点检查：
+On Windows, the most relevant bundles are usually:
 
 - `msi`
 - `nsis`
 
-## 5. 建议交付内容
+## 5. Repository Metadata Convention
 
-建议将发布材料整理成：
+Track release metadata in:
 
 ```text
 release/
@@ -84,42 +85,32 @@ release/
     SHA256SUMS.txt
 ```
 
-说明：
+Meaning:
 
-- `README.md`: 记录构建 commit、安装包名称、大小和校验步骤
-- `RELEASE_NOTES.md`: 面向使用者的更新说明
-- `SHA256SUMS.txt`: 安装包校验值
+- `README.md`: build commit, artifact names, sizes, validation steps
+- `RELEASE_NOTES.md`: user-facing summary
+- `SHA256SUMS.txt`: installer checksums
 
-安装包二进制本身不建议提交到仓库，继续保留在 `src-tauri/target/release/bundle/` 即可。
+Do not commit installer binaries to the repository. Keep them under `src-tauri/target/release/bundle/`.
 
-## 6. 冒烟验收清单
+## 6. Smoke Test Checklist
 
-打包后至少检查以下路径：
+Use the reusable checklist in:
 
-### 核心路径
+- [docs/SMOKE_TEST_TEMPLATE.md](SMOKE_TEST_TEMPLATE.md)
 
-- 应用可以正常启动
-- Today Workspace 正常加载
-- Runtime Workspace 可以创建或继续会话
-- Knowledge Vault 可以创建、编辑、保存笔记
-- Reminder Workspace 可以创建提醒并完成闭环
-- Skill Workspace 可以打开并保存技能
-- Settings 可以保存 provider 配置
+At minimum, verify:
 
-### 安全与配置
+- the app launches
+- Today loads
+- Runtime can create or continue a session
+- Knowledge Vault can create and save a note
+- Reminder flow can create and complete an item
+- Skill Workspace opens and saves correctly
+- Settings can save provider configuration
+- API key state is not echoed back into client snapshots
 
-- API Key 不会回显到前端快照
-- 清空 API Key 后再次打开 Settings，状态正确
-- 未配置 provider 时，应用仍可进入本地预览流
-
-### 打包质量
-
-- 产品名显示为 `MMGH Agent Deck`
-- 图标正常
-- 窗口默认尺寸和标题正常
-- 首次安装与覆盖安装都能正常启动
-
-## 7. 发布说明模板
+## 7. Release Notes Template
 
 ```text
 Version: vX.Y.Z
@@ -139,11 +130,12 @@ Known issues:
 - ...
 ```
 
-## 8. 当前推荐流程
+## 8. Recommended Flow
 
-1. 完成功能并提交
-2. 运行 `npm run release:check`
-3. 运行 `npm run build:desktop`
-4. 从 `src-tauri/target/release/bundle/` 收集安装包
-5. 记录版本号、commit id、更新说明和 SHA256
-6. 做一轮桌面冒烟验收
+1. Finish feature work and commit it.
+2. Update version numbers.
+3. Update `CHANGELOG.md`.
+4. Run `npm run release:check`.
+5. Run `npm run build:desktop`.
+6. Record artifact metadata under `release/<version>/`.
+7. Run the smoke checklist.
