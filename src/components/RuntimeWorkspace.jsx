@@ -38,6 +38,7 @@ function RuntimeWorkspace({
   const mountedSkillSet = useMemo(() => new Set(mountedSkillIds), [mountedSkillIds]);
   const updatedAt =
     activeSession?.session?.updatedAt || messages[messages.length - 1]?.createdAt || 0;
+  const conversationCountLabel = t("app.agent.conversation.entries", { count: messages.length });
   const isRunning = busy === "run";
   const isCapturingNote = busy === "capture-note";
   const isCapturingReminder = busy === "capture-reminder";
@@ -98,6 +99,21 @@ function RuntimeWorkspace({
                   {updatedAt ? formatTime(updatedAt, lang) : t("app.common.loading")}
                 </span>
               </div>
+            </div>
+
+            <div className="runtime-stage-card__summary">
+              <article className="runtime-stage-pill">
+                <span>{t("app.agent.conversation.title")}</span>
+                <strong>{conversationCountLabel}</strong>
+              </article>
+              <article className="runtime-stage-pill">
+                <span>{t("app.view.agent.badge.mounted")}</span>
+                <strong>{t("app.skills.mountedCount", { count: activeSessionSkills.length })}</strong>
+              </article>
+              <article className="runtime-stage-pill">
+                <span>{t("app.view.agent.badge.gateway")}</span>
+                <strong>{t(`app.provider.${providerConfigured ? "configured" : "pending"}`)}</strong>
+              </article>
             </div>
 
             <div className="runtime-thread">
@@ -166,7 +182,7 @@ function RuntimeWorkspace({
               rows={6}
             />
             <div className="composer__actions runtime-composer__actions">
-              <span>
+              <span className="runtime-composer__hint">
                 {providerConfigured
                   ? t("app.agent.composer.providerConfigured")
                   : t("app.agent.composer.providerPending")}

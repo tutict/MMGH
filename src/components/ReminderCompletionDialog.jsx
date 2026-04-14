@@ -30,11 +30,18 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
         <div className="completion-dialog__subject">
           <span className="section-note">{t("app.today.review.subject")}</span>
           <strong>{draft.reminderTitle || t("app.reminders.defaultTitle")}</strong>
-          <span className="section-note">
-            {linkedNoteTitle
-              ? t("app.today.review.linkedNote", { title: linkedNoteTitle })
-              : t("app.today.review.newNote")}
-          </span>
+          <div className="completion-dialog__subject-meta">
+            <span className="section-note">
+              {linkedNoteTitle
+                ? t("app.today.review.linkedNote", { title: linkedNoteTitle })
+                : t("app.today.review.newNote")}
+            </span>
+            <span className={`status-chip status-${draft.createFollowUp ? "running" : "completed"}`}>
+              {draft.createFollowUp
+                ? t("app.today.review.followUp")
+                : t("app.today.review.noteMarker")}
+            </span>
+          </div>
         </div>
 
         <label className="settings-form__row">
@@ -64,7 +71,14 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
                 }))
               }
             />
-            <span>{t("app.today.review.saveToNote")}</span>
+            <span className="completion-dialog__toggle-copy">
+              <strong>{t("app.today.review.saveToNote")}</strong>
+              <span className="section-note">
+                {linkedNoteTitle
+                  ? t("app.today.review.linkedNote", { title: linkedNoteTitle })
+                  : t("app.today.review.newNote")}
+              </span>
+            </span>
           </label>
           <label className="completion-dialog__toggle">
             <input
@@ -77,7 +91,10 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
                 }))
               }
             />
-            <span>{t("app.today.review.createFollowUp")}</span>
+            <span className="completion-dialog__toggle-copy">
+              <strong>{t("app.today.review.createFollowUp")}</strong>
+              <span className="section-note">{t("app.today.review.followUpSeed", { title: draft.reminderTitle || t("app.reminders.defaultTitle") })}</span>
+            </span>
           </label>
         </div>
 

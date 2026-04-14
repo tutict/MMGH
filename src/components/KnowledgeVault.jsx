@@ -56,35 +56,47 @@ function KnowledgeVault({
           </div>
         </div>
 
-        <input
-          className="field-input"
-          value={noteSearch}
-          onChange={(event) => setNoteSearch(event.target.value)}
-          placeholder={t("app.knowledge.search")}
-        />
+        <div className="knowledge-search-shell">
+          <span className="section-note">
+            {t("app.stats.notes")}: {filteredNotes.length}
+          </span>
+          <input
+            className="field-input"
+            value={noteSearch}
+            onChange={(event) => setNoteSearch(event.target.value)}
+            placeholder={t("app.knowledge.search")}
+          />
+        </div>
 
         <div className="knowledge-note-list">
-          {filteredNotes.map((note) => (
-            <button
-              key={note.id}
-              type="button"
-              className={`knowledge-note-card ${note.id === activeNoteId ? "is-active" : ""}`}
-              onClick={() => handleOpenNote(note.id)}
-            >
-              <div className="knowledge-note-card__head">
-                <span className="knowledge-note-icon">{note.icon || "*"}</span>
-                <div className="knowledge-note-card__title-block">
-                  <strong>{note.title}</strong>
-                  <span>{formatTime(note.updatedAt, lang)}</span>
+          {filteredNotes.length > 0 ? (
+            filteredNotes.map((note) => (
+              <button
+                key={note.id}
+                type="button"
+                className={`knowledge-note-card ${note.id === activeNoteId ? "is-active" : ""}`}
+                onClick={() => handleOpenNote(note.id)}
+              >
+                <div className="knowledge-note-card__head">
+                  <span className="knowledge-note-icon">{note.icon || "*"}</span>
+                  <div className="knowledge-note-card__title-block">
+                    <strong>{note.title}</strong>
+                    <span>{formatTime(note.updatedAt, lang)}</span>
+                  </div>
                 </div>
-              </div>
-              <p>{note.summary}</p>
-              <div className="knowledge-note-card__meta">
-                <span>{(note.tags || []).slice(0, 2).join(" | ") || t("app.knowledge.noTags")}</span>
-                <span>{t("app.knowledge.editor.eyebrow")}</span>
-              </div>
-            </button>
-          ))}
+                <p>{note.summary}</p>
+                <div className="knowledge-note-card__meta">
+                  <span>{(note.tags || []).slice(0, 2).join(" | ") || t("app.knowledge.noTags")}</span>
+                  <span>{t("app.knowledge.editor.eyebrow")}</span>
+                </div>
+              </button>
+            ))
+          ) : (
+            <div className="knowledge-empty-state">
+              <strong>{t("app.common.empty")}</strong>
+              <p>{t("app.knowledge.editor.description")}</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -118,9 +130,18 @@ function KnowledgeVault({
           <div className="knowledge-editor__hero">
             <div className="knowledge-editor__hero-icon">{noteDraft.icon || "*"}</div>
             <div className="knowledge-editor__hero-copy">
-              <span className="eyebrow">{t("app.knowledge.editor.eyebrow")}</span>
+              <div className="knowledge-editor__hero-meta">
+                <span className="eyebrow">{t("app.knowledge.editor.eyebrow")}</span>
+                <span className={`status-chip status-${hasUnsavedNote ? "warning" : "completed"}`}>
+                  {t(hasUnsavedNote ? "app.common.dirty" : "app.common.saved")}
+                </span>
+              </div>
               <strong>{noteDraft.title || t("app.knowledge.defaultTitle")}</strong>
-              <p>{t("app.knowledge.editor.description")}</p>
+              <p>
+                {activeNoteUpdatedAt
+                  ? formatTime(activeNoteUpdatedAt, lang)
+                  : t("app.knowledge.editor.description")}
+              </p>
             </div>
           </div>
           <div className="knowledge-editor__title-row">

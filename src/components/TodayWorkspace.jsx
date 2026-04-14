@@ -54,6 +54,7 @@ function TodayWorkspace({
     return t("app.today.daypart.evening");
   }, [clockNow, t]);
   const activeSessionTitle = activeSession?.session?.title || t("app.session.defaultTitle");
+  const activeSessionStatus = activeSession?.session?.status || "idle";
   const weatherLabel =
     weatherStatus === "error"
       ? t("app.weather.status.error")
@@ -63,21 +64,30 @@ function TodayWorkspace({
     <section className="today-workspace">
       <div className="today-layout">
         <section className="panel-surface today-hero">
-          <div className="today-hero__copy">
-            <span className="eyebrow">{t("app.today.eyebrow")}</span>
-            <h3>{t("app.today.title", { dayPeriod })}</h3>
-            <p>{t("app.today.description")}</p>
+          <div className="today-hero__topline">
+            <div className="today-hero__copy">
+              <span className="eyebrow">{t("app.today.eyebrow")}</span>
+              <h3>{t("app.today.title", { dayPeriod })}</h3>
+              <p>{t("app.today.description")}</p>
+            </div>
+            <div className="today-hero__session">
+              <span className="section-note">{t("app.today.sessions.active")}</span>
+              <strong>{activeSessionTitle}</strong>
+              <span className={`status-chip status-${activeSessionStatus}`}>
+                {t(`app.status.${activeSessionStatus}`)}
+              </span>
+            </div>
           </div>
           <div className="today-hero__stats">
-            <div className="today-stat">
+            <div className="today-stat today-stat--accent">
               <span>{t("app.today.stat.open")}</span>
               <strong>{openReminderCount}</strong>
             </div>
-            <div className="today-stat">
+            <div className="today-stat today-stat--warning">
               <span>{t("app.today.stat.due")}</span>
               <strong>{dueReminderCount}</strong>
             </div>
-            <div className="today-stat">
+            <div className="today-stat today-stat--neutral">
               <span>{t("app.today.stat.clock")}</span>
               <strong>{formatShortClock(clockNow, lang)}</strong>
             </div>
@@ -141,7 +151,9 @@ function TodayWorkspace({
                         </div>
                         <p>{reminder.preview || t("app.reminders.emptyBucket")}</p>
                         <div className="today-focus-item__meta">
-                          <span>{t(`app.today.urgency.${urgency}`)}</span>
+                          <span className={`today-focus-item__urgency urgency-${urgency}`}>
+                            {t(`app.today.urgency.${urgency}`)}
+                          </span>
                           <span>
                             {reminder.dueAt
                               ? formatTime(reminder.dueAt, lang)
