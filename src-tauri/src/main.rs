@@ -12,7 +12,7 @@ use std::sync::{
 use tauri::{
   menu::{Menu, MenuItemBuilder},
   tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-  AppHandle, Manager, WindowEvent,
+  AppHandle, Manager, RunEvent, WindowEvent,
 };
 
 mod agent;
@@ -38,6 +38,7 @@ fn show_main_window(app: &AppHandle) {
 
 fn hide_main_window(app: &AppHandle) {
   if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+    let _ = window.unminimize();
     let _ = window.hide();
   }
 }
@@ -45,7 +46,9 @@ fn hide_main_window(app: &AppHandle) {
 fn toggle_main_window(app: &AppHandle) {
   if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
     let is_visible = window.is_visible().unwrap_or(true);
-    if is_visible {
+    let is_minimized = window.is_minimized().unwrap_or(false);
+
+    if is_visible && !is_minimized {
       let _ = window.hide();
     } else {
       let _ = window.unminimize();
@@ -56,9 +59,14 @@ fn toggle_main_window(app: &AppHandle) {
 }
 
 fn build_tray(app: &AppHandle, state: Arc<AppRuntimeState>) -> tauri::Result<()> {
-  let show_item = MenuItemBuilder::with_id(TRAY_SHOW_ID, "显示主窗口").build(app)?;
-  let hide_item = MenuItemBuilder::with_id(TRAY_HIDE_ID, "隐藏到托盘").build(app)?;
-  let quit_item = MenuItemBuilder::with_id(TRAY_QUIT_ID, "退出 MMGH").build(app)?;
+  let show_item =
+    MenuItemBuilder::with_id(TRAY_SHOW_ID, "\u{663E}\u{793A}\u{4E3B}\u{7A97}\u{53E3}")
+      .build(app)?;
+  let hide_item =
+    MenuItemBuilder::with_id(TRAY_HIDE_ID, "\u{9690}\u{85CF}\u{5230}\u{6258}\u{76D8}")
+      .build(app)?;
+  let quit_item =
+    MenuItemBuilder::with_id(TRAY_QUIT_ID, "\u{9000}\u{51FA} MMGH").build(app)?;
   let menu = Menu::with_items(app, &[&show_item, &hide_item, &quit_item])?;
 
   let mut tray = TrayIconBuilder::with_id("main-tray")
@@ -100,8 +108,10 @@ fn main() {
   let runtime_state = Arc::new(AppRuntimeState {
     is_quitting: AtomicBool::new(false),
   });
+  let runtime_state_for_setup = Arc::clone(&runtime_state);
+  let runtime_state_for_run = Arc::clone(&runtime_state);
 
-  tauri::Builder::default()
+  let app = tauri::Builder::default()
     .setup(move |app| {
       let app_data_dir = app
         .path()
@@ -113,16 +123,17 @@ fn main() {
         return Err(std::io::Error::other(error.to_string()).into());
       }
 
-      build_tray(app.handle(), Arc::clone(&runtime_state))?;
+      build_tray(app.handle(), Arc::clone(&runtime_state_for_setup))?;
 
       if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-        let state = Arc::clone(&runtime_state);
+        let state = Arc::clone(&runtime_state_for_setup);
         let window_handle = window.clone();
         window.on_window_event(move |event| {
           if let WindowEvent::CloseRequested { api, .. } = event {
             if state.is_quitting.load(Ordering::SeqCst) {
               return;
             }
+
             api.prevent_close();
             let _ = window_handle.hide();
           }
@@ -153,6 +164,21 @@ fn main() {
       cmd::forge_skill,
       cmd::run_agent
     ])
-    .run(tauri::generate_context!())
-    .expect("error while running tauri application");
+    .build(tauri::generate_context!())
+    .expect("error while building tauri application");
+
+  app.run(move |app: &AppHandle, event: RunEvent| {
+    if let RunEvent::MainEventsCleared = event {
+      if runtime_state_for_run.is_quitting.load(Ordering::SeqCst) {
+        return;
+      }
+
+      if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+        if window.is_minimized().unwrap_or(false) {
+          let _ = window.unminimize();
+          let _ = window.hide();
+        }
+      }
+    }
+  });
 }
