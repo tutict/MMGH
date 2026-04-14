@@ -46,7 +46,8 @@
         "customLanguageFiles": {
           "SimpChinese": "windows/nsis/SimpChinese.nsh"
         },
-        "displayLanguageSelector": true
+        "displayLanguageSelector": true,
+        "installerHooks": "windows/nsis/installer-hooks.nsh"
       },
       "wix": {
         "language": {
