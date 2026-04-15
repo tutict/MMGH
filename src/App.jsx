@@ -77,6 +77,10 @@ import {
   selectRecurringReminderPatterns,
   selectTodayReminderItems,
 } from "./utils/todayInsights";
+import {
+  patchPlaybackSnapshot,
+  resetPlaybackSnapshot,
+} from "./utils/playbackSnapshot";
 
 const GalleryWorkspace = lazy(() => import("./components/GalleryWorkspace"));
 const KnowledgeVault = lazy(() => import("./components/KnowledgeVault"));
@@ -174,6 +178,16 @@ function persistTheme(theme) {
     console.error("Failed to persist theme preference", error);
     throw new Error(`Failed to persist theme preference. ${normalizeError(error)}`);
   }
+}
+
+function readInitialAppVisibility() {
+  if (typeof document === "undefined") {
+    return true;
+  }
+
+  const isVisible = document.visibilityState !== "hidden";
+  const isFocused = typeof document.hasFocus === "function" ? document.hasFocus() : true;
+  return isVisible && isFocused;
 }
 
 function reuseEqualArray(previousItems, nextItems, isEqual) {
@@ -535,6 +549,7 @@ function App() {
   const [collapsedSessionGroups, setCollapsedSessionGroups] = useState({});
   const [collapsedSessionPreviews, setCollapsedSessionPreviews] = useState({});
   const [clockNow, setClockNow] = useState(() => Date.now());
+  const [isAppVisible, setIsAppVisible] = useState(() => readInitialAppVisibility());
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -554,7 +569,6 @@ function App() {
   const [selectedTrackId, setSelectedTrackId] = useState(BUILT_IN_TRACKS[0].id);
   const [autoPlayOnReply, setAutoPlayOnReply] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(72);
   const [playMode, setPlayMode] = useState("loop");
@@ -820,11 +834,46 @@ function App() {
   }, [commitWorkspaceSnapshot]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      setClockNow(Date.now());
-    }, 1000);
-    return () => window.clearInterval(timer);
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      return undefined;
+    }
+
+    const syncAppVisibility = () => {
+      setIsAppVisible(readInitialAppVisibility());
+    };
+
+    syncAppVisibility();
+    window.addEventListener("focus", syncAppVisibility);
+    window.addEventListener("blur", syncAppVisibility);
+    document.addEventListener("visibilitychange", syncAppVisibility);
+
+    return () => {
+      window.removeEventListener("focus", syncAppVisibility);
+      window.removeEventListener("blur", syncAppVisibility);
+      document.removeEventListener("visibilitychange", syncAppVisibility);
+    };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !isAppVisible) {
+      return undefined;
+    }
+
+    let timer = 0;
+
+    const syncClock = () => {
+      const now = Date.now();
+      setClockNow(now);
+      const nextDelay = Math.max(1000, 60000 - (now % 60000) + 40);
+      timer = window.setTimeout(syncClock, nextDelay);
+    };
+
+    syncClock();
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [isAppVisible]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -1007,8 +1056,9 @@ function App() {
       return;
     }
     document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset.appVisibility = isAppVisible ? "visible" : "hidden";
     document.documentElement.style.colorScheme = theme;
-  }, [theme]);
+  }, [isAppVisible, theme]);
 
   useEffect(
     () => {
@@ -1112,9 +1162,19 @@ function App() {
       return undefined;
     }
 
-    const syncState = () => {
-      setCurrentTime(audio.currentTime || 0);
-      setDuration(Number.isFinite(audio.duration) ? audio.duration : 0);
+    const syncDuration = () => {
+      const nextDuration = Number.isFinite(audio.duration) ? audio.duration : 0;
+      setDuration((previousDuration) =>
+        previousDuration === nextDuration ? previousDuration : nextDuration
+      );
+      patchPlaybackSnapshot({ duration: nextDuration });
+    };
+    const handleTimeUpdate = () => {
+      if (!isAppVisible) {
+        return;
+      }
+
+      patchPlaybackSnapshot({ currentTime: audio.currentTime || 0 });
     };
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
@@ -1124,12 +1184,13 @@ function App() {
 
       if (!nextTrackId) {
         setIsPlaying(false);
-        setCurrentTime(0);
+        patchPlaybackSnapshot({ currentTime: 0 });
         return;
       }
 
       if (nextTrackId === selectedTrackId) {
         audio.currentTime = 0;
+        patchPlaybackSnapshot({ currentTime: 0 });
         void audio.play().catch(() => {
           setIsPlaying(false);
         });
@@ -1140,21 +1201,28 @@ function App() {
       setSelectedTrackId(nextTrackId);
     };
 
-    syncState();
-    audio.addEventListener("loadedmetadata", syncState);
-    audio.addEventListener("timeupdate", syncState);
+    syncDuration();
+    if (isAppVisible) {
+      patchPlaybackSnapshot({ currentTime: audio.currentTime || 0 });
+    }
+    audio.addEventListener("loadedmetadata", syncDuration);
+    audio.addEventListener("durationchange", syncDuration);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("seeking", handleTimeUpdate);
     audio.addEventListener("play", handlePlay);
     audio.addEventListener("pause", handlePause);
     audio.addEventListener("ended", handleEnded);
 
     return () => {
-      audio.removeEventListener("loadedmetadata", syncState);
-      audio.removeEventListener("timeupdate", syncState);
+      audio.removeEventListener("loadedmetadata", syncDuration);
+      audio.removeEventListener("durationchange", syncDuration);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("seeking", handleTimeUpdate);
       audio.removeEventListener("play", handlePlay);
       audio.removeEventListener("pause", handlePause);
       audio.removeEventListener("ended", handleEnded);
     };
-  }, [playMode, resolveAdjacentTrackId, selectedTrackId, tracks]);
+  }, [isAppVisible, playMode, resolveAdjacentTrackId, selectedTrackId, tracks]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -1224,7 +1292,7 @@ function App() {
   }
 
   function handlePlayPreviousTrack() {
-    if (currentTime > 3 && playMode !== "shuffle") {
+    if ((audioRef.current?.currentTime || 0) > 3 && playMode !== "shuffle") {
       handleRestartTrack();
       return;
     }
@@ -1977,8 +2045,8 @@ function App() {
 
     const shouldResume = isPlaying;
     audio.load();
-    setCurrentTime(0);
     setDuration(0);
+    resetPlaybackSnapshot();
 
     if (shouldResume) {
       void audio.play().catch(() => {
@@ -3499,6 +3567,7 @@ function App() {
       return;
     }
     audio.currentTime = 0;
+    patchPlaybackSnapshot({ currentTime: 0 });
     void audio.play().catch(() => {
       setIsPlaying(false);
     });
@@ -3506,7 +3575,7 @@ function App() {
 
   function handleSeek(event) {
     const nextValue = Number(event.target.value);
-    setCurrentTime(nextValue);
+    patchPlaybackSnapshot({ currentTime: nextValue });
     if (audioRef.current) {
       audioRef.current.currentTime = nextValue;
     }
@@ -4435,8 +4504,6 @@ function App() {
           <Suspense fallback={workspaceLoadingFallback}>
             <MusicWorkspace
               autoPlayOnReply={autoPlayOnReply}
-              currentTime={currentTime}
-              duration={duration}
               handleCyclePlayMode={handleCyclePlayMode}
               handlePlayNextTrack={handlePlayNextTrack}
               handlePlayPreviousTrack={handlePlayPreviousTrack}
@@ -4444,6 +4511,7 @@ function App() {
               handleSeek={handleSeek}
               handleSelectTrack={handleSelectTrack}
               handleTogglePlayback={handleTogglePlayback}
+              isAppVisible={isAppVisible}
               isPlaying={isPlaying}
               lyricsError={selectedTrackLyricsError}
               lyricsLines={selectedTrackLyrics}
@@ -4881,8 +4949,6 @@ function App() {
 
         {showMiniPlayer ? (
           <MiniPlayerBar
-            currentTime={currentTime}
-            duration={duration}
             handleOpenMusicWorkspace={() => openView("music")}
             handleRestartTrack={handleRestartTrack}
             handleSeek={handleSeek}

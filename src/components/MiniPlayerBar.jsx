@@ -1,9 +1,8 @@
 import React, { useRef } from "react";
 import { useI18n } from "../i18n";
+import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
 
 function MiniPlayerBar({
-  currentTime,
-  duration,
   handleOpenMusicWorkspace,
   handleRestartTrack,
   handleSeek,
@@ -13,6 +12,7 @@ function MiniPlayerBar({
 }) {
   const { t } = useI18n();
   const rootRef = useRef(null);
+  const { currentTime, duration } = usePlaybackSnapshot();
 
   const handlePointerMove = (event) => {
     const element = rootRef.current;

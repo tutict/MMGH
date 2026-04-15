@@ -1,8 +1,10 @@
 import React from "react";
 import { useI18n } from "../i18n";
+import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
 
 const LYRIC_LINE_HEIGHT = 72;
 const MOBILE_LIBRARY_BREAKPOINT = 1120;
+const COSMIC_DUST_FRAME_INTERVAL_MS = 1000 / 24;
 const COSMIC_DUST_PARTICLES = Array.from({ length: 110 }, (_, index) => {
   const seed = pseudoRandom(index + 1);
   const secondary = pseudoRandom(index + 101);
@@ -109,8 +111,6 @@ function getOrCreateAudioAnalysis(mediaElement, AudioContextCtor) {
 
 function MusicWorkspace({
   autoPlayOnReply,
-  currentTime,
-  duration,
   handleCyclePlayMode,
   handlePlayNextTrack,
   handlePlayPreviousTrack,
@@ -118,6 +118,7 @@ function MusicWorkspace({
   handleSeek,
   handleSelectTrack,
   handleTogglePlayback,
+  isAppVisible,
   isPlaying,
   lyricsError,
   lyricsLines,
@@ -137,6 +138,7 @@ function MusicWorkspace({
   volume,
 }) {
   const { t } = useI18n();
+  const { currentTime, duration } = usePlaybackSnapshot();
   const analysisRef = React.useRef(null);
   const animationFrameRef = React.useRef(0);
   const pulseLevelRef = React.useRef(0.2);
@@ -195,7 +197,7 @@ function MusicWorkspace({
   const lyricsStatusLabel = resolveLyricsStatusLabel({ lyricsError, lyricsSource, lyricsStatus, t });
 
   React.useEffect(() => {
-    if (!isPlaying) {
+    if (!isPlaying || !isAppVisible) {
       pulseLevelRef.current = 0.18;
       setPulseLevel(0.18);
       if (animationFrameRef.current) {
@@ -236,9 +238,12 @@ function MusicWorkspace({
       }
 
       analyser.getByteFrequencyData(dataArray);
-      const bassWindow = dataArray.slice(0, 12);
-      const average =
-        bassWindow.reduce((sum, value) => sum + value, 0) / Math.max(bassWindow.length, 1);
+      const bassWindowLength = Math.min(12, dataArray.length);
+      let bassWindowTotal = 0;
+      for (let index = 0; index < bassWindowLength; index += 1) {
+        bassWindowTotal += dataArray[index];
+      }
+      const average = bassWindowTotal / Math.max(bassWindowLength, 1);
       const normalized = Math.min(Math.max(average / 160, 0.14), 1);
       const nextPulse = pulseLevelRef.current * 0.58 + normalized * 0.42;
 
@@ -263,17 +268,17 @@ function MusicWorkspace({
         animationFrameRef.current = 0;
       }
     };
-  }, [isPlaying, playerAudioElement]);
+  }, [isAppVisible, isPlaying, playerAudioElement]);
 
   React.useEffect(() => {
-    if (analysisRef.current?.analyser || !isPlaying) {
+    if (analysisRef.current?.analyser || !isPlaying || !isAppVisible) {
       return;
     }
 
     const nextPulse = 0.24 + ((Math.sin(currentTime * 6.2) + 1) / 2) * 0.22;
     pulseLevelRef.current = nextPulse;
     setPulseLevel(nextPulse);
-  }, [currentTime, isPlaying]);
+  }, [currentTime, isAppVisible, isPlaying]);
 
   function handleTrackPick(trackId) {
     handleSelectTrack(trackId);
@@ -381,6 +386,7 @@ function MusicWorkspace({
                     </radialGradient>
                   </defs>
                   <CosmicDustRing
+                    isAppVisible={isAppVisible}
                     isPlaying={isPlaying}
                     particleCount={particleCount}
                     pulseLevel={pulseLevel}
@@ -690,9 +696,15 @@ function resolveParticleBudget(win) {
   return 110;
 }
 
-const CosmicDustRing = React.memo(function CosmicDustRing({ isPlaying, particleCount, pulseLevel }) {
+const CosmicDustRing = React.memo(function CosmicDustRing({
+  isAppVisible,
+  isPlaying,
+  particleCount,
+  pulseLevel,
+}) {
   const frameRef = React.useRef(0);
   const startTimeRef = React.useRef(0);
+  const lastCommitRef = React.useRef(0);
   const [animationTime, setAnimationTime] = React.useState(0);
 
   React.useEffect(() => {
@@ -700,8 +712,10 @@ const CosmicDustRing = React.memo(function CosmicDustRing({ isPlaying, particleC
       return undefined;
     }
 
-    if (!isPlaying) {
+    if (!isPlaying || !isAppVisible) {
       startTimeRef.current = 0;
+      lastCommitRef.current = 0;
+      setAnimationTime(0);
       if (frameRef.current) {
         window.cancelAnimationFrame(frameRef.current);
         frameRef.current = 0;
@@ -714,7 +728,14 @@ const CosmicDustRing = React.memo(function CosmicDustRing({ isPlaying, particleC
         startTimeRef.current = timestamp;
       }
 
-      setAnimationTime((timestamp - startTimeRef.current) / 1000);
+      if (
+        !lastCommitRef.current ||
+        timestamp - lastCommitRef.current >= COSMIC_DUST_FRAME_INTERVAL_MS
+      ) {
+        lastCommitRef.current = timestamp;
+        setAnimationTime((timestamp - startTimeRef.current) / 1000);
+      }
+
       frameRef.current = window.requestAnimationFrame(step);
     };
 
@@ -722,12 +743,13 @@ const CosmicDustRing = React.memo(function CosmicDustRing({ isPlaying, particleC
 
     return () => {
       startTimeRef.current = 0;
+      lastCommitRef.current = 0;
       if (frameRef.current) {
         window.cancelAnimationFrame(frameRef.current);
         frameRef.current = 0;
       }
     };
-  }, [isPlaying]);
+  }, [isAppVisible, isPlaying]);
 
   const cosmicDust = React.useMemo(
     () =>
