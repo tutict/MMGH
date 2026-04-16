@@ -1,103 +1,159 @@
 # MMGH Agent Deck
 
-MMGH Agent Deck is a local desktop agent workspace built with `Rust + Tauri + React`.
+一个面向本地桌面场景的 Agent 工作台，采用 `Rust + Tauri + React` 构建，将会话、知识、提醒、技能和日常任务流整合到统一桌面界面中。项目强调本地持久化、桌面端安全存储和多工作区协同，适合用作个人智能工作台或桌面 AI 助手产品原型。
 
-The product is organized around sessions, knowledge, reminders, skills, and a set of supporting workspaces so that conversation, durable context, and follow-up actions stay in one desktop surface.
+## 项目概览
 
-## Docs
+- 项目类型：本地桌面端 Agent 工作台
+- 业务方向：桌面 AI 助手、知识管理、提醒管理与技能编排
+- 主要能力：本地会话上下文管理、知识沉淀、提醒闭环、技能编辑、桌面端安全配置
+- 适合阅读对象：HR 初筛、客户端开发、桌面应用、全栈产品与 AI 工具方向面试官
 
-- API key handling: [docs/API_KEY_HANDLING.md](docs/API_KEY_HANDLING.md)
-- Release guide: [docs/RELEASE.md](docs/RELEASE.md)
-- Changelog: [CHANGELOG.md](CHANGELOG.md)
+## 核心功能
 
-## Product Areas
+- Today Workspace：日程队列、会话续接、快速捕获与状态汇总
+- Runtime Workspace：主对话线程、执行上下文、技能挂载与交互入口
+- Knowledge Vault：本地笔记、提示词、运行手册和产品事实存储
+- Reminder Workspace：提醒事项、关联笔记、完成回写和后续动作生成
+- Skill Workspace：技能创建、编辑、版本历史、导入导出与技能流程
+- Weather / Music / Gallery：辅助工作区与上下文扩展界面
 
-- `Today Workspace`: daily queue, session continuation, loop signals, and recent captures
-- `Runtime Workspace`: conversation thread, execution context, mounted skills, and quick capture
-- `Knowledge Vault`: local notes, reusable prompts, runbooks, and product facts
-- `Reminder Workspace`: reminders with note linking, completion write-back, and follow-up creation
-- `Skill Workspace`: skill authoring, editing, version history, import/export, and forge flow
-- `Weather / Music / Gallery`: supporting front-end workspaces for context and media
+## 承担内容
 
-## Current Scope
+- 完成桌面 Agent 工作台的产品结构设计与工作区划分
+- 完成 React 前端、Tauri 桌面容器和 Rust 本地能力实现
+- 完成本地 SQLite 持久化、系统 keyring 密钥存储与提供方配置约束
+- 完成 Today / Runtime / Reminder / Skill 等核心工作区页面与数据流
+- 完成桌面打包、发布校验和基础测试链路
 
-- The core runtime still focuses on sessions, reminders, knowledge, and skill context.
-- Weather, Music, and Gallery are product workspaces, not native runtime tools.
-- Skills are low-permission prompt capabilities and do not grant extra system privileges.
+## 关键技术实现
 
-## Tech Stack
+- 使用 `React 18 + Vite` 构建桌面端前端界面
+- 使用 `Tauri 2` 将前端与 Rust 本地能力整合为桌面应用
+- 使用 `Rust + rusqlite` 管理本地数据库与命令调用
+- 使用系统 `keyring` 保存 API Key，避免将明文密钥写入 SQLite
+- 对模型提供方地址实施协议与主机白名单约束
+- 在无在线模型配置时提供本地预览回复与草稿回退逻辑
+- 支持桌面打包、版本化发布说明和安装产物校验
 
-- Frontend: React 18 + Vite
-- Desktop runtime: Tauri 2
-- Backend: Rust
-- Local persistence: SQLite + system keyring
-- Model gateway: OpenAI-compatible provider
+## 技术栈
 
-## Repository Layout
+| 分层 | 技术方案 |
+| --- | --- |
+| 前端 | React 18、Vite |
+| 桌面容器 | Tauri 2 |
+| 本地后端 | Rust、Tauri Command |
+| 本地存储 | SQLite、rusqlite |
+| 安全存储 | system keyring |
+| 模型接入 | OpenAI-compatible provider |
+| 测试与质量 | ESLint、Vitest、Cargo Test |
 
-- `src/`: React app, workspaces, styles, i18n strings
-- `src/components/`: main workspace UI components
-- `src/storage/`: preview-mode and desktop-mode data access
-- `src/utils/`: Today/Runtime workflow logic and derived state helpers
-- `src-tauri/`: Tauri runtime, Rust commands, SQLite persistence
-- `src-tauri/sql/schema.sql`: SQLite schema
-- `docs/`: security and release docs
-- `release/`: versioned release metadata
+## 仓库结构
 
-## Prerequisites
+```text
+MMGH
+├─ src/                # React 应用、工作区组件、样式与 i18n
+├─ src-tauri/          # Tauri 运行时、Rust 命令、本地数据库
+├─ docs/               # 安全、发布与操作文档
+├─ release/            # 版本化发布元数据
+├─ package.json        # 前端与桌面构建脚本
+└─ README.md           # 项目说明
+```
+
+## 主要模块说明
+
+### 1. React 前端工作区
+
+负责桌面端主要交互界面和工作区组织。
+
+- 路径：`src/`
+- 技术关键词：`React`、`Vite`
+- 主要工作区：
+  - `Today Workspace`
+  - `Runtime Workspace`
+  - `Knowledge Vault`
+  - `Reminder Workspace`
+  - `Skill Workspace`
+
+### 2. Tauri 与 Rust 本地能力
+
+负责桌面运行时、本地命令和持久化能力。
+
+- 路径：`src-tauri/`
+- 技术关键词：`Tauri 2`、`Rust`、`rusqlite`
+- 主要能力：
+  - Tauri runtime
+  - Rust commands
+  - SQLite persistence
+  - 桌面打包与平台构建
+
+### 3. 数据与安全
+
+负责本地状态落盘、配置管理和 API Key 安全约束。
+
+- 路径：`src-tauri/sql/schema.sql`
+- 相关说明：
+  - API Key 在桌面模式下写入系统 keyring，不写入 SQLite
+  - 前端配置快照始终返回空 `apiKey`
+  - 远端模型地址默认要求 `https`
+  - `http` 仅允许 `localhost` 或内网地址
+
+## 运行说明
+
+### 环境准备
 
 - Node.js 18+
 - npm 9+
 - Rust stable
-- Tauri 2 build prerequisites for your platform
+- Tauri 2 对应平台构建依赖
 
-Install dependencies:
+### 安装依赖
 
 ```bash
 npm install
 ```
 
-## Local Development
+### 本地开发
 
-Web preview:
+Web 预览：
 
 ```bash
 npm run dev:web
 ```
 
-Desktop development:
+桌面开发：
 
 ```bash
 npm run dev:tauri
 ```
 
-## Build And Validation
+## 构建与校验
 
-Frontend build:
+前端构建：
 
 ```bash
 npm run build
 ```
 
-Desktop release build:
+桌面发行构建：
 
 ```bash
 npm run build:desktop
 ```
 
-Desktop debug build:
+桌面调试构建：
 
 ```bash
 npm run build:desktop:debug
 ```
 
-Release validation:
+统一校验：
 
 ```bash
 npm run release:check
 ```
 
-You can also run checks individually:
+也可以分别执行：
 
 ```bash
 npm run lint
@@ -105,62 +161,43 @@ npm run test:unit
 npm run test:rust
 ```
 
-## Build Artifacts
+## 提供方配置
 
-Desktop bundle output is produced under:
-
-```text
-src-tauri/target/release/bundle/
-```
-
-On Windows, the most relevant outputs are usually:
-
-- `msi`
-- `nsis`
-
-## Provider Configuration
-
-Configure the model provider in `Settings`:
+可在 `Settings` 中配置模型接入信息：
 
 - `Base URL`
 - `API Key`
 - `Model`
 - `System Prompt`
 
-Security rules:
+相关安全规则：
 
-- Remote `Base URL` values are expected to use `https`
-- `http` is only allowed for `localhost` or private network ranges
-- Trusted hosts can be configured through:
+- 远端 `Base URL` 默认要求使用 `https`
+- `http` 仅允许 `localhost` 或私网地址
+- 可通过以下环境变量扩展可信主机：
   - `VITE_TRUSTED_PROVIDER_HOSTS`
   - `MMGH_TRUSTED_PROVIDER_HOSTS`
-- Strict host allowlisting can be enabled with:
+- 可通过以下环境变量启用严格白名单：
   - `VITE_ENFORCE_TRUSTED_PROVIDER_HOSTS=true`
   - `MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS=true`
 
-If no live provider is configured:
+## 产物与文档
 
-- the desktop app falls back to local preview reply logic
-- Skill Forge falls back to local draft generation
+桌面构建产物默认位于：
 
-## API Key Contract
+```text
+src-tauri/target/release/bundle/
+```
 
-- Browser preview mode does not persist plaintext API keys in `localStorage`
-- Tauri desktop mode stores the active key in the system keyring, not SQLite
-- Client-facing settings snapshots always expose a blank `apiKey`
-- Frontend code must rely on `hasApiKey`, not secret round-tripping
+Windows 下常见产物包括：
 
-See [docs/API_KEY_HANDLING.md](docs/API_KEY_HANDLING.md) for details.
+- `msi`
+- `nsis`
 
-## Release Pointers
+相关文档：
 
-For published builds, see:
+- API Key 处理说明：[docs/API_KEY_HANDLING.md](docs/API_KEY_HANDLING.md)
+- 发布指南：[docs/RELEASE.md](docs/RELEASE.md)
+- 变更记录：[CHANGELOG.md](CHANGELOG.md)
+- 首个桌面发行版：[release/0.1.0/README.md](release/0.1.0/README.md)
 
-- version metadata: `release/<version>/README.md`
-- user-facing notes: `release/<version>/RELEASE_NOTES.md`
-- installer checksums: `release/<version>/SHA256SUMS.txt`
-
-The first packaged desktop release is tracked under:
-
-- [release/0.1.0/README.md](release/0.1.0/README.md)
-- [release/0.1.0/RELEASE_NOTES.md](release/0.1.0/RELEASE_NOTES.md)
