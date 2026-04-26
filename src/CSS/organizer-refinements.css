@@ -1,0 +1,398 @@
+/* Final workspace alignment:
+   bring reminders, knowledge, and gallery onto the same operational surface system. */
+
+.reminder-panel.panel-surface,
+.knowledge-panel.panel-surface,
+.gallery-panel.panel-surface {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.reminder-panel,
+.knowledge-panel {
+  display: grid;
+  grid-template-columns: minmax(290px, 340px) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.reminder-sidebar,
+.reminder-editor,
+.knowledge-sidebar,
+.knowledge-editor {
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.024), transparent 56%),
+    var(--panel-background);
+  box-shadow: var(--panel-shadow);
+}
+
+.reminder-sidebar,
+.reminder-editor,
+.knowledge-sidebar,
+.knowledge-editor {
+  padding: 18px;
+}
+
+.reminder-sidebar,
+.knowledge-sidebar {
+  position: sticky;
+  top: 20px;
+  align-self: start;
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+}
+
+.reminder-sidebar__intro,
+.knowledge-sidebar__intro {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.reminder-sidebar__summary,
+.knowledge-sidebar__summary {
+  gap: 10px;
+}
+
+.reminder-summary-card,
+.knowledge-summary-card {
+  border-radius: 16px;
+  background: transparent;
+  border: 1px solid var(--surface-border);
+  box-shadow: none;
+}
+
+.reminder-summary-card strong,
+.knowledge-summary-card strong {
+  font-size: 1.12rem;
+}
+
+.reminder-clock-card {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--surface-border);
+  background: transparent;
+  box-shadow: none;
+}
+
+.reminder-clock-card strong {
+  font-size: 1.32rem;
+}
+
+.reminder-group-list,
+.reminder-card-list,
+.knowledge-note-list {
+  gap: 10px;
+}
+
+.reminder-group {
+  gap: 10px;
+}
+
+.reminder-group__head {
+  padding: 0 4px;
+}
+
+.reminder-card,
+.knowledge-note-card {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.reminder-card:hover,
+.knowledge-note-card:hover {
+  transform: none;
+  background: var(--surface-hover);
+  box-shadow: none;
+}
+
+.reminder-card.is-active,
+.knowledge-note-card.is-active {
+  background: var(--surface-active);
+  border-color: var(--surface-active-border);
+  box-shadow: none;
+}
+
+.knowledge-note-card::before {
+  opacity: 0.72;
+}
+
+.reminder-card__meta,
+.reminder-card__link,
+.knowledge-note-card__meta,
+.knowledge-note-card__title-block span {
+  color: var(--muted-text);
+}
+
+.priority-pill {
+  border-radius: 999px;
+}
+
+.reminder-editor,
+.knowledge-editor {
+  min-width: 0;
+}
+
+.reminder-editor__toolbar,
+.knowledge-editor__toolbar {
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.reminder-editor__form,
+.knowledge-editor__form {
+  gap: 16px;
+}
+
+.reminder-editor__hero,
+.knowledge-editor__hero {
+  padding: 18px;
+  border-radius: 18px;
+  background: transparent;
+  border: 1px solid var(--surface-border);
+  box-shadow: none;
+}
+
+.reminder-editor__hero-copy strong,
+.knowledge-editor__hero-copy strong {
+  font-size: 1.38rem;
+  line-height: 1.08;
+}
+
+.reminder-editor__grid,
+.knowledge-editor__title-row {
+  gap: 12px;
+}
+
+.reminder-linked-note {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--surface-border);
+  background: transparent;
+}
+
+.knowledge-search-shell {
+  padding-top: 2px;
+}
+
+.knowledge-summary-card--wide {
+  background:
+    linear-gradient(135deg, rgba(255, 122, 74, 0.06), transparent 70%),
+    transparent;
+}
+
+.knowledge-note-icon,
+.knowledge-editor__hero-icon {
+  box-shadow: none;
+}
+
+.knowledge-editor__hero-icon {
+  border: 1px solid var(--surface-border);
+  background: var(--surface-background);
+}
+
+.knowledge-icon-input,
+.knowledge-title-input,
+.knowledge-body-input,
+.reminder-detail-input {
+  box-shadow: none;
+}
+
+.gallery-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.gallery-toolbar,
+.gallery-stage,
+.gallery-viewer__card {
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.024), transparent 56%),
+    var(--panel-background);
+  box-shadow: var(--panel-shadow);
+}
+
+.gallery-toolbar,
+.gallery-stage {
+  padding: 18px;
+}
+
+.gallery-toolbar {
+  gap: 14px;
+}
+
+.gallery-toolbar__summary {
+  gap: 8px;
+}
+
+.gallery-toolbar__pill {
+  background: transparent;
+}
+
+.gallery-stage {
+  gap: 18px;
+}
+
+.gallery-group {
+  gap: 12px;
+}
+
+.gallery-group + .gallery-group {
+  padding-top: 18px;
+  border-top: 1px solid var(--surface-border);
+}
+
+.gallery-group__head {
+  padding: 0 2px;
+}
+
+.gallery-group__intro strong {
+  font-size: 1.08rem;
+}
+
+.gallery-grid {
+  gap: 12px;
+}
+
+.gallery-card {
+  border-radius: 16px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.gallery-card__image {
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.gallery-card__image::after {
+  opacity: 0.7;
+}
+
+.gallery-card__image img,
+.gallery-viewer__image img {
+  transition: transform 220ms ease, filter 220ms ease;
+}
+
+.gallery-card:hover .gallery-card__image img {
+  transform: scale(1.02);
+}
+
+.gallery-card__badge {
+  box-shadow: none;
+}
+
+.gallery-card__meta {
+  padding-top: 12px;
+}
+
+.gallery-card__copy strong {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.gallery-card__actions,
+.gallery-viewer__actions {
+  gap: 8px;
+}
+
+.gallery-empty,
+.reminder-empty-group,
+.reminder-empty-state,
+.knowledge-empty-state {
+  border-radius: 18px;
+  border: 1px dashed var(--surface-border);
+  background: transparent;
+  box-shadow: none;
+}
+
+.gallery-viewer__scrim {
+  backdrop-filter: blur(6px);
+}
+
+.gallery-viewer__card {
+  max-width: min(1120px, calc(100vw - 48px));
+  padding: 18px;
+}
+
+.gallery-viewer__head,
+.gallery-viewer__foot {
+  gap: 12px;
+}
+
+.gallery-viewer__image {
+  border-radius: 18px;
+}
+
+.gallery-viewer__detail strong {
+  font-size: 1rem;
+}
+
+html[data-theme="light"] .reminder-sidebar,
+html[data-theme="light"] .reminder-editor,
+html[data-theme="light"] .knowledge-sidebar,
+html[data-theme="light"] .knowledge-editor,
+html[data-theme="light"] .gallery-toolbar,
+html[data-theme="light"] .gallery-stage,
+html[data-theme="light"] .gallery-viewer__card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.72)),
+    var(--panel-background);
+}
+
+@media (max-width: 1180px) {
+  .reminder-panel,
+  .knowledge-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .reminder-sidebar,
+  .knowledge-sidebar {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 900px) {
+  .gallery-toolbar__actions,
+  .gallery-card__actions,
+  .gallery-viewer__foot,
+  .reminder-linked-note,
+  .reminder-card__meta,
+  .knowledge-note-card__meta,
+  .knowledge-editor__toolbar,
+  .knowledge-editor__title-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .gallery-viewer__card {
+    max-width: calc(100vw - 24px);
+    padding: 16px;
+  }
+}
+
+@media (max-width: 760px) {
+  .reminder-sidebar,
+  .reminder-editor,
+  .knowledge-sidebar,
+  .knowledge-editor,
+  .gallery-toolbar,
+  .gallery-stage {
+    padding: 16px;
+  }
+
+  .reminder-sidebar__summary,
+  .knowledge-sidebar__summary,
+  .reminder-editor__grid {
+    grid-template-columns: 1fr;
+  }
+}

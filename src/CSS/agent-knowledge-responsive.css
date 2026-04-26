@@ -1,0 +1,131 @@
+/* Agent + Knowledge refinement */
+@media (max-width: 1480px) {
+  .runtime-layout {
+    grid-template-columns: minmax(0, 1fr) 292px;
+  }
+
+  .knowledge-panel {
+    grid-template-columns: minmax(236px, 280px) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1120px) {
+  .knowledge-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .knowledge-note-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 960px) {
+  .runtime-thread__frame {
+    padding: 10px 10px 4px 2px;
+    border-radius: 20px;
+  }
+
+  .runtime-message-list .message-card {
+    max-width: 100%;
+  }
+
+  .knowledge-panel {
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .knowledge-sidebar__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .knowledge-editor {
+    padding: 18px;
+    border-radius: 24px;
+  }
+
+  .today-hero__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .runtime-overview-card {
+    padding: 16px;
+  }
+
+  .runtime-stage-card,
+  .runtime-composer,
+  .runtime-sidebar-card {
+    border-radius: 22px;
+  }
+
+  .runtime-stage-card {
+    padding: 16px;
+    min-height: 0;
+  }
+
+  .runtime-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .runtime-thread__frame {
+    border-radius: 18px;
+  }
+
+  .message-card {
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .message-card__body pre {
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  .knowledge-panel {
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  .knowledge-note-list {
+    grid-template-columns: 1fr;
+  }
+
+  .knowledge-editor__hero {
+    grid-template-columns: 1fr;
+  }
+
+  .knowledge-editor__title-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .today-hero__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .today-stat,
+  .runtime-stage-pill {
+    min-height: 0;
+  }
+
+  .reminder-sidebar__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .reminder-editor {
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  .reminder-editor__hero {
+    grid-template-columns: 1fr;
+  }
+
+  .weather-scene__cloud--three,
+  .weather-scene__streak--four,
+  .weather-scene__snow--four,
+  .weather-scene__bolt--two {
+    display: none;
+  }
+}

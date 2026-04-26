@@ -886,6 +886,14 @@ const enUS = {
   "app.capability.desktop.title": "Tauri Shell",
   "app.capability.desktop.description":
     "Native shell for desktop packaging and platform APIs.",
+  "app.desktop.runtime.label": "Shell",
+  "app.desktop.runtime.connecting": "Connecting",
+  "app.desktop.runtime.state.focused": "Focused",
+  "app.desktop.runtime.state.background": "Background",
+  "app.desktop.runtime.state.tray": "Tray",
+  "app.desktop.runtime.state.maximized": "Maximized",
+  "app.desktop.runtime.state.fullscreen": "Fullscreen",
+  "app.desktop.runtime.notice.restored": "Window restored from the tray.",
 
   "datetime.cancel": "Cancel",
   "datetime.title": "Alarm",

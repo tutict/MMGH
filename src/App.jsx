@@ -81,6 +81,12 @@ import {
   patchPlaybackSnapshot,
   resetPlaybackSnapshot,
 } from "./utils/playbackSnapshot";
+import {
+  getDesktopWindowState,
+  isTauriAvailable,
+  listenToDesktopLifecycle,
+  listenToDesktopWindowState,
+} from "./storage/tauri";
 
 const GalleryWorkspace = lazy(() => import("./components/GalleryWorkspace"));
 const KnowledgeVault = lazy(() => import("./components/KnowledgeVault"));
@@ -188,6 +194,36 @@ function readInitialAppVisibility() {
   const isVisible = document.visibilityState !== "hidden";
   const isFocused = typeof document.hasFocus === "function" ? document.hasFocus() : true;
   return isVisible && isFocused;
+}
+
+function createInitialDesktopRuntime() {
+  const available = isTauriAvailable();
+  return {
+    available,
+    synced: !available,
+    lifecycle: "",
+    windowState: null,
+  };
+}
+
+function mergeDesktopWindowState(previousState, nextState) {
+  if (!previousState || !nextState) {
+    return nextState;
+  }
+
+  return previousState.label === nextState.label &&
+    previousState.visible === nextState.visible &&
+    previousState.focused === nextState.focused &&
+    previousState.minimized === nextState.minimized &&
+    previousState.maximized === nextState.maximized &&
+    previousState.fullscreen === nextState.fullscreen &&
+    previousState.resizable === nextState.resizable &&
+    previousState.decorated === nextState.decorated &&
+    previousState.width === nextState.width &&
+    previousState.height === nextState.height &&
+    previousState.scaleFactor === nextState.scaleFactor
+    ? previousState
+    : nextState;
 }
 
 function reuseEqualArray(previousItems, nextItems, isEqual) {
@@ -550,6 +586,7 @@ function App() {
   const [collapsedSessionPreviews, setCollapsedSessionPreviews] = useState({});
   const [clockNow, setClockNow] = useState(() => Date.now());
   const [isAppVisible, setIsAppVisible] = useState(() => readInitialAppVisibility());
+  const [desktopRuntime, setDesktopRuntime] = useState(() => createInitialDesktopRuntime());
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -855,6 +892,107 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!isTauriAvailable()) {
+      return undefined;
+    }
+
+    let disposed = false;
+    const unlistenCallbacks = [];
+
+    const applyWindowState = (nextState) => {
+      if (disposed || !nextState) {
+        return;
+      }
+
+      setDesktopRuntime((current) => ({
+        ...current,
+        available: true,
+        synced: true,
+        windowState: mergeDesktopWindowState(current.windowState, nextState),
+      }));
+
+      if (typeof nextState.visible === "boolean" || typeof nextState.focused === "boolean") {
+        setIsAppVisible(Boolean(nextState.visible) && Boolean(nextState.focused));
+      }
+    };
+
+    const connectDesktopRuntime = async () => {
+      try {
+        const nextState = await getDesktopWindowState();
+        applyWindowState(nextState);
+      } catch (err) {
+        console.error("Failed to read initial desktop window state", err);
+        if (!disposed) {
+          setDesktopRuntime((current) => ({
+            ...current,
+            available: true,
+            synced: false,
+          }));
+        }
+      }
+
+      try {
+        const unlistenWindowState = await listenToDesktopWindowState((payload) => {
+          applyWindowState(payload);
+        });
+
+        if (disposed) {
+          await unlistenWindowState?.();
+          return;
+        }
+
+        unlistenCallbacks.push(unlistenWindowState);
+      } catch (err) {
+        console.error("Failed to listen to desktop window state", err);
+      }
+
+      try {
+        const unlistenLifecycle = await listenToDesktopLifecycle((payload) => {
+          if (disposed) {
+            return;
+          }
+
+          const reason = String(payload?.reason || "");
+          setDesktopRuntime((current) => ({
+            ...current,
+            available: true,
+            synced: true,
+            lifecycle: reason,
+          }));
+
+          if (reason === "restored-from-tray") {
+            setNotice(t("app.desktop.runtime.notice.restored"));
+          }
+        });
+
+        if (disposed) {
+          await unlistenLifecycle?.();
+          return;
+        }
+
+        unlistenCallbacks.push(unlistenLifecycle);
+      } catch (err) {
+        console.error("Failed to listen to desktop lifecycle", err);
+      }
+    };
+
+    void connectDesktopRuntime();
+
+    return () => {
+      disposed = true;
+      Promise.all(
+        unlistenCallbacks.map(async (unlisten) => {
+          if (typeof unlisten === "function") {
+            await unlisten();
+          }
+        })
+      ).catch((err) => {
+        console.error("Failed to detach desktop listeners", err);
+      });
+    };
+  }, [t]);
+
+  useEffect(() => {
     if (typeof window === "undefined" || !isAppVisible) {
       return undefined;
     }
@@ -1057,8 +1195,13 @@ function App() {
     }
     document.documentElement.dataset.theme = theme;
     document.documentElement.dataset.appVisibility = isAppVisible ? "visible" : "hidden";
+    document.documentElement.dataset.desktopRuntime = desktopRuntime.available ? "tauri" : "web";
+    document.documentElement.dataset.desktopVisibility =
+      desktopRuntime.windowState?.visible === false ? "tray" : "visible";
+    document.documentElement.dataset.desktopFocus =
+      desktopRuntime.windowState?.focused === false ? "background" : "focused";
     document.documentElement.style.colorScheme = theme;
-  }, [isAppVisible, theme]);
+  }, [desktopRuntime.available, desktopRuntime.windowState?.focused, desktopRuntime.windowState?.visible, isAppVisible, theme]);
 
   useEffect(
     () => {
@@ -2036,6 +2179,44 @@ function App() {
   );
   const activeNavItem =
     allNavigationItems.find((item) => item.id === currentView) || allNavigationItems[0] || null;
+  const desktopRuntimeMeta = useMemo(() => {
+    if (!desktopRuntime.available) {
+      return null;
+    }
+
+    if (!desktopRuntime.synced || !desktopRuntime.windowState) {
+      return {
+        label: t("app.desktop.runtime.label"),
+        value: t("app.desktop.runtime.connecting"),
+        tone: "is-pending",
+        title: t("app.desktop.runtime.connecting"),
+      };
+    }
+
+    const { focused, fullscreen, height, maximized, visible, width } = desktopRuntime.windowState;
+    let valueKey = "app.desktop.runtime.state.background";
+    let tone = "is-background";
+
+    if (!visible) {
+      valueKey = "app.desktop.runtime.state.tray";
+    } else if (fullscreen) {
+      valueKey = "app.desktop.runtime.state.fullscreen";
+      tone = "is-live";
+    } else if (maximized) {
+      valueKey = "app.desktop.runtime.state.maximized";
+      tone = "is-live";
+    } else if (focused) {
+      valueKey = "app.desktop.runtime.state.focused";
+      tone = "is-live";
+    }
+
+    return {
+      label: t("app.desktop.runtime.label"),
+      value: t(valueKey),
+      tone,
+      title: `${Math.max(0, width || 0)} x ${Math.max(0, height || 0)}`,
+    };
+  }, [desktopRuntime.available, desktopRuntime.synced, desktopRuntime.windowState, t]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -4294,6 +4475,15 @@ function App() {
               <span className="workspace-hero__meta-pill">
                 {activeNavItem?.meta || viewMeta[currentView].eyebrow}
               </span>
+              {desktopRuntimeMeta ? (
+                <span
+                  className={`workspace-hero__meta-pill workspace-hero__meta-pill--desktop ${desktopRuntimeMeta.tone}`}
+                  title={desktopRuntimeMeta.title}
+                >
+                  <span>{desktopRuntimeMeta.label}</span>
+                  <strong>{desktopRuntimeMeta.value}</strong>
+                </span>
+              ) : null}
               <button
                 type="button"
                 className="shell-menu-button"

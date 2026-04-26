@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{agent, db};
+use crate::{agent, db, desktop};
 
 type CommandResult<T> = Result<T, String>;
 
@@ -154,6 +154,13 @@ pub fn forge_skill(
 #[tauri::command]
 pub fn run_agent(session_id: i64, prompt: String) -> CommandResult<db::WorkspaceSnapshot> {
   agent::run_agent(session_id, prompt).map_err(into_command_error)
+}
+
+#[tauri::command]
+pub fn desktop_window_state(
+  app: tauri::AppHandle,
+) -> CommandResult<desktop::DesktopWindowState> {
+  desktop::desktop_window_state(app)
 }
 
 #[derive(Debug, Clone, Deserialize)]

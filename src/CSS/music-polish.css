@@ -1,0 +1,313 @@
+.music-room__header {
+  gap: 18px;
+}
+
+.music-room__header-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.95fr);
+  gap: 18px 20px;
+  align-items: start;
+}
+
+.music-room__status-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.music-room__status-item {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background:
+    linear-gradient(145deg, rgba(121, 115, 121, 0.22), rgba(89, 84, 90, 0.12)),
+    rgba(255, 255, 255, 0.02);
+  box-shadow:
+    10px 10px 20px rgba(58, 54, 59, 0.14),
+    -6px -6px 14px rgba(255, 255, 255, 0.025),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.music-room__status-item span {
+  color: rgba(243, 239, 233, 0.5);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.music-room__status-item strong {
+  color: rgba(255, 250, 245, 0.94);
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.music-room__meta {
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.music-room__stage {
+  gap: 30px;
+  align-items: start;
+}
+
+.music-room__turntable {
+  padding-top: 18px;
+}
+
+.music-room__content {
+  gap: 28px;
+  min-height: 560px;
+}
+
+.music-room__trackline {
+  gap: 18px;
+  padding: 6px 0 22px;
+}
+
+.music-room__facts {
+  gap: 10px 12px;
+}
+
+.music-room__facts span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.music-room__lyrics {
+  gap: 18px;
+}
+
+.music-room__lyrics-title {
+  max-width: 520px;
+}
+
+.music-room__lyrics-title p {
+  margin: 0;
+  max-width: 440px;
+  color: rgba(236, 242, 255, 0.62);
+  font-size: 0.93rem;
+  line-height: 1.6;
+}
+
+.music-room__lyrics-viewport {
+  min-height: 360px;
+  padding: 18px;
+}
+
+.music-room__lyrics-track {
+  left: 18px;
+  right: 18px;
+}
+
+.music-room__lyric-line {
+  padding-inline: 12px;
+  border-radius: 20px;
+}
+
+.music-room__lyric-line.is-active {
+  background:
+    linear-gradient(90deg, rgba(var(--music-accent-rgb), 0.12), transparent 72%),
+    rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.music-room__footer {
+  gap: 20px;
+  padding-top: 24px;
+}
+
+.music-room__library {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.music-room__library-hint {
+  display: grid;
+  gap: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.music-room__track {
+  gap: 14px;
+  padding: 13px 14px;
+  border-radius: 20px;
+}
+
+.music-room__track-copy {
+  gap: 4px;
+}
+
+html[data-theme="light"] .gallery-toolbar__pill {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(239, 232, 227, 0.56)),
+    var(--surface-background);
+  box-shadow:
+    10px 10px 18px rgba(198, 185, 181, 0.18),
+    -6px -6px 14px rgba(255, 255, 255, 0.84),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+html[data-theme="light"] .gallery-card__image {
+  background: rgba(226, 217, 212, 0.42);
+  box-shadow:
+    0 20px 36px rgba(198, 185, 181, 0.24),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+}
+
+html[data-theme="light"] .gallery-card__image::after {
+  background: linear-gradient(180deg, transparent, rgba(56, 48, 44, 0.32));
+}
+
+html[data-theme="light"] .gallery-card__badge {
+  background: rgba(255, 252, 248, 0.72);
+  color: #433a3e;
+}
+
+html[data-theme="light"] .gallery-card.is-favorite .gallery-card__image {
+  box-shadow:
+    0 22px 38px rgba(198, 185, 181, 0.28),
+    0 0 0 1px rgba(255, 122, 74, 0.16);
+}
+
+html[data-theme="light"] .gallery-viewer__image {
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.24), transparent 36%),
+    rgba(236, 229, 223, 0.82);
+}
+
+html[data-theme="light"] .music-room__status-item,
+html[data-theme="light"] .music-room__facts span,
+html[data-theme="light"] .music-room__lyric-line.is-active {
+  background:
+    linear-gradient(145deg, rgba(251, 247, 244, 0.72), rgba(226, 217, 211, 0.46)),
+    rgba(255, 255, 255, 0.22);
+  box-shadow:
+    10px 10px 18px rgba(198, 185, 181, 0.22),
+    -6px -6px 14px rgba(255, 255, 255, 0.72),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.68);
+}
+
+html[data-theme="light"] .music-room__status-item {
+  border-color: rgba(139, 126, 128, 0.12);
+}
+
+html[data-theme="light"] .music-room__status-item span,
+html[data-theme="light"] .music-room__lyrics-title p {
+  color: rgba(58, 53, 56, 0.62);
+}
+
+html[data-theme="light"] .music-room__status-item strong {
+  color: #2f2a2d;
+}
+
+html[data-theme="light"] .music-room__meta,
+html[data-theme="light"] .music-room__library-hint {
+  border-color: rgba(139, 126, 128, 0.12);
+}
+
+@media (max-width: 1280px) {
+  .gallery-card,
+  .gallery-card:first-child {
+    grid-column: span 6;
+  }
+
+  .gallery-card__image img,
+  .gallery-card:first-child .gallery-card__image img {
+    aspect-ratio: 4 / 3;
+  }
+}
+
+@media (max-width: 1120px) {
+  .music-room__header-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 960px) {
+  .gallery-toolbar__head,
+  .gallery-group__head {
+    align-items: flex-start;
+  }
+
+  .gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gallery-card,
+  .gallery-card:first-child {
+    grid-column: span 1;
+  }
+
+  .gallery-card__image img,
+  .gallery-card:first-child .gallery-card__image img {
+    aspect-ratio: 4 / 5;
+  }
+
+  .gallery-viewer__card {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 840px) {
+  .music-room__status-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .music-room__meta {
+    padding-top: 0;
+    border-top: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .gallery-toolbar__summary {
+    width: 100%;
+  }
+
+  .gallery-toolbar__pill {
+    flex: 1 1 calc(50% - 5px);
+    justify-content: center;
+  }
+
+  .gallery-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gallery-card__actions,
+  .gallery-viewer__actions {
+    width: 100%;
+  }
+
+  .gallery-card__actions .chip-button,
+  .gallery-viewer__actions .chip-button {
+    flex: 1;
+  }
+
+  .gallery-viewer__foot {
+    align-items: stretch;
+  }
+
+  .music-room__status-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .music-room__lyrics-viewport {
+    min-height: 320px;
+    padding: 14px;
+  }
+
+  .music-room__lyrics-track {
+    left: 14px;
+    right: 14px;
+  }
+}

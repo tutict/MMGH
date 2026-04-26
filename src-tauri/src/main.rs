@@ -18,44 +18,14 @@ use tauri::{
 mod agent;
 mod cmd;
 mod db;
+mod desktop;
 
-const MAIN_WINDOW_LABEL: &str = "main";
 const TRAY_SHOW_ID: &str = "tray_show";
 const TRAY_HIDE_ID: &str = "tray_hide";
 const TRAY_QUIT_ID: &str = "tray_quit";
 
 struct AppRuntimeState {
   is_quitting: AtomicBool,
-}
-
-fn show_main_window(app: &AppHandle) {
-  if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-    let _ = window.unminimize();
-    let _ = window.show();
-    let _ = window.set_focus();
-  }
-}
-
-fn hide_main_window(app: &AppHandle) {
-  if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-    let _ = window.unminimize();
-    let _ = window.hide();
-  }
-}
-
-fn toggle_main_window(app: &AppHandle) {
-  if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-    let is_visible = window.is_visible().unwrap_or(true);
-    let is_minimized = window.is_minimized().unwrap_or(false);
-
-    if is_visible && !is_minimized {
-      let _ = window.hide();
-    } else {
-      let _ = window.unminimize();
-      let _ = window.show();
-      let _ = window.set_focus();
-    }
-  }
 }
 
 fn build_tray(app: &AppHandle, state: Arc<AppRuntimeState>) -> tauri::Result<()> {
@@ -76,8 +46,8 @@ fn build_tray(app: &AppHandle, state: Arc<AppRuntimeState>) -> tauri::Result<()>
     .on_menu_event({
       let state = Arc::clone(&state);
       move |app, event| match event.id().as_ref() {
-        TRAY_SHOW_ID => show_main_window(app),
-        TRAY_HIDE_ID => hide_main_window(app),
+        TRAY_SHOW_ID => desktop::show_main_window(app),
+        TRAY_HIDE_ID => desktop::hide_main_window(app),
         TRAY_QUIT_ID => {
           state.is_quitting.store(true, Ordering::SeqCst);
           app.exit(0);
@@ -92,7 +62,7 @@ fn build_tray(app: &AppHandle, state: Arc<AppRuntimeState>) -> tauri::Result<()>
         ..
       } = event
       {
-        toggle_main_window(tray.app_handle());
+        desktop::toggle_main_window(tray.app_handle());
       }
     });
 
@@ -125,19 +95,32 @@ fn main() {
 
       build_tray(app.handle(), Arc::clone(&runtime_state_for_setup))?;
 
-      if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+      if let Some(window) = app.get_webview_window(desktop::MAIN_WINDOW_LABEL) {
         let state = Arc::clone(&runtime_state_for_setup);
         let window_handle = window.clone();
         window.on_window_event(move |event| {
-          if let WindowEvent::CloseRequested { api, .. } = event {
-            if state.is_quitting.load(Ordering::SeqCst) {
-              return;
-            }
+          match event {
+            WindowEvent::CloseRequested { api, .. } => {
+              if state.is_quitting.load(Ordering::SeqCst) {
+                return;
+              }
 
-            api.prevent_close();
-            let _ = window_handle.hide();
+              api.prevent_close();
+              let _ = window_handle.hide();
+              desktop::emit_lifecycle(&window_handle, "hidden-to-tray");
+              desktop::emit_window_state(&window_handle);
+            }
+            WindowEvent::Focused(_)
+            | WindowEvent::Resized(_)
+            | WindowEvent::ScaleFactorChanged { .. } => {
+              desktop::emit_window_state(&window_handle);
+            }
+            _ => {}
           }
         });
+
+        desktop::emit_lifecycle(&window, "app-ready");
+        desktop::emit_window_state(&window);
       }
 
       Ok(())
@@ -161,6 +144,7 @@ fn main() {
       cmd::save_skill,
       cmd::delete_skill,
       cmd::save_session_skills,
+      cmd::desktop_window_state,
       cmd::forge_skill,
       cmd::run_agent
     ])
@@ -173,10 +157,12 @@ fn main() {
         return;
       }
 
-      if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+      if let Some(window) = app.get_webview_window(desktop::MAIN_WINDOW_LABEL) {
         if window.is_minimized().unwrap_or(false) {
           let _ = window.unminimize();
           let _ = window.hide();
+          desktop::emit_lifecycle(&window, "hidden-to-tray");
+          desktop::emit_window_state(&window);
         }
       }
     }

@@ -1,0 +1,84 @@
+/* Skill refinement */
+@media (max-width: 1480px) {
+  .skill-panel.panel-surface {
+    grid-template-columns: minmax(236px, 272px) minmax(0, 1fr) minmax(236px, 284px);
+  }
+
+  .skill-profile-card .skill-profile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .skill-editor .skill-editor__operations {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1180px) {
+  .skill-panel.panel-surface {
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  }
+
+  .skill-panel.panel-surface .skill-catalog {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+  }
+
+  .skill-panel.panel-surface .skill-catalog__panel--scroll {
+    min-height: 320px;
+  }
+}
+
+@media (max-width: 960px) {
+  .skill-panel.panel-surface .skill-sidebar__intro {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .skill-panel.panel-surface .skill-catalog {
+    grid-template-columns: 1fr;
+  }
+
+  .skill-panel.panel-surface .skill-profile-card--hero {
+    padding: 18px;
+  }
+
+  .skill-panel.panel-surface .skill-profile-card__head,
+  .skill-panel.panel-surface .skill-card__head,
+  .skill-panel.panel-surface .skill-card__meta,
+  .skill-panel.panel-surface .skill-version-card__head,
+  .skill-panel.panel-surface .skill-template-card__body,
+  .skill-panel.panel-surface .skill-header-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .skill-panel.panel-surface {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .skill-panel.panel-surface .skill-sidebar__status--grid,
+  .skill-panel.panel-surface .skill-profile-card .skill-profile-grid,
+  .skill-panel.panel-surface .skill-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skill-panel.panel-surface .skill-filter-row {
+    margin: 0 -2px;
+    padding: 0 2px 4px;
+  }
+
+  .skill-panel.panel-surface .skill-card,
+  .skill-panel.panel-surface .skill-catalog__panel,
+  .skill-panel.panel-surface .skill-profile-card {
+    border-radius: 18px;
+  }
+
+  .skill-panel.panel-surface .skill-editor {
+    padding: 16px;
+    border-radius: 22px;
+  }
+}

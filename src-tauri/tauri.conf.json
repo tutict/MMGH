@@ -14,8 +14,12 @@
       {
         "label": "main",
         "title": "MMGH Agent Deck",
+        "center": true,
         "width": 1520,
         "height": 920,
+        "minWidth": 1180,
+        "minHeight": 760,
+        "preventOverflow": true,
         "resizable": true,
         "fullscreen": false
       }

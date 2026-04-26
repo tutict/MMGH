@@ -1,0 +1,83 @@
+.settings-workspace {
+  gap: 16px;
+}
+
+.settings-workspace__hero,
+.settings-panel,
+.settings-cache-panel {
+  border-radius: 26px;
+}
+
+.settings-workspace__hero {
+  padding: 16px 18px;
+}
+
+.settings-workspace__note,
+.settings-cache-panel__description,
+.settings-cache-panel__safe-note {
+  max-width: 64ch;
+  line-height: 1.62;
+}
+
+.settings-workspace__grid {
+  gap: 16px;
+}
+
+.settings-form {
+  gap: 12px;
+}
+
+.settings-form__grid {
+  gap: 10px;
+}
+
+.settings-form label,
+.settings-form__card {
+  gap: 7px;
+  padding: 12px 13px;
+}
+
+.settings-form label span,
+.settings-form__card span {
+  font-size: 0.68rem;
+  letter-spacing: 0.11em;
+}
+
+.settings-form__card,
+.settings-form__footer,
+.cache-card {
+  border-radius: 18px;
+}
+
+.settings-form__prompt {
+  min-height: 168px;
+  line-height: 1.65;
+}
+
+.settings-form__footer {
+  padding: 12px 14px;
+}
+
+.settings-form__footer .section-note {
+  max-width: 34ch;
+}
+
+.cache-grid {
+  gap: 10px;
+}
+
+.cache-card {
+  gap: 10px;
+  padding: 14px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 14px 24px rgba(15, 23, 42, 0.06);
+}
+
+.cache-card__head {
+  gap: 10px;
+}
+
+.settings-rail-card {
+  gap: 12px;
+}

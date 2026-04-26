@@ -1,0 +1,859 @@
+/* Text and module layout stabilization:
+   keep translated labels, long titles, and mixed action rows readable
+   across workspace panels without changing feature behavior. */
+
+:root {
+  --module-reading-measure: 62ch;
+  --module-reading-measure-tight: 46ch;
+  --module-heading-measure: 16ch;
+  --module-panel-gap: 18px;
+}
+
+.gallery-toolbar,
+.gallery-group,
+.runtime-sidebar-card,
+.settings-panel,
+.settings-cache-panel,
+.weather-city-widget,
+.weather-forecast-card,
+.weather-metric-card,
+.skill-catalog__panel,
+.skill-profile-card,
+.skill-version-card,
+.skill-template-card,
+.cache-card,
+.knowledge-editor {
+  align-content: start;
+}
+
+.section-head,
+.today-section__head,
+.runtime-stage-card__head,
+.runtime-sidebar-card__head,
+.gallery-group__head,
+.gallery-toolbar__head,
+.weather-card-head,
+.weather-hero-card__headline,
+.weather-hero-card__eyebrow-row,
+.skill-card__head,
+.skill-profile-card__head,
+.skill-version-card__head,
+.cache-card__head,
+.session-history-card__head,
+.reminder-sidebar__head,
+.knowledge-head {
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.section-head > div,
+.today-section__head > div,
+.runtime-stage-card__head > div,
+.runtime-sidebar-card__head > div,
+.gallery-group__head > div,
+.gallery-toolbar__head > div,
+.weather-card-head > div,
+.weather-hero-card__headline > div,
+.weather-hero-card__eyebrow-row > div,
+.skill-card__head > div,
+.skill-profile-card__head > div,
+.skill-version-card__head > div,
+.cache-card__head > div,
+.session-history-card__head > div,
+.reminder-sidebar__head > div,
+.knowledge-head > div,
+.gallery-card__copy,
+.runtime-overview-card,
+.runtime-stage-pill,
+.runtime-recommend-card__body,
+.runtime-quick-summary,
+.skill-card,
+.skill-card__meta,
+.skill-template-card__head,
+.skill-version-card__body,
+.today-focus-item__body,
+.today-pattern-item__copy,
+.today-capture-item__body,
+.weather-search-result__copy,
+.weather-city-widget__copy,
+.weather-hourly-chip,
+.weather-day-card,
+.cache-card,
+.settings-form__card,
+.knowledge-editor__toolbar > div {
+  min-width: 0;
+}
+
+.section-head h3,
+.today-section__head h4,
+.runtime-stage-card__head h3,
+.runtime-sidebar-card__head h4,
+.gallery-group__head strong,
+.weather-card-head h3,
+.weather-hero-card__headline h3,
+.skill-card__head strong,
+.skill-profile-card__head h4,
+.skill-version-card__head strong,
+.cache-card__head strong,
+.session-history-card__head strong,
+.today-focus-item__head strong,
+.today-session-item__head strong,
+.today-capture-item strong,
+.workspace-hero__headline h2,
+.today-hero h3 {
+  max-width: var(--module-heading-measure);
+  line-height: 1.14;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.rail-brand p,
+.workspace-hero__headline p,
+.today-hero__copy p,
+.section-note,
+.gallery-card__meta p,
+.skill-card p,
+.skill-card__meta span,
+.skill-profile-card p,
+.skill-version-card p,
+.skill-template-card__head p,
+.runtime-overview-card__meta-text,
+.runtime-quick-summary p,
+.runtime-recommend-card span,
+.runtime-activity-item p,
+.runtime-session-card p,
+.weather-hero-card__summary p,
+.weather-metric-card p,
+.weather-hourly-chip p,
+.weather-search-result__copy span,
+.weather-search-empty,
+.weather-city-widget__copy span,
+.settings-workspace__note,
+.settings-cache-panel__description,
+.settings-cache-panel__safe-note,
+.cache-card p,
+.knowledge-note-card p,
+.knowledge-summary-card p {
+  max-width: var(--module-reading-measure);
+  line-height: 1.68;
+  overflow-wrap: anywhere;
+}
+
+.skill-card__meta span:last-child,
+.gallery-toolbar__head .section-note,
+.gallery-group__head .section-note,
+.weather-card-head .section-note,
+.cache-card__head .section-note,
+.settings-form__footer .section-note {
+  max-width: var(--module-reading-measure-tight);
+}
+
+.settings-summary__chips,
+.gallery-toolbar__summary,
+.gallery-toolbar__actions,
+.gallery-card__actions,
+.runtime-stage-card__meta,
+.runtime-recommend-card__actions,
+.runtime-quick-actions,
+.session-card__meta,
+.skill-card__status-group,
+.skill-profile-actions,
+.skill-header-actions,
+.today-hero__actions,
+.today-item__actions,
+.today-session-spotlight__actions,
+.composer__actions,
+.knowledge-editor__toolbar,
+.weather-range-row,
+.weather-search-result,
+.weather-city-widget__meta {
+  flex-wrap: wrap;
+  row-gap: 10px;
+}
+
+.gallery-toolbar__actions,
+.composer__actions,
+.knowledge-editor__toolbar {
+  align-items: flex-start;
+}
+
+.today-item__actions,
+.runtime-recommend-card__actions {
+  justify-content: flex-start;
+}
+
+.gallery-card__actions,
+.skill-card__status-group,
+.settings-summary__chips,
+.gallery-toolbar__summary,
+.runtime-stage-card__meta {
+  align-items: flex-start;
+}
+
+.gallery-toolbar__actions .field-input,
+.gallery-toolbar__actions .segmented-filter {
+  min-width: min(100%, 240px);
+}
+
+.settings-form__grid,
+.cache-grid,
+.today-review-grid,
+.today-shortcut-grid,
+.runtime-stage-card__summary {
+  align-items: stretch;
+}
+
+.today-focus-item,
+.today-session-item,
+.today-capture-item,
+.today-shortcut,
+.gallery-card,
+.runtime-recommend-card,
+.runtime-session-card,
+.skill-card,
+.cache-card,
+.weather-search-result,
+.weather-hourly-chip,
+.weather-day-card {
+  align-content: start;
+}
+
+.today-focus-item__head,
+.today-session-item__head,
+.today-capture-item__head,
+.gallery-card__meta,
+.skill-card__meta,
+.skill-template-card__body,
+.session-history-card__meta {
+  gap: 10px 14px;
+}
+
+.weather-search-result__button,
+.today-focus-item__body,
+.today-pattern-item__body,
+.today-capture-item__body,
+.runtime-recommend-card__body,
+.skill-card,
+.gallery-card__image {
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .gallery-toolbar__head,
+  .gallery-group__head,
+  .weather-card-head,
+  .weather-hero-card__headline,
+  .weather-hero-card__eyebrow-row,
+  .skill-card__head,
+  .skill-profile-card__head,
+  .skill-version-card__head,
+  .cache-card__head,
+  .session-history-card__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .section-head h3,
+  .today-section__head h4,
+  .runtime-stage-card__head h3,
+  .runtime-sidebar-card__head h4,
+  .gallery-group__head strong,
+  .weather-card-head h3,
+  .weather-hero-card__headline h3,
+  .skill-profile-card__head h4,
+  .workspace-hero__headline h2,
+  .today-hero h3 {
+    max-width: 12ch;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --module-reading-measure: 100%;
+    --module-reading-measure-tight: 100%;
+    --module-heading-measure: 100%;
+  }
+
+  .gallery-toolbar__actions,
+  .skill-header-actions,
+  .today-hero__actions,
+  .runtime-quick-actions,
+  .settings-form__footer {
+    align-items: stretch;
+  }
+
+  .gallery-toolbar__actions > *,
+  .skill-header-actions > *,
+  .today-hero__actions > *,
+  .runtime-quick-actions > *,
+  .settings-form__footer > * {
+    width: 100%;
+  }
+
+  .settings-summary__chips,
+  .gallery-toolbar__summary,
+  .runtime-stage-card__meta,
+  .skill-card__status-group {
+    width: 100%;
+  }
+}
+
+/* Today workspace */
+.today-hero__stats {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.today-review-grid {
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+}
+
+.today-rule-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.today-rule-block,
+.today-pattern-list {
+  gap: 12px;
+}
+
+.today-rule-block + .today-rule-block,
+.today-rule-block + .today-pattern-list,
+.today-pattern-list + .today-rule-block {
+  padding-top: 14px;
+  border-top: 1px solid var(--surface-border);
+}
+
+.today-rule-block > .section-note,
+.today-pattern-list > .section-note {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+}
+
+.today-session-spotlight,
+.today-review-signal,
+.today-rule-signal,
+.today-pattern-item,
+.today-shortcut {
+  align-content: start;
+}
+
+.today-review-signal,
+.today-rule-signal {
+  min-height: 96px;
+}
+
+.today-pattern-item__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-content: initial;
+  align-items: start;
+}
+
+.today-pattern-item__copy {
+  gap: 8px;
+}
+
+.today-rule-item__metrics {
+  gap: 8px;
+}
+
+.today-rule-item__metrics span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.today-item__actions .ghost-button,
+.today-session-spotlight__actions .solid-button {
+  max-width: 100%;
+}
+
+.today-item__actions {
+  padding-top: 2px;
+}
+
+/* Gallery workspace */
+.gallery-toolbar__summary,
+.gallery-toolbar__actions {
+  padding-top: 12px;
+  border-top: 1px solid var(--surface-border);
+}
+
+.gallery-group__head {
+  padding-bottom: 2px;
+}
+
+.gallery-card__copy p {
+  max-width: 40ch;
+}
+
+.gallery-card__actions {
+  justify-content: flex-start;
+}
+
+.gallery-card__actions .chip-button {
+  min-width: 96px;
+}
+
+/* Reminder workspace */
+.reminder-sidebar__intro,
+.reminder-clock-card,
+.reminder-group {
+  align-content: start;
+}
+
+.reminder-sidebar__summary,
+.reminder-editor__grid {
+  align-items: stretch;
+}
+
+.reminder-group__head {
+  padding-bottom: 2px;
+}
+
+.reminder-card__meta,
+.reminder-linked-note {
+  gap: 10px 14px;
+}
+
+.reminder-card__link,
+.reminder-editor__hero-copy p {
+  max-width: 48ch;
+}
+
+.reminder-linked-note {
+  align-items: flex-start;
+}
+
+.reminder-linked-note .ghost-button {
+  max-width: 100%;
+}
+
+/* Knowledge workspace */
+.knowledge-sidebar__summary,
+.knowledge-search-shell,
+.knowledge-editor__hero,
+.knowledge-empty-state {
+  align-content: start;
+}
+
+.knowledge-search-shell,
+.knowledge-note-list {
+  padding-top: 12px;
+  border-top: 1px solid var(--surface-border);
+}
+
+.knowledge-summary-card p,
+.knowledge-note-card p,
+.knowledge-editor__hero-copy p,
+.knowledge-editor__stamp p {
+  max-width: 50ch;
+}
+
+.knowledge-note-card__meta {
+  gap: 8px 12px;
+}
+
+.knowledge-note-card__meta span,
+.knowledge-note-card__title-block span {
+  overflow-wrap: anywhere;
+}
+
+/* Session rail */
+.rail-section__head,
+.rail-section__head--split,
+.session-group__head,
+.session-card__head,
+.session-card__meta {
+  align-items: flex-start;
+}
+
+.rail-brand p,
+.session-library-summary strong,
+.session-library-summary span,
+.session-card__preview,
+.session-card__meta {
+  max-width: 44ch;
+}
+
+.session-search-panel,
+.session-library-summary,
+.session-card {
+  align-content: start;
+}
+
+/* Skills workspace */
+.skill-sidebar__intro-copy p,
+.skill-catalog__summary,
+.skill-mount-banner p,
+.skill-recommend-card p,
+.skill-version-card p,
+.skill-template-card__head p,
+.knowledge-editor__stamp p {
+  max-width: 58ch;
+}
+
+.skill-profile-grid {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.skill-editor__operations,
+.skill-recommend-card,
+.skill-mounted-card,
+.skill-version-card,
+.skill-template-card {
+  align-items: start;
+}
+
+.skill-card__status-group {
+  justify-content: flex-start;
+}
+
+.skill-card__pill-row,
+.skill-template-card__body,
+.skill-recommend-card .skill-template-card__body,
+.knowledge-editor__actions {
+  align-items: flex-start;
+}
+
+.skill-recommend-card > div:first-child,
+.skill-version-card__head > div,
+.skill-template-card__head > div,
+.skill-profile-card__head > div {
+  min-width: 0;
+}
+
+.skill-recommend-card strong,
+.skill-version-card__head strong,
+.skill-template-card__head strong,
+.skill-mounted-card strong {
+  overflow-wrap: anywhere;
+}
+
+/* Settings workspace */
+.settings-workspace__hero .section-head,
+.settings-panel .section-head,
+.settings-cache-panel .section-head {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.settings-form__grid,
+.cache-grid {
+  align-items: start;
+}
+
+.settings-form__card > .section-note,
+.settings-form__card .section-note,
+.cache-card .section-note {
+  max-width: 52ch;
+}
+
+.settings-form__card > button,
+.cache-card > button {
+  align-self: flex-start;
+}
+
+.settings-form__footer,
+.settings-cache-panel__safe-note {
+  padding-top: 12px;
+  border-top: 1px solid var(--surface-border);
+}
+
+/* Weather workspace */
+.weather-stage__toolbar,
+.weather-stage__status,
+.weather-stage__actions,
+.weather-search-section__head,
+.weather-attribution,
+.weather-hero-card__temperature {
+  align-items: flex-start;
+}
+
+.weather-metric-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.weather-city-search,
+.weather-city-widget__list {
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.weather-search-results,
+.weather-city-widget__list {
+  gap: 12px;
+}
+
+.weather-search-section {
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.weather-search-section__head {
+  padding: 0;
+}
+
+.weather-condition-pill {
+  max-width: 24ch;
+  white-space: normal;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.weather-hero-card__summary {
+  max-width: 50ch;
+}
+
+.weather-search-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.weather-search-result__copy strong,
+.weather-city-widget__copy strong,
+.weather-week-row strong {
+  overflow-wrap: anywhere;
+}
+
+.weather-city-widget__item {
+  align-items: start;
+}
+
+.weather-city-widget__select {
+  align-items: start;
+}
+
+.weather-city-widget__meta {
+  align-self: start;
+  padding-top: 2px;
+}
+
+.weather-city-widget__remove {
+  align-self: start;
+  min-height: 36px;
+  min-width: 84px;
+  white-space: nowrap;
+}
+
+.weather-hourly-row {
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+}
+
+.weather-week-row {
+  grid-template-columns: minmax(88px, 1fr) minmax(0, 1.2fr) auto auto;
+  align-items: start;
+}
+
+/* Runtime workspace */
+.runtime-overview-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.runtime-overview-card,
+.runtime-stage-pill {
+  align-content: start;
+}
+
+.runtime-overview-card {
+  min-height: 108px;
+}
+
+.runtime-stage-card__summary {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.runtime-chip-list .chip-button,
+.runtime-recommend-card__actions .ghost-button,
+.runtime-quick-actions .chip-button {
+  max-width: 100%;
+}
+
+.runtime-composer__actions {
+  align-items: flex-start;
+}
+
+.runtime-composer__actions .solid-button,
+.runtime-recommend-card__actions .ghost-button {
+  align-self: flex-start;
+}
+
+.runtime-recommend-card,
+.runtime-activity-item,
+.runtime-session-card {
+  align-content: start;
+}
+
+/* Long-label control safeguards */
+.status-chip,
+.priority-pill,
+.skill-meta-pill,
+.gallery-toolbar__pill,
+.weather-pill,
+.weather-condition-pill,
+.segmented-filter__button,
+.chip-button,
+.ghost-button,
+.solid-button,
+.mode-switch__button {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.status-chip,
+.priority-pill,
+.skill-meta-pill,
+.gallery-toolbar__pill,
+.weather-pill,
+.weather-condition-pill {
+  white-space: normal;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.segmented-filter,
+.mode-switch,
+.runtime-chip-list,
+.conversation-skill-strip__chips,
+.today-hero__meta,
+.settings-summary__chips {
+  row-gap: 8px;
+}
+
+.segmented-filter__button,
+.chip-button,
+.ghost-button,
+.solid-button,
+.mode-switch__button {
+  line-height: 1.35;
+  text-align: center;
+}
+
+/* Helper-copy safeguards */
+.section-note,
+.danger-copy,
+.error-banner,
+.notice-banner,
+.runtime-sidebar-copy,
+.runtime-composer__hint,
+.settings-workspace__note,
+.settings-cache-panel__description,
+.settings-cache-panel__safe-note,
+.skill-catalog__summary,
+.gallery-empty p,
+.reminder-empty-state p,
+.knowledge-empty-state p {
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+
+.error-banner,
+.notice-banner {
+  max-width: 72ch;
+  line-height: 1.65;
+}
+
+.settings-form__card .section-note,
+.cache-card .section-note,
+.knowledge-editor__stamp p,
+.reminder-editor__hero-copy p,
+.runtime-sidebar-copy {
+  max-width: 54ch;
+}
+
+@media (max-width: 960px) {
+  .skill-header-actions > *,
+  .knowledge-editor__actions > * {
+    flex: 1 1 180px;
+  }
+
+  .weather-search-result,
+  .weather-city-widget__item,
+  .weather-week-row {
+    grid-template-columns: 1fr;
+  }
+
+  .weather-city-widget__select {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .weather-search-result > .chip-button,
+  .weather-city-widget__remove {
+    width: 100%;
+  }
+
+  .weather-city-widget__meta {
+    grid-column: 2;
+    justify-items: start;
+  }
+
+  .gallery-card__actions .chip-button,
+  .reminder-linked-note .ghost-button,
+  .settings-form__card > button,
+  .cache-card > button,
+  .runtime-composer__actions .solid-button,
+  .runtime-recommend-card__actions .ghost-button,
+  .runtime-quick-actions .chip-button {
+    width: 100%;
+  }
+
+  .segmented-filter,
+  .mode-switch {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .segmented-filter__button,
+  .mode-switch__button {
+    flex: 1 1 140px;
+  }
+}
+
+@media (max-width: 760px) {
+  .today-item__actions > *,
+  .today-session-spotlight__actions > *,
+  .gallery-card__actions > *,
+  .reminder-linked-note > *,
+  .skill-header-actions > *,
+  .knowledge-editor__actions > *,
+  .skill-template-card__body > *,
+  .skill-recommend-card .skill-template-card__body > * {
+    width: 100%;
+  }
+
+  .today-rule-item__metrics span,
+  .skill-card__status-group,
+  .skill-card__pill-row,
+  .weather-condition-pill,
+  .gallery-toolbar__pill {
+    max-width: 100%;
+  }
+
+  .today-review-signal,
+  .today-rule-signal,
+  .weather-search-section {
+    min-height: 0;
+  }
+
+  .weather-city-search,
+  .weather-city-widget__list {
+    padding-top: 12px;
+  }
+
+  .gallery-toolbar__summary,
+  .gallery-toolbar__actions,
+  .knowledge-search-shell,
+  .knowledge-note-list,
+  .settings-form__footer,
+  .settings-cache-panel__safe-note {
+    padding-top: 10px;
+  }
+}

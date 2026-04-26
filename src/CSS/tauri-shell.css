@@ -1,0 +1,46 @@
+.workspace-hero__meta-pill--desktop {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding-inline: 12px 14px;
+}
+
+.workspace-hero__meta-pill--desktop span {
+  min-width: 0;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  color: var(--soft-text);
+  white-space: nowrap;
+}
+
+.workspace-hero__meta-pill--desktop strong {
+  flex: 0 0 auto;
+  font-size: 0.76rem;
+  line-height: 1.2;
+  color: var(--heading-text);
+  white-space: nowrap;
+}
+
+.workspace-hero__meta-pill--desktop.is-live {
+  border-color: rgba(255, 122, 74, 0.2);
+  background:
+    radial-gradient(circle at left center, rgba(255, 122, 74, 0.14), transparent 44%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.03);
+}
+
+.workspace-hero__meta-pill--desktop.is-background {
+  opacity: 0.9;
+}
+
+.workspace-hero__meta-pill--desktop.is-pending strong {
+  color: var(--soft-text);
+}
+
+@media (max-width: 900px) {
+  .workspace-hero__meta-pill--desktop {
+    order: 3;
+  }
+}

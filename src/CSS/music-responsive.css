@@ -1,0 +1,129 @@
+@media (max-width: 1280px) {
+  .music-stage__content {
+    grid-template-columns: 1fr;
+  }
+
+  .music-queue-panel {
+    grid-column: auto;
+  }
+
+  .music-hero-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .music-showcase-panel__layout {
+    grid-template-columns: minmax(228px, 260px) minmax(0, 1fr) minmax(210px, 236px);
+  }
+
+  .music-showcase-panel__layout--queue-collapsed {
+    grid-template-columns: minmax(228px, 260px) minmax(0, 1fr) 80px;
+  }
+}
+
+@media (max-width: 960px) {
+  .music-stage__content {
+    grid-template-columns: 1fr;
+  }
+
+  .music-hero-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .music-showcase-panel__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .music-showcase-panel__layout--queue-collapsed {
+    grid-template-columns: 1fr;
+  }
+
+  .music-showcase-sidebar {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-right: 28px;
+  }
+
+  .music-queue-panel--embedded,
+  .music-queue-panel--embedded.is-collapsed {
+    padding: 20px 24px 24px;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    justify-items: stretch;
+  }
+
+  .music-queue-panel__collapsed-indicator {
+    justify-items: start;
+    min-height: auto;
+    padding-top: 0;
+  }
+
+  .music-showcase-shell {
+    min-height: 440px;
+  }
+
+  .music-orbit-scene {
+    --orbit-distance: 160px;
+    width: min(100%, 440px);
+  }
+
+  .mini-player-bar {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    width: min(calc(100vw - 28px), 680px);
+  }
+
+  .mini-player-bar__controls {
+    justify-content: flex-start;
+  }
+
+  .music-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .music-progress,
+  .music-controls,
+  .music-volume,
+  .music-control-row {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .music-visualizer-shell,
+  .audio-visualizer {
+    min-height: 240px;
+  }
+
+  .music-showcase-shell {
+    min-height: 360px;
+    padding: 16px;
+  }
+
+  .music-orbit-scene {
+    --orbit-distance: 118px;
+    width: min(100%, 320px);
+  }
+
+  .music-vinyl--hero {
+    width: min(100%, 250px);
+    padding: 18px;
+  }
+
+  .music-needle {
+    width: 108px;
+    right: 10%;
+    top: 14%;
+  }
+
+  .agent-app--with-mini-player {
+    padding-bottom: 184px;
+  }
+
+  .mini-player-bar {
+    left: 50%;
+    bottom: 12px;
+    width: calc(100vw - 24px);
+    padding: 12px;
+    border-radius: 24px;
+  }
+}

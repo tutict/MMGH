@@ -1,0 +1,145 @@
+.music-room {
+  border-radius: 22px;
+  overflow: hidden;
+}
+
+.music-room__scrim {
+  background:
+    linear-gradient(180deg, rgba(8, 10, 14, 0.46), rgba(8, 10, 14, 0.72)),
+    radial-gradient(circle at 18% 18%, rgba(var(--music-accent-rgb), 0.12), transparent 26%);
+}
+
+.music-room__surface {
+  padding: 18px;
+  background:
+    linear-gradient(180deg, rgba(10, 14, 20, 0.72), rgba(10, 14, 20, 0.82)),
+    var(--music-surface);
+  backdrop-filter: blur(18px);
+}
+
+.music-room__surface::before,
+.music-room__surface::after {
+  opacity: 0.42;
+}
+
+.music-room__header,
+.music-room__trackline,
+.music-room__footer,
+.music-room__library-head {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.music-room__header-shell {
+  gap: 16px;
+}
+
+.music-room__headline h2 {
+  font-size: clamp(1.9rem, 3vw, 2.7rem);
+  line-height: 0.98;
+  max-width: 12ch;
+}
+
+.music-room__headline p,
+.music-room__turntable-copy p,
+.music-room__lyrics-title p,
+.music-room__library-hint p {
+  max-width: 48ch;
+}
+
+.music-room__status-strip {
+  gap: 10px;
+}
+
+.music-room__status-item,
+.music-room__facts span,
+.music-room__library-hint,
+.music-room__lyric-line.is-active {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: none;
+}
+
+.music-room__status-item {
+  padding: 12px 14px;
+  border-radius: 14px;
+}
+
+.music-room__meta {
+  gap: 8px;
+}
+
+.music-room__chip,
+.music-room__utility,
+.music-room__mode-button,
+.music-room__lyrics-action,
+.music-room__lyrics-source,
+.music-room__sync,
+.music-room__library-toggle,
+.music-room__library-close,
+.music-room__icon-button,
+.music-room__volume,
+.music-room__track,
+.music-room__lyrics-viewport {
+  box-shadow: none;
+}
+
+.music-room__stage {
+  gap: 18px;
+}
+
+.music-room__turntable,
+.music-room__content,
+.music-room__library {
+  border-radius: 18px;
+}
+
+.music-room__content {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.music-room__facts {
+  gap: 8px;
+}
+
+.music-room__facts span {
+  padding: 8px 10px;
+  border-radius: 999px;
+}
+
+.music-room__lyrics {
+  gap: 14px;
+}
+
+.music-room__lyrics-viewport {
+  border-radius: 16px;
+}
+
+.music-room__lyric-line {
+  min-height: 64px;
+  padding: 10px 14px;
+  border-radius: 14px;
+}
+
+.music-room__footer {
+  gap: 14px;
+}
+
+.music-room__track {
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.music-room__track:hover {
+  transform: none;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.music-room__track.is-active {
+  box-shadow: none;
+}
+html[data-theme="light"] .music-room__surface {
+  background:
+    linear-gradient(180deg, rgba(255, 250, 248, 0.76), rgba(243, 237, 233, 0.82)),
+    var(--music-surface);
+}

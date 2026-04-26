@@ -1,0 +1,247 @@
+/* Follow-up workspace refinement:
+   align Skills, Music, and Weather with the calmer shell while keeping
+   their domain-specific character intact. */
+
+.skill-panel.panel-surface,
+.weather-panel.panel-surface {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.skill-panel {
+  display: grid;
+  grid-template-columns: minmax(270px, 320px) minmax(0, 1fr) minmax(280px, 340px);
+  gap: 18px;
+}
+
+.skill-sidebar,
+.skill-editor,
+.skill-catalog,
+.weather-stage {
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.024), transparent 56%),
+    var(--panel-background);
+  box-shadow: var(--panel-shadow);
+}
+
+.skill-sidebar,
+.skill-editor,
+.skill-catalog {
+  padding: 18px;
+}
+
+.skill-sidebar,
+.skill-catalog {
+  align-self: start;
+  position: sticky;
+  top: 20px;
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+}
+
+.skill-sidebar__intro {
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.skill-sidebar__intro-copy h3 {
+  font-size: 1.28rem;
+  line-height: 1.1;
+}
+
+.skill-sidebar__status--grid,
+.skill-profile-grid {
+  gap: 10px;
+}
+
+.skill-stat-card,
+.skill-profile-metric,
+.skill-toggle-card,
+.skill-mount-banner,
+.skill-catalog__panel,
+.skill-template-card,
+.skill-version-card,
+.skill-recommend-card,
+.skill-mounted-card,
+.skill-empty-panel,
+.skill-profile-card {
+  border-radius: 16px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.skill-stat-card,
+.skill-profile-metric,
+.skill-toggle-card,
+.skill-mount-banner,
+.skill-template-card,
+.skill-version-card,
+.skill-recommend-card,
+.skill-mounted-card,
+.skill-empty-panel {
+  border: 1px solid var(--surface-border);
+}
+
+.skill-catalog__panel {
+  padding: 0 0 18px;
+  border: none;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.skill-catalog__panel:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.skill-filter-chip,
+.skill-meta-pill {
+  border-radius: 999px;
+  background: transparent;
+}
+
+.skill-filter-chip.is-active {
+  background: var(--surface-active);
+  border-color: var(--surface-active-border);
+}
+
+.skill-list,
+.skill-template-list,
+.skill-version-list,
+.skill-recommend-list,
+.skill-mounted-list {
+  gap: 10px;
+}
+
+.skill-card {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.skill-card:hover,
+.skill-template-card:hover,
+.skill-version-card:hover,
+.skill-recommend-card:hover,
+.skill-mounted-card:hover {
+  transform: none;
+  background: var(--surface-hover);
+  box-shadow: none;
+}
+
+.skill-card.is-active,
+.skill-mounted-card.is-active {
+  background: var(--surface-active);
+  border-color: var(--surface-active-border);
+}
+
+.skill-editor {
+  min-width: 0;
+}
+
+.skill-editor .knowledge-editor__toolbar {
+  padding-bottom: 14px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.skill-editor__form {
+  gap: 16px;
+}
+
+.skill-profile-card--hero {
+  padding: 18px;
+}
+
+.skill-profile-card__head {
+  gap: 12px;
+}
+
+.skill-profile-card__head h4 {
+  font-size: 1.42rem;
+  line-height: 1.06;
+}
+
+.skill-profile-card p,
+.skill-version-card p,
+.skill-template-card__head p,
+.skill-recommend-card p {
+  max-width: 58ch;
+}
+
+.skill-editor .settings-form__row {
+  gap: 8px;
+}
+
+.skill-editor .knowledge-body-input {
+  min-height: 280px;
+}
+
+
+
+html[data-theme="light"] .skill-sidebar,
+html[data-theme="light"] .skill-editor,
+html[data-theme="light"] .skill-catalog,
+html[data-theme="light"] .weather-stage {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.72)),
+    var(--panel-background);
+}
+
+
+@media (max-width: 1380px) {
+  .skill-panel {
+    grid-template-columns: 280px minmax(0, 1fr);
+  }
+
+  .skill-catalog {
+    grid-column: 1 / -1;
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 1120px) {
+  .skill-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .skill-sidebar,
+  .skill-catalog {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .music-room__stage {
+    grid-template-columns: 1fr;
+  }
+
+  .weather-top-grid,
+  .weather-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .skill-sidebar,
+  .skill-editor,
+  .skill-catalog,
+  .weather-stage,
+  .music-room__surface {
+    padding: 16px;
+  }
+
+  .music-room__status-strip,
+  .weather-metric-grid,
+  .skill-sidebar__status--grid,
+  .skill-profile-grid,
+  .skill-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

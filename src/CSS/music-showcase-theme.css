@@ -1,0 +1,117 @@
+html[data-theme="light"] .music-stage {
+  border-color: rgba(18, 32, 45, 0.08);
+}
+
+html[data-theme="light"] .mini-player-bar {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.92), transparent 36%),
+    radial-gradient(circle at bottom right, rgba(255, 122, 74, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(247, 250, 255, 0.62)),
+    rgba(255, 255, 255, 0.56);
+  border-color: rgba(255, 255, 255, 0.46);
+  box-shadow:
+    0 22px 40px rgba(34, 53, 79, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.42);
+}
+
+html[data-theme="light"] .music-showcase-panel,
+html[data-theme="light"] .music-queue-panel {
+  background: rgba(255, 255, 255, 0.38);
+  border-color: rgba(18, 32, 45, 0.08);
+}
+
+html[data-theme="light"] .music-hero-panel {
+  background: transparent;
+  border-color: transparent;
+}
+
+html[data-theme="light"] .music-meta-card,
+html[data-theme="light"] .music-queue-item,
+html[data-theme="light"] .music-queue-empty {
+  background: rgba(255, 255, 255, 0.52);
+  border-color: rgba(18, 32, 45, 0.08);
+}
+
+html[data-theme="light"] .music-showcase-panel__head h3,
+html[data-theme="light"] .music-queue-panel__head h3,
+html[data-theme="light"] .music-meta-card strong,
+html[data-theme="light"] .music-showcase-copy strong,
+html[data-theme="light"] .music-queue-item__body strong,
+html[data-theme="light"] .music-queue-count {
+  color: #182332;
+}
+
+html[data-theme="light"] .music-meta-card span,
+html[data-theme="light"] .music-visualizer-overlay__eyebrow,
+html[data-theme="light"] .music-showcase-copy p,
+html[data-theme="light"] .music-queue-item__body p,
+html[data-theme="light"] .music-queue-item__meta,
+html[data-theme="light"] .music-queue-empty {
+  color: rgba(24, 35, 50, 0.68);
+}
+
+html[data-theme="light"] .music-queue-count {
+  background: rgba(24, 35, 50, 0.08);
+}
+
+html[data-theme="light"] .music-showcase-shell {
+  background:
+    radial-gradient(circle at center, rgba(255, 116, 86, 0.16), transparent 26%),
+    radial-gradient(circle at top, rgba(255, 116, 86, 0.14), transparent 40%),
+    linear-gradient(180deg, rgba(250, 246, 244, 0.96), rgba(230, 235, 244, 0.94));
+}
+
+html[data-theme="light"] .music-showcase-panel__footer,
+html[data-theme="light"] .music-volume--player,
+html[data-theme="light"] .music-showcase-pill {
+  background: rgba(255, 255, 255, 0.56);
+  border-color: rgba(18, 32, 45, 0.08);
+}
+
+html[data-theme="light"] .music-showcase-sidebar {
+  border-right-color: rgba(18, 32, 45, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="light"] .music-showcase-panel--hero {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.92), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.4)),
+    rgba(255, 255, 255, 0.32);
+}
+
+html[data-theme="light"] .music-queue-panel--embedded {
+  border-left-color: rgba(18, 32, 45, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.14)),
+    rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme="light"] .music-queue-toggle {
+  background: rgba(255, 255, 255, 0.64);
+  border-color: rgba(18, 32, 45, 0.08);
+}
+
+html[data-theme="light"] .music-queue-toggle__chevron {
+  border-right-color: rgba(24, 35, 50, 0.8);
+  border-bottom-color: rgba(24, 35, 50, 0.8);
+}
+
+html[data-theme="light"] .music-vinyl--hero {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.28), transparent 30%),
+    radial-gradient(circle at 52% 52%, rgba(255, 255, 255, 0.08), transparent 58%),
+    linear-gradient(145deg, rgba(248, 249, 252, 0.98), rgba(226, 231, 240, 0.94));
+}
+
+html[data-theme="light"] .music-needle {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.92), rgba(160, 170, 186, 0.54));
+}
+
+html[data-theme="light"] .sound-track-card {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.12);
+}
