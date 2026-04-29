@@ -36,6 +36,7 @@ import {
 import MiniPlayerBar from "./components/MiniPlayerBar";
 import {
   WEATHER_LOCATIONS,
+  createInitialWeatherCity,
   createInitialWeatherCities,
   fetchWeatherSnapshots,
 } from "./components/weatherData";
@@ -676,7 +677,9 @@ function App() {
 
     setWeatherStatus("loading");
     setWeatherError("");
-    setWeatherCities(createInitialWeatherCities(sourceLocations));
+    setWeatherCities((currentCities) =>
+      buildWeatherLoadingCities(currentCities, sourceLocations)
+    );
     try {
       const nextCities = await fetchWeatherSnapshots(sourceLocations, {
         signal: controller.signal,
@@ -695,13 +698,13 @@ function App() {
         return;
       }
       setWeatherStatus("error");
-      setWeatherError(normalizeError(err));
+      setWeatherError(normalizeWeatherNetworkError(err, t));
     } finally {
       if (weatherAbortControllerRef.current === controller) {
         weatherAbortControllerRef.current = null;
       }
     }
-  }, [weatherLocations]);
+  }, [t, weatherLocations]);
   const resolveAdjacentTrackId = useCallback((direction = 1, mode = playMode) => {
     if (tracks.length === 0) {
       return "";
@@ -2177,8 +2180,6 @@ function App() {
         .filter(Boolean),
     [allNavigationItems]
   );
-  const activeNavItem =
-    allNavigationItems.find((item) => item.id === currentView) || allNavigationItems[0] || null;
   const desktopRuntimeMeta = useMemo(() => {
     if (!desktopRuntime.available) {
       return null;
@@ -4181,80 +4182,21 @@ function App() {
     }
   }
 
-  const railContent = (
-    <div className="session-rail__body">
-      <div className="rail-brand rail-brand--compact">
-        <div className="rail-brand__head">
-          <div>
-            <span className="rail-brand__tag">{t("app.brand.tag")}</span>
-            <h1>MMGH Agent</h1>
-            <p>{t("app.brand.description")}</p>
-          </div>
-          <span className="rail-brand__view-tag">{viewMeta[currentView].eyebrow}</span>
-        </div>
+  const renderMiniPlayer = (placement) =>
+    showMiniPlayer ? (
+      <MiniPlayerBar
+        handleOpenMusicWorkspace={() => openView("music")}
+        handleRestartTrack={handleRestartTrack}
+        handleSeek={handleSeek}
+        handleTogglePlayback={handleTogglePlayback}
+        isPlaying={isPlaying}
+        placement={placement}
+        selectedTrack={selectedTrack}
+      />
+    ) : null;
 
-        <div className="rail-summary-strip">
-          <article className="rail-summary-pill">
-            <span>{t("app.stats.sessions")}</span>
-            <strong>{String(sessionList.length).padStart(2, "0")}</strong>
-          </article>
-          <article className="rail-summary-pill">
-            <span>{t("app.stats.notes")}</span>
-            <strong>{String(noteList.length).padStart(2, "0")}</strong>
-          </article>
-          <article className="rail-summary-pill">
-            <span>{t("app.stats.skills")}</span>
-            <strong>{String(skillList.length).padStart(2, "0")}</strong>
-          </article>
-        </div>
-      </div>
-
-      <section className="rail-section rail-section--navigation">
-        <div className="rail-section__head">
-          <span className="eyebrow">{t("app.nav.eyebrow")}</span>
-          <strong>{t("app.nav.title")}</strong>
-        </div>
-        <div className="rail-nav rail-nav--compact">
-          {navigationGroups.map((group) => (
-            <section
-              key={group.id}
-              className={`rail-nav-group ${
-                group.items.some((item) => item.id === currentView) ? "is-active" : ""
-              }`}
-            >
-              <div className="rail-nav-group__label">
-                <span className="rail-nav-group__icon" aria-hidden="true">
-                  <PanelIcon type={getNavGroupIconType(group.id)} />
-                </span>
-                <span>{group.label}</span>
-              </div>
-              <div className="rail-nav-list">
-                {group.items.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className={`rail-nav-item ${currentView === item.id ? "is-active" : ""}`}
-                    onClick={() => handleSelectView(item.id)}
-                  >
-                    <div className="rail-nav-item__head">
-                      <div className="rail-nav-item__title">
-                        <span className="rail-nav-item__icon" aria-hidden="true">
-                          <PanelIcon type={getNavIconType(item.id)} />
-                        </span>
-                        <strong>{item.label}</strong>
-                      </div>
-                      <span className="rail-nav-item__badge">{item.badge}</span>
-                    </div>
-                    <span className="rail-nav-item__meta">{item.meta}</span>
-                  </button>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      </section>
-
-      <section className="rail-section rail-section--sessions">
+  const sessionLibraryPanel = (
+    <section className="panel-surface today-section today-session-library-panel">
         <div className="rail-section__head rail-section__head--split">
           <div>
             <span className="eyebrow">{t("app.nav.sessions.eyebrow")}</span>
@@ -4419,6 +4361,82 @@ function App() {
           </div>
         )}
       </section>
+  );
+
+  const railContent = (
+    <div className="session-rail__body">
+      <div className="rail-brand rail-brand--compact">
+        <div className="rail-brand__head">
+          <div>
+            <span className="rail-brand__tag">{t("app.brand.tag")}</span>
+            <h1>MMGH Agent</h1>
+            <p>{t("app.brand.description")}</p>
+          </div>
+          <span className="rail-brand__view-tag">{viewMeta[currentView].eyebrow}</span>
+        </div>
+
+        <div className="rail-summary-strip">
+          <article className="rail-summary-pill">
+            <span>{t("app.stats.sessions")}</span>
+            <strong>{String(sessionList.length).padStart(2, "0")}</strong>
+          </article>
+          <article className="rail-summary-pill">
+            <span>{t("app.stats.notes")}</span>
+            <strong>{String(noteList.length).padStart(2, "0")}</strong>
+          </article>
+          <article className="rail-summary-pill">
+            <span>{t("app.stats.skills")}</span>
+            <strong>{String(skillList.length).padStart(2, "0")}</strong>
+          </article>
+        </div>
+      </div>
+
+      <section className="rail-section rail-section--navigation">
+        <div className="rail-section__head">
+          <span className="eyebrow">{t("app.nav.eyebrow")}</span>
+          <strong>{t("app.nav.title")}</strong>
+        </div>
+        <div className="rail-nav rail-nav--compact">
+          {navigationGroups.map((group) => (
+            <section
+              key={group.id}
+              className={`rail-nav-group ${
+                group.items.some((item) => item.id === currentView) ? "is-active" : ""
+              }`}
+            >
+              <div className="rail-nav-group__label">
+                <span className="rail-nav-group__icon" aria-hidden="true">
+                  <PanelIcon type={getNavGroupIconType(group.id)} />
+                </span>
+                <span>{group.label}</span>
+              </div>
+              <div className="rail-nav-list">
+                {group.items.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`rail-nav-item ${currentView === item.id ? "is-active" : ""}`}
+                    onClick={() => handleSelectView(item.id)}
+                  >
+                    <div className="rail-nav-item__head">
+                      <div className="rail-nav-item__title">
+                        <span className="rail-nav-item__icon" aria-hidden="true">
+                          <PanelIcon type={getNavIconType(item.id)} />
+                        </span>
+                        <strong>{item.label}</strong>
+                      </div>
+                      <span className="rail-nav-item__badge">{item.badge}</span>
+                    </div>
+                    <span className="rail-nav-item__meta">{item.meta}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </section>
+
+      {renderMiniPlayer("rail")}
     </div>
   );
 
@@ -4467,15 +4485,12 @@ function App() {
               <span className="workspace-hero__brand-mark">MMGH</span>
               <div className="workspace-hero__brand-copy">
                 <span className="eyebrow">{t("app.brand.tag")}</span>
-                <strong>MMGH Agent</strong>
+                <strong>MMGH · {viewMeta[currentView].title}</strong>
               </div>
             </div>
             <div className="workspace-hero__meta-bar">
               <span className="workspace-hero__meta-pill">{formatShortClock(clockNow, lang)}</span>
-              <span className="workspace-hero__meta-pill">
-                {activeNavItem?.meta || viewMeta[currentView].eyebrow}
-              </span>
-              {desktopRuntimeMeta ? (
+              {desktopRuntimeMeta && desktopRuntimeMeta.tone !== "is-live" ? (
                 <span
                   className={`workspace-hero__meta-pill workspace-hero__meta-pill--desktop ${desktopRuntimeMeta.tone}`}
                   title={desktopRuntimeMeta.title}
@@ -4499,22 +4514,13 @@ function App() {
             </div>
           </div>
           <div className="workspace-hero__headline">
-            <span className="eyebrow">{viewMeta[currentView].eyebrow}</span>
             <h2>{viewMeta[currentView].title}</h2>
             <p>{viewMeta[currentView].description}</p>
-          </div>
-          <div className="workspace-hero__status">
-            <div className="hero-badges">
-              {viewMeta[currentView].badges.map((badge) => (
-                <Badge key={`${currentView}-${badge.label}`} label={badge.label} value={badge.value} />
-              ))}
-            </div>
           </div>
           <div className="workspace-hero__actions">
             <div className="workspace-hero__toolbar-shell">
               <div className="workspace-hero__toolbar">
                 <div className="hero-control-card hero-control-card--theme hero-control-card--compact">
-                  <span className="hero-control-card__label">{t("app.hero.appearance")}</span>
                   <button
                     type="button"
                     className="ghost-button hero-theme-button"
@@ -4524,14 +4530,14 @@ function App() {
                   </button>
                 </div>
                 <div className="hero-control-card hero-control-card--locale hero-control-card--compact">
-                  <span className="hero-control-card__label">{t("app.language.label")}</span>
                   <div className="mode-switch mode-switch--inline" aria-label={t("app.language.label")}>
                     <button
                       type="button"
                       className={`mode-switch__button ${lang === "zh-CN" ? "is-active" : ""}`}
                       onClick={() => setLang("zh-CN")}
+                      aria-label={"\u4E2D\u6587"}
                     >
-                      中文
+                      {"\u4E2D\u6587"}
                     </button>
                     <button
                       type="button"
@@ -4571,7 +4577,6 @@ function App() {
                 </span>
                 <span className="workspace-switcher-button__copy">
                   <strong>{item.label}</strong>
-                  <span>{item.badge}</span>
                 </span>
               </button>
             ))}
@@ -4618,6 +4623,7 @@ function App() {
               ruleActionRecommendations={ruleActionRecommendations}
               ruleEffectivenessInsights={ruleEffectivenessInsights}
               ruleEffectivenessSignals={ruleEffectivenessSignals}
+              sessionLibraryPanel={sessionLibraryPanel}
               todayReminderItems={todayReminderItems}
               todayReviewSignals={todayReviewSignals}
               weatherStatus={weatherStatus}
@@ -5054,8 +5060,9 @@ function App() {
                         type="button"
                         className={`mode-switch__button ${lang === "zh-CN" ? "is-active" : ""}`}
                         onClick={() => setLang("zh-CN")}
+                        aria-label={"\u4E2D\u6587"}
                       >
-                        中文
+                        {"\u4E2D\u6587"}
                       </button>
                       <button
                         type="button"
@@ -5137,26 +5144,8 @@ function App() {
           {selectedTrackSource ? <source src={selectedTrackSource.src} type="audio/mpeg" /> : null}
         </audio>
 
-        {showMiniPlayer ? (
-          <MiniPlayerBar
-            handleOpenMusicWorkspace={() => openView("music")}
-            handleRestartTrack={handleRestartTrack}
-            handleSeek={handleSeek}
-            handleTogglePlayback={handleTogglePlayback}
-            isPlaying={isPlaying}
-            selectedTrack={selectedTrack}
-          />
-        ) : null}
+        {renderMiniPlayer("floating")}
       </div>
-    </div>
-  );
-}
-
-function Badge({ label, value }) {
-  return (
-    <div className="badge-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
     </div>
   );
 }
@@ -6359,6 +6348,26 @@ function normalizeError(error) {
     return error.message;
   }
   return "Unknown error";
+}
+
+function normalizeWeatherNetworkError(error, t) {
+  const message = normalizeError(error);
+  if (/networkerror|failed to fetch|load failed|fetch resource|network request failed/i.test(message)) {
+    return t("app.weather.error.network");
+  }
+  return message;
+}
+
+function buildWeatherLoadingCities(currentCities, sourceLocations) {
+  const currentById = new Map(
+    (Array.isArray(currentCities) ? currentCities : [])
+      .filter((city) => city?.id)
+      .map((city) => [city.id, city])
+  );
+
+  return (Array.isArray(sourceLocations) ? sourceLocations : WEATHER_LOCATIONS).map(
+    (location) => currentById.get(location.id) || createInitialWeatherCity(location)
+  );
 }
 
 function createAbortError(message) {

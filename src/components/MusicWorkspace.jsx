@@ -4,19 +4,16 @@ import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
 
 const LYRIC_LINE_HEIGHT = 72;
 const MOBILE_LIBRARY_BREAKPOINT = 1120;
-const COSMIC_DUST_FRAME_INTERVAL_MS = 1000 / 24;
-const COSMIC_DUST_PARTICLES = Array.from({ length: 110 }, (_, index) => {
+const COSMIC_DUST_PARTICLES = Array.from({ length: 24 }, (_, index) => {
   const seed = pseudoRandom(index + 1);
   const secondary = pseudoRandom(index + 101);
   const tertiary = pseudoRandom(index + 301);
   return {
     id: `music-dust-${index}`,
     angle: seed * Math.PI * 2,
-    radius: 126 + secondary * 44,
-    size: 1.4 + tertiary * 3.8,
-    speed: 0.18 + secondary * 0.72,
-    drift: 6 + tertiary * 14,
-    opacity: 0.24 + seed * 0.48,
+    radius: 118 + secondary * 50,
+    size: 1.3 + tertiary * 3.2,
+    opacity: 0.16 + seed * 0.34,
   };
 });
 
@@ -82,33 +79,6 @@ const TRACK_LYRICS = {
   ],
 };
 
-const AUDIO_ANALYSIS_CACHE = new WeakMap();
-
-function getOrCreateAudioAnalysis(mediaElement, AudioContextCtor) {
-  const cached = AUDIO_ANALYSIS_CACHE.get(mediaElement);
-  if (cached) {
-    return cached;
-  }
-
-  const context = new AudioContextCtor();
-  const analyser = context.createAnalyser();
-  analyser.fftSize = 128;
-  analyser.smoothingTimeConstant = 0.84;
-
-  const source = context.createMediaElementSource(mediaElement);
-  source.connect(analyser);
-  analyser.connect(context.destination);
-
-  const analysis = {
-    context,
-    analyser,
-    dataArray: new Uint8Array(analyser.frequencyBinCount),
-    source,
-  };
-  AUDIO_ANALYSIS_CACHE.set(mediaElement, analysis);
-  return analysis;
-}
-
 function MusicWorkspace({
   autoPlayOnReply,
   handleCyclePlayMode,
@@ -118,7 +88,6 @@ function MusicWorkspace({
   handleSeek,
   handleSelectTrack,
   handleTogglePlayback,
-  isAppVisible,
   isPlaying,
   lyricsError,
   lyricsLines,
@@ -129,7 +98,6 @@ function MusicWorkspace({
   onRefreshLyrics,
   onUploadLyricsFile,
   playMode,
-  playerAudioElement,
   selectedTrack,
   selectedTrackId,
   setAutoPlayOnReply,
@@ -139,10 +107,6 @@ function MusicWorkspace({
 }) {
   const { t } = useI18n();
   const { currentTime, duration } = usePlaybackSnapshot();
-  const analysisRef = React.useRef(null);
-  const animationFrameRef = React.useRef(0);
-  const pulseLevelRef = React.useRef(0.2);
-  const lastPulseCommitRef = React.useRef(0);
   const [isLibraryOpen, setIsLibraryOpen] = React.useState(
     () =>
       typeof window !== "undefined" &&
@@ -150,9 +114,9 @@ function MusicWorkspace({
       localizedTracks.length > 0
   );
   const [particleCount, setParticleCount] = React.useState(() =>
-    typeof window === "undefined" ? 80 : resolveParticleBudget(window)
+    typeof window === "undefined" ? 18 : resolveParticleBudget(window)
   );
-  const [pulseLevel, setPulseLevel] = React.useState(0.2);
+  const pulseLevel = isPlaying ? 0.34 : 0.18;
 
   React.useEffect(() => {
     if (typeof window === "undefined") {
@@ -182,6 +146,19 @@ function MusicWorkspace({
       ? t("app.music.sourceUpload")
       : t("app.music.sourceBuiltIn");
   const playModeMeta = PLAY_MODE_META[playMode] || PLAY_MODE_META.loop;
+  const waveformBars = React.useMemo(
+    () =>
+      Array.from({ length: 34 }, (_, index) => {
+        const trackSeed = typeof selectedTrackId === "string" ? selectedTrackId.length : 8;
+        const seed = pseudoRandom(trackSeed * 13 + index * 17);
+        return {
+          id: `waveform-${index}`,
+          delay: index * 42,
+          height: 22 + Math.round(seed * 68),
+        };
+      }),
+    [selectedTrackId]
+  );
   const activeLyricIndex = React.useMemo(() => {
     let index = 0;
     lyricsLines.forEach((line, lineIndex) => {
@@ -196,90 +173,6 @@ function MusicWorkspace({
   }px))`;
   const lyricsStatusLabel = resolveLyricsStatusLabel({ lyricsError, lyricsSource, lyricsStatus, t });
 
-  React.useEffect(() => {
-    if (!isPlaying || !isAppVisible) {
-      pulseLevelRef.current = 0.18;
-      setPulseLevel(0.18);
-      if (animationFrameRef.current) {
-        window.cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = 0;
-      }
-      return undefined;
-    }
-
-    if (typeof window === "undefined") {
-      return undefined;
-    }
-
-    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextCtor || !playerAudioElement) {
-      analysisRef.current = null;
-      return undefined;
-    }
-
-    let analysis = null;
-
-    try {
-      analysis = getOrCreateAudioAnalysis(playerAudioElement, AudioContextCtor);
-      analysisRef.current = analysis;
-
-      if (analysis.context.state === "suspended") {
-        void analysis.context.resume().catch(() => {});
-      }
-    } catch (error) {
-      analysisRef.current = null;
-      return undefined;
-    }
-
-    const tick = () => {
-      const { analyser, dataArray } = analysisRef.current;
-      if (!analyser || !dataArray) {
-        return;
-      }
-
-      analyser.getByteFrequencyData(dataArray);
-      const bassWindowLength = Math.min(12, dataArray.length);
-      let bassWindowTotal = 0;
-      for (let index = 0; index < bassWindowLength; index += 1) {
-        bassWindowTotal += dataArray[index];
-      }
-      const average = bassWindowTotal / Math.max(bassWindowLength, 1);
-      const normalized = Math.min(Math.max(average / 160, 0.14), 1);
-      const nextPulse = pulseLevelRef.current * 0.58 + normalized * 0.42;
-
-      pulseLevelRef.current = nextPulse;
-
-      if (
-        typeof performance !== "undefined" &&
-        performance.now() - lastPulseCommitRef.current >= 40
-      ) {
-        lastPulseCommitRef.current = performance.now();
-        setPulseLevel(nextPulse);
-      }
-
-      animationFrameRef.current = window.requestAnimationFrame(tick);
-    };
-
-    animationFrameRef.current = window.requestAnimationFrame(tick);
-
-    return () => {
-      if (animationFrameRef.current) {
-        window.cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = 0;
-      }
-    };
-  }, [isAppVisible, isPlaying, playerAudioElement]);
-
-  React.useEffect(() => {
-    if (analysisRef.current?.analyser || !isPlaying || !isAppVisible) {
-      return;
-    }
-
-    const nextPulse = 0.24 + ((Math.sin(currentTime * 6.2) + 1) / 2) * 0.22;
-    pulseLevelRef.current = nextPulse;
-    setPulseLevel(nextPulse);
-  }, [currentTime, isAppVisible, isPlaying]);
-
   function handleTrackPick(trackId) {
     handleSelectTrack(trackId);
     if (typeof window !== "undefined" && window.innerWidth <= MOBILE_LIBRARY_BREAKPOINT) {
@@ -288,7 +181,11 @@ function MusicWorkspace({
   }
 
   return (
-    <section className={`music-room theme-${selectedTrack?.theme || "ember"}`}>
+    <section
+      className={`music-room theme-${selectedTrack?.theme || "ember"} ${
+        isPlaying ? "is-playing" : "is-paused"
+      }`}
+    >
       <div
         className="music-room__backdrop"
         style={{ backgroundImage: `url(${coverSrc})` }}
@@ -386,7 +283,6 @@ function MusicWorkspace({
                     </radialGradient>
                   </defs>
                   <CosmicDustRing
-                    isAppVisible={isAppVisible}
                     isPlaying={isPlaying}
                     particleCount={particleCount}
                     pulseLevel={pulseLevel}
@@ -420,6 +316,21 @@ function MusicWorkspace({
                   <span>{t("app.music.currentLabel")} {formatDuration(currentTime)}</span>
                   <span>{t("app.music.durationLabel")} {formatDuration(duration)}</span>
                   <span>{t("app.music.volume")} {volume}%</span>
+                </div>
+
+                <div
+                  className={`music-room__waveform ${isPlaying ? "is-playing" : ""}`}
+                  aria-hidden="true"
+                >
+                  {waveformBars.map((bar) => (
+                    <span
+                      key={bar.id}
+                      style={{
+                        "--bar-height": `${bar.height}%`,
+                        "--bar-delay": `${bar.delay}ms`,
+                      }}
+                    />
+                  ))}
                 </div>
               </div>
 
@@ -639,12 +550,11 @@ function getTrackDurationLabel(track, index, selectedTrackId, currentDuration) {
 
 function buildCosmicDust({ particles, pulseLevel, isPlaying, currentTime }) {
   const center = 200;
-  const pulseRadiusBoost = isPlaying ? 10 * pulseLevel : 2;
+  const pulseRadiusBoost = isPlaying ? 5 * pulseLevel : 1;
 
   return particles.map((particle, index) => {
-    const theta = particle.angle + currentTime * particle.speed;
-    const breathe = Math.sin(currentTime * 4.8 + index * 0.73);
-    const orbitRadius = particle.radius + breathe * particle.drift * (0.4 + pulseLevel * 0.5) + pulseRadiusBoost;
+    const theta = particle.angle + index * 0.08;
+    const orbitRadius = particle.radius + pulseRadiusBoost;
     const point = polarToCartesian(
       center,
       center,
@@ -657,7 +567,7 @@ function buildCosmicDust({ particles, pulseLevel, isPlaying, currentTime }) {
       x: point.x,
       y: point.y,
       r: particle.size * (0.84 + pulseLevel * 0.66),
-      opacity: Math.min(particle.opacity + pulseLevel * 0.22 + (breathe + 1) * 0.06, 0.92),
+      opacity: Math.min(particle.opacity + pulseLevel * 0.18, 0.72),
     };
   });
 }
@@ -697,69 +607,19 @@ function resolveParticleBudget(win) {
 }
 
 const CosmicDustRing = React.memo(function CosmicDustRing({
-  isAppVisible,
   isPlaying,
   particleCount,
   pulseLevel,
 }) {
-  const frameRef = React.useRef(0);
-  const startTimeRef = React.useRef(0);
-  const lastCommitRef = React.useRef(0);
-  const [animationTime, setAnimationTime] = React.useState(0);
-
-  React.useEffect(() => {
-    if (typeof window === "undefined") {
-      return undefined;
-    }
-
-    if (!isPlaying || !isAppVisible) {
-      startTimeRef.current = 0;
-      lastCommitRef.current = 0;
-      setAnimationTime(0);
-      if (frameRef.current) {
-        window.cancelAnimationFrame(frameRef.current);
-        frameRef.current = 0;
-      }
-      return undefined;
-    }
-
-    const step = (timestamp) => {
-      if (!startTimeRef.current) {
-        startTimeRef.current = timestamp;
-      }
-
-      if (
-        !lastCommitRef.current ||
-        timestamp - lastCommitRef.current >= COSMIC_DUST_FRAME_INTERVAL_MS
-      ) {
-        lastCommitRef.current = timestamp;
-        setAnimationTime((timestamp - startTimeRef.current) / 1000);
-      }
-
-      frameRef.current = window.requestAnimationFrame(step);
-    };
-
-    frameRef.current = window.requestAnimationFrame(step);
-
-    return () => {
-      startTimeRef.current = 0;
-      lastCommitRef.current = 0;
-      if (frameRef.current) {
-        window.cancelAnimationFrame(frameRef.current);
-        frameRef.current = 0;
-      }
-    };
-  }, [isAppVisible, isPlaying]);
-
   const cosmicDust = React.useMemo(
     () =>
       buildCosmicDust({
         particles: COSMIC_DUST_PARTICLES.slice(0, particleCount),
         pulseLevel,
         isPlaying,
-        currentTime: animationTime,
+        currentTime: 0,
       }),
-    [animationTime, isPlaying, particleCount, pulseLevel]
+    [isPlaying, particleCount, pulseLevel]
   );
 
   return cosmicDust.map((particle) => (
@@ -847,8 +707,18 @@ function ReplayIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
-        d="M12 6a6 6 0 0 1 5.2 3H14v2h7V4h-2v3.1A8 8 0 1 0 20 12h-2a6 6 0 1 1-6-6Z"
-        fill="currentColor"
+        d="M18.4 9.6a6.7 6.7 0 1 0 .7 5.2"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M18.1 5.5v4.2h-4.2"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -911,10 +781,26 @@ function ModeIcon({ mode }) {
     return (
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
-          d="M17 17H7l2.4 2.4L8 20.8 3.2 16 8 11.2l1.4 1.4L7 15h10V7h2v10c0 1.1-.9 2-2 2Z"
-          fill="currentColor"
+          d="M7.2 8.2h8.1c2.1 0 3.8 1.7 3.8 3.8s-1.7 3.8-3.8 3.8H6.1"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
-        <path d="M15 6h1.2v5H15V7.7l-1 .5-.5-1 1.5-.7Z" fill="currentColor" />
+        <path
+          d="m8.2 12.9-3.1 2.9 3.1 2.9"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M12.9 7.1 15.2 6v6"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     );
   }
@@ -933,8 +819,32 @@ function ModeIcon({ mode }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
-        d="M17 17H7l2.4 2.4L8 20.8 3.2 16 8 11.2l1.4 1.4L7 15h10V7h2v10ZM7 7h10l-2.4-2.4L16 3.2 20.8 8 16 12.8l-1.4-1.4L17 9H7v8H5V7c0-1.1.9-2 2-2Z"
-        fill="currentColor"
+        d="M7.1 7.2h8.2c2.1 0 3.8 1.7 3.8 3.8v.4"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m15.8 4.1 3.3 3.1-3.3 3.1"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16.9 16.8H8.7c-2.1 0-3.8-1.7-3.8-3.8v-.4"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m8.2 19.9-3.3-3.1 3.3-3.1"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );

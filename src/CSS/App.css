@@ -21,3 +21,6 @@
 
 /* Tauri shell state polish */
 @import "./tauri-shell.css";
+
+/* Minimal workspace system */
+@import "./muji-refresh.css";

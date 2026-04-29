@@ -36,6 +36,7 @@ function TodayWorkspace({
   ruleActionRecommendations,
   ruleEffectivenessInsights,
   ruleEffectivenessSignals,
+  sessionLibraryPanel,
   todayReminderItems,
   todayReviewSignals,
   weatherStatus,
@@ -191,52 +192,54 @@ function TodayWorkspace({
             )}
           </section>
 
-          <section className="panel-surface today-section">
-            <div className="today-section__head">
-              <div>
-                <span className="eyebrow">{t("app.today.sessions.eyebrow")}</span>
-                <h4>{t("app.today.sessions.title")}</h4>
-              </div>
-              <button type="button" className="ghost-button" onClick={() => openView("agent")}>
-                {t("app.mode.agent")}
-              </button>
-            </div>
-
-            <div className="today-session-spotlight">
-              <span className="section-note">{t("app.today.sessions.active")}</span>
-              <strong>{activeSessionTitle}</strong>
-              <div className="today-session-spotlight__actions">
-                <button type="button" className="solid-button" onClick={() => openView("agent")}>
-                  {t("app.today.sessions.continue")}
+          {sessionLibraryPanel || (
+            <section className="panel-surface today-section">
+              <div className="today-section__head">
+                <div>
+                  <span className="eyebrow">{t("app.today.sessions.eyebrow")}</span>
+                  <h4>{t("app.today.sessions.title")}</h4>
+                </div>
+                <button type="button" className="ghost-button" onClick={() => openView("agent")}>
+                  {t("app.mode.agent")}
                 </button>
               </div>
-            </div>
 
-            {continueSessionItems.length > 0 ? (
-              <div className="today-session-list">
-                {continueSessionItems.map((session) => (
-                  <button
-                    key={session.id}
-                    type="button"
-                    className={`today-session-item ${session.id === activeSessionId ? "is-active" : ""}`}
-                    onClick={async () => {
-                      await handleOpenSession(session.id);
-                      openView("agent");
-                    }}
-                  >
-                    <div className="today-session-item__head">
-                      <strong>{session.title}</strong>
-                      <span className={`status-chip status-${session.status}`}>
-                        {t(`app.status.${session.status}`)}
-                      </span>
-                    </div>
-                    <p>{session.lastMessagePreview || t("app.session.emptyMessages")}</p>
-                    <span className="section-note">{formatTime(session.updatedAt, lang)}</span>
+              <div className="today-session-spotlight">
+                <span className="section-note">{t("app.today.sessions.active")}</span>
+                <strong>{activeSessionTitle}</strong>
+                <div className="today-session-spotlight__actions">
+                  <button type="button" className="solid-button" onClick={() => openView("agent")}>
+                    {t("app.today.sessions.continue")}
                   </button>
-                ))}
+                </div>
               </div>
-            ) : null}
-          </section>
+
+              {continueSessionItems.length > 0 ? (
+                <div className="today-session-list">
+                  {continueSessionItems.map((session) => (
+                    <button
+                      key={session.id}
+                      type="button"
+                      className={`today-session-item ${session.id === activeSessionId ? "is-active" : ""}`}
+                      onClick={async () => {
+                        await handleOpenSession(session.id);
+                        openView("agent");
+                      }}
+                    >
+                      <div className="today-session-item__head">
+                        <strong>{session.title}</strong>
+                        <span className={`status-chip status-${session.status}`}>
+                          {t(`app.status.${session.status}`)}
+                        </span>
+                      </div>
+                      <p>{session.lastMessagePreview || t("app.session.emptyMessages")}</p>
+                      <span className="section-note">{formatTime(session.updatedAt, lang)}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          )}
         </section>
 
         <aside className="today-sidebar">

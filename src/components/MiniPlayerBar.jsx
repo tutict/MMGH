@@ -8,6 +8,7 @@ function MiniPlayerBar({
   handleSeek,
   handleTogglePlayback,
   isPlaying,
+  placement = "floating",
   selectedTrack,
 }) {
   const { t } = useI18n();
@@ -41,7 +42,7 @@ function MiniPlayerBar({
   return (
     <section
       ref={rootRef}
-      className="mini-player-bar panel-surface"
+      className={`mini-player-bar mini-player-bar--${placement} panel-surface`}
       aria-label={t("app.music.miniPlayer.label")}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
