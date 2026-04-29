@@ -142,24 +142,26 @@ pub fn save_session_skills(
 }
 
 #[tauri::command]
-pub fn forge_skill(
+pub async fn forge_skill(
   prompt: String,
   lang: Option<String>,
   existing_skill: Option<SkillInput>,
   settings: Option<AgentSettingsInput>,
 ) -> CommandResult<agent::GeneratedSkillDraft> {
-  agent::forge_skill(prompt, lang, existing_skill, settings).map_err(into_command_error)
+  agent::forge_skill(prompt, lang, existing_skill, settings)
+    .await
+    .map_err(into_command_error)
 }
 
 #[tauri::command]
-pub fn run_agent(session_id: i64, prompt: String) -> CommandResult<db::WorkspaceSnapshot> {
-  agent::run_agent(session_id, prompt).map_err(into_command_error)
+pub async fn run_agent(session_id: i64, prompt: String) -> CommandResult<db::WorkspaceSnapshot> {
+  agent::run_agent(session_id, prompt)
+    .await
+    .map_err(into_command_error)
 }
 
 #[tauri::command]
-pub fn desktop_window_state(
-  app: tauri::AppHandle,
-) -> CommandResult<desktop::DesktopWindowState> {
+pub fn desktop_window_state(app: tauri::AppHandle) -> CommandResult<desktop::DesktopWindowState> {
   desktop::desktop_window_state(app)
 }
 

@@ -109,17 +109,17 @@ export function createInitialWeatherCity(location) {
 }
 
 async function fetchWeatherForLocation(location, { signal } = {}) {
-  const [forecastResponse, airQualityResponse] = await Promise.all([
-    fetch(buildForecastUrl(location), { signal }),
-    fetch(buildAirQualityUrl(location), { signal }),
-  ]);
+  const forecastRequest = fetch(buildForecastUrl(location), { signal });
+  const airQualityRequest = fetch(buildAirQualityUrl(location), { signal }).catch(() => null);
+  const forecastResponse = await forecastRequest;
+  const airQualityResponse = await airQualityRequest;
 
   if (!forecastResponse.ok) {
     throw new Error(`Weather API request failed for ${location.id}`);
   }
 
   const forecastPayload = await forecastResponse.json();
-  const airQualityPayload = airQualityResponse.ok ? await airQualityResponse.json() : null;
+  const airQualityPayload = airQualityResponse?.ok ? await airQualityResponse.json() : null;
   const current = forecastPayload?.current || {};
   const hourly = forecastPayload?.hourly || {};
   const daily = forecastPayload?.daily || {};

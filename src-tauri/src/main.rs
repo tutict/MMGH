@@ -35,8 +35,7 @@ fn build_tray(app: &AppHandle, state: Arc<AppRuntimeState>) -> tauri::Result<()>
   let hide_item =
     MenuItemBuilder::with_id(TRAY_HIDE_ID, "\u{9690}\u{85CF}\u{5230}\u{6258}\u{76D8}")
       .build(app)?;
-  let quit_item =
-    MenuItemBuilder::with_id(TRAY_QUIT_ID, "\u{9000}\u{51FA} MMGH").build(app)?;
+  let quit_item = MenuItemBuilder::with_id(TRAY_QUIT_ID, "\u{9000}\u{51FA} MMGH").build(app)?;
   let menu = Menu::with_items(app, &[&show_item, &hide_item, &quit_item])?;
 
   let mut tray = TrayIconBuilder::with_id("main-tray")
@@ -98,25 +97,23 @@ fn main() {
       if let Some(window) = app.get_webview_window(desktop::MAIN_WINDOW_LABEL) {
         let state = Arc::clone(&runtime_state_for_setup);
         let window_handle = window.clone();
-        window.on_window_event(move |event| {
-          match event {
-            WindowEvent::CloseRequested { api, .. } => {
-              if state.is_quitting.load(Ordering::SeqCst) {
-                return;
-              }
+        window.on_window_event(move |event| match event {
+          WindowEvent::CloseRequested { api, .. } => {
+            if state.is_quitting.load(Ordering::SeqCst) {
+              return;
+            }
 
-              api.prevent_close();
-              let _ = window_handle.hide();
-              desktop::emit_lifecycle(&window_handle, "hidden-to-tray");
-              desktop::emit_window_state(&window_handle);
-            }
-            WindowEvent::Focused(_)
-            | WindowEvent::Resized(_)
-            | WindowEvent::ScaleFactorChanged { .. } => {
-              desktop::emit_window_state(&window_handle);
-            }
-            _ => {}
+            api.prevent_close();
+            let _ = window_handle.hide();
+            desktop::emit_lifecycle(&window_handle, "hidden-to-tray");
+            desktop::emit_window_state(&window_handle);
           }
+          WindowEvent::Focused(_)
+          | WindowEvent::Resized(_)
+          | WindowEvent::ScaleFactorChanged { .. } => {
+            desktop::emit_window_state(&window_handle);
+          }
+          _ => {}
         });
 
         desktop::emit_lifecycle(&window, "app-ready");

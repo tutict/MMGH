@@ -152,7 +152,7 @@ function WeatherWorkspace({
           }
           setSearchResults([]);
           setSearchStatus("error");
-          setSearchError(normalizeError(error));
+          setSearchError(normalizeWeatherNetworkError(error, t));
         });
     }, 260);
 
@@ -160,7 +160,7 @@ function WeatherWorkspace({
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [lang, searchQuery]);
+  }, [lang, searchQuery, t]);
 
   useEffect(() => {
     setRecentSearches(readRecentWeatherSearches());
@@ -764,32 +764,8 @@ function WeatherTiltCard({
     <Component
       {...props}
       className={["weather-tilt", className].filter(Boolean).join(" ")}
-      onMouseMove={(event) => {
-        const rect = event.currentTarget.getBoundingClientRect();
-        const x = (event.clientX - rect.left) / rect.width;
-        const y = (event.clientY - rect.top) / rect.height;
-        const rotateX = (0.5 - y) * 14;
-        const rotateY = (x - 0.5) * 18;
-
-        event.currentTarget.style.setProperty("--weather-rotate-x", `${rotateX.toFixed(2)}deg`);
-        event.currentTarget.style.setProperty("--weather-rotate-y", `${rotateY.toFixed(2)}deg`);
-        event.currentTarget.style.setProperty("--weather-glow-x", `${(x * 100).toFixed(2)}%`);
-        event.currentTarget.style.setProperty("--weather-glow-y", `${(y * 100).toFixed(2)}%`);
-
-        if (onMouseMove) {
-          onMouseMove(event);
-        }
-      }}
-      onMouseLeave={(event) => {
-        event.currentTarget.style.setProperty("--weather-rotate-x", "0deg");
-        event.currentTarget.style.setProperty("--weather-rotate-y", "0deg");
-        event.currentTarget.style.setProperty("--weather-glow-x", "50%");
-        event.currentTarget.style.setProperty("--weather-glow-y", "50%");
-
-        if (onMouseLeave) {
-          onMouseLeave(event);
-        }
-      }}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
     >
       {children}
     </Component>
@@ -951,6 +927,20 @@ function normalizeError(error) {
     return error.message;
   }
   return "Unknown error";
+}
+
+function normalizeWeatherNetworkError(error, t) {
+  const message = normalizeError(error);
+  if (isNetworkFetchErrorMessage(message)) {
+    return t("app.weather.error.network");
+  }
+  return message;
+}
+
+function isNetworkFetchErrorMessage(message) {
+  return /networkerror|failed to fetch|load failed|fetch resource|network request failed/i.test(
+    String(message || "")
+  );
 }
 
 function buildCommonCitySuggestions({ recentSearches, usageMap, weatherCities }) {

@@ -31,6 +31,8 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "publisher": "MMGH",
+    "copyright": "Copyright (c) 2026 MMGH",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -42,7 +44,12 @@
     "shortDescription": "Desktop agent workspace powered by Rust and Tauri.",
     "longDescription": "MMGH Agent Deck is a Rust-first desktop agent workspace with persistent sessions, execution traces and an OpenAI-compatible gateway.",
     "windows": {
+      "allowDowngrades": false,
       "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "headerImage": "windows/assets/nsis-header.bmp",
+        "sidebarImage": "windows/assets/nsis-sidebar.bmp",
+        "installMode": "currentUser",
         "languages": [
           "SimpChinese",
           "English"
@@ -51,9 +58,12 @@
           "SimpChinese": "windows/nsis/SimpChinese.nsh"
         },
         "displayLanguageSelector": true,
+        "startMenuFolder": "MMGH",
         "installerHooks": "windows/nsis/installer-hooks.nsh"
       },
       "wix": {
+        "bannerPath": "windows/assets/wix-banner.bmp",
+        "dialogImagePath": "windows/assets/wix-dialog.bmp",
         "language": {
           "en-US": {},
           "zh-CN": {

@@ -38,50 +38,39 @@ function RuntimeWorkspace({
   const mountedSkillSet = useMemo(() => new Set(mountedSkillIds), [mountedSkillIds]);
   const updatedAt =
     activeSession?.session?.updatedAt || messages[messages.length - 1]?.createdAt || 0;
-  const conversationCountLabel = t("app.agent.conversation.entries", { count: messages.length });
   const isRunning = busy === "run";
   const isCapturingNote = busy === "capture-note";
   const isCapturingReminder = busy === "capture-reminder";
 
   return (
     <section className="runtime-workspace">
-      <div className="runtime-overview-grid">
-        <article className="panel-surface runtime-overview-card runtime-overview-card--primary">
-          <span className="runtime-overview-card__label">{t("app.view.agent.badge.session")}</span>
+      <section className="panel-surface runtime-status-panel">
+        <div className="runtime-status-panel__identity">
+          <span className="runtime-status-panel__label">{t("app.view.agent.badge.session")}</span>
           <strong>{activeTitle}</strong>
-          <div className="runtime-overview-card__meta">
+          <span>{updatedAt ? formatTime(updatedAt, lang) : t("app.common.loading")}</span>
+        </div>
+
+        <div className="runtime-status-panel__metrics" aria-label={t("app.agent.conversation.title")}>
+          <div className="runtime-status-panel__metric runtime-status-panel__metric--state">
             <span className={`status-chip status-${activeStatus}`}>
               {t(`app.status.${activeStatus}`)}
             </span>
           </div>
-        </article>
-
-        <article className="panel-surface runtime-overview-card">
-          <span className="runtime-overview-card__label">{t("app.agent.conversation.title")}</span>
-          <strong>{t("app.agent.conversation.entries", { count: messages.length })}</strong>
-          <span className="runtime-overview-card__meta-text">
-            {updatedAt ? formatTime(updatedAt, lang) : t("app.common.loading")}
-          </span>
-        </article>
-
-        <article className="panel-surface runtime-overview-card runtime-overview-card--compact">
-          <span className="runtime-overview-card__label">{t("app.view.agent.badge.mounted")}</span>
-          <strong>{t("app.agent.history.skillCount", { count: activeSessionSkills.length })}</strong>
-          <span className="runtime-overview-card__meta-text">{t("app.permission.low")}</span>
-        </article>
-
-        <article className="panel-surface runtime-overview-card runtime-overview-card--compact">
-          <span className="runtime-overview-card__label">{t("app.view.agent.badge.gateway")}</span>
-          <strong>{t(`app.provider.${providerConfigured ? "configured" : "pending"}`)}</strong>
-          <span
-            className={`status-chip ${
-              providerConfigured ? "status-completed" : "status-warning"
-            }`}
-          >
-            {providerConfigured ? t("app.status.ready") : t("app.status.idle")}
-          </span>
-        </article>
-      </div>
+          <div className="runtime-status-panel__metric">
+            <span>{t("app.agent.conversation.title")}</span>
+            <strong>{messages.length}</strong>
+          </div>
+          <div className="runtime-status-panel__metric">
+            <span>{t("app.view.agent.badge.mounted")}</span>
+            <strong>{activeSessionSkills.length}</strong>
+          </div>
+          <div className="runtime-status-panel__metric">
+            <span>{t("app.view.agent.badge.gateway")}</span>
+            <strong>{t(`app.provider.${providerConfigured ? "configured" : "pending"}`)}</strong>
+          </div>
+        </div>
+      </section>
 
       <div className="runtime-layout">
         <div className="runtime-main-column">
@@ -99,21 +88,6 @@ function RuntimeWorkspace({
                   {updatedAt ? formatTime(updatedAt, lang) : t("app.common.loading")}
                 </span>
               </div>
-            </div>
-
-            <div className="runtime-stage-card__summary">
-              <article className="runtime-stage-pill">
-                <span>{t("app.agent.conversation.title")}</span>
-                <strong>{conversationCountLabel}</strong>
-              </article>
-              <article className="runtime-stage-pill">
-                <span>{t("app.view.agent.badge.mounted")}</span>
-                <strong>{t("app.skills.mountedCount", { count: activeSessionSkills.length })}</strong>
-              </article>
-              <article className="runtime-stage-pill">
-                <span>{t("app.view.agent.badge.gateway")}</span>
-                <strong>{t(`app.provider.${providerConfigured ? "configured" : "pending"}`)}</strong>
-              </article>
             </div>
 
             <div className="runtime-thread">

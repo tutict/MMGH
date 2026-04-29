@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 use once_cell::sync::Lazy;
-use reqwest::blocking::Client;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -14,6 +14,8 @@ static HTTP_CLIENT: Lazy<Client> = Lazy::new(|| {
     .build()
     .expect("failed to build shared HTTP client")
 });
+
+const MAX_AGENT_PROMPT_CHARS: usize = 20_000;
 
 #[derive(Debug, Clone)]
 struct AgentRuntimeContext {
@@ -89,16 +91,13 @@ struct ChatResponseMessage {
   content: Value,
 }
 
-pub fn forge_skill(
+pub async fn forge_skill(
   prompt: String,
   lang: Option<String>,
   existing_skill: Option<cmd::SkillInput>,
   settings_override: Option<cmd::AgentSettingsInput>,
 ) -> Result<GeneratedSkillDraft> {
-  let trimmed_prompt = prompt.trim().to_string();
-  if trimmed_prompt.is_empty() {
-    return Err(anyhow!("prompt cannot be empty"));
-  }
+  let trimmed_prompt = normalize_agent_prompt(prompt)?;
 
   let resolved_lang = normalize_lang(lang.as_deref());
   let settings = db::resolve_settings_override(settings_override)?;
@@ -109,7 +108,9 @@ pub fn forge_skill(
       &trimmed_prompt,
       resolved_lang,
       existing_skill.as_ref(),
-    ) {
+    )
+    .await
+    {
       Ok(skill) => Ok(skill),
       Err(error) => Ok(with_skill_generation_warning(
         build_local_skill_draft(existing_skill.as_ref(), &trimmed_prompt, resolved_lang),
@@ -125,11 +126,8 @@ pub fn forge_skill(
   }
 }
 
-pub fn run_agent(session_id: i64, prompt: String) -> Result<db::WorkspaceSnapshot> {
-  let trimmed_prompt = prompt.trim().to_string();
-  if trimmed_prompt.is_empty() {
-    return Err(anyhow!("prompt cannot be empty"));
-  }
+pub async fn run_agent(session_id: i64, prompt: String) -> Result<db::WorkspaceSnapshot> {
+  let trimmed_prompt = normalize_agent_prompt(prompt)?;
 
   let runtime_context = build_runtime_context(session_id, &trimmed_prompt)?;
   let runtime_context_detail = render_runtime_context_activity(&runtime_context);
@@ -137,7 +135,7 @@ pub fn run_agent(session_id: i64, prompt: String) -> Result<db::WorkspaceSnapsho
   let settings = db::load_settings()?;
 
   let (model_title, model_detail, model_status, reply) = if settings.is_ready() {
-    match request_completion(&settings, session_id, &runtime_context, &trimmed_prompt) {
+    match request_completion(&settings, session_id, &runtime_context, &trimmed_prompt).await {
       Ok(content) => (
         "Provider call finished".to_string(),
         format!(
@@ -170,19 +168,19 @@ pub fn run_agent(session_id: i64, prompt: String) -> Result<db::WorkspaceSnapsho
     )
   };
 
-  db::persist_agent_run(
+  db::persist_agent_run(db::AgentRunPersistence {
     session_id,
-    &trimmed_prompt,
-    &runtime_context_detail,
-    &plan,
-    &model_title,
-    &model_detail,
-    &model_status,
-    &reply,
-  )
+    prompt: &trimmed_prompt,
+    runtime_context_detail: &runtime_context_detail,
+    plan: &plan,
+    model_title: &model_title,
+    model_detail: &model_detail,
+    model_status: &model_status,
+    reply: &reply,
+  })
 }
 
-fn request_completion(
+async fn request_completion(
   settings: &db::AgentSettings,
   session_id: i64,
   runtime_context: &AgentRuntimeContext,
@@ -239,11 +237,13 @@ fn request_completion(
     .header(AUTHORIZATION, format!("Bearer {}", settings.api_key))
     .json(&request)
     .send()
+    .await
     .context("failed to send completion request")?;
 
   let status = response.status();
   let body = response
     .text()
+    .await
     .context("failed to read completion response")?;
   if !status.is_success() {
     return Err(anyhow!(
@@ -267,7 +267,7 @@ fn request_completion(
   Ok(content)
 }
 
-fn request_skill_draft_from_model(
+async fn request_skill_draft_from_model(
   settings: &db::AgentSettings,
   prompt: &str,
   lang: &str,
@@ -329,11 +329,13 @@ fn request_skill_draft_from_model(
     .header(AUTHORIZATION, format!("Bearer {}", settings.api_key))
     .json(&request)
     .send()
+    .await
     .context("failed to send skill generation request")?;
 
   let status = response.status();
   let body = response
     .text()
+    .await
     .context("failed to read skill generation response")?;
   if !status.is_success() {
     return Err(anyhow!(
@@ -564,6 +566,20 @@ fn normalize_lang(lang: Option<&str>) -> &str {
     value if value.starts_with("en") => "en-US",
     _ => "en-US",
   }
+}
+
+fn normalize_agent_prompt(prompt: String) -> Result<String> {
+  let trimmed = prompt.trim().to_string();
+  if trimmed.is_empty() {
+    return Err(anyhow!("prompt cannot be empty"));
+  }
+  if trimmed.chars().count() > MAX_AGENT_PROMPT_CHARS {
+    return Err(anyhow!(
+      "prompt is too long; maximum is {} characters",
+      MAX_AGENT_PROMPT_CHARS
+    ));
+  }
+  Ok(trimmed)
 }
 
 fn trim_for_template(value: &str, limit: usize) -> String {

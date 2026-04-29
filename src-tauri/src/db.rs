@@ -30,7 +30,15 @@ const STARTER_SKILL_CATALOG_VERSION_KEY: &str = "starter_skill_catalog_version";
 const STARTER_SKILL_DELETED_TOMBSTONES_KEY: &str = "starter_skill_deleted_tombstones_v1";
 const LEGACY_STARTER_SKILL_CATALOG_VERSION: u32 = 1;
 const STARTER_SKILL_CATALOG_VERSION: u32 = 2;
+const CURRENT_SCHEMA_VERSION: u32 = 1;
 const DEFAULT_SESSION_TITLE: &str = "New Mission";
+const MAX_TITLE_CHARS: usize = 160;
+const MAX_SHORT_TEXT_CHARS: usize = 2_000;
+const MAX_LONG_TEXT_CHARS: usize = 20_000;
+const MAX_NOTE_BODY_CHARS: usize = 100_000;
+const MAX_SKILL_INSTRUCTIONS_CHARS: usize = 40_000;
+const MAX_TAGS: usize = 32;
+const MAX_TAG_CHARS: usize = 48;
 
 #[derive(Debug, Clone, Copy)]
 struct StarterSkillSeed {
@@ -317,6 +325,17 @@ pub struct WorkspaceSnapshot {
   pub capabilities: Vec<Capability>,
 }
 
+pub struct AgentRunPersistence<'a> {
+  pub session_id: i64,
+  pub prompt: &'a str,
+  pub runtime_context_detail: &'a str,
+  pub plan: &'a str,
+  pub model_title: &'a str,
+  pub model_detail: &'a str,
+  pub model_status: &'a str,
+  pub reply: &'a str,
+}
+
 #[derive(Debug, Clone, Copy, Default)]
 struct SnapshotReusePolicy {
   reuse_session_list: bool,
@@ -374,7 +393,7 @@ pub fn open_session(session_id: i64) -> Result<WorkspaceSnapshot> {
 }
 
 pub fn create_session(title: Option<String>) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| {
+  with_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let session = create_session_detail_in(conn, title)?;
     let seeded_snapshot = seed_snapshot_for_session_create(cached_snapshot, session.clone());
@@ -384,24 +403,14 @@ pub fn create_session(title: Option<String>) -> Result<WorkspaceSnapshot> {
       None,
       None,
       None,
-      SnapshotReusePolicy {
-        reuse_session_list: true,
-        reuse_active_session_timeline: true,
-        reuse_note_list: true,
-        reuse_active_note_detail: true,
-        reuse_reminder_list: true,
-        reuse_active_reminder_detail: true,
-        reuse_skill_list: true,
-        reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
-      },
+      SnapshotReusePolicy::read_only(),
       seeded_snapshot,
     )
   })
 }
 
 pub fn delete_session(session_id: i64) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| {
+  with_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     delete_session_in(conn, session_id)?;
     let seeded_snapshot = seed_snapshot_for_session_delete(cached_snapshot, session_id);
@@ -432,7 +441,6 @@ pub fn delete_session(session_id: i64) -> Result<WorkspaceSnapshot> {
         reuse_active_reminder_detail: true,
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
       },
       seeded_snapshot,
     )
@@ -446,6 +454,7 @@ pub fn save_settings(
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let settings = merge_settings_input(load_settings_in(conn)?, input);
+    validate_settings_size(&settings)?;
     validate_provider_base_url(&settings.base_url)?;
     store_settings_in(conn, &settings)?;
     build_workspace_snapshot_with_policy_in(
@@ -478,7 +487,7 @@ pub fn create_note(
   title: Option<String>,
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| {
+  with_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let note = create_note_detail_in(conn, title)?;
@@ -488,7 +497,10 @@ pub fn create_note(
         session_id,
         "system",
         "Knowledge note created",
-        &format!("Added '{}' to the Knowledge Vault.", preview_text(&note.title, 48)),
+        &format!(
+          "Added '{}' to the Knowledge Vault.",
+          preview_text(&note.title, 48)
+        ),
         "completed",
       )?;
       let updated_session = load_session_summary_in(conn, session_id)?;
@@ -507,17 +519,7 @@ pub fn create_note(
       Some(note.id),
       None,
       None,
-      SnapshotReusePolicy {
-        reuse_session_list: true,
-        reuse_active_session_timeline: true,
-        reuse_note_list: true,
-        reuse_active_note_detail: true,
-        reuse_reminder_list: true,
-        reuse_active_reminder_detail: true,
-        reuse_skill_list: true,
-        reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
-      },
+      SnapshotReusePolicy::read_only(),
       seeded_snapshot,
     )
   })
@@ -527,7 +529,7 @@ pub fn save_note(
   input: KnowledgeNoteInput,
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| {
+  with_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let note = save_note_detail_in(conn, input)?;
@@ -560,24 +562,14 @@ pub fn save_note(
       Some(note.id),
       None,
       None,
-      SnapshotReusePolicy {
-        reuse_session_list: true,
-        reuse_active_session_timeline: true,
-        reuse_note_list: true,
-        reuse_active_note_detail: true,
-        reuse_reminder_list: true,
-        reuse_active_reminder_detail: true,
-        reuse_skill_list: true,
-        reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
-      },
+      SnapshotReusePolicy::read_only(),
       seeded_snapshot,
     )
   })
 }
 
 pub fn delete_note(note_id: i64, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| {
+  with_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let deleted_note = build_note_detail_in(conn, note_id)?;
@@ -627,7 +619,6 @@ pub fn delete_note(note_id: i64, active_session_id: Option<i64>) -> Result<Works
         reuse_active_reminder_detail: true,
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
       },
       seeded_snapshot,
     )
@@ -656,7 +647,7 @@ pub fn create_reminder(
   title: Option<String>,
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| {
+  with_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let reminder = create_reminder_detail_in(conn, title)?;
@@ -685,17 +676,7 @@ pub fn create_reminder(
       None,
       Some(reminder.id),
       None,
-      SnapshotReusePolicy {
-        reuse_session_list: true,
-        reuse_active_session_timeline: true,
-        reuse_note_list: true,
-        reuse_active_note_detail: true,
-        reuse_reminder_list: true,
-        reuse_active_reminder_detail: true,
-        reuse_skill_list: true,
-        reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
-      },
+      SnapshotReusePolicy::read_only(),
       seeded_snapshot,
     )
   })
@@ -705,7 +686,7 @@ pub fn save_reminder(
   input: ReminderInput,
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| {
+  with_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let reminder = save_reminder_detail_in(conn, input)?;
@@ -738,17 +719,7 @@ pub fn save_reminder(
       None,
       Some(reminder.id),
       None,
-      SnapshotReusePolicy {
-        reuse_session_list: true,
-        reuse_active_session_timeline: true,
-        reuse_note_list: true,
-        reuse_active_note_detail: true,
-        reuse_reminder_list: true,
-        reuse_active_reminder_detail: true,
-        reuse_skill_list: true,
-        reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
-      },
+      SnapshotReusePolicy::read_only(),
       seeded_snapshot,
     )
   })
@@ -758,7 +729,7 @@ pub fn delete_reminder(
   reminder_id: i64,
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| {
+  with_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let deleted_reminder = build_reminder_detail_in(conn, reminder_id)?;
@@ -804,7 +775,6 @@ pub fn delete_reminder(
         reuse_active_reminder_detail: can_reuse_active_reminder_detail,
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
       },
       seeded_snapshot,
     )
@@ -830,7 +800,7 @@ pub fn create_skill(
   name: Option<String>,
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| {
+  with_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let skill = create_skill_detail_for_active_session_in(conn, name, active_session_id)?;
@@ -842,6 +812,7 @@ pub fn create_skill(
       None,
       Some(skill.id),
       SnapshotReusePolicy {
+        reuse_session_list: false,
         reuse_active_session_timeline: true,
         reuse_note_list: true,
         reuse_active_note_detail: true,
@@ -849,7 +820,6 @@ pub fn create_skill(
         reuse_active_reminder_detail: true,
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
       },
       seeded_snapshot,
     )
@@ -857,7 +827,7 @@ pub fn create_skill(
 }
 
 pub fn save_skill(input: SkillInput, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| {
+  with_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let skill = save_skill_detail_in(conn, input)?;
@@ -869,6 +839,7 @@ pub fn save_skill(input: SkillInput, active_session_id: Option<i64>) -> Result<W
       None,
       Some(skill.id),
       SnapshotReusePolicy {
+        reuse_session_list: false,
         reuse_active_session_timeline: true,
         reuse_note_list: true,
         reuse_active_note_detail: true,
@@ -876,7 +847,6 @@ pub fn save_skill(input: SkillInput, active_session_id: Option<i64>) -> Result<W
         reuse_active_reminder_detail: true,
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
       },
       seeded_snapshot,
     )
@@ -884,7 +854,7 @@ pub fn save_skill(input: SkillInput, active_session_id: Option<i64>) -> Result<W
 }
 
 pub fn delete_skill(skill_id: i64, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| {
+  with_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     delete_skill_in(conn, skill_id)?;
@@ -923,7 +893,7 @@ pub fn save_session_skills(
   skill_ids: Vec<i64>,
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| {
+  with_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let mounted_skill_ids = save_session_skills_in(conn, session_id, skill_ids)?;
@@ -936,84 +906,65 @@ pub fn save_session_skills(
       None,
       None,
       None,
-      SnapshotReusePolicy {
-        reuse_session_list: true,
-        reuse_active_session_timeline: true,
-        reuse_note_list: true,
-        reuse_active_note_detail: true,
-        reuse_reminder_list: true,
-        reuse_active_reminder_detail: true,
-        reuse_skill_list: true,
-        reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
-      },
+      SnapshotReusePolicy::read_only(),
       seeded_snapshot,
     )
   })
 }
 
-pub fn persist_agent_run(
-  session_id: i64,
-  prompt: &str,
-  runtime_context_detail: &str,
-  plan: &str,
-  model_title: &str,
-  model_detail: &str,
-  model_status: &str,
-  reply: &str,
-) -> Result<WorkspaceSnapshot> {
+pub fn persist_agent_run(run: AgentRunPersistence<'_>) -> Result<WorkspaceSnapshot> {
   with_transaction(|tx| {
     let cached_snapshot = read_snapshot_cache()?;
-    ensure_session_exists_in(tx, session_id)?;
-    touch_session_in(tx, session_id, "running")?;
-    let user_message = append_message_in(tx, session_id, "user", prompt)?;
-    ensure_session_title_in(tx, session_id, prompt)?;
+    ensure_session_exists_in(tx, run.session_id)?;
+    touch_session_in(tx, run.session_id, "running")?;
+    let user_message = append_message_in(tx, run.session_id, "user", run.prompt)?;
+    ensure_session_title_in(tx, run.session_id, run.prompt)?;
     let input_activity = append_activity_in(
       tx,
-      session_id,
+      run.session_id,
       "input",
       "Mission received",
-      &format!("New mission captured: {}", preview_text(prompt, 120)),
+      &format!("New mission captured: {}", preview_text(run.prompt, 120)),
       "completed",
     )?;
     let runtime_activity = append_activity_in(
       tx,
-      session_id,
+      run.session_id,
       "system",
       "Runtime context staged",
-      runtime_context_detail,
+      run.runtime_context_detail,
       "completed",
     )?;
     let plan_activity = append_activity_in(
       tx,
-      session_id,
+      run.session_id,
       "plan",
       "Execution plan drafted",
-      plan,
+      run.plan,
       "completed",
     )?;
     let model_activity = append_activity_in(
       tx,
-      session_id,
+      run.session_id,
       "model",
-      model_title,
-      model_detail,
-      model_status,
+      run.model_title,
+      run.model_detail,
+      run.model_status,
     )?;
-    let assistant_message = append_message_in(tx, session_id, "assistant", reply)?;
+    let assistant_message = append_message_in(tx, run.session_id, "assistant", run.reply)?;
     let output_activity = append_activity_in(
       tx,
-      session_id,
+      run.session_id,
       "output",
       "Reply persisted",
       "Assistant output has been stored in the session log.",
       "completed",
     )?;
-    touch_session_in(tx, session_id, "ready")?;
-    let updated_session = load_session_summary_in(tx, session_id)?;
+    touch_session_in(tx, run.session_id, "ready")?;
+    let updated_session = load_session_summary_in(tx, run.session_id)?;
     let seeded_snapshot = seed_snapshot_for_persisted_run(
       cached_snapshot,
-      session_id,
+      run.session_id,
       updated_session,
       &[user_message, assistant_message],
       &[
@@ -1026,21 +977,11 @@ pub fn persist_agent_run(
     );
     build_workspace_snapshot_with_seed_snapshot_in(
       tx,
-      Some(session_id),
+      Some(run.session_id),
       None,
       None,
       None,
-      SnapshotReusePolicy {
-        reuse_session_list: true,
-        reuse_active_session_timeline: true,
-        reuse_note_list: true,
-        reuse_active_note_detail: true,
-        reuse_reminder_list: true,
-        reuse_active_reminder_detail: true,
-        reuse_skill_list: true,
-        reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
-      },
+      SnapshotReusePolicy::read_only(),
       seeded_snapshot,
     )
   })
@@ -1058,16 +999,12 @@ pub fn resolve_settings_override(input: Option<AgentSettingsInput>) -> Result<Ag
   match input {
     Some(value) => {
       let merged = merge_settings_input(load_settings()?, value);
+      validate_settings_size(&merged)?;
       validate_provider_base_url(&merged.base_url)?;
       Ok(merged)
     }
     None => load_settings(),
   }
-}
-
-#[cfg_attr(test, allow(dead_code))]
-pub fn recent_note_details(limit: usize) -> Result<Vec<KnowledgeNoteDetail>> {
-  with_connection(|conn| list_note_details_in(conn, limit))
 }
 
 pub fn recent_note_context(
@@ -1228,14 +1165,60 @@ fn ensure_database_initialized(conn: &Connection, path: &PathBuf) -> Result<()> 
     return Ok(());
   }
 
-  conn.execute_batch(include_str!("../sql/schema.sql"))?;
-  run_post_init_migrations_in(conn)?;
+  initialize_or_migrate_schema_in(conn)?;
 
   let mut guard = DB_INIT_PATH
     .lock()
     .map_err(|_| anyhow!("database init path mutex poisoned"))?;
   *guard = Some(path.clone());
   Ok(())
+}
+
+fn initialize_or_migrate_schema_in(conn: &Connection) -> Result<()> {
+  let schema_version = database_user_version(conn)?;
+  ensure_supported_schema_version(schema_version)?;
+
+  conn.execute_batch(include_str!("../sql/schema.sql"))?;
+  migrate_schema_from_version_in(conn, schema_version)?;
+  run_post_init_migrations_in(conn)?;
+
+  Ok(())
+}
+
+fn database_user_version(conn: &Connection) -> Result<u32> {
+  let version = conn.query_row("PRAGMA user_version", [], |row| row.get::<_, i64>(0))?;
+  u32::try_from(version).context("database user_version is negative")
+}
+
+fn set_database_user_version(conn: &Connection, version: u32) -> Result<()> {
+  conn.execute_batch(&format!("PRAGMA user_version = {version};"))?;
+  Ok(())
+}
+
+fn ensure_supported_schema_version(version: u32) -> Result<()> {
+  if version > CURRENT_SCHEMA_VERSION {
+    return Err(anyhow!(
+      "database schema version {version} is newer than supported {CURRENT_SCHEMA_VERSION}"
+    ));
+  }
+  Ok(())
+}
+
+fn migrate_schema_from_version_in(conn: &Connection, mut version: u32) -> Result<()> {
+  while version < CURRENT_SCHEMA_VERSION {
+    version = migrate_next_schema_version_in(conn, version)?;
+    set_database_user_version(conn, version)?;
+  }
+  Ok(())
+}
+
+fn migrate_next_schema_version_in(_conn: &Connection, version: u32) -> Result<u32> {
+  match version {
+    0 => Ok(1),
+    _ => Err(anyhow!(
+      "unsupported database schema migration path from version {version}"
+    )),
+  }
 }
 
 fn with_transaction<T, F>(action: F) -> Result<T>
@@ -1538,6 +1521,58 @@ fn sanitize_settings_for_client(settings: &AgentSettings) -> AgentSettings {
 
 fn is_default_session_title(title: &str) -> bool {
   matches!(title.trim(), DEFAULT_SESSION_TITLE | "新任务")
+}
+
+fn ensure_char_limit(value: &str, limit: usize, field: &str) -> Result<()> {
+  if value.chars().count() > limit {
+    return Err(anyhow!(
+      "{} is too long; maximum is {} characters",
+      field,
+      limit
+    ));
+  }
+  Ok(())
+}
+
+fn normalize_text_field(value: &str, fallback: &str, limit: usize, field: &str) -> Result<String> {
+  let trimmed = value.trim();
+  let normalized = if trimmed.is_empty() {
+    fallback
+  } else {
+    trimmed
+  };
+  ensure_char_limit(normalized, limit, field)?;
+  Ok(normalized.to_string())
+}
+
+fn normalize_optional_text_field(
+  value: Option<&str>,
+  fallback: &str,
+  limit: usize,
+  field: &str,
+) -> Result<String> {
+  normalize_text_field(value.unwrap_or_default(), fallback, limit, field)
+}
+
+fn normalize_free_text(value: &str, limit: usize, field: &str) -> Result<String> {
+  let trimmed = value.trim();
+  ensure_char_limit(trimmed, limit, field)?;
+  Ok(trimmed.to_string())
+}
+
+fn validate_settings_size(settings: &AgentSettings) -> Result<()> {
+  ensure_char_limit(&settings.provider_name, MAX_TITLE_CHARS, "provider name")?;
+  ensure_char_limit(
+    &settings.base_url,
+    MAX_SHORT_TEXT_CHARS,
+    "provider base url",
+  )?;
+  ensure_char_limit(&settings.model, MAX_SHORT_TEXT_CHARS, "model")?;
+  ensure_char_limit(
+    &settings.system_prompt,
+    MAX_LONG_TEXT_CHARS,
+    "system prompt",
+  )
 }
 
 fn merge_settings_input(current: AgentSettings, input: AgentSettingsInput) -> AgentSettings {
@@ -1885,6 +1920,7 @@ fn insert_starter_skill_in(conn: &Connection, seed: &StarterSkillSeed) -> Result
   Ok(conn.last_insert_rowid())
 }
 
+#[cfg(test)]
 fn ensure_seed_session_in(conn: &Connection) -> Result<i64> {
   let existing: Option<i64> = conn
     .query_row(
@@ -1900,6 +1936,7 @@ fn ensure_seed_session_in(conn: &Connection) -> Result<i64> {
   }
 }
 
+#[cfg(test)]
 fn ensure_seed_note_in(conn: &Connection) -> Result<i64> {
   let existing: Option<i64> = conn
     .query_row(
@@ -1915,6 +1952,7 @@ fn ensure_seed_note_in(conn: &Connection) -> Result<i64> {
   }
 }
 
+#[cfg(test)]
 fn ensure_seed_skill_in(conn: &Connection) -> Result<i64> {
   let existing: Option<i64> = conn
     .query_row(
@@ -1930,18 +1968,19 @@ fn ensure_seed_skill_in(conn: &Connection) -> Result<i64> {
   }
 }
 
+#[cfg(test)]
 fn create_session_in(conn: &Connection, title: Option<String>) -> Result<i64> {
   Ok(create_session_detail_in(conn, title)?.session.id)
 }
 
 fn create_session_detail_in(conn: &Connection, title: Option<String>) -> Result<SessionDetail> {
   let now = now_millis();
-  let session_title = title
-    .as_deref()
-    .map(str::trim)
-    .filter(|value| !value.is_empty())
-    .map(|value| value.to_string())
-    .unwrap_or_else(|| DEFAULT_SESSION_TITLE.to_string());
+  let session_title = normalize_optional_text_field(
+    title.as_deref(),
+    DEFAULT_SESSION_TITLE,
+    MAX_TITLE_CHARS,
+    "session title",
+  )?;
 
   conn.execute(
     "INSERT INTO sessions (title, status, created_at, updated_at)
@@ -1976,18 +2015,19 @@ fn create_session_detail_in(conn: &Connection, title: Option<String>) -> Result<
   })
 }
 
+#[cfg(test)]
 fn create_note_in(conn: &Connection, title: Option<String>) -> Result<i64> {
   Ok(create_note_detail_in(conn, title)?.id)
 }
 
 fn create_note_detail_in(conn: &Connection, title: Option<String>) -> Result<KnowledgeNoteDetail> {
   let now = now_millis();
-  let note_title = title
-    .as_deref()
-    .map(str::trim)
-    .filter(|value| !value.is_empty())
-    .map(|value| value.to_string())
-    .unwrap_or_else(|| "Untitled note".to_string());
+  let note_title = normalize_optional_text_field(
+    title.as_deref(),
+    "Untitled note",
+    MAX_TITLE_CHARS,
+    "note title",
+  )?;
   let body = if note_title == "Welcome note" {
     "# Knowledge Vault\n\nUse this space for local notes, reusable prompts, product facts, and runbooks.\n\n- Keep durable context here.\n- Use short titles.\n- Tag notes so they are easy to filter later.".to_string()
   } else {
@@ -2011,18 +2051,19 @@ fn create_note_detail_in(conn: &Connection, title: Option<String>) -> Result<Kno
   ))
 }
 
+#[cfg(test)]
 fn create_reminder_in(conn: &Connection, title: Option<String>) -> Result<i64> {
   Ok(create_reminder_detail_in(conn, title)?.id)
 }
 
 fn create_reminder_detail_in(conn: &Connection, title: Option<String>) -> Result<ReminderDetail> {
   let now = now_millis();
-  let reminder_title = title
-    .as_deref()
-    .map(str::trim)
-    .filter(|value| !value.is_empty())
-    .map(|value| value.to_string())
-    .unwrap_or_else(|| "New reminder".to_string());
+  let reminder_title = normalize_optional_text_field(
+    title.as_deref(),
+    "New reminder",
+    MAX_TITLE_CHARS,
+    "reminder title",
+  )?;
   let linked_note_id: Option<i64> = conn
     .query_row(
       "SELECT id FROM notes ORDER BY updated_at DESC LIMIT 1",
@@ -2046,31 +2087,29 @@ fn create_reminder_detail_in(conn: &Connection, title: Option<String>) -> Result
     ],
   )?;
 
-  Ok(build_reminder_detail(
-    conn.last_insert_rowid(),
-    reminder_title,
-    "Capture the next action, attach a note, and set when it should surface again.".to_string(),
-    Some(now + 60 * 60 * 1000),
-    "medium".to_string(),
-    "scheduled".to_string(),
+  Ok(build_reminder_detail(ReminderDetailParts {
+    id: conn.last_insert_rowid(),
+    title: reminder_title,
+    detail: "Capture the next action, attach a note, and set when it should surface again."
+      .to_string(),
+    due_at: Some(now + 60 * 60 * 1000),
+    severity: "medium".to_string(),
+    status: "scheduled".to_string(),
     linked_note_id,
-    now,
-    now,
-  ))
+    created_at: now,
+    updated_at: now,
+  }))
 }
 
+#[cfg(test)]
 fn create_skill_in(conn: &Connection, name: Option<String>) -> Result<i64> {
   Ok(create_skill_detail_in(conn, name)?.id)
 }
 
 fn create_skill_detail_in(conn: &Connection, name: Option<String>) -> Result<SkillDetail> {
   let now = now_millis();
-  let skill_name = name
-    .as_deref()
-    .map(str::trim)
-    .filter(|value| !value.is_empty())
-    .map(|value| value.to_string())
-    .unwrap_or_else(|| "New skill".to_string());
+  let skill_name =
+    normalize_optional_text_field(name.as_deref(), "New skill", MAX_TITLE_CHARS, "skill name")?;
 
   let (description, instructions, trigger_hint) = if skill_name == "Local note recall" {
     (
@@ -2095,19 +2134,20 @@ fn create_skill_detail_in(conn: &Connection, name: Option<String>) -> Result<Ski
     params![&skill_name, &description, &instructions, &trigger_hint, now, now],
   )?;
 
-  Ok(build_skill_detail(
-    conn.last_insert_rowid(),
-    skill_name,
+  Ok(build_skill_detail(SkillDetailParts {
+    id: conn.last_insert_rowid(),
+    name: skill_name,
     description,
     instructions,
     trigger_hint,
-    true,
-    "low".to_string(),
-    now,
-    now,
-  ))
+    enabled: true,
+    permission_level: "low".to_string(),
+    created_at: now,
+    updated_at: now,
+  }))
 }
 
+#[cfg(test)]
 fn save_note_in(conn: &Connection, input: KnowledgeNoteInput) -> Result<()> {
   save_note_detail_in(conn, input).map(|_| ())
 }
@@ -2117,8 +2157,8 @@ fn save_note_detail_in(
   input: KnowledgeNoteInput,
 ) -> Result<KnowledgeNoteDetail> {
   let icon = normalize_note_icon(&input.icon);
-  let title = normalize_note_title(&input.title);
-  let body = input.body.trim().to_string();
+  let title = normalize_text_field(&input.title, "Untitled note", MAX_TITLE_CHARS, "note title")?;
+  let body = normalize_free_text(&input.body, MAX_NOTE_BODY_CHARS, "note body")?;
   let tags = normalize_tags(input.tags);
   let updated_at = now_millis();
   let created_at = load_note_created_at_in(conn, input.id)?;
@@ -2170,17 +2210,19 @@ fn delete_note_in(conn: &Connection, note_id: i64) -> Result<()> {
   Ok(())
 }
 
+#[cfg(test)]
 fn save_reminder_in(conn: &Connection, input: ReminderInput) -> Result<()> {
   save_reminder_detail_in(conn, input).map(|_| ())
 }
 
 fn save_reminder_detail_in(conn: &Connection, input: ReminderInput) -> Result<ReminderDetail> {
-  let title = if input.title.trim().is_empty() {
-    "New reminder".to_string()
-  } else {
-    input.title.trim().to_string()
-  };
-  let detail = input.detail.trim().to_string();
+  let title = normalize_text_field(
+    &input.title,
+    "New reminder",
+    MAX_TITLE_CHARS,
+    "reminder title",
+  )?;
+  let detail = normalize_free_text(&input.detail, MAX_LONG_TEXT_CHARS, "reminder detail")?;
   let severity = match input.severity.trim() {
     "low" => "low",
     "high" => "high",
@@ -2225,17 +2267,17 @@ fn save_reminder_detail_in(conn: &Connection, input: ReminderInput) -> Result<Re
     return Err(anyhow!("reminder not found"));
   }
 
-  Ok(build_reminder_detail(
-    input.id,
+  Ok(build_reminder_detail(ReminderDetailParts {
+    id: input.id,
     title,
     detail,
-    input.due_at,
-    severity.to_string(),
-    status.to_string(),
+    due_at: input.due_at,
+    severity: severity.to_string(),
+    status: status.to_string(),
     linked_note_id,
     created_at,
     updated_at,
-  ))
+  }))
 }
 
 fn delete_reminder_in(conn: &Connection, reminder_id: i64) -> Result<()> {
@@ -2340,6 +2382,7 @@ fn get_skill_name_in(conn: &Connection, skill_id: i64) -> Result<Option<String>>
     .map_err(Into::into)
 }
 
+#[cfg(test)]
 fn create_skill_for_active_session_in(
   conn: &Connection,
   name: Option<String>,
@@ -2423,19 +2466,28 @@ fn delete_skill_in(conn: &Connection, skill_id: i64) -> Result<()> {
   Ok(())
 }
 
+#[cfg(test)]
 fn save_skill_in(conn: &Connection, input: SkillInput) -> Result<()> {
   save_skill_detail_in(conn, input).map(|_| ())
 }
 
 fn save_skill_detail_in(conn: &Connection, input: SkillInput) -> Result<SkillDetail> {
-  let name = if input.name.trim().is_empty() {
-    "New skill".to_string()
-  } else {
-    input.name.trim().to_string()
-  };
-  let description = input.description.trim().to_string();
-  let instructions = input.instructions.trim().to_string();
-  let trigger_hint = input.trigger_hint.trim().to_string();
+  let name = normalize_text_field(&input.name, "New skill", MAX_TITLE_CHARS, "skill name")?;
+  let description = normalize_free_text(
+    &input.description,
+    MAX_SHORT_TEXT_CHARS,
+    "skill description",
+  )?;
+  let instructions = normalize_free_text(
+    &input.instructions,
+    MAX_SKILL_INSTRUCTIONS_CHARS,
+    "skill instructions",
+  )?;
+  let trigger_hint = normalize_free_text(
+    &input.trigger_hint,
+    MAX_SHORT_TEXT_CHARS,
+    "skill trigger hint",
+  )?;
   let updated_at = now_millis();
   let created_at = load_skill_created_at_in(conn, input.id)?;
 
@@ -2489,17 +2541,17 @@ fn save_skill_detail_in(conn: &Connection, input: SkillInput) -> Result<SkillDet
     }
   }
 
-  Ok(build_skill_detail(
-    input.id,
+  Ok(build_skill_detail(SkillDetailParts {
+    id: input.id,
     name,
     description,
     instructions,
     trigger_hint,
-    input.enabled,
-    "low".to_string(),
+    enabled: input.enabled,
+    permission_level: "low".to_string(),
     created_at,
     updated_at,
-  ))
+  }))
 }
 
 fn save_session_skills_in(
@@ -2846,37 +2898,6 @@ fn list_notes_in(conn: &Connection) -> Result<Vec<KnowledgeNoteSummary>> {
       summary: preview_text(&row.get::<_, String>(3)?, 120),
       tags: decode_tags(row.get(4)?),
       updated_at: row.get(5)?,
-    })
-  })?;
-
-  let mut notes = Vec::new();
-  for row in rows {
-    notes.push(row?);
-  }
-
-  Ok(notes)
-}
-
-#[cfg_attr(test, allow(dead_code))]
-fn list_note_details_in(conn: &Connection, limit: usize) -> Result<Vec<KnowledgeNoteDetail>> {
-  let mut stmt = conn.prepare(
-    "SELECT id, icon, title, body, tags, created_at, updated_at
-     FROM notes
-     ORDER BY updated_at DESC, id DESC
-     LIMIT ?1",
-  )?;
-  let rows = stmt.query_map(params![limit as i64], |row| {
-    let body: String = row.get(3)?;
-    let tags_json: String = row.get(4)?;
-    Ok(KnowledgeNoteDetail {
-      id: row.get(0)?,
-      icon: row.get(1)?,
-      title: row.get(2)?,
-      summary: preview_text(&body, 120),
-      body,
-      tags: decode_tags(tags_json),
-      created_at: row.get(5)?,
-      updated_at: row.get(6)?,
     })
   })?;
 
@@ -3275,9 +3296,8 @@ fn recommend_session_skills_from_messages(
   let keywords = extract_recommendation_keywords(&session_haystack);
   let mut ranked = all_skills
     .iter()
-    .cloned()
-    .into_iter()
     .filter(|skill| skill.enabled && !mounted_skill_ids.contains(&skill.id))
+    .cloned()
     .map(|mut skill| {
       let (score, reason) = score_skill_recommendation_stable(&skill, &session_haystack, &keywords);
       skill.recommendation_reason = reason;
@@ -3937,6 +3957,8 @@ fn normalize_tags(tags: Vec<String>) -> Vec<String> {
     .into_iter()
     .map(|tag| tag.trim().to_string())
     .filter(|tag| !tag.is_empty())
+    .map(|tag| tag.chars().take(MAX_TAG_CHARS).collect::<String>())
+    .take(MAX_TAGS)
     .collect()
 }
 
@@ -3945,14 +3967,6 @@ fn normalize_note_icon(icon: &str) -> String {
     "*".to_string()
   } else {
     icon.trim().chars().take(2).collect::<String>()
-  }
-}
-
-fn normalize_note_title(title: &str) -> String {
-  if title.trim().is_empty() {
-    "Untitled note".to_string()
-  } else {
-    title.trim().to_string()
   }
 }
 
@@ -3988,7 +4002,7 @@ fn build_note_summary_from_detail(detail: &KnowledgeNoteDetail) -> KnowledgeNote
   }
 }
 
-fn build_reminder_detail(
+struct ReminderDetailParts {
   id: i64,
   title: String,
   detail: String,
@@ -3998,18 +4012,20 @@ fn build_reminder_detail(
   linked_note_id: Option<i64>,
   created_at: i64,
   updated_at: i64,
-) -> ReminderDetail {
+}
+
+fn build_reminder_detail(parts: ReminderDetailParts) -> ReminderDetail {
   ReminderDetail {
-    id,
-    title,
-    preview: preview_text(&detail, 120),
-    detail,
-    due_at,
-    severity,
-    status,
-    linked_note_id,
-    created_at,
-    updated_at,
+    id: parts.id,
+    title: parts.title,
+    preview: preview_text(&parts.detail, 120),
+    detail: parts.detail,
+    due_at: parts.due_at,
+    severity: parts.severity,
+    status: parts.status,
+    linked_note_id: parts.linked_note_id,
+    created_at: parts.created_at,
+    updated_at: parts.updated_at,
   }
 }
 
@@ -4026,7 +4042,7 @@ fn build_reminder_summary_from_detail(detail: &ReminderDetail) -> ReminderSummar
   }
 }
 
-fn build_skill_detail(
+struct SkillDetailParts {
   id: i64,
   name: String,
   description: String,
@@ -4036,18 +4052,20 @@ fn build_skill_detail(
   permission_level: String,
   created_at: i64,
   updated_at: i64,
-) -> SkillDetail {
+}
+
+fn build_skill_detail(parts: SkillDetailParts) -> SkillDetail {
   SkillDetail {
-    id,
-    name,
-    description: description.clone(),
-    summary: preview_text(&description, 120),
-    instructions,
-    trigger_hint,
-    enabled,
-    permission_level,
-    created_at,
-    updated_at,
+    id: parts.id,
+    name: parts.name,
+    description: parts.description.clone(),
+    summary: preview_text(&parts.description, 120),
+    instructions: parts.instructions,
+    trigger_hint: parts.trigger_hint,
+    enabled: parts.enabled,
+    permission_level: parts.permission_level,
+    created_at: parts.created_at,
+    updated_at: parts.updated_at,
   }
 }
 
@@ -4263,9 +4281,8 @@ mod tests {
     clear_snapshot_cache()?;
     clear_settings_cache()?;
     let conn = Connection::open_in_memory()?;
-    conn.execute_batch(include_str!("../sql/schema.sql"))?;
     conn.execute_batch("PRAGMA foreign_keys = ON;")?;
-    run_post_init_migrations_in(&conn)?;
+    initialize_or_migrate_schema_in(&conn)?;
     Ok(conn)
   }
 
@@ -4310,6 +4327,53 @@ mod tests {
   fn persisted_settings(conn: &Connection) -> Result<AgentSettings> {
     let raw = load_setting_value_in(conn, SETTINGS_KEY)?.context("missing settings payload")?;
     serde_json::from_str(&raw).map_err(Into::into)
+  }
+
+  #[test]
+  fn schema_init_sets_current_user_version() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = Connection::open_in_memory()?;
+
+    initialize_or_migrate_schema_in(&conn)?;
+
+    assert_eq!(database_user_version(&conn)?, CURRENT_SCHEMA_VERSION);
+    Ok(())
+  }
+
+  #[test]
+  fn schema_init_rejects_newer_database_version() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = Connection::open_in_memory()?;
+    set_database_user_version(&conn, CURRENT_SCHEMA_VERSION + 1)?;
+
+    let error =
+      initialize_or_migrate_schema_in(&conn).expect_err("newer schema should be rejected");
+
+    assert!(error.to_string().contains("newer than supported"));
+    Ok(())
+  }
+
+  #[test]
+  fn legacy_zero_schema_version_is_promoted_to_current() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let conn = Connection::open_in_memory()?;
+    conn.execute_batch(include_str!("../sql/schema.sql"))?;
+    assert_eq!(database_user_version(&conn)?, 0);
+
+    initialize_or_migrate_schema_in(&conn)?;
+
+    let starter_skill_count = conn.query_row("SELECT COUNT(*) FROM skills", [], |row| {
+      row.get::<_, i64>(0)
+    })?;
+    assert_eq!(database_user_version(&conn)?, CURRENT_SCHEMA_VERSION);
+    assert!(starter_skill_count > 0);
+    Ok(())
   }
 
   #[test]
@@ -4540,16 +4604,14 @@ mod tests {
       .map_err(|_| anyhow!("test state mutex poisoned"))?;
     let conn = test_connection()?;
 
-    let error = (|| {
-      build_workspace_snapshot_with_policy_in(
-        &conn,
-        Some(999),
-        None,
-        None,
-        None,
-        SnapshotReusePolicy::default(),
-      )
-    })()
+    let error = build_workspace_snapshot_with_policy_in(
+      &conn,
+      Some(999),
+      None,
+      None,
+      None,
+      SnapshotReusePolicy::default(),
+    )
     .expect("snapshot fallback should still be available");
     assert_ne!(error.active_session_id, 999);
 
@@ -4676,9 +4738,8 @@ mod tests {
       .lock()
       .map_err(|_| anyhow!("test state mutex poisoned"))?;
     let conn = Connection::open_in_memory()?;
-    conn.execute_batch(include_str!("../sql/schema.sql"))?;
     conn.execute_batch("PRAGMA foreign_keys = ON;")?;
-    run_post_init_migrations_in(&conn)?;
+    initialize_or_migrate_schema_in(&conn)?;
     clear_snapshot_cache()?;
     clear_settings_cache()?;
 
@@ -4863,17 +4924,7 @@ mod tests {
         note_ids.first().copied(),
         reminder_ids.first().copied(),
         None,
-        SnapshotReusePolicy {
-          reuse_session_list: true,
-          reuse_active_session_timeline: true,
-          reuse_note_list: true,
-          reuse_active_note_detail: true,
-          reuse_reminder_list: true,
-          reuse_active_reminder_detail: true,
-          reuse_skill_list: true,
-          reuse_active_skill_detail: true,
-          ..SnapshotReusePolicy::default()
-        },
+        SnapshotReusePolicy::read_only(),
         seed_snapshot_for_session_skills_save(cached_snapshot, updated_session, mounted_skill_ids),
       )?);
     }
@@ -4955,17 +5006,7 @@ mod tests {
         note_ids.first().copied(),
         reminder_ids.first().copied(),
         skill_ids.first().copied(),
-        SnapshotReusePolicy {
-          reuse_session_list: true,
-          reuse_active_session_timeline: true,
-          reuse_note_list: true,
-          reuse_active_note_detail: true,
-          reuse_reminder_list: true,
-          reuse_active_reminder_detail: true,
-          reuse_skill_list: true,
-          reuse_active_skill_detail: true,
-          ..SnapshotReusePolicy::default()
-        },
+        SnapshotReusePolicy::read_only(),
         seeded_snapshot,
       )?);
     }
@@ -5107,12 +5148,12 @@ mod tests {
       SnapshotReusePolicy {
         reuse_session_list: true,
         reuse_active_session_timeline: true,
+        reuse_note_list: false,
         reuse_active_note_detail: true,
         reuse_reminder_list: true,
         reuse_active_reminder_detail: true,
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
       },
     )?;
     assert!(refreshed_snapshot
@@ -5228,7 +5269,6 @@ mod tests {
         reuse_active_reminder_detail: true,
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
       },
       seeded_snapshot,
     )?;
@@ -5325,17 +5365,7 @@ mod tests {
       Some(base_snapshot.active_note_id),
       (base_snapshot.active_reminder_id > 0).then_some(base_snapshot.active_reminder_id),
       Some(base_snapshot.active_skill_id),
-      SnapshotReusePolicy {
-        reuse_session_list: true,
-        reuse_active_session_timeline: true,
-        reuse_note_list: true,
-        reuse_active_note_detail: true,
-        reuse_reminder_list: true,
-        reuse_active_reminder_detail: true,
-        reuse_skill_list: true,
-        reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
-      },
+      SnapshotReusePolicy::read_only(),
       seed_snapshot_for_session_create(Some(base_snapshot), session.clone()),
     )?;
 
@@ -5395,7 +5425,6 @@ mod tests {
         reuse_active_reminder_detail: true,
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
       },
       seeded_snapshot,
     )?;
@@ -5436,17 +5465,7 @@ mod tests {
       None,
       None,
       None,
-      SnapshotReusePolicy {
-        reuse_session_list: true,
-        reuse_active_session_timeline: true,
-        reuse_note_list: true,
-        reuse_active_note_detail: true,
-        reuse_reminder_list: true,
-        reuse_active_reminder_detail: true,
-        reuse_skill_list: true,
-        reuse_active_skill_detail: true,
-        ..SnapshotReusePolicy::default()
-      },
+      SnapshotReusePolicy::read_only(),
       seed_snapshot_for_session_skills_save(
         Some(base_snapshot),
         updated_session.clone(),

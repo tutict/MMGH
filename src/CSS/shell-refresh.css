@@ -385,7 +385,7 @@
 }
 
 .hero-control-card--locale .mode-switch__button:first-child::after {
-  content: "涓枃";
+  content: "\4E2D\6587";
   font-size: 0.92rem;
 }
 
