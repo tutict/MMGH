@@ -2238,6 +2238,10 @@ function App() {
   }, [isPlaying, selectedTrackId, selectedTrackSource]);
 
   useEffect(() => {
+    if (currentView !== "music") {
+      return;
+    }
+
     if (!selectedTrack) {
       return;
     }
@@ -2250,13 +2254,14 @@ function App() {
 
     if (
       lyricsLookupState[selectedTrack.id]?.status === "loading" ||
-      lyricsLookupState[selectedTrack.id]?.status === "cleared"
+      lyricsLookupState[selectedTrack.id]?.status === "cleared" ||
+      lyricsLookupState[selectedTrack.id]?.status === "error"
     ) {
       return;
     }
 
     void handleRefreshLyrics({ force: true, initiatedBy: "auto" });
-  }, [duration, handleRefreshLyrics, lyricsCache, lyricsLookupState, selectedTrack, selectedTrackId]);
+  }, [currentView, duration, handleRefreshLyrics, lyricsCache, lyricsLookupState, selectedTrack, selectedTrackId]);
 
   useEffect(() => {
     if (!autoPlayOnReply || !lastAssistantMessageId) {
@@ -4233,6 +4238,7 @@ function App() {
                 onChange={(event) => setNewSessionTitle(event.target.value)}
                 placeholder={t("app.session.newPlaceholder")}
                 className="field-input"
+                aria-label={t("app.session.newPlaceholder")}
               />
               <button
                 type="button"
@@ -4417,6 +4423,7 @@ function App() {
                     type="button"
                     className={`rail-nav-item ${currentView === item.id ? "is-active" : ""}`}
                     onClick={() => handleSelectView(item.id)}
+                    aria-current={currentView === item.id ? "page" : undefined}
                   >
                     <div className="rail-nav-item__head">
                       <div className="rail-nav-item__title">
@@ -4525,6 +4532,7 @@ function App() {
                     type="button"
                     className="ghost-button hero-theme-button"
                     onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+                    aria-label={theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
                   >
                     {theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
                   </button>
@@ -4536,6 +4544,7 @@ function App() {
                       className={`mode-switch__button ${lang === "zh-CN" ? "is-active" : ""}`}
                       onClick={() => setLang("zh-CN")}
                       aria-label={"\u4E2D\u6587"}
+                      aria-pressed={lang === "zh-CN"}
                     >
                       {"\u4E2D\u6587"}
                     </button>
@@ -4543,6 +4552,8 @@ function App() {
                       type="button"
                       className={`mode-switch__button ${lang === "en-US" ? "is-active" : ""}`}
                       onClick={() => setLang("en-US")}
+                      aria-label="English"
+                      aria-pressed={lang === "en-US"}
                     >
                       EN
                     </button>
@@ -4571,6 +4582,7 @@ function App() {
                 type="button"
                 className={`workspace-switcher-button ${currentView === item.id ? "is-active" : ""}`}
                 onClick={() => handleSelectView(item.id)}
+                aria-current={currentView === item.id ? "page" : undefined}
               >
                 <span className="workspace-switcher-button__icon" aria-hidden="true">
                   <PanelIcon type={getNavIconType(item.id)} />
@@ -5061,6 +5073,7 @@ function App() {
                         className={`mode-switch__button ${lang === "zh-CN" ? "is-active" : ""}`}
                         onClick={() => setLang("zh-CN")}
                         aria-label={"\u4E2D\u6587"}
+                        aria-pressed={lang === "zh-CN"}
                       >
                         {"\u4E2D\u6587"}
                       </button>
@@ -5068,6 +5081,8 @@ function App() {
                         type="button"
                         className={`mode-switch__button ${lang === "en-US" ? "is-active" : ""}`}
                         onClick={() => setLang("en-US")}
+                        aria-label="English"
+                        aria-pressed={lang === "en-US"}
                       >
                         EN
                       </button>
@@ -5080,6 +5095,7 @@ function App() {
                       type="button"
                       className="ghost-button hero-theme-button"
                       onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
+                      aria-label={theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
                     >
                       {theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
                     </button>
@@ -5117,6 +5133,7 @@ function App() {
             type="button"
             className={`mobile-dock__item ${currentView === item.id ? "is-active" : ""}`}
             onClick={() => handleSelectView(item.id)}
+            aria-current={currentView === item.id ? "page" : undefined}
           >
             <span className="mobile-dock__icon" aria-hidden="true">
               <PanelIcon type={getNavIconType(item.id)} />

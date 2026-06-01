@@ -7,7 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use anyhow::{anyhow, Context, Result};
 use once_cell::sync::Lazy;
 use reqwest::Url;
-use rusqlite::{params, Connection, OptionalExtension, Row, Transaction};
+use rusqlite::{params, Connection, OptionalExtension, Row, Transaction, TransactionBehavior};
 use serde::{Deserialize, Serialize};
 
 use crate::cmd::{AgentSettingsInput, KnowledgeNoteInput, ReminderInput, SkillInput};
@@ -18,6 +18,7 @@ static RUNTIME_API_KEY: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(No
 static APP_DATA_DIR: Lazy<Mutex<Option<PathBuf>>> = Lazy::new(|| Mutex::new(None));
 static DB_INIT_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 static DB_INIT_PATH: Lazy<Mutex<Option<PathBuf>>> = Lazy::new(|| Mutex::new(None));
+static DB_WRITE_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 static CAPABILITY_CATALOG: Lazy<Vec<Capability>> = Lazy::new(build_capability_catalog);
 const SETTINGS_KEY: &str = "agent_settings_v1";
 #[cfg_attr(test, allow(dead_code))]
@@ -1134,8 +1135,11 @@ fn clear_db_init_path() -> Result<()> {
 fn open_database_connection() -> Result<Connection> {
   let path = db_path()?;
   let conn = Connection::open(&path)?;
-  conn.busy_timeout(std::time::Duration::from_secs(5))?;
-  conn.execute_batch("PRAGMA foreign_keys = ON;")?;
+  conn.busy_timeout(std::time::Duration::from_secs(10))?;
+  conn.execute_batch(
+    "PRAGMA foreign_keys = ON;
+     PRAGMA synchronous = NORMAL;",
+  )?;
   ensure_database_initialized(&conn, &path)?;
   Ok(conn)
 }
@@ -1165,6 +1169,7 @@ fn ensure_database_initialized(conn: &Connection, path: &PathBuf) -> Result<()> 
     return Ok(());
   }
 
+  conn.execute_batch("PRAGMA journal_mode = WAL;")?;
   initialize_or_migrate_schema_in(conn)?;
 
   let mut guard = DB_INIT_PATH
@@ -1225,8 +1230,11 @@ fn with_transaction<T, F>(action: F) -> Result<T>
 where
   F: FnOnce(&Transaction<'_>) -> Result<T>,
 {
+  let _write_guard = DB_WRITE_LOCK
+    .lock()
+    .map_err(|_| anyhow!("database write mutex poisoned"))?;
   let mut conn = open_database_connection()?;
-  let tx = conn.transaction()?;
+  let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
   let result = action(&tx)?;
   tx.commit()?;
   Ok(result)
@@ -2758,7 +2766,7 @@ fn build_workspace_snapshot_with_seed_snapshot_in(
       preserved_skill_catalog,
     )?
   };
-  let active_note = cached_snapshot
+  let active_note_detail = cached_snapshot
     .as_ref()
     .filter(|snapshot| {
       reuse_policy.reuse_active_note_detail && snapshot.active_note_id == active_note_id
@@ -2768,8 +2776,12 @@ fn build_workspace_snapshot_with_seed_snapshot_in(
       seeded_note_detail
         .clone()
         .filter(|detail| detail.id == active_note_id)
-    })
-    .unwrap_or(build_note_detail_in(conn, active_note_id)?);
+    });
+  let active_note = if let Some(detail) = active_note_detail {
+    detail
+  } else {
+    build_note_detail_in(conn, active_note_id)?
+  };
   let active_reminder = cached_snapshot
     .as_ref()
     .filter(|snapshot| {
@@ -2784,7 +2796,7 @@ fn build_workspace_snapshot_with_seed_snapshot_in(
       }
     })
     .unwrap_or_else(empty_reminder_detail);
-  let active_skill = cached_snapshot
+  let active_skill_detail = cached_snapshot
     .as_ref()
     .filter(|snapshot| {
       reuse_policy.reuse_active_skill_detail && snapshot.active_skill_id == active_skill_id
@@ -2794,8 +2806,12 @@ fn build_workspace_snapshot_with_seed_snapshot_in(
       seeded_skill_detail
         .clone()
         .filter(|detail| detail.id == active_skill_id)
-    })
-    .unwrap_or(build_skill_detail_in(conn, active_skill_id)?);
+    });
+  let active_skill = if let Some(detail) = active_skill_detail {
+    detail
+  } else {
+    build_skill_detail_in(conn, active_skill_id)?
+  };
 
   let snapshot = WorkspaceSnapshot {
     settings: sanitize_settings_for_client(&load_settings_in(conn)?),
@@ -4663,6 +4679,65 @@ mod tests {
 
     let skill_error = delete_skill_in(&conn, 999).expect_err("missing skill should fail");
     assert!(skill_error.to_string().contains("skill not found"));
+    Ok(())
+  }
+
+  #[test]
+  fn concurrent_write_commands_wait_instead_of_returning_database_locked() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let data_dir = std::env::current_dir()?
+      .join("target")
+      .join(format!("mmgh-concurrent-write-{}", now_millis()));
+    if data_dir.exists() {
+      fs::remove_dir_all(&data_dir)?;
+    }
+    set_app_data_dir(data_dir.clone())?;
+
+    let snapshot = bootstrap()?;
+    let session_id = snapshot.active_session_id;
+    let worker_count = 20;
+    let barrier = std::sync::Arc::new(std::sync::Barrier::new(worker_count));
+    let errors = std::sync::Arc::new(Mutex::new(Vec::<String>::new()));
+    let mut handles = Vec::new();
+
+    for index in 0..worker_count {
+      let barrier = std::sync::Arc::clone(&barrier);
+      let errors = std::sync::Arc::clone(&errors);
+      handles.push(std::thread::spawn(move || {
+        barrier.wait();
+        if let Err(error) = create_reminder(
+          Some(format!("Concurrent reminder {index:02}")),
+          Some(session_id),
+        ) {
+          if let Ok(mut guard) = errors.lock() {
+            guard.push(format!("{error:#}"));
+          }
+        }
+      }));
+    }
+
+    for handle in handles {
+      handle
+        .join()
+        .map_err(|_| anyhow!("concurrent writer thread panicked"))?;
+    }
+
+    let errors = errors
+      .lock()
+      .map_err(|_| anyhow!("concurrent error mutex poisoned"))?;
+    assert!(
+      errors.is_empty(),
+      "concurrent writes should not fail: {errors:?}"
+    );
+    let snapshot = bootstrap()?;
+    assert!(snapshot.reminders.len() >= worker_count);
+
+    drop(errors);
+    if data_dir.exists() {
+      fs::remove_dir_all(&data_dir)?;
+    }
     Ok(())
   }
 
