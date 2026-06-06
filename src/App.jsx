@@ -36,7 +36,6 @@ import {
 import MiniPlayerBar from "./components/MiniPlayerBar";
 import {
   WEATHER_LOCATIONS,
-  createInitialWeatherCity,
   createInitialWeatherCities,
   fetchWeatherSnapshots,
 } from "./components/weatherData";
@@ -88,6 +87,63 @@ import {
   listenToDesktopLifecycle,
   listenToDesktopWindowState,
 } from "./storage/tauri";
+import {
+  createAbortError,
+  downloadJsonFile,
+  fileToDataUrl,
+  formatShortClock,
+  normalizeError,
+  normalizeReminderDueAt,
+  parseTags,
+  slugifyFileName,
+} from "./utils/appUtils";
+import {
+  GALLERY_STORAGE_KEY,
+  LEGACY_ALBUM_STORAGE_KEY,
+  readGalleryItems,
+  updateStoredGalleryItems,
+} from "./utils/galleryStorage";
+import {
+  getStoredArrayLength,
+  removeLocalStorageKeys,
+} from "./utils/localStorageCache";
+import {
+  LYRICS_CACHE_CLEAR_MARKER_STORAGE_KEY,
+  LYRICS_CACHE_STORAGE_KEY,
+  buildLyricsLookupStateWithClearMarker,
+  clearClearedLyricsLookupState,
+  fetchLyricsFromLrclib,
+  getLyricsCacheEntryKey,
+  mergeLyricsLookupStateFromCache,
+  normalizeLyricsError,
+  readLyricsCache,
+  readLyricsCacheClearMarker,
+  resolveLyricsLines,
+  updateStoredLyricsCache,
+  writeLyricsCacheClearMarker,
+} from "./utils/lyrics";
+import {
+  SKILL_HISTORY_STORAGE_KEY,
+  appendSkillHistoryEntry,
+  buildSkillDraftFromVersion,
+  getSkillHistoryEntries,
+  parseImportedSkills,
+  readSkillHistory,
+  removeSkillHistoryEntries,
+  shouldTrackSkillVersion,
+  updateStoredSkillHistory,
+} from "./utils/skillHistory";
+import {
+  WEATHER_LOCATIONS_STORAGE_KEY,
+  WEATHER_RECENT_SEARCHES_STORAGE_KEY,
+  WEATHER_USAGE_STORAGE_KEY,
+  buildWeatherLoadingCities,
+  isSameWeatherLocation,
+  normalizeWeatherNetworkError,
+  readWeatherLocations,
+  sanitizeWeatherLocation,
+  updateStoredWeatherLocations,
+} from "./utils/weatherStorage";
 
 const GalleryWorkspace = lazy(() => import("./components/GalleryWorkspace"));
 const KnowledgeVault = lazy(() => import("./components/KnowledgeVault"));
@@ -119,16 +175,6 @@ const BUILT_IN_TRACKS = [
   },
 ];
 
-const GALLERY_STORAGE_KEY = "mmgh-gallery-v1";
-const LEGACY_ALBUM_STORAGE_KEY = "mmgh.album.photos.v1";
-const WEATHER_LOCATIONS_STORAGE_KEY = "mmgh-weather-locations-v1";
-const WEATHER_RECENT_SEARCHES_STORAGE_KEY = "mmgh-weather-recent-searches-v1";
-const WEATHER_USAGE_STORAGE_KEY = "mmgh-weather-usage-v1";
-const SKILL_HISTORY_STORAGE_KEY = "mmgh-skill-history-v1";
-const LYRICS_CACHE_STORAGE_KEY = "mmgh-lyrics-cache-v1";
-const LYRICS_CACHE_CLEAR_MARKER_STORAGE_KEY = "mmgh-lyrics-cache-cleared-at-v1";
-const MAX_SKILL_HISTORY_ENTRIES = 24;
-
 const EMPTY_REMINDER_DRAFT = {
   id: 0,
   title: "",
@@ -158,8 +204,67 @@ const EMPTY_REMINDER_COMPLETION_DRAFT = {
   followUpDueAt: "",
 };
 const EMPTY_LIST = [];
-const LOCAL_CACHE_WRITE_MAX_RETRIES = 5;
 const THEME_STORAGE_KEY = "mmgh-theme";
+const STARTER_SKILL_TITLE_KEYS = [
+  {
+    key: "app.skills.templates.noteRecall.name",
+    names: ["Note Recall", "\u7b14\u8bb0\u53ec\u56de", "\u7b14\u8bb0\u4f18\u5148", "Local note recall"],
+  },
+  {
+    key: "app.skills.templates.knowledgeLibrarian.name",
+    names: ["Knowledge Librarian", "\u77e5\u8bc6\u6574\u7406\u5458", "\u6574\u7406\u7b14\u8bb0"],
+  },
+  {
+    key: "app.skills.templates.reminderRadar.name",
+    names: ["Reminder Radar", "\u63d0\u9192\u96f7\u8fbe", "\u6574\u7406\u63d0\u9192"],
+  },
+  {
+    key: "app.skills.templates.weatherBrief.name",
+    names: ["Weather Brief", "\u5929\u6c14\u7b80\u62a5", "\u5929\u6c14\u53c2\u8003"],
+  },
+  {
+    key: "app.skills.templates.musicCompanion.name",
+    names: ["Music Companion", "\u97f3\u4e50\u966a\u542c", "\u97f3\u4e50\u4f34\u542c", "\u97f3\u4e50\u5efa\u8bae"],
+  },
+  {
+    key: "app.skills.templates.galleryCurator.name",
+    names: ["Gallery Curator", "\u753b\u5eca\u7b56\u5c55", "\u6574\u7406\u56fe\u7247"],
+  },
+  {
+    key: "app.skills.templates.settingsSteward.name",
+    names: ["Settings Steward", "\u8bbe\u7f6e\u7ba1\u5bb6", "\u8bbe\u7f6e\u7ba1\u7406"],
+  },
+  {
+    key: "app.skills.templates.releaseGuard.name",
+    names: ["Release Guard", "\u53d1\u5e03\u5b88\u536b", "\u53d1\u5e03\u68c0\u67e5"],
+  },
+  {
+    key: "app.skills.templates.uiPolish.name",
+    names: ["UI Polish", "\u754c\u9762\u6253\u78e8"],
+  },
+  {
+    key: "app.skills.templates.researchMode.name",
+    names: ["Research Mode", "\u7814\u7a76\u6a21\u5f0f", "\u67e5\u8bc1\u6a21\u5f0f"],
+  },
+  {
+    key: "app.skills.templates.taskRouter.name",
+    names: ["Task Router", "\u4efb\u52a1\u8def\u7531", "\u4efb\u52a1\u62c6\u89e3"],
+  },
+];
+const STARTER_SKILL_TITLE_KEY_BY_NAME = new Map(
+  STARTER_SKILL_TITLE_KEYS.flatMap((item) =>
+    item.names.map((name) => [normalizeSkillNameForDisplay(name), item.key])
+  )
+);
+
+function normalizeSkillNameForDisplay(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function resolveSkillDisplayTitle(skill, t) {
+  const titleKey = STARTER_SKILL_TITLE_KEY_BY_NAME.get(normalizeSkillNameForDisplay(skill?.name));
+  return titleKey ? t(titleKey) : skill?.name || "";
+}
 
 function readStoredTheme() {
   if (typeof window === "undefined") {
@@ -2972,7 +3077,7 @@ function App() {
     setNotice("");
     let createdSkillId = 0;
     try {
-      const generatedSkill = await generateSkillDraft({
+      const generatedSkill = await forgeSkill({
         existingSkill: mode === "rewrite" ? activeSkill : null,
         lang,
         prompt,
@@ -4059,7 +4164,7 @@ function App() {
     },
     skills: {
       eyebrow: t("app.view.skills.eyebrow"),
-      title: activeSkill?.name || t("app.view.skills.title"),
+      title: resolveSkillDisplayTitle(activeSkill, t) || t("app.view.skills.title"),
       description: t("app.view.skills.description"),
       badges: [
         { label: t("app.view.skills.badge.skills"), value: `${skillList.length}` },
@@ -4492,7 +4597,7 @@ function App() {
               <span className="workspace-hero__brand-mark">MMGH</span>
               <div className="workspace-hero__brand-copy">
                 <span className="eyebrow">{t("app.brand.tag")}</span>
-                <strong>MMGH · {viewMeta[currentView].title}</strong>
+                <strong>MMGH {"\u00b7"} {viewMeta[currentView].title}</strong>
               </div>
             </div>
             <div className="workspace-hero__meta-bar">
@@ -5496,904 +5601,6 @@ function WorkspaceLoadingState({ label }) {
       <p className="section-note runtime-sidebar-copy">{label}</p>
     </section>
   );
-}
-
-function parseTags(value) {
-  return String(value || "")
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-}
-
-function removeLocalStorageKeys(keys) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  const snapshots = [];
-  keys.forEach((key) => {
-    try {
-      snapshots.push({
-        key,
-        value: window.localStorage.getItem(key),
-      });
-    } catch (error) {
-      console.error(`Failed to inspect cache key: ${key}`, error);
-      throw new Error(`Failed to clear local cache. ${key}: ${normalizeError(error)}`);
-    }
-  });
-
-  const removedSnapshots = [];
-  for (const snapshot of snapshots) {
-    try {
-      window.localStorage.removeItem(snapshot.key);
-      removedSnapshots.push(snapshot);
-    } catch (error) {
-      console.error(`Failed to remove cache key: ${snapshot.key}`, error);
-      const rollbackFailures = restoreLocalStorageSnapshots(removedSnapshots);
-      const rollbackDetail =
-        rollbackFailures.length > 0
-          ? ` Rollback failed for ${rollbackFailures.join("; ")}.`
-          : "";
-      throw new Error(
-        `Failed to clear local cache. ${snapshot.key}: ${normalizeError(error)}.${rollbackDetail}`
-      );
-    }
-  }
-}
-
-function restoreLocalStorageSnapshots(snapshots) {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  return snapshots.reduce((failures, snapshot) => {
-    try {
-      if (snapshot.value === null) {
-        window.localStorage.removeItem(snapshot.key);
-      } else {
-        window.localStorage.setItem(snapshot.key, snapshot.value);
-      }
-    } catch (error) {
-      console.error(`Failed to restore cache key: ${snapshot.key}`, error);
-      failures.push(`${snapshot.key}: ${normalizeError(error)}`);
-    }
-    return failures;
-  }, []);
-}
-
-function getStoredArrayLength(key) {
-  if (typeof window === "undefined") {
-    return 0;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) {
-      return 0;
-    }
-
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.length : 0;
-  } catch (error) {
-    console.error(`Failed to inspect cache key: ${key}`, error);
-    return 0;
-  }
-}
-
-function resolveStateUpdater(current, updater) {
-  return typeof updater === "function" ? updater(current) : updater;
-}
-
-function updateStoredValue({ key, parseRaw, serialize, updater, cacheLabel }) {
-  if (typeof window === "undefined") {
-    return parseRaw(serialize(resolveStateUpdater(parseRaw(null), updater)));
-  }
-
-  for (let attempt = 0; attempt < LOCAL_CACHE_WRITE_MAX_RETRIES; attempt += 1) {
-    let raw = null;
-
-    try {
-      raw = window.localStorage.getItem(key);
-      const current = parseRaw(raw);
-      const next = resolveStateUpdater(current, updater);
-      const serializedNext = serialize(next);
-      const latestRaw = window.localStorage.getItem(key);
-
-      if (latestRaw !== raw) {
-        continue;
-      }
-
-      window.localStorage.setItem(key, serializedNext);
-
-      if (window.localStorage.getItem(key) === serializedNext) {
-        return parseRaw(serializedNext);
-      }
-    } catch (error) {
-      console.error(`Failed to update ${cacheLabel}`, error);
-      throw new Error(`Failed to persist ${cacheLabel}. ${normalizeError(error)}`);
-    }
-  }
-
-  throw new Error(`Failed to persist ${cacheLabel}. Concurrent updates could not be reconciled.`);
-}
-
-function parseGalleryItemsRaw(raw) {
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-    return parsed.filter(
-      (item) =>
-        item &&
-        typeof item.id === "string" &&
-        typeof item.name === "string" &&
-        typeof item.src === "string"
-    );
-  } catch (error) {
-    console.error("Failed to parse gallery cache", error);
-    return [];
-  }
-}
-
-function readGalleryItems() {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  try {
-    return parseGalleryItemsRaw(window.localStorage.getItem(GALLERY_STORAGE_KEY));
-  } catch (error) {
-    console.error("Failed to read gallery cache", error);
-    return [];
-  }
-}
-
-function updateStoredGalleryItems(updater) {
-  return updateStoredValue({
-    key: GALLERY_STORAGE_KEY,
-    parseRaw: parseGalleryItemsRaw,
-    serialize: (items) => JSON.stringify(Array.isArray(items) ? items : []),
-    updater,
-    cacheLabel: "gallery cache",
-  });
-}
-
-function readWeatherLocations() {
-  if (typeof window === "undefined") {
-    return WEATHER_LOCATIONS;
-  }
-
-  try {
-    return parseWeatherLocationsRaw(window.localStorage.getItem(WEATHER_LOCATIONS_STORAGE_KEY));
-  } catch (error) {
-    console.error("Failed to read weather locations", error);
-    return WEATHER_LOCATIONS;
-  }
-}
-
-function parseWeatherLocationsRaw(raw) {
-  if (!raw) {
-    return WEATHER_LOCATIONS;
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return WEATHER_LOCATIONS;
-    }
-
-    const locations = parsed.map((item) => sanitizeWeatherLocation(item)).filter(Boolean);
-    return locations.length > 0 ? locations : WEATHER_LOCATIONS;
-  } catch (error) {
-    console.error("Failed to parse weather locations", error);
-    return WEATHER_LOCATIONS;
-  }
-}
-
-function updateStoredWeatherLocations(updater) {
-  return updateStoredValue({
-    key: WEATHER_LOCATIONS_STORAGE_KEY,
-    parseRaw: parseWeatherLocationsRaw,
-    serialize: (locations) => {
-      const normalizedLocations = (Array.isArray(locations) ? locations : [])
-        .map((location) => sanitizeWeatherLocation(location))
-        .filter(Boolean);
-      return JSON.stringify(normalizedLocations.length > 0 ? normalizedLocations : WEATHER_LOCATIONS);
-    },
-    updater,
-    cacheLabel: "weather cache",
-  });
-}
-
-function sanitizeWeatherLocation(location) {
-  if (!location || typeof location !== "object") {
-    return null;
-  }
-
-  const latitude = Number(location.latitude);
-  const longitude = Number(location.longitude);
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    return null;
-  }
-
-  const fallbackId =
-    location.id ||
-    `geo-${Number(location.geoId) || `${latitude.toFixed(4)}-${longitude.toFixed(4)}`}`;
-
-  return {
-    id: String(fallbackId),
-    geoId: Number.isFinite(Number(location.geoId)) ? Number(location.geoId) : null,
-    nameKey: location.nameKey ? String(location.nameKey) : undefined,
-    regionKey: location.regionKey ? String(location.regionKey) : undefined,
-    name: String(location.name || ""),
-    region: String(location.region || ""),
-    timeZone: String(location.timeZone || "UTC"),
-    tone: ["sunrise", "rain", "aurora", "polar"].includes(location.tone) ? location.tone : "sunrise",
-    latitude,
-    longitude,
-  };
-}
-
-function isSameWeatherLocation(left, right) {
-  if (!left || !right) {
-    return false;
-  }
-
-  if (left.geoId && right.geoId) {
-    return Number(left.geoId) === Number(right.geoId);
-  }
-
-  return (
-    Number(left.latitude).toFixed(4) === Number(right.latitude).toFixed(4) &&
-    Number(left.longitude).toFixed(4) === Number(right.longitude).toFixed(4)
-  );
-}
-
-function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(reader.error || new Error("Failed to read file"));
-    reader.readAsDataURL(file);
-  });
-}
-
-function normalizeReminderDueAt(value) {
-  if (!value) {
-    return null;
-  }
-  const timestamp = new Date(value).getTime();
-  return Number.isFinite(timestamp) ? timestamp : null;
-}
-
-function formatShortClock(value, lang = "en-US") {
-  return new Date(value).toLocaleTimeString(lang, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
-
-async function generateSkillDraft({ existingSkill, lang, prompt, settings, signal, t }) {
-  return forgeSkill({
-    existingSkill,
-    lang,
-    prompt,
-    settings,
-    signal,
-  });
-}
-
-function readSkillHistory() {
-  if (typeof window === "undefined") {
-    return {};
-  }
-
-  try {
-    return parseSkillHistoryRaw(window.localStorage.getItem(SKILL_HISTORY_STORAGE_KEY));
-  } catch (error) {
-    console.error("Failed to read skill history", error);
-    return {};
-  }
-}
-
-function parseSkillHistoryRaw(raw) {
-  if (!raw) {
-    return {};
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") {
-      return {};
-    }
-
-    return Object.entries(parsed).reduce((accumulator, [skillId, versions]) => {
-      const normalizedId = Number(skillId);
-      if (!normalizedId || !Array.isArray(versions)) {
-        return accumulator;
-      }
-
-      const normalizedVersions = versions
-        .map((version) => normalizeSkillHistoryEntry(version))
-        .filter(Boolean)
-        .slice(0, MAX_SKILL_HISTORY_ENTRIES);
-
-      if (normalizedVersions.length > 0) {
-        accumulator[String(normalizedId)] = normalizedVersions;
-      }
-
-      return accumulator;
-    }, {});
-  } catch (error) {
-    console.error("Failed to parse skill history", error);
-    return {};
-  }
-}
-
-function updateStoredSkillHistory(updater) {
-  return updateStoredValue({
-    key: SKILL_HISTORY_STORAGE_KEY,
-    parseRaw: parseSkillHistoryRaw,
-    serialize: (historyMap) => JSON.stringify(historyMap || {}),
-    updater,
-    cacheLabel: "skill history cache",
-  });
-}
-
-function readLyricsCache() {
-  if (typeof window === "undefined") {
-    return {};
-  }
-
-  try {
-    return parseLyricsCacheRaw(window.localStorage.getItem(LYRICS_CACHE_STORAGE_KEY));
-  } catch (error) {
-    console.error("Failed to read lyrics cache", error);
-    return {};
-  }
-}
-
-function readLyricsCacheClearMarker() {
-  if (typeof window === "undefined") {
-    return "";
-  }
-
-  try {
-    return String(window.localStorage.getItem(LYRICS_CACHE_CLEAR_MARKER_STORAGE_KEY) || "");
-  } catch (error) {
-    console.error("Failed to read lyrics cache clear marker", error);
-    return "";
-  }
-}
-
-function writeLyricsCacheClearMarker(marker) {
-  if (typeof window === "undefined") {
-    return String(marker || "");
-  }
-
-  const normalizedMarker = String(marker || "");
-
-  try {
-    if (normalizedMarker) {
-      window.localStorage.setItem(LYRICS_CACHE_CLEAR_MARKER_STORAGE_KEY, normalizedMarker);
-    } else {
-      window.localStorage.removeItem(LYRICS_CACHE_CLEAR_MARKER_STORAGE_KEY);
-    }
-    return normalizedMarker;
-  } catch (error) {
-    console.error("Failed to persist lyrics cache clear marker", error);
-    throw new Error(`Failed to persist lyrics cache clear marker. ${normalizeError(error)}`);
-  }
-}
-
-function parseLyricsCacheRaw(raw) {
-  if (!raw) {
-    return {};
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch (error) {
-    console.error("Failed to parse lyrics cache", error);
-    return {};
-  }
-}
-
-function updateStoredLyricsCache(updater) {
-  return updateStoredValue({
-    key: LYRICS_CACHE_STORAGE_KEY,
-    parseRaw: parseLyricsCacheRaw,
-    serialize: (cache) => JSON.stringify(cache || {}),
-    updater,
-    cacheLabel: "lyrics cache",
-  });
-}
-
-function buildLyricsLookupStateFromCache(cache, trackList) {
-  return (Array.isArray(trackList) ? trackList : []).reduce((accumulator, track) => {
-    const cacheKey = getLyricsCacheEntryKey(track);
-    const entry = cache?.[cacheKey];
-
-    if (entry?.fingerprint !== cacheKey || !entry?.source) {
-      return accumulator;
-    }
-
-    accumulator[track.id] = {
-      status: entry.source === "manual" ? "manual" : "ready",
-      error: "",
-    };
-    return accumulator;
-  }, {});
-}
-
-function buildLyricsLookupStateWithClearMarker(cache, trackList) {
-  return (Array.isArray(trackList) ? trackList : []).reduce((accumulator, track) => {
-    if (!track?.id) {
-      return accumulator;
-    }
-
-    const cacheKey = getLyricsCacheEntryKey(track);
-    const entry = cache?.[cacheKey];
-    accumulator[track.id] =
-      entry?.fingerprint === cacheKey && entry?.source
-        ? {
-            status: entry.source === "manual" ? "manual" : "ready",
-            error: "",
-          }
-        : {
-            status: "cleared",
-            error: "",
-          };
-    return accumulator;
-  }, {});
-}
-
-function mergeLyricsLookupStateFromCache({ cache, previousState, trackList }) {
-  const cacheState = buildLyricsLookupStateFromCache(cache, trackList);
-
-  return Object.entries(previousState || {}).reduce((accumulator, [trackId, entry]) => {
-    if (cacheState[trackId]) {
-      return accumulator;
-    }
-
-    if (
-      entry?.status === "loading" ||
-      entry?.status === "cleared" ||
-      String(entry?.error || "").trim()
-    ) {
-      accumulator[trackId] = entry;
-    }
-    return accumulator;
-  }, { ...cacheState });
-}
-
-function clearClearedLyricsLookupState(lookupState) {
-  return Object.entries(lookupState || {}).reduce((accumulator, [trackId, entry]) => {
-    if (entry?.status !== "cleared") {
-      accumulator[trackId] = entry;
-    }
-    return accumulator;
-  }, {});
-}
-
-function getLyricsCacheEntryKey(track, duration) {
-  void duration;
-  const title = resolveLyricsCacheIdentityPart(track, "title");
-  const artist = resolveLyricsCacheIdentityPart(track, "artist");
-  return `${title}__${artist}`;
-}
-
-function resolveLyricsCacheIdentityPart(track, field) {
-  const translationKeyField = `${field}Key`;
-  return sanitizeLyricsSearchPart(track?.[translationKeyField] || track?.[field] || "");
-}
-
-function sanitizeLyricsSearchPart(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ");
-}
-
-function resolveLyricsLines({ duration, entry, fallbackArtist, fallbackTitle, t }) {
-  const syncedLines = parseLrcLyrics(entry?.syncedLyrics || "");
-  if (syncedLines.length > 0) {
-    return syncedLines;
-  }
-
-  const plainLines = parsePlainLyrics(entry?.plainLyrics || "");
-  if (plainLines.length > 0) {
-    return spreadPlainLyricsAcrossTrack(plainLines, duration);
-  }
-
-  return buildFallbackLyrics({ artist: fallbackArtist, duration, t, title: fallbackTitle });
-}
-
-function parseLrcLyrics(text) {
-  if (!text) {
-    return [];
-  }
-
-  const lines = [];
-  const pattern = /\[(\d{1,2}):(\d{2})(?:\.(\d{1,3}))?\]/g;
-
-  String(text)
-    .split(/\r?\n/)
-    .forEach((rawLine) => {
-      const timestamps = [...rawLine.matchAll(pattern)];
-      const content = rawLine.replace(pattern, "").trim();
-      if (timestamps.length === 0 || !content) {
-        return;
-      }
-
-      timestamps.forEach((match) => {
-        const minutes = Number(match[1] || 0);
-        const seconds = Number(match[2] || 0);
-        const fractionRaw = String(match[3] || "0");
-        const fraction =
-          fractionRaw.length === 3
-            ? Number(fractionRaw) / 1000
-            : fractionRaw.length === 2
-              ? Number(fractionRaw) / 100
-              : Number(fractionRaw) / 10;
-
-        lines.push({
-          time: minutes * 60 + seconds + fraction,
-          text: content,
-        });
-      });
-    });
-
-  return lines.sort((left, right) => left.time - right.time);
-}
-
-function parsePlainLyrics(text) {
-  return String(text || "")
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(0, 80);
-}
-
-function spreadPlainLyricsAcrossTrack(lines, duration) {
-  const totalDuration = Math.max(duration || lines.length * 6, lines.length * 4, 24);
-  const step = totalDuration / Math.max(lines.length, 1);
-
-  return lines.map((line, index) => ({
-    time: Math.round(step * index),
-    text: line,
-  }));
-}
-
-function buildFallbackLyrics({ artist, duration, t, title }) {
-  const totalDuration = Math.max(duration || 180, 120);
-  const step = totalDuration / 6;
-  return [
-    { time: 0, text: title, subtext: artist },
-    { time: Math.round(step), text: t("app.music.lyrics.status.loading"), subtext: t("app.music.playing") },
-    { time: Math.round(step * 2), text: t("app.music.lyrics.fallback.line1"), subtext: t("app.music.lyrics.fallback.line2") },
-    { time: Math.round(step * 3), text: t("app.music.panelDescription"), subtext: t("app.music.heroDescription") },
-    { time: Math.round(step * 4), text: t("app.music.queueHint"), subtext: t("app.music.uploadHint") },
-    { time: Math.round(step * 5), text: t("app.music.nowPlaying"), subtext: title },
-  ];
-}
-
-async function fetchLyricsFromLrclib({ artist, duration, title }) {
-  const params = new URLSearchParams({
-    artist_name: artist,
-    track_name: title,
-  });
-
-  if (duration) {
-    params.set("duration", String(Math.round(duration)));
-  }
-
-  const response = await fetch(`https://lrclib.net/api/get?${params.toString()}`, {
-    headers: {
-      Accept: "application/json",
-    },
-  });
-
-  if (response.ok) {
-    return extractLyricsPayload(await response.json());
-  }
-
-  if (response.status !== 404) {
-    throw new Error(`lyrics-${response.status}`);
-  }
-
-  const searchParams = new URLSearchParams({
-    artist_name: artist,
-    track_name: title,
-  });
-
-  const searchResponse = await fetch(`https://lrclib.net/api/search?${searchParams.toString()}`, {
-    headers: {
-      Accept: "application/json",
-    },
-  });
-
-  if (!searchResponse.ok) {
-    throw new Error(`lyrics-${searchResponse.status}`);
-  }
-
-  const payload = await searchResponse.json();
-  if (!Array.isArray(payload)) {
-    throw new Error("lyrics-invalid-payload");
-  }
-
-  const matchedLyrics = payload.find((item) => item && (item.syncedLyrics || item.plainLyrics));
-  if (!matchedLyrics) {
-    throw new Error("lyrics-404");
-  }
-
-  return extractLyricsPayload(matchedLyrics);
-}
-
-function extractLyricsPayload(payload) {
-  if (!payload || typeof payload !== "object") {
-    throw new Error("lyrics-invalid-payload");
-  }
-
-  return {
-    plainLyrics: String(payload.plainLyrics || ""),
-    syncedLyrics: String(payload.syncedLyrics || ""),
-  };
-}
-
-function normalizeLyricsError(error, t) {
-  const message = String(error?.message || "");
-  if (message === "lyrics-404") {
-    return t("app.music.lyrics.status.notFound");
-  }
-
-  return t("app.music.lyrics.status.error");
-}
-
-function getSkillHistoryEntries(historyMap, skillId) {
-  if (!skillId) {
-    return [];
-  }
-  return Array.isArray(historyMap?.[String(skillId)]) ? historyMap[String(skillId)] : [];
-}
-
-function normalizeSkillHistoryEntry(entry) {
-  if (!entry || typeof entry !== "object") {
-    return null;
-  }
-
-  const skillId = Number(entry.skillId);
-  const savedAt = Number(entry.savedAt);
-  if (!skillId || !Number.isFinite(savedAt)) {
-    return null;
-  }
-
-  return {
-    versionId: String(entry.versionId || `skill-${skillId}-${savedAt}`),
-    skillId,
-    name: String(entry.name || ""),
-    description: String(entry.description || ""),
-    instructions: String(entry.instructions || ""),
-    triggerHint: String(entry.triggerHint || ""),
-    enabled: Boolean(entry.enabled),
-    savedAt,
-    reason: normalizeSkillHistoryReason(entry.reason),
-  };
-}
-
-function normalizeSkillHistoryReason(reason) {
-  return ["manual-save", "ai-rewrite", "restore"].includes(reason)
-    ? reason
-    : "manual-save";
-}
-
-function appendSkillHistoryEntry(historyMap, skill, reason) {
-  const entry = createSkillHistoryEntry(skill, reason);
-  if (!entry) {
-    return historyMap;
-  }
-
-  const skillKey = String(entry.skillId);
-  const currentEntries = Array.isArray(historyMap?.[skillKey]) ? historyMap[skillKey] : [];
-  return {
-    ...historyMap,
-    [skillKey]: [entry, ...currentEntries].slice(0, MAX_SKILL_HISTORY_ENTRIES),
-  };
-}
-
-function removeSkillHistoryEntries(historyMap, skillId) {
-  if (!skillId || !historyMap?.[String(skillId)]) {
-    return historyMap;
-  }
-
-  const nextHistory = { ...historyMap };
-  delete nextHistory[String(skillId)];
-  return nextHistory;
-}
-
-function createSkillHistoryEntry(skill, reason) {
-  if (!skill?.id) {
-    return null;
-  }
-
-  const savedAt = Date.now();
-  return {
-    versionId: `skill-${skill.id}-${savedAt}`,
-    skillId: skill.id,
-    name: String(skill.name || ""),
-    description: String(skill.description || ""),
-    instructions: String(skill.instructions || ""),
-    triggerHint: String(skill.triggerHint || ""),
-    enabled: Boolean(skill.enabled),
-    savedAt,
-    reason: normalizeSkillHistoryReason(reason),
-  };
-}
-
-function buildSkillDraftFromVersion(version, skillId) {
-  return {
-    id: skillId || Number(version?.skillId) || 0,
-    name: String(version?.name || ""),
-    description: String(version?.description || ""),
-    instructions: String(version?.instructions || ""),
-    triggerHint: String(version?.triggerHint || ""),
-    enabled: Boolean(version?.enabled),
-  };
-}
-
-function shouldTrackSkillVersion(currentSkill, nextSkill) {
-  if (!currentSkill?.id || !nextSkill?.id || currentSkill.id !== nextSkill.id) {
-    return false;
-  }
-
-  return !areSkillPayloadsEqual(currentSkill, nextSkill);
-}
-
-function areSkillPayloadsEqual(left, right) {
-  return JSON.stringify(toComparableSkill(left)) === JSON.stringify(toComparableSkill(right));
-}
-
-function toComparableSkill(skill) {
-  return {
-    name: String(skill?.name || "").trim(),
-    description: String(skill?.description || "").trim(),
-    instructions: String(skill?.instructions || "").trim(),
-    triggerHint: String(skill?.triggerHint || "").trim(),
-    enabled: Boolean(skill?.enabled),
-  };
-}
-
-function parseImportedSkills(raw, t) {
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (error) {
-    throw new Error(t("app.skills.import.invalidJson"));
-  }
-
-  const candidates = Array.isArray(parsed)
-    ? parsed
-    : parsed?.type === "mmgh-skill"
-      ? [parsed.skill]
-      : parsed?.type === "mmgh-skill-bundle"
-        ? parsed.skills
-        : [parsed.skill || parsed];
-
-  if (!Array.isArray(candidates) || candidates.length === 0) {
-    throw new Error(t("app.skills.import.emptyPayload"));
-  }
-
-  const skills = candidates.map((candidate) => sanitizeImportedSkill(candidate, t)).filter(Boolean);
-  if (skills.length === 0) {
-    throw new Error(t("app.skills.import.emptyPayload"));
-  }
-
-  return skills;
-}
-
-function sanitizeImportedSkill(skill, t) {
-  if (!skill || typeof skill !== "object") {
-    return null;
-  }
-
-  return {
-    name: String(skill.name || t("app.skills.defaultTitle")).trim().slice(0, 64),
-    description: String(skill.description || "").trim(),
-    instructions: String(skill.instructions || "").trim(),
-    triggerHint: String(skill.triggerHint || "").trim(),
-    enabled: Boolean(
-      Object.prototype.hasOwnProperty.call(skill, "enabled") ? skill.enabled : true
-    ),
-  };
-}
-
-function downloadJsonFile(payload, filename) {
-  if (typeof window === "undefined" || typeof document === "undefined") {
-    return;
-  }
-
-  let url = "";
-
-  try {
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json;charset=utf-8",
-    });
-    url = window.URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = filename;
-    document.body.append(anchor);
-    anchor.click();
-    anchor.remove();
-  } catch (error) {
-    throw new Error(`Failed to export JSON file. ${normalizeError(error)}`);
-  } finally {
-    if (url) {
-      try {
-        window.URL.revokeObjectURL(url);
-      } catch (error) {
-        console.error("Failed to revoke exported JSON URL", error);
-      }
-    }
-  }
-}
-
-function slugifyFileName(value) {
-  const normalized = String(value || "skill")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-  return normalized || "skill";
-}
-
-function normalizeError(error) {
-  if (!error) {
-    return "Unknown error";
-  }
-  if (typeof error === "string") {
-    return error;
-  }
-  if (error.message) {
-    return error.message;
-  }
-  return "Unknown error";
-}
-
-function normalizeWeatherNetworkError(error, t) {
-  const message = normalizeError(error);
-  if (/networkerror|failed to fetch|load failed|fetch resource|network request failed/i.test(message)) {
-    return t("app.weather.error.network");
-  }
-  return message;
-}
-
-function buildWeatherLoadingCities(currentCities, sourceLocations) {
-  const currentById = new Map(
-    (Array.isArray(currentCities) ? currentCities : [])
-      .filter((city) => city?.id)
-      .map((city) => [city.id, city])
-  );
-
-  return (Array.isArray(sourceLocations) ? sourceLocations : WEATHER_LOCATIONS).map(
-    (location) => currentById.get(location.id) || createInitialWeatherCity(location)
-  );
-}
-
-function createAbortError(message) {
-  if (typeof DOMException === "function") {
-    return new DOMException(message, "AbortError");
-  }
-  const error = new Error(message);
-  error.name = "AbortError";
-  return error;
 }
 
 export default App;
