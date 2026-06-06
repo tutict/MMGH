@@ -494,3 +494,89 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
+
+.runtime-sidebar--compact {
+  gap: 12px;
+}
+
+.runtime-context-card,
+.runtime-next-card {
+  align-content: start;
+}
+
+.runtime-context-stack {
+  display: grid;
+  gap: 12px;
+}
+
+.runtime-context-row {
+  display: grid;
+  gap: 8px;
+}
+
+.runtime-context-label {
+  color: var(--soft-text);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.runtime-recommend-list--compact {
+  gap: 0;
+}
+
+.runtime-inline-link {
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  border-top: 1px solid var(--surface-border);
+  background: transparent;
+  color: var(--tag-text);
+  font-weight: 700;
+  text-align: left;
+}
+
+.runtime-mini-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.runtime-disclosure-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.runtime-disclosure {
+  border-top: 1px solid var(--surface-border);
+  padding-top: 8px;
+}
+
+.runtime-disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 34px;
+  color: var(--heading-text);
+  cursor: pointer;
+  font-weight: 700;
+  list-style: none;
+}
+
+.runtime-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.runtime-disclosure summary::after {
+  content: "+";
+  color: var(--soft-text);
+  font-weight: 700;
+}
+
+.runtime-disclosure[open] summary::after {
+  content: "-";
+}
+
+.runtime-disclosure[open] summary {
+  margin-bottom: 8px;
+}

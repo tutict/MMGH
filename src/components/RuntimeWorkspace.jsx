@@ -33,6 +33,7 @@ function RuntimeWorkspace({
   const activityItems = activeSession?.activity || [];
   const recentActivity = activityItems.slice(-4).reverse();
   const recentSessions = sessionList.slice(0, 6);
+  const recommendedSkillsPreview = activeSessionRecommendedSkills.slice(0, 3);
   const activeStatus = activeSession?.session?.status || "idle";
   const activeTitle = activeSession?.session?.title || t("app.session.defaultTitle");
   const mountedSkillSet = useMemo(() => new Set(mountedSkillIds), [mountedSkillIds]);
@@ -172,8 +173,8 @@ function RuntimeWorkspace({
           </form>
         </div>
 
-        <aside className="runtime-sidebar">
-          <section className="panel-surface runtime-sidebar-card">
+        <aside className="runtime-sidebar runtime-sidebar--compact">
+          <section className="panel-surface runtime-sidebar-card runtime-context-card">
             <div className="runtime-sidebar-card__head">
               <div>
                 <span className="eyebrow">{t("app.agent.mount.eyebrow")}</span>
@@ -192,92 +193,89 @@ function RuntimeWorkspace({
               </button>
             </div>
 
-            {activeSessionSkills.length > 0 ? (
-              <div className="runtime-chip-list">
-                {activeSessionSkills.map((skill) => (
-                  <button
-                    key={skill.id}
-                    type="button"
-                    className={`chip-button ${skill.enabled ? "is-active" : ""}`}
-                    onClick={async () => {
-                      const opened = await handleOpenSkill(skill.id);
-                      if (opened) {
-                        openView("skills");
-                      }
-                    }}
-                  >
-                    {skill.name}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="section-note runtime-sidebar-copy">
-                {t("app.agent.mount.emptyDescription")}
-              </p>
-            )}
-          </section>
-
-          <section className="panel-surface runtime-sidebar-card">
-            <div className="runtime-sidebar-card__head">
-              <div>
-                <span className="eyebrow">{t("app.agent.recommend.eyebrow")}</span>
-                <h4>
-                  {activeSessionRecommendedSkills.length > 0
-                    ? t("app.agent.recommend.title")
-                    : t("app.agent.recommend.emptyTitle")}
-                </h4>
-              </div>
-              <button
-                type="button"
-                className="ghost-button runtime-sidebar-card__action"
-                onClick={() => openView("skills")}
-              >
-                {t("app.mode.skills")}
-              </button>
-            </div>
-
-            {activeSessionRecommendedSkills.length > 0 ? (
-              <div className="runtime-recommend-list">
-                {activeSessionRecommendedSkills.map((skill) => (
-                  <article key={skill.id} className="runtime-recommend-card">
-                    <button
-                      type="button"
-                      className="runtime-recommend-card__body"
-                      onClick={async () => {
-                        const opened = await handleOpenSkill(skill.id);
-                        if (opened) {
-                          openView("skills");
-                        }
-                      }}
-                    >
-                      <strong>{skill.name}</strong>
-                      <span>{skill.recommendationReason || skill.triggerHint}</span>
-                    </button>
-                    <div className="runtime-recommend-card__actions">
+            <div className="runtime-context-stack">
+              <div className="runtime-context-row">
+                <span className="runtime-context-label">{t("app.view.agent.badge.mounted")}</span>
+                {activeSessionSkills.length > 0 ? (
+                  <div className="runtime-chip-list">
+                    {activeSessionSkills.map((skill) => (
                       <button
+                        key={skill.id}
                         type="button"
-                        className="ghost-button runtime-sidebar-card__action"
-                        disabled={mountedSkillSet.has(skill.id) || busy !== "" || loading}
-                        onClick={() => {
-                          void handleToggleSkillMounted(skill.id);
+                        className={`chip-button ${skill.enabled ? "is-active" : ""}`}
+                        onClick={async () => {
+                          const opened = await handleOpenSkill(skill.id);
+                          if (opened) {
+                            openView("skills");
+                          }
                         }}
                       >
-                        {mountedSkillSet.has(skill.id)
-                          ? t("app.skills.mounted")
-                          : t("app.skills.sessionMount.recommendedAction")}
+                        {skill.name}
                       </button>
-                    </div>
-                  </article>
-                ))}
+                    ))}
+                  </div>
+                ) : (
+                  <p className="section-note runtime-sidebar-copy">
+                    {t("app.agent.mount.emptyDescription")}
+                  </p>
+                )}
               </div>
-            ) : (
-              <p className="section-note runtime-sidebar-copy">
-                {t("app.agent.recommend.emptyDescription")}
-              </p>
-            )}
+
+              <div className="runtime-context-row">
+                <span className="runtime-context-label">{t("app.agent.recommend.eyebrow")}</span>
+                {recommendedSkillsPreview.length > 0 ? (
+                  <div className="runtime-recommend-list runtime-recommend-list--compact">
+                    {recommendedSkillsPreview.map((skill) => (
+                      <article key={skill.id} className="runtime-recommend-card">
+                        <button
+                          type="button"
+                          className="runtime-recommend-card__body"
+                          onClick={async () => {
+                            const opened = await handleOpenSkill(skill.id);
+                            if (opened) {
+                              openView("skills");
+                            }
+                          }}
+                        >
+                          <strong>{skill.name}</strong>
+                          <span>{skill.recommendationReason || skill.triggerHint}</span>
+                        </button>
+                        <div className="runtime-recommend-card__actions">
+                          <button
+                            type="button"
+                            className="ghost-button runtime-sidebar-card__action"
+                            disabled={mountedSkillSet.has(skill.id) || busy !== "" || loading}
+                            onClick={() => {
+                              void handleToggleSkillMounted(skill.id);
+                            }}
+                          >
+                            {mountedSkillSet.has(skill.id)
+                              ? t("app.skills.mounted")
+                              : t("app.skills.sessionMount.recommendedAction")}
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                    {activeSessionRecommendedSkills.length > recommendedSkillsPreview.length ? (
+                      <button
+                        type="button"
+                        className="runtime-inline-link"
+                        onClick={() => openView("skills")}
+                      >
+                        {t("app.mode.skills")}
+                      </button>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="section-note runtime-sidebar-copy">
+                    {t("app.agent.recommend.emptyDescription")}
+                  </p>
+                )}
+              </div>
+            </div>
           </section>
 
-          <section className="panel-surface runtime-sidebar-card">
+          <section className="panel-surface runtime-sidebar-card runtime-next-card">
             <div className="runtime-sidebar-card__head">
               <div>
                 <span className="eyebrow">{t("app.agent.quick.eyebrow")}</span>
@@ -324,14 +322,8 @@ function RuntimeWorkspace({
                 {t("app.agent.quick.emptyDescription")}
               </p>
             )}
-          </section>
 
-          <section className="panel-surface runtime-sidebar-card">
-            <div className="runtime-sidebar-card__head">
-              <div>
-                <span className="eyebrow">{t("app.activity.eyebrow")}</span>
-                <h4>{t("app.activity.title")}</h4>
-              </div>
+            <div className="runtime-mini-actions">
               <button
                 type="button"
                 className={`ghost-button runtime-sidebar-card__action ${
@@ -339,75 +331,86 @@ function RuntimeWorkspace({
                 }`}
                 onClick={() => openInspector("activity")}
               >
-                {t("app.inspector.group.activity.title")}
+                {t("app.activity.title")}
+              </button>
+              <button
+                type="button"
+                className="ghost-button runtime-sidebar-card__action"
+                onClick={() => openView("skills")}
+              >
+                {t("app.mode.skills")}
               </button>
             </div>
 
-            {recentActivity.length > 0 ? (
-              <div className="runtime-activity-list">
-                {recentActivity.map((item) => {
-                  const normalizedKind = normalizeActivityKind(item.kind);
+            <div className="runtime-disclosure-stack">
+              <details className="runtime-disclosure">
+                <summary>
+                  <span>{t("app.activity.title")}</span>
+                  <span className="section-note">{recentActivity.length}</span>
+                </summary>
+                {recentActivity.length > 0 ? (
+                  <div className="runtime-activity-list">
+                    {recentActivity.map((item) => {
+                      const normalizedKind = normalizeActivityKind(item.kind);
 
-                  return (
-                    <article key={item.id} className="runtime-activity-item">
-                      <div className="runtime-activity-item__head">
-                        <div className="runtime-activity-item__title">
-                          <span
-                            className={`runtime-activity-item__icon runtime-activity-item__icon--${normalizedKind}`}
-                          >
-                            <PanelIcon type={normalizedKind} />
-                          </span>
-                          <div>
-                            <strong>{item.title}</strong>
-                            <span>{t(`app.activity.kind.${normalizedKind}`)}</span>
+                      return (
+                        <article key={item.id} className="runtime-activity-item">
+                          <div className="runtime-activity-item__head">
+                            <div className="runtime-activity-item__title">
+                              <span
+                                className={`runtime-activity-item__icon runtime-activity-item__icon--${normalizedKind}`}
+                              >
+                                <PanelIcon type={normalizedKind} />
+                              </span>
+                              <div>
+                                <strong>{item.title}</strong>
+                                <span>{t(`app.activity.kind.${normalizedKind}`)}</span>
+                              </div>
+                            </div>
+                            <span className={`status-chip status-${item.status}`}>
+                              {t(`app.status.${item.status}`)}
+                            </span>
                           </div>
-                        </div>
-                        <span className={`status-chip status-${item.status}`}>
-                          {t(`app.status.${item.status}`)}
+                          <p>{item.detail}</p>
+                          <span className="section-note">{formatTime(item.createdAt, lang)}</span>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="section-note runtime-sidebar-copy">{t("app.status.idle")}</p>
+                )}
+              </details>
+
+              <details className="runtime-disclosure">
+                <summary>
+                  <span>{t("app.agent.history.title")}</span>
+                  <span className="section-note">
+                    {t("app.agent.history.total", { count: sessionList.length })}
+                  </span>
+                </summary>
+                <div className="runtime-session-list">
+                  {recentSessions.map((session) => (
+                    <button
+                      key={session.id}
+                      type="button"
+                      className={`runtime-session-card ${
+                        session.id === activeSessionId ? "is-active" : ""
+                      }`}
+                      onClick={() => handleOpenSession(session.id)}
+                    >
+                      <div className="runtime-session-card__head">
+                        <strong>{session.title}</strong>
+                        <span className={`status-chip status-${session.status}`}>
+                          {t(`app.status.${session.status}`)}
                         </span>
                       </div>
-                      <p>{item.detail}</p>
-                      <span className="section-note">{formatTime(item.createdAt, lang)}</span>
-                    </article>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="section-note runtime-sidebar-copy">{t("app.status.idle")}</p>
-            )}
-          </section>
-
-          <section className="panel-surface runtime-sidebar-card">
-            <div className="runtime-sidebar-card__head">
-              <div>
-                <span className="eyebrow">{t("app.agent.history.eyebrow")}</span>
-                <h4>{t("app.agent.history.title")}</h4>
-              </div>
-              <span className="section-note">
-                {t("app.agent.history.total", { count: sessionList.length })}
-              </span>
-            </div>
-
-            <div className="runtime-session-list">
-              {recentSessions.map((session) => (
-                <button
-                  key={session.id}
-                  type="button"
-                  className={`runtime-session-card ${
-                    session.id === activeSessionId ? "is-active" : ""
-                  }`}
-                  onClick={() => handleOpenSession(session.id)}
-                >
-                  <div className="runtime-session-card__head">
-                    <strong>{session.title}</strong>
-                    <span className={`status-chip status-${session.status}`}>
-                      {t(`app.status.${session.status}`)}
-                    </span>
-                  </div>
-                  <p>{session.lastMessagePreview || t("app.session.emptyMessages")}</p>
-                  <span className="section-note">{formatTime(session.updatedAt, lang)}</span>
-                </button>
-              ))}
+                      <p>{session.lastMessagePreview || t("app.session.emptyMessages")}</p>
+                      <span className="section-note">{formatTime(session.updatedAt, lang)}</span>
+                    </button>
+                  ))}
+                </div>
+              </details>
             </div>
           </section>
         </aside>

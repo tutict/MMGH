@@ -27,3 +27,6 @@
 
 /* UI/UX Pro Max refactor pass */
 @import "./ui-ux-pro-max-refactor.css";
+
+/* Final density pass: quieter shell, fewer widget-like surfaces */
+@import "./layout-breathing-room.css";

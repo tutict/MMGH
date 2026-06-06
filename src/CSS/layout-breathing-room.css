@@ -1,0 +1,1255 @@
+/* Layout breathing room: reduce visual noise from nested widgets and restore workspace density. */
+:root {
+  --quiet-radius: 8px;
+  --quiet-gap: 14px;
+  --quiet-row-height: 38px;
+  --quiet-divider: var(--surface-border);
+}
+
+.agent-app {
+  grid-template-columns: minmax(224px, 248px) minmax(0, 1fr);
+  gap: var(--quiet-gap);
+  padding: 14px;
+  background: var(--app-background);
+}
+
+.agent-app__glow,
+.agent-app__mesh {
+  display: none;
+}
+
+.panel-surface {
+  border-radius: var(--quiet-radius);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.workspace-column {
+  gap: var(--quiet-gap);
+}
+
+.session-rail {
+  top: 14px;
+  max-height: calc(100svh - 28px);
+  padding: 12px;
+  gap: 12px;
+  border-color: var(--panel-border);
+  background: var(--panel-background);
+  overflow: hidden;
+}
+
+.session-rail__body {
+  min-height: calc(100svh - 52px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.rail-brand,
+.rail-section {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.rail-brand {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--quiet-divider);
+}
+
+.rail-brand__head {
+  gap: 8px;
+}
+
+.rail-brand__tag,
+.rail-brand p,
+.rail-nav-item__meta {
+  display: none;
+}
+
+.rail-brand h1 {
+  font-size: 1.02rem;
+  line-height: 1.2;
+}
+
+.rail-brand__view-tag {
+  min-height: 24px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-text);
+  font-size: 0.68rem;
+}
+
+.rail-summary-strip {
+  display: flex;
+  gap: 0;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--quiet-divider);
+}
+
+.rail-summary-pill {
+  flex: 1;
+  min-height: 0;
+  padding: 0 8px;
+  border: 0;
+  border-left: 1px solid var(--quiet-divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.rail-summary-pill:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.rail-summary-pill span {
+  font-size: 0.66rem;
+}
+
+.rail-summary-pill strong {
+  font-size: 0.9rem;
+}
+
+.rail-section--navigation {
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.rail-section__head {
+  display: none;
+}
+
+.rail-nav,
+.rail-nav--compact,
+.rail-nav-list {
+  gap: 3px;
+}
+
+.rail-nav-group {
+  gap: 6px;
+  padding: 8px 0 0;
+  border: 0;
+  border-top: 1px solid var(--quiet-divider);
+  border-radius: 0;
+  background: transparent;
+}
+
+.rail-nav-group:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.rail-nav-group__label {
+  min-height: 22px;
+  padding: 0 4px;
+  color: var(--soft-text);
+  font-size: 0.68rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.rail-nav-group__icon {
+  width: 15px;
+  height: 15px;
+}
+
+.rail-nav-item {
+  min-height: var(--quiet-row-height);
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.rail-nav-item__head {
+  gap: 8px;
+}
+
+.rail-nav-item__title {
+  gap: 8px;
+}
+
+.rail-nav-item__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.rail-nav-item__title strong,
+.session-card__title strong {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.rail-nav-item__badge {
+  min-width: 0;
+  min-height: 20px;
+  padding: 1px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--soft-text);
+  font-size: 0.68rem;
+}
+
+.rail-nav-item:hover,
+.rail-nav-item.is-active {
+  transform: none;
+  background: var(--surface-hover);
+  box-shadow: none;
+}
+
+.rail-nav-item.is-active {
+  color: var(--heading-text);
+  background: var(--surface-active);
+}
+
+.mini-player-bar--rail {
+  border-radius: var(--quiet-radius);
+  box-shadow: none;
+}
+
+.agent-app .workspace-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "masthead actions";
+  align-items: center;
+  gap: 10px;
+  min-height: 0;
+  padding: 9px 12px;
+  border-color: var(--panel-border);
+  background: var(--panel-background);
+}
+
+.agent-app .workspace-hero::before,
+.agent-app .workspace-hero::after {
+  display: none;
+}
+
+.workspace-hero__headline,
+.workspace-hero__switcher {
+  display: none;
+}
+
+.workspace-hero__masthead {
+  grid-area: masthead;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.workspace-hero__brandline {
+  gap: 9px;
+  min-width: 0;
+}
+
+.workspace-hero__brand-mark {
+  min-width: 34px;
+  min-height: 34px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+}
+
+.workspace-hero__brand-copy {
+  gap: 1px;
+  min-width: 0;
+}
+
+.workspace-hero__brand-copy .eyebrow {
+  display: none;
+}
+
+.workspace-hero__brand-copy strong {
+  overflow: hidden;
+  color: var(--heading-text);
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-hero__meta-bar {
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.workspace-hero__meta-pill {
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted-text);
+  font-size: 0.76rem;
+}
+
+.workspace-hero__meta-pill--desktop {
+  display: none;
+}
+
+.workspace-hero__actions {
+  grid-area: actions;
+  align-self: center;
+}
+
+.workspace-hero__toolbar-shell,
+.agent-app .workspace-hero__toolbar-shell {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.workspace-hero__toolbar {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+.hero-control-card,
+.hero-control-card--compact {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.hero-theme-button,
+.workspace-hero__toolbar-shell .hero-theme-button,
+.mode-switch--inline,
+.hero-inspector-toggle,
+.shell-menu-button {
+  min-height: 32px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.hero-theme-button,
+.workspace-hero__toolbar-shell .hero-theme-button {
+  min-width: 72px;
+  padding: 0 9px;
+  font-size: 0.74rem;
+}
+
+.workspace-hero__toolbar-shell .mode-switch--inline {
+  width: auto;
+  min-width: 78px;
+  padding: 2px;
+}
+
+.mode-switch__button {
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 5px;
+  font-size: 0.72rem;
+}
+
+.hero-inspector-toggle,
+.shell-menu-button {
+  width: 32px;
+  height: 32px;
+}
+
+.notice-banner,
+.error-banner {
+  min-height: 0;
+  padding: 9px 12px;
+  border-radius: var(--quiet-radius);
+  box-shadow: none;
+}
+
+.today-layout,
+.runtime-layout,
+.reminder-panel,
+.knowledge-panel,
+.gallery-panel,
+.skill-panel,
+.weather-panel,
+.settings-workspace__grid {
+  gap: var(--quiet-gap);
+}
+
+.today-layout {
+  grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.75fr);
+}
+
+.today-hero,
+.today-section,
+.runtime-overview-card,
+.runtime-stage-card,
+.runtime-sidebar-card,
+.settings-workspace__hero,
+.settings-panel,
+.settings-cache-panel,
+.settings-form__card,
+.cache-card,
+.skill-sidebar,
+.skill-editor,
+.skill-catalog,
+.knowledge-sidebar,
+.knowledge-editor,
+.reminder-sidebar,
+.reminder-editor,
+.gallery-toolbar,
+.gallery-stage,
+.weather-stage,
+.weather-panel,
+.music-room {
+  border-radius: var(--quiet-radius);
+  box-shadow: none;
+}
+
+.today-hero {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 11px 12px;
+  min-height: 0;
+  border-color: var(--panel-border);
+  background: var(--panel-background);
+}
+
+.today-hero::before {
+  display: none;
+}
+
+.today-hero__topline {
+  display: block;
+  min-width: 0;
+}
+
+.today-hero__copy .eyebrow,
+.today-hero__copy p,
+.today-hero__session,
+.today-hero__meta {
+  display: none;
+}
+
+.today-hero h3 {
+  max-width: none;
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.today-hero__stats {
+  grid-column: auto;
+  grid-row: auto;
+  display: flex;
+  align-self: center;
+  gap: 0;
+  min-width: max-content;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.today-stat {
+  min-width: 70px;
+  padding: 0 10px;
+  border: 0;
+  border-left: 1px solid var(--quiet-divider);
+  border-radius: 0;
+  background: transparent;
+}
+
+.today-stat:first-child {
+  border-left: 0;
+}
+
+.today-stat::before {
+  display: none;
+}
+
+.today-stat span {
+  font-size: 0.66rem;
+  line-height: 1.2;
+}
+
+.today-stat strong {
+  font-size: 0.96rem;
+  line-height: 1.15;
+}
+
+.today-hero__actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-self: center;
+  gap: 6px;
+}
+
+.today-hero__actions .solid-button,
+.today-hero__actions .ghost-button,
+.today-section__head .ghost-button,
+.today-session-spotlight__actions .solid-button,
+.today-inline-action {
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 6px;
+  box-shadow: none;
+  font-size: 0.74rem;
+}
+
+.today-section {
+  gap: 10px;
+  padding: 12px;
+  border-color: var(--panel-border);
+  background: var(--panel-background);
+}
+
+.today-section__head {
+  align-items: center;
+  min-height: 32px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--quiet-divider);
+}
+
+.today-section__head h4 {
+  font-size: 0.92rem;
+  line-height: 1.25;
+}
+
+.today-section__head h4::after,
+.today-focus-item::before,
+.today-session-item::before,
+.today-capture-item::before,
+.today-shortcut::before,
+.today-pattern-item::before {
+  display: none;
+}
+
+.today-focus-list,
+.today-session-list,
+.today-capture-list,
+.today-pattern-list,
+.today-rule-list {
+  gap: 0;
+}
+
+.today-focus-item,
+.today-session-item,
+.today-capture-item,
+.today-shortcut,
+.today-pattern-item,
+.today-session-spotlight,
+.today-empty-state,
+.session-card,
+.runtime-session-card,
+.runtime-recommend-card,
+.runtime-activity-item,
+.knowledge-note-card,
+.reminder-card,
+.skill-card,
+.skill-template-card,
+.skill-recommend-card,
+.skill-mounted-card,
+.skill-version-card,
+.gallery-card,
+.weather-city-widget__item,
+.sound-track-card,
+.capability-card,
+.activity-card,
+.quick-setting-card,
+.settings-rail-card {
+  border: 0;
+  border-top: 1px solid var(--quiet-divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.today-focus-item:first-child,
+.today-session-item:first-child,
+.today-capture-item:first-child,
+.today-pattern-item:first-child,
+.session-card:first-child,
+.runtime-session-card:first-child,
+.runtime-recommend-card:first-child,
+.runtime-activity-item:first-child,
+.knowledge-note-card:first-child,
+.reminder-card:first-child,
+.skill-card:first-child,
+.skill-template-card:first-child,
+.skill-recommend-card:first-child,
+.skill-mounted-card:first-child,
+.skill-version-card:first-child,
+.gallery-card:first-child,
+.weather-city-widget__item:first-child,
+.sound-track-card:first-child,
+.capability-card:first-child,
+.activity-card:first-child {
+  border-top: 0;
+}
+
+.today-focus-item,
+.today-session-item,
+.today-capture-item,
+.today-pattern-item,
+.session-card,
+.runtime-session-card,
+.runtime-recommend-card,
+.runtime-activity-item,
+.knowledge-note-card,
+.reminder-card,
+.skill-card,
+.skill-template-card,
+.skill-recommend-card,
+.skill-mounted-card,
+.skill-version-card,
+.sound-track-card,
+.capability-card,
+.activity-card {
+  padding: 10px 0;
+}
+
+.today-focus-item:hover,
+.today-session-item:hover,
+.today-capture-item:hover,
+.today-pattern-item:hover,
+.today-shortcut:hover,
+.session-card:hover,
+.runtime-session-card:hover,
+.runtime-recommend-card:hover,
+.runtime-activity-item:hover,
+.knowledge-note-card:hover,
+.reminder-card:hover,
+.skill-card:hover,
+.skill-template-card:hover,
+.skill-recommend-card:hover,
+.skill-mounted-card:hover,
+.skill-version-card:hover,
+.gallery-card:hover,
+.weather-city-widget__item:hover,
+.sound-track-card:hover,
+.capability-card:hover,
+.activity-card:hover {
+  transform: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.today-focus-item.is-active,
+.today-session-item.is-active,
+.session-card.is-active,
+.runtime-session-card.is-active,
+.skill-card.is-active,
+.knowledge-note-card.is-active,
+.reminder-card.is-active {
+  border-radius: 6px;
+  background: var(--surface-active);
+}
+
+.today-focus-item__body,
+.today-capture-item__body,
+.today-pattern-item__body {
+  gap: 7px;
+}
+
+.today-focus-item p,
+.today-session-item p,
+.today-capture-item p,
+.today-pattern-item span,
+.runtime-recommend-card p,
+.runtime-activity-item p,
+.knowledge-note-card p,
+.reminder-card p,
+.skill-card p,
+.skill-template-card p,
+.capability-card p,
+.activity-card p {
+  line-height: 1.45;
+}
+
+.today-review-grid,
+.today-rule-grid,
+.quick-settings-grid,
+.capability-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  border: 1px solid var(--quiet-divider);
+  border-radius: var(--quiet-radius);
+  overflow: hidden;
+}
+
+.today-review-signal,
+.today-rule-signal,
+.skill-profile-metric,
+.runtime-stage-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-top: 1px solid var(--quiet-divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.today-review-signal:first-child,
+.today-rule-signal:first-child,
+.skill-profile-metric:first-child,
+.runtime-stage-pill:first-child {
+  border-top: 0;
+}
+
+.today-review-signal strong,
+.today-rule-signal strong,
+.skill-profile-metric strong,
+.runtime-stage-pill strong {
+  font-size: 0.94rem;
+}
+
+.today-rule-item__metrics span {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.runtime-overview-grid,
+.runtime-stage-card__summary,
+.skill-profile-grid,
+.weather-metric-grid {
+  gap: 0;
+  border: 1px solid var(--quiet-divider);
+  border-radius: var(--quiet-radius);
+  overflow: hidden;
+}
+
+.runtime-overview-card,
+.weather-metric-card {
+  border: 0;
+  border-left: 1px solid var(--quiet-divider);
+  border-radius: 0;
+  background: transparent;
+}
+
+.runtime-overview-card:first-child,
+.weather-metric-card:first-child {
+  border-left: 0;
+}
+
+.inspector-drawer__panel {
+  width: min(420px, calc(100vw - 24px));
+  border-radius: var(--quiet-radius);
+  box-shadow: none;
+}
+
+.inspector-drawer__head,
+.inspector-tab-strip {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--quiet-divider);
+}
+
+.inspector-tab-panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+@media (max-width: 1180px) {
+  .agent-app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agent-app .workspace-hero {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "masthead actions";
+  }
+
+  .today-layout,
+  .runtime-layout,
+  .knowledge-panel,
+  .reminder-panel,
+  .skill-panel,
+  .weather-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .agent-app {
+    padding: 10px;
+  }
+
+  .agent-app .workspace-hero {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "masthead actions";
+    align-items: center;
+  }
+
+  .workspace-hero__masthead {
+    align-items: center;
+  }
+
+  .workspace-hero__brand-copy strong {
+    max-width: 18ch;
+  }
+
+  .workspace-hero__actions,
+  .workspace-hero__toolbar-shell {
+    width: auto;
+  }
+
+  .workspace-hero__toolbar {
+    justify-content: flex-end;
+  }
+
+  .workspace-hero__toolbar .hero-control-card--theme,
+  .workspace-hero__toolbar .hero-control-card--locale {
+    display: none;
+  }
+
+  .today-hero {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .today-hero__stats {
+    width: 100%;
+    min-width: 0;
+    border-top: 1px solid var(--quiet-divider);
+    padding-top: 8px;
+  }
+
+  .today-stat {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .today-hero__actions {
+    width: 100%;
+  }
+
+  .today-hero__actions > * {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .agent-app.agent-app--with-mini-player {
+    padding-bottom: 112px;
+  }
+
+  .mini-player-bar--floating {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "meta controls";
+    gap: 8px;
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    width: min(calc(100vw - 20px), 370px);
+    min-height: 42px;
+    padding: 5px 7px;
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .mini-player-bar--floating::before,
+  .mini-player-bar--floating::after,
+  .mini-player-bar--floating .mini-player-bar__timeline,
+  .mini-player-bar--floating .mini-player-bar__cover,
+  .mini-player-bar--floating .mini-player-bar__eyebrow,
+  .mini-player-bar--floating .mini-player-bar__time {
+    display: none;
+  }
+
+  .mini-player-bar--floating .mini-player-bar__meta {
+    grid-area: meta;
+    min-width: 0;
+  }
+
+  .mini-player-bar--floating .mini-player-bar__copy {
+    min-width: 0;
+  }
+
+  .mini-player-bar--floating .mini-player-bar__copy strong {
+    overflow: hidden;
+    font-size: 0.84rem;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mini-player-bar--floating .mini-player-bar__copy p {
+    overflow: hidden;
+    font-size: 0.68rem;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mini-player-bar--floating .mini-player-bar__controls {
+    grid-area: controls;
+    gap: 6px;
+  }
+
+  .mini-player-bar--floating .mini-player-bar__button {
+    min-width: 34px;
+    width: 34px;
+    height: 32px;
+    padding: 0;
+    border-radius: 999px;
+  }
+
+  .runtime-overview-grid,
+  .weather-metric-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .runtime-overview-card,
+  .weather-metric-card {
+    border-left: 0;
+    border-top: 1px solid var(--quiet-divider);
+  }
+
+  .runtime-overview-card:first-child,
+  .weather-metric-card:first-child {
+    border-top: 0;
+  }
+}
+
+/* Mobile business workspace pass: keep the first screen operational instead of explanatory. */
+@media (max-width: 760px) {
+  :root {
+    --quiet-gap: 10px;
+    --quiet-row-height: 34px;
+  }
+
+  .workspace-column,
+  .runtime-workspace,
+  .settings-workspace {
+    gap: 10px;
+  }
+
+  .runtime-status-panel,
+  .runtime-stage-card,
+  .runtime-composer,
+  .runtime-sidebar-card,
+  .today-section,
+  .knowledge-sidebar,
+  .knowledge-editor,
+  .reminder-sidebar,
+  .reminder-editor,
+  .skill-sidebar,
+  .skill-editor,
+  .skill-catalog,
+  .settings-workspace__hero,
+  .settings-panel,
+  .settings-cache-panel,
+  .weather-stage,
+  .weather-panel,
+  .gallery-toolbar,
+  .gallery-stage {
+    padding: 10px;
+    border-radius: 8px;
+  }
+
+  .runtime-layout {
+    gap: 10px;
+  }
+
+  .runtime-main-column {
+    gap: 10px;
+  }
+
+  .runtime-stage-card {
+    min-height: 0;
+    grid-template-rows: auto auto;
+  }
+
+  .runtime-stage-card::before {
+    display: none;
+  }
+
+  .runtime-stage-card__head,
+  .runtime-composer__head,
+  .runtime-sidebar-card__head,
+  .settings-workspace__hero .section-head,
+  .settings-panel .section-head,
+  .settings-cache-panel .section-head,
+  .knowledge-editor__toolbar,
+  .reminder-editor__toolbar {
+    min-height: 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--quiet-divider);
+  }
+
+  .runtime-stage-card__head .eyebrow,
+  .runtime-composer__head .eyebrow,
+  .runtime-sidebar-card__head .eyebrow,
+  .knowledge-editor__stamp p,
+  .reminder-editor__toolbar p,
+  .settings-workspace__note,
+  .settings-cache-panel__description,
+  .settings-cache-panel__safe-note,
+  .skill-sidebar__intro-copy p,
+  .knowledge-editor__hero,
+  .reminder-editor__hero,
+  .runtime-composer__hint {
+    display: none;
+  }
+
+  .runtime-stage-card__head h3,
+  .runtime-composer__head h4,
+  .runtime-sidebar-card__head h4,
+  .today-section__head h4,
+  .knowledge-head h3,
+  .reminder-sidebar__head h3,
+  .skill-sidebar__intro-copy h3,
+  .settings-workspace__hero h3,
+  .settings-panel h3,
+  .settings-cache-panel h3 {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.25;
+  }
+
+  .runtime-thread__frame {
+    margin-top: 8px;
+    padding: 8px;
+    border: 0;
+    background: transparent;
+    max-height: min(34svh, 320px);
+    overflow: auto;
+  }
+
+  .runtime-message-list {
+    gap: 10px;
+    padding: 0;
+  }
+
+  .runtime-empty-state {
+    min-height: 140px;
+    padding: 16px;
+  }
+
+  .runtime-message-list .message-card,
+  .runtime-message-list .message-card.role-user,
+  .runtime-message-list .message-card.role-assistant {
+    max-width: 100%;
+  }
+
+  .runtime-composer textarea,
+  .knowledge-body-input,
+  .settings-form__prompt {
+    min-height: 128px;
+  }
+
+  .runtime-composer__actions,
+  .runtime-mini-actions,
+  .runtime-quick-actions,
+  .knowledge-editor__actions,
+  .settings-form__footer {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .runtime-composer__actions .solid-button,
+  .runtime-mini-actions > *,
+  .runtime-quick-actions > *,
+  .knowledge-editor__actions > *,
+  .settings-form__footer .solid-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .runtime-sidebar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .runtime-context-stack,
+  .runtime-disclosure-stack {
+    gap: 8px;
+  }
+
+  .runtime-recommend-card span,
+  .runtime-activity-item p,
+  .runtime-session-card p,
+  .knowledge-note-card p,
+  .reminder-card p,
+  .skill-card p,
+  .cache-card p,
+  .gallery-card p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .runtime-recommend-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .runtime-recommend-card__body span {
+    display: none;
+  }
+
+  .runtime-recommend-card__actions {
+    justify-content: end;
+  }
+
+  .runtime-recommend-card__actions .runtime-sidebar-card__action {
+    min-height: 30px;
+    padding: 0 8px;
+  }
+
+  .knowledge-sidebar,
+  .reminder-sidebar,
+  .skill-sidebar {
+    gap: 10px;
+  }
+
+  .skill-header-actions {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .skill-header-actions > * {
+    flex: 1;
+    min-height: 34px;
+    padding: 0 10px;
+    justify-content: center;
+  }
+
+  .knowledge-sidebar__summary,
+  .reminder-sidebar__summary,
+  .skill-sidebar__status--grid {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid var(--quiet-divider);
+    border-radius: 8px;
+  }
+
+  .knowledge-summary-card,
+  .reminder-summary-card,
+  .skill-stat-card {
+    flex: 1;
+    min-width: 0;
+    padding: 7px 8px;
+    border: 0;
+    border-left: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .knowledge-summary-card:first-child,
+  .reminder-summary-card:first-child,
+  .skill-stat-card:first-child {
+    border-left: 0;
+  }
+
+  .knowledge-summary-card p,
+  .knowledge-summary-card--wide p,
+  .reminder-clock-card,
+  .skill-card__meta span:first-child,
+  .knowledge-note-card__meta,
+  .reminder-card__link {
+    display: none;
+  }
+
+  .knowledge-search-shell,
+  .knowledge-note-list,
+  .reminder-group-list,
+  .skill-list,
+  .skill-template-list,
+  .skill-version-list,
+  .cache-grid,
+  .gallery-grid {
+    max-height: min(42svh, 320px);
+    overflow: auto;
+    padding-right: 2px;
+  }
+
+  .skill-list {
+    max-height: min(30svh, 220px);
+  }
+
+  .knowledge-note-list,
+  .reminder-card-list,
+  .skill-list,
+  .cache-grid,
+  .gallery-grid {
+    gap: 0;
+  }
+
+  .reminder-group-list {
+    gap: 8px;
+  }
+
+  .reminder-group__head,
+  .skill-filter-row {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--panel-background);
+  }
+
+  .skill-filter-row {
+    padding-bottom: 6px;
+  }
+
+  .skill-profile-card--hero,
+  .skill-toggle-card,
+  .skill-mount-banner,
+  .skill-catalog__panel,
+  .settings-form__card,
+  .cache-card {
+    padding: 10px 0;
+    border-radius: 0;
+  }
+
+  .skill-profile-card--hero {
+    border-top: 0;
+  }
+
+  .settings-form,
+  .settings-form__grid,
+  .skill-editor__form,
+  .knowledge-editor__form,
+  .reminder-editor__form {
+    gap: 10px;
+  }
+
+  .settings-summary__chips {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .settings-summary__chips .status-chip {
+    min-width: 0;
+  }
+
+  .weather-hero-card__description,
+  .weather-card-subtitle,
+  .weather-forecast-card p,
+  .gallery-toolbar__copy p {
+    display: none;
+  }
+
+  .agent-app:not(.view-music) .mini-player-bar--floating {
+    display: none;
+  }
+
+  .agent-app:not(.view-music).agent-app--with-mini-player {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+}
