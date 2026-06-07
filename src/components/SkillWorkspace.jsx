@@ -505,7 +505,9 @@ function SkillWorkspace({
                     <button
                       key={skill.id}
                       type="button"
-                      className="skill-mounted-card"
+                      className={`skill-mounted-card ${
+                        skill.id === activeSkillId ? "is-active" : ""
+                      }`}
                       onClick={() => handleOpenSkill(skill.id)}
                       disabled={busy !== "" || loading}
                     >

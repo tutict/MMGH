@@ -757,6 +757,158 @@
   background: transparent;
 }
 
+/* Skills workspace pass: keep the surface operational and scannable. */
+.agent-app.view-skills .skill-panel.panel-surface {
+  grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1.72fr) minmax(280px, 0.82fr);
+  align-items: stretch;
+}
+
+.agent-app.view-skills .skill-sidebar,
+.agent-app.view-skills .skill-editor,
+.agent-app.view-skills .skill-catalog {
+  min-height: 0;
+}
+
+.agent-app.view-skills .skill-sidebar,
+.agent-app.view-skills .skill-catalog {
+  max-height: calc(100svh - 132px);
+}
+
+.agent-app.view-skills .skill-editor {
+  min-height: min(760px, calc(100svh - 132px));
+}
+
+.agent-app.view-skills .skill-card,
+.agent-app.view-skills .skill-mounted-card,
+.agent-app.view-skills .skill-template-card,
+.agent-app.view-skills .skill-recommend-card,
+.agent-app.view-skills .skill-version-card {
+  position: relative;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.agent-app.view-skills .skill-card:hover,
+.agent-app.view-skills .skill-mounted-card:hover,
+.agent-app.view-skills .skill-template-card:hover,
+.agent-app.view-skills .skill-recommend-card:hover,
+.agent-app.view-skills .skill-version-card:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.agent-app.view-skills .skill-card.is-active,
+.agent-app.view-skills .skill-mounted-card.is-active {
+  padding-left: 14px;
+  border-radius: 7px;
+  background: var(--surface-active);
+}
+
+.agent-app.view-skills .skill-card.is-active::before,
+.agent-app.view-skills .skill-mounted-card.is-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.agent-app.view-skills .skill-card__head,
+.agent-app.view-skills .skill-version-card__head,
+.agent-app.view-skills .skill-template-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+}
+
+.agent-app.view-skills .skill-card__status-group,
+.agent-app.view-skills .skill-card__pill-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.agent-app.view-skills .skill-card__head strong,
+.agent-app.view-skills .skill-mounted-card strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.agent-app.view-skills .skill-profile-card--hero {
+  padding: 0 0 12px;
+  border: 0;
+  border-bottom: 1px solid var(--quiet-divider);
+  border-radius: 0;
+  background: transparent;
+}
+
+.agent-app.view-skills .skill-profile-card__head {
+  align-items: center;
+}
+
+.agent-app.view-skills .skill-editor__form--dense {
+  gap: 14px;
+}
+
+.agent-app.view-skills .skill-editor__operations {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.52fr);
+  gap: 10px;
+}
+
+.agent-app.view-skills .skill-profile-actions {
+  gap: 8px;
+}
+
+.agent-app.view-skills .skill-toggle-card,
+.agent-app.view-skills .skill-mount-banner {
+  padding: 9px 10px;
+  border-radius: 8px;
+}
+
+.agent-app.view-skills .skill-editor .knowledge-body-input {
+  min-height: clamp(220px, 32svh, 360px);
+}
+
+.agent-app.view-skills .skill-panel.panel-surface .skill-tools__tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.agent-app.view-skills .skill-panel.panel-surface .skill-tools__tab {
+  min-height: 31px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.agent-app.view-skills .skill-panel.panel-surface .skill-tools__tab.is-active {
+  background: var(--surface-active);
+}
+
+.agent-app.view-skills .skill-tools__panel {
+  overflow: hidden;
+}
+
+.agent-app.view-skills .skill-filter-row {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.agent-app.view-skills .skill-filter-chip {
+  flex: 1 0 auto;
+  text-align: center;
+}
+
 @media (max-width: 1180px) {
   .agent-app {
     grid-template-columns: minmax(0, 1fr);
@@ -774,6 +926,30 @@
   .skill-panel,
   .weather-panel {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agent-app.view-skills .skill-panel.panel-surface {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agent-app.view-skills .skill-sidebar,
+  .agent-app.view-skills .skill-catalog {
+    position: static;
+    max-height: none;
+  }
+
+  .agent-app.view-skills .skill-editor {
+    min-height: 0;
+  }
+
+  .agent-app.view-skills .skill-panel.panel-surface .skill-tools__tabs {
+    grid-template-columns: minmax(0, 1fr);
+    align-self: start;
+  }
+
+  .agent-app.view-skills .skill-panel.panel-surface .skill-tools__tab {
+    justify-content: flex-start;
+    text-align: left;
   }
 }
 
@@ -913,6 +1089,77 @@
   .runtime-overview-card:first-child,
   .weather-metric-card:first-child {
     border-top: 0;
+  }
+
+  .agent-app.view-skills .skill-panel.panel-surface {
+    align-items: start;
+  }
+
+  .agent-app.view-skills .skill-panel.panel-surface .skill-catalog.skill-tools {
+    grid-column: auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .agent-app.view-skills .skill-card__head,
+  .agent-app.view-skills .skill-version-card__head,
+  .agent-app.view-skills .skill-template-card__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agent-app.view-skills .skill-card__status-group,
+  .agent-app.view-skills .skill-card__pill-row {
+    justify-content: flex-start;
+  }
+
+  .agent-app.view-skills .skill-sidebar__intro-copy p {
+    display: none;
+  }
+
+  .agent-app.view-skills .skill-list {
+    max-height: 150px;
+  }
+
+  .agent-app.view-skills .skill-profile-card--hero {
+    padding-bottom: 100px;
+  }
+
+  .agent-app.view-skills .skill-profile-card--hero > p {
+    display: none;
+  }
+
+  .agent-app.view-skills .skill-editor__operations {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agent-app.view-skills .skill-profile-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .agent-app.view-skills .skill-editor .knowledge-editor__actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    align-items: stretch;
+  }
+
+  .agent-app.view-skills .skill-editor .knowledge-editor__actions > * {
+    width: 100%;
+    min-height: 32px;
+    padding: 0 8px;
+    justify-content: center;
+  }
+
+  .agent-app.view-skills .skill-panel.panel-surface .skill-tools__tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .agent-app.view-skills .skill-panel.panel-surface .skill-tools__tab {
+    justify-content: center;
+    text-align: center;
   }
 }
 
