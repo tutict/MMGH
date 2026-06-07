@@ -1496,3 +1496,424 @@
     padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* Mobile minimal shell pass: make the phone viewport content-first and low chrome. */
+@media (max-width: 760px) {
+  :root {
+    --quiet-gap: 8px;
+    --quiet-radius: 6px;
+    --mobile-shell-gutter: 6px;
+    --mobile-dock-space: calc(62px + env(safe-area-inset-bottom, 0px));
+  }
+
+  html,
+  body,
+  #root {
+    overflow-x: hidden;
+  }
+
+  .agent-app {
+    gap: var(--quiet-gap);
+    min-width: 0;
+    padding: var(--mobile-shell-gutter) var(--mobile-shell-gutter) var(--mobile-dock-space);
+  }
+
+  .agent-app.agent-app--with-mini-player {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .agent-app:not(.view-music).agent-app--with-mini-player {
+    padding-bottom: var(--mobile-dock-space);
+  }
+
+  .workspace-column,
+  .runtime-workspace,
+  .settings-workspace,
+  .runtime-layout,
+  .runtime-main-column,
+  .runtime-sidebar,
+  .knowledge-workspace,
+  .reminder-workspace,
+  .skill-panel.panel-surface,
+  .weather-workspace,
+  .gallery-workspace {
+    gap: var(--quiet-gap);
+    min-width: 0;
+  }
+
+  .agent-app .workspace-hero.panel-surface {
+    margin: 0;
+    padding: 6px 2px 8px;
+    border: 0;
+    border-bottom: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .workspace-hero__masthead {
+    gap: 8px;
+  }
+
+  .workspace-hero__brandline {
+    gap: 0;
+  }
+
+  .workspace-hero__brand-mark {
+    display: none;
+  }
+
+  .workspace-hero__brand-copy strong {
+    max-width: min(54vw, 20ch);
+    font-size: 0.88rem;
+    line-height: 1.2;
+  }
+
+  .workspace-hero__meta-bar {
+    gap: 4px;
+  }
+
+  .workspace-hero__meta-pill {
+    min-height: 28px;
+    font-size: 0.7rem;
+  }
+
+  .workspace-hero__toolbar {
+    gap: 2px;
+  }
+
+  .hero-inspector-toggle,
+  .shell-menu-button {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+  }
+
+  .hero-inspector-toggle:hover,
+  .shell-menu-button:hover,
+  .hero-inspector-toggle.is-active,
+  .shell-menu-button[aria-expanded="true"] {
+    transform: none;
+    background: var(--surface-active);
+    color: var(--heading-text);
+  }
+
+  .hero-inspector-toggle__icon,
+  .shell-menu-button__icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .runtime-status-panel,
+  .runtime-stage-card,
+  .runtime-composer,
+  .runtime-sidebar-card,
+  .today-section,
+  .knowledge-sidebar,
+  .knowledge-editor,
+  .reminder-sidebar,
+  .reminder-editor,
+  .skill-sidebar,
+  .skill-editor,
+  .skill-catalog,
+  .settings-workspace__hero,
+  .settings-panel,
+  .settings-cache-panel,
+  .weather-stage,
+  .weather-panel,
+  .gallery-toolbar,
+  .gallery-stage {
+    padding: 8px;
+    border-radius: var(--quiet-radius);
+    box-shadow: none;
+  }
+
+  .runtime-stage-card__head,
+  .runtime-composer__head,
+  .runtime-sidebar-card__head,
+  .settings-workspace__hero .section-head,
+  .settings-panel .section-head,
+  .settings-cache-panel .section-head,
+  .knowledge-editor__toolbar,
+  .reminder-editor__toolbar {
+    padding-bottom: 6px;
+  }
+
+  .today-section__head,
+  .knowledge-head,
+  .reminder-sidebar__head,
+  .skill-sidebar__intro,
+  .skill-profile-card__head,
+  .skill-version-card__head,
+  .skill-template-card__body,
+  .gallery-toolbar__copy {
+    gap: 6px;
+  }
+
+  .runtime-recommend-card,
+  .runtime-activity-item,
+  .runtime-session-card,
+  .knowledge-note-card,
+  .reminder-card,
+  .skill-card,
+  .skill-mounted-card,
+  .skill-template-card,
+  .skill-recommend-card,
+  .skill-version-card,
+  .cache-card,
+  .gallery-card,
+  .weather-forecast-card {
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .knowledge-note-card,
+  .reminder-card,
+  .skill-card,
+  .skill-mounted-card,
+  .skill-template-card,
+  .skill-recommend-card,
+  .skill-version-card,
+  .cache-card,
+  .gallery-card {
+    border-width: 1px 0 0;
+    background: transparent;
+  }
+
+  .knowledge-note-list > :first-child,
+  .reminder-card-list > :first-child,
+  .skill-list > :first-child,
+  .skill-template-list > :first-child,
+  .skill-version-list > :first-child,
+  .cache-grid > :first-child,
+  .gallery-grid > :first-child {
+    border-top: 0;
+  }
+
+  .solid-button,
+  .ghost-button,
+  .runtime-sidebar-card__action,
+  .skill-filter-chip,
+  .status-chip,
+  .workspace-switcher-button {
+    min-height: 32px;
+    border-radius: 6px;
+  }
+
+  .solid-button,
+  .ghost-button,
+  .runtime-sidebar-card__action {
+    padding-inline: 10px;
+  }
+
+  .mobile-dock {
+    left: var(--mobile-shell-gutter);
+    right: var(--mobile-shell-gutter);
+    bottom: calc(var(--mobile-shell-gutter) + env(safe-area-inset-bottom, 0px));
+    gap: 0;
+    min-height: 50px;
+    padding: 4px;
+    border: 1px solid var(--quiet-divider);
+    border-radius: 10px;
+    background: var(--panel-background);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  html[data-theme="light"] .mobile-dock {
+    background: #fbfdfc;
+  }
+
+  html[data-theme="dark"] .mobile-dock {
+    background: #050c12;
+  }
+
+  .mobile-dock__item {
+    position: relative;
+    min-height: 42px;
+    gap: 2px;
+    padding: 4px 2px 5px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    box-shadow: none;
+    color: var(--muted-text);
+    transition:
+      background-color 160ms ease,
+      color 160ms ease;
+  }
+
+  .mobile-dock__item:hover {
+    transform: none;
+    background: var(--surface-hover);
+  }
+
+  .mobile-dock__item.is-active {
+    background: transparent;
+    color: var(--heading-text);
+  }
+
+  .mobile-dock__item.is-active::after {
+    content: "";
+    position: absolute;
+    right: 28%;
+    bottom: 2px;
+    left: 28%;
+    height: 2px;
+    border-radius: 999px;
+    background: var(--accent);
+  }
+
+  .mobile-dock__icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .mobile-dock__label {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.62rem;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-shell-drawer__panel.session-rail,
+  .inspector-drawer__panel {
+    top: var(--mobile-shell-gutter);
+    right: var(--mobile-shell-gutter);
+    bottom: var(--mobile-shell-gutter);
+    left: var(--mobile-shell-gutter);
+    width: auto;
+    max-width: none;
+    border-radius: 10px;
+    box-shadow: none;
+  }
+
+  .mini-player-bar--floating {
+    bottom: calc(58px + env(safe-area-inset-bottom, 0px));
+    width: calc(100vw - (var(--mobile-shell-gutter) * 2));
+    border-radius: 10px;
+  }
+}
+
+/* Mobile minimal form pass: flatten nested editors without changing desktop density. */
+@media (max-width: 760px) {
+  .agent-app.view-skills .skill-sidebar .skill-sidebar__intro,
+  .agent-app.view-skills .skill-sidebar .skill-sidebar__status,
+  .agent-app.view-skills .skill-editor,
+  .agent-app.view-skills .skill-catalog .skill-catalog__panel,
+  .agent-app.view-settings .settings-workspace__hero,
+  .agent-app.view-settings .settings-panel,
+  .agent-app.view-settings .settings-cache-panel {
+    border-radius: 6px;
+    box-shadow: none;
+  }
+
+  .agent-app.view-skills .skill-sidebar .skill-sidebar__intro,
+  .agent-app.view-skills .skill-editor,
+  .agent-app.view-skills .skill-catalog .skill-catalog__panel,
+  .agent-app.view-settings .settings-panel,
+  .agent-app.view-settings .settings-cache-panel {
+    padding: 8px;
+  }
+
+  .agent-app.view-skills .skill-sidebar__intro-copy h3,
+  .agent-app.view-settings .settings-panel .section-head h3,
+  .agent-app.view-settings .settings-cache-panel .section-head h3 {
+    font-size: 0.94rem;
+  }
+
+  .agent-app.view-skills .skill-header-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .agent-app.view-skills .skill-header-actions > *,
+  .agent-app.view-settings .settings-form__footer .solid-button,
+  .agent-app.view-settings .settings-form__card > .ghost-button {
+    min-height: 32px;
+    padding-inline: 10px;
+  }
+
+  .agent-app.view-settings .settings-form__grid {
+    gap: 0;
+    overflow: visible;
+    border: 0;
+    border-top: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .agent-app.view-settings .settings-form__grid .settings-form__card,
+  .agent-app.view-settings .settings-form .settings-form__card,
+  .agent-app.view-skills .skill-profile-card,
+  .agent-app.view-skills .skill-toggle-card,
+  .agent-app.view-skills .skill-mount-banner {
+    padding: 8px 0;
+    border: 0;
+    border-top: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .agent-app.view-settings .settings-form__grid .settings-form__card:first-child {
+    border-top: 0;
+  }
+
+  .agent-app.view-settings .settings-form__grid .settings-form__card:nth-child(even),
+  .agent-app.view-settings .settings-form__grid .settings-form__card:nth-child(2) {
+    border-left: 0 !important;
+    border-top: 1px solid var(--quiet-divider);
+  }
+
+  .agent-app.view-settings .settings-form__card--prompt {
+    margin-top: 2px;
+  }
+
+  .agent-app.view-settings .settings-form__footer {
+    gap: 8px;
+    padding: 8px 0 0;
+    border: 0;
+    border-top: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .agent-app.view-settings .settings-form .field-input,
+  .agent-app.view-settings .settings-form .field-area,
+  .agent-app.view-skills .field-input,
+  .agent-app.view-skills .field-area,
+  .agent-app.view-skills .knowledge-body-input,
+  .agent-app.view-skills .skill-forge-input {
+    min-height: 34px;
+    padding: 7px 9px;
+    border-radius: 6px;
+    box-shadow: none;
+    font-size: 0.84rem;
+  }
+
+  .agent-app.view-settings .settings-form__prompt,
+  .agent-app.view-skills .knowledge-body-input {
+    min-height: 128px;
+  }
+
+  .agent-app.view-skills .skill-profile-card--hero {
+    padding-bottom: 8px;
+  }
+
+  .agent-app.view-skills .skill-profile-card__head {
+    gap: 6px;
+  }
+
+  .agent-app.view-skills .skill-profile-card__head h4 {
+    font-size: 1rem;
+  }
+}
