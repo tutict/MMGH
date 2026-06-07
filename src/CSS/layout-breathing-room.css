@@ -1917,3 +1917,237 @@
     font-size: 1rem;
   }
 }
+
+/* Mobile settings list pass: replace card-stacked settings with compact preference rows. */
+@media (max-width: 760px) {
+  .agent-app.view-settings {
+    --settings-row-label: minmax(86px, 31%);
+  }
+
+  .agent-app.view-settings .workspace-column,
+  .agent-app.view-settings .settings-workspace,
+  .agent-app.view-settings .settings-workspace__grid,
+  .agent-app.view-settings .settings-form {
+    gap: 6px;
+  }
+
+  .agent-app.view-settings .settings-workspace__hero.panel-surface {
+    min-height: 0;
+    padding: 0 2px 4px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .agent-app.view-settings .settings-workspace__hero .section-head {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .agent-app.view-settings .settings-workspace__hero .section-head > div,
+  .agent-app.view-settings .settings-workspace__note {
+    display: none;
+  }
+
+  .agent-app.view-settings .settings-summary__chips {
+    gap: 6px;
+  }
+
+  .agent-app.view-settings .settings-summary__chips .status-chip {
+    min-height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+  }
+
+  .agent-app.view-settings .settings-panel.panel-surface,
+  .agent-app.view-settings .settings-cache-panel.panel-surface {
+    padding: 0 2px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .agent-app.view-settings .settings-panel .section-head,
+  .agent-app.view-settings .settings-cache-panel .section-head {
+    margin: 0;
+    padding: 3px 0 7px;
+    border-bottom: 1px solid var(--quiet-divider);
+  }
+
+  .agent-app.view-settings .settings-panel .section-head h3,
+  .agent-app.view-settings .settings-cache-panel .section-head h3 {
+    font-size: 0.92rem;
+    line-height: 1.2;
+  }
+
+  .agent-app.view-settings .settings-form__grid {
+    gap: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .agent-app.view-settings .settings-form__grid .settings-form__card,
+  .agent-app.view-settings .settings-form .settings-form__card {
+    display: grid;
+    grid-template-columns: var(--settings-row-label) minmax(0, 1fr);
+    column-gap: 8px;
+    row-gap: 4px;
+    align-items: center;
+    min-height: 48px;
+    padding: 7px 0;
+    border: 0;
+    border-top: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .agent-app.view-settings .settings-form__grid .settings-form__card:first-child {
+    border-top: 0;
+  }
+
+  .agent-app.view-settings .settings-form__grid .settings-form__card:nth-child(even),
+  .agent-app.view-settings .settings-form__grid .settings-form__card:nth-child(2) {
+    border-left: 0 !important;
+    border-top: 1px solid var(--quiet-divider);
+  }
+
+  .agent-app.view-settings .settings-form label span,
+  .agent-app.view-settings .settings-form__card span {
+    color: var(--muted-text);
+    font-size: 0.76rem;
+    line-height: 1.3;
+  }
+
+  .agent-app.view-settings .settings-form .field-input {
+    min-height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    font-size: 0.88rem;
+  }
+
+  .agent-app.view-settings .settings-form .field-input:focus {
+    box-shadow: inset 0 -1px 0 var(--accent);
+  }
+
+  .agent-app.view-settings .settings-form__card .section-note {
+    grid-column: 2;
+    margin: -2px 0 0;
+    font-size: 0.69rem;
+    line-height: 1.35;
+  }
+
+  .agent-app.view-settings .settings-form__card > .ghost-button {
+    grid-column: 2;
+    justify-self: start;
+    width: auto;
+    min-height: 30px;
+  }
+
+  .agent-app.view-settings .settings-form .settings-form__card--prompt {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+    margin-top: 0;
+    padding: 9px 0;
+  }
+
+  .agent-app.view-settings .settings-form .settings-form__card--prompt > span,
+  .agent-app.view-settings .settings-form .settings-form__card--prompt .settings-form__prompt {
+    grid-column: 1;
+  }
+
+  .agent-app.view-settings .settings-form .settings-form__prompt {
+    min-height: 136px;
+    padding: 8px;
+    border: 1px solid var(--quiet-divider);
+    border-radius: 6px;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .agent-app.view-settings .settings-form__footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0 0;
+    border-top: 1px solid var(--quiet-divider);
+  }
+
+  .agent-app.view-settings .settings-form__footer .section-note {
+    margin: 0;
+    font-size: 0.7rem;
+    line-height: 1.35;
+  }
+
+  .agent-app.view-settings .settings-form__footer .solid-button {
+    width: auto;
+    min-width: 92px;
+    justify-self: end;
+  }
+
+  .agent-app.view-settings .settings-cache-panel__description {
+    display: none;
+  }
+
+  .agent-app.view-settings .cache-grid {
+    gap: 0;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .agent-app.view-settings .cache-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 10px;
+    align-items: center;
+    padding: 9px 0;
+    border: 0;
+    border-top: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .agent-app.view-settings .cache-card:first-child {
+    border-top: 0;
+  }
+
+  .agent-app.view-settings .cache-card__head {
+    display: contents;
+  }
+
+  .agent-app.view-settings .cache-card__head > div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .agent-app.view-settings .cache-card__head strong {
+    font-size: 0.84rem;
+    line-height: 1.25;
+  }
+
+  .agent-app.view-settings .cache-card__head .status-chip {
+    justify-self: end;
+  }
+
+  .agent-app.view-settings .cache-card p {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-size: 0.72rem;
+    line-height: 1.35;
+  }
+
+  .agent-app.view-settings .cache-card > .ghost-button {
+    grid-column: 1 / -1;
+    min-height: 30px;
+    margin-top: 2px;
+    border-radius: 6px;
+  }
+}
