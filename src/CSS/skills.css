@@ -95,7 +95,6 @@
 
 .skill-filter-row,
 .skill-card__pill-row,
-.skill-profile-grid,
 .skill-profile-actions,
 .skill-template-card__body,
 .skill-mounted-list,
@@ -247,10 +246,6 @@
   display: grid;
   align-content: start;
   gap: 8px;
-}
-
-.skill-toggle-row {
-  align-content: center;
 }
 
 .skill-profile-card,

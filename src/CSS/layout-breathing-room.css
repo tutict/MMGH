@@ -682,7 +682,6 @@
 
 .today-review-signal,
 .today-rule-signal,
-.skill-profile-metric,
 .runtime-stage-pill {
   display: flex;
   align-items: center;
@@ -698,14 +697,12 @@
 
 .today-review-signal:first-child,
 .today-rule-signal:first-child,
-.skill-profile-metric:first-child,
 .runtime-stage-pill:first-child {
   border-top: 0;
 }
 
 .today-review-signal strong,
 .today-rule-signal strong,
-.skill-profile-metric strong,
 .runtime-stage-pill strong {
   font-size: 0.94rem;
 }
@@ -718,7 +715,6 @@
 
 .runtime-overview-grid,
 .runtime-stage-card__summary,
-.skill-profile-grid,
 .weather-metric-grid {
   gap: 0;
   border: 1px solid var(--quiet-divider);

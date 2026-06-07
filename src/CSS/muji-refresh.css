@@ -3189,36 +3189,11 @@ html[data-theme="light"] .status-overdue {
   letter-spacing: 0;
 }
 
-.skill-profile-grid {
-  gap: 0;
-  overflow: hidden;
-  border: 1px solid var(--surface-border);
-  border-radius: 7px;
-}
-
-.skill-profile-metric {
-  gap: 3px;
-  padding: 8px 10px;
-  border-left: 1px solid var(--surface-border);
-  border-radius: 0;
-  background: transparent;
-}
-
-.skill-profile-metric:first-child {
-  border-left: 0;
-}
-
-.skill-profile-metric--highlight {
-  background: transparent;
-}
-
-.skill-profile-metric span,
 .skill-toggle-card span {
   color: var(--soft-text);
   font-size: 0.7rem;
 }
 
-.skill-profile-metric strong,
 .skill-toggle-card strong,
 .skill-mount-banner strong {
   color: var(--heading-text);
@@ -6567,19 +6542,16 @@ html[data-theme="light"] .music-room__icon-button {
   }
 
   .skill-sidebar__status--grid,
-  .skill-profile-grid,
   .skill-form-grid {
     grid-template-columns: 1fr;
   }
 
-  .skill-stat-card,
-  .skill-profile-metric {
+  .skill-stat-card {
     border-left: 0;
     border-top: 1px solid var(--surface-border);
   }
 
-  .skill-stat-card:first-child,
-  .skill-profile-metric:first-child {
+  .skill-stat-card:first-child {
     border-top: 0;
   }
 

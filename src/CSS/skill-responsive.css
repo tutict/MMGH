@@ -4,10 +4,6 @@
     grid-template-columns: minmax(236px, 272px) minmax(0, 1fr) minmax(236px, 284px);
   }
 
-  .skill-profile-card .skill-profile-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .skill-editor .skill-editor__operations {
     grid-template-columns: 1fr;
   }
@@ -61,7 +57,6 @@
   }
 
   .skill-panel.panel-surface .skill-sidebar__status--grid,
-  .skill-panel.panel-surface .skill-profile-card .skill-profile-grid,
   .skill-panel.panel-surface .skill-form-grid {
     grid-template-columns: 1fr;
   }

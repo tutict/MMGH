@@ -53,13 +53,11 @@
   line-height: 1.1;
 }
 
-.skill-sidebar__status--grid,
-.skill-profile-grid {
+.skill-sidebar__status--grid {
   gap: 10px;
 }
 
 .skill-stat-card,
-.skill-profile-metric,
 .skill-toggle-card,
 .skill-mount-banner,
 .skill-catalog__panel,
@@ -75,7 +73,6 @@
 }
 
 .skill-stat-card,
-.skill-profile-metric,
 .skill-toggle-card,
 .skill-mount-banner,
 .skill-template-card,
@@ -240,7 +237,6 @@ html[data-theme="light"] .weather-stage {
   .music-room__status-strip,
   .weather-metric-grid,
   .skill-sidebar__status--grid,
-  .skill-profile-grid,
   .skill-form-grid {
     grid-template-columns: 1fr;
   }

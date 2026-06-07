@@ -166,7 +166,6 @@
   .skill-panel,
   .reminder-editor__grid,
   .skill-form-grid,
-  .skill-profile-grid,
   .weather-metric-grid {
     grid-template-columns: 1fr;
   }
