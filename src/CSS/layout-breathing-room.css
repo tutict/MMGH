@@ -905,6 +905,391 @@
   text-align: center;
 }
 
+/* Desktop workbench pass: keep multi-column pages, but remove extra shell weight. */
+@media (min-width: 1181px) {
+  .agent-app:not(.view-music) {
+    --quiet-gap: 10px;
+    --quiet-radius: 6px;
+    --quiet-row-height: 34px;
+    grid-template-columns: minmax(200px, 224px) minmax(0, 1fr);
+    gap: var(--quiet-gap);
+    padding: 10px;
+  }
+
+  .agent-app:not(.view-music) .session-rail {
+    top: 10px;
+    max-height: calc(100svh - 20px);
+    padding: 10px;
+    gap: var(--quiet-gap);
+    border-radius: var(--quiet-radius);
+  }
+
+  .agent-app:not(.view-music) .session-rail__body {
+    min-height: calc(100svh - 40px);
+    gap: var(--quiet-gap);
+  }
+
+  .agent-app:not(.view-music) .rail-brand {
+    padding-bottom: 9px;
+  }
+
+  .agent-app:not(.view-music) .rail-brand__head {
+    gap: 6px;
+  }
+
+  .agent-app:not(.view-music) .rail-brand h1 {
+    font-size: 0.94rem;
+  }
+
+  .agent-app:not(.view-music) .rail-brand__view-tag {
+    display: none;
+  }
+
+  .agent-app:not(.view-music) .rail-summary-strip {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+
+  .agent-app:not(.view-music) .rail-summary-pill {
+    padding: 0 6px;
+  }
+
+  .agent-app:not(.view-music) .rail-summary-pill span {
+    font-size: 0.62rem;
+  }
+
+  .agent-app:not(.view-music) .rail-summary-pill strong {
+    font-size: 0.82rem;
+  }
+
+  .agent-app:not(.view-music) .rail-nav,
+  .agent-app:not(.view-music) .rail-nav--compact,
+  .agent-app:not(.view-music) .rail-nav-list {
+    gap: 2px;
+  }
+
+  .agent-app:not(.view-music) .rail-nav-group {
+    gap: 4px;
+    padding-top: 6px;
+  }
+
+  .agent-app:not(.view-music) .rail-nav-group__label {
+    min-height: 20px;
+    padding: 0 3px;
+    font-size: 0.64rem;
+  }
+
+  .agent-app:not(.view-music) .rail-nav-item {
+    min-height: var(--quiet-row-height);
+    padding: 5px 7px;
+    border-radius: 5px;
+  }
+
+  .agent-app:not(.view-music) .rail-nav-item__head,
+  .agent-app:not(.view-music) .rail-nav-item__title {
+    gap: 7px;
+  }
+
+  .agent-app:not(.view-music) .rail-nav-item__icon {
+    width: 17px;
+    height: 17px;
+  }
+
+  .agent-app:not(.view-music) .rail-nav-item__title strong,
+  .agent-app:not(.view-music) .session-card__title strong {
+    font-size: 0.78rem;
+  }
+
+  .agent-app:not(.view-music) .session-stack,
+  .agent-app:not(.view-music) .session-list,
+  .agent-app:not(.view-music) .session-group__list {
+    gap: 0;
+  }
+
+  .agent-app:not(.view-music) .session-toolbar {
+    gap: 6px;
+  }
+
+  .agent-app:not(.view-music) .session-toolbar .field-input,
+  .agent-app:not(.view-music) .session-search-input {
+    min-height: 32px;
+    padding: 0 9px;
+  }
+
+  .agent-app:not(.view-music) .session-toolbar .solid-button,
+  .agent-app:not(.view-music) .session-stack__danger {
+    min-height: 32px;
+    padding: 0 9px;
+  }
+
+  .agent-app:not(.view-music) .session-card {
+    padding: 8px 0;
+  }
+
+  .agent-app:not(.view-music) .session-card__main {
+    gap: 6px;
+  }
+
+  .agent-app:not(.view-music) .session-card__toggle {
+    min-height: 26px;
+    font-size: 0.68rem;
+  }
+
+  .agent-app:not(.view-music) .mini-player-bar--rail {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "meta controls";
+    grid-template-rows: auto;
+    align-items: center;
+    min-height: 52px;
+    height: auto;
+    padding: 8px;
+    gap: 8px;
+    border-color: var(--quiet-divider);
+    background: transparent;
+  }
+
+  .agent-app:not(.view-music) .mini-player-bar--rail::before,
+  .agent-app:not(.view-music) .mini-player-bar--rail::after,
+  .agent-app:not(.view-music) .mini-player-bar--rail .mini-player-bar__cover,
+  .agent-app:not(.view-music) .mini-player-bar--rail .mini-player-bar__status-row,
+  .agent-app:not(.view-music) .mini-player-bar--rail .mini-player-bar__timeline {
+    display: none;
+  }
+
+  .agent-app:not(.view-music) .mini-player-bar--rail .mini-player-bar__meta {
+    justify-content: center;
+    gap: 0;
+    height: auto;
+  }
+
+  .agent-app:not(.view-music) .mini-player-bar--rail .mini-player-bar__copy strong,
+  .agent-app:not(.view-music) .mini-player-bar--rail .mini-player-bar__copy p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .agent-app:not(.view-music) .mini-player-bar--rail .mini-player-bar__copy strong {
+    font-size: 0.78rem;
+  }
+
+  .agent-app:not(.view-music) .mini-player-bar--rail .mini-player-bar__copy p {
+    font-size: 0.66rem;
+  }
+
+  .agent-app:not(.view-music) .mini-player-bar--rail .mini-player-bar__controls {
+    grid-template-columns: repeat(2, 32px);
+    gap: 6px;
+    justify-self: end;
+  }
+
+  .agent-app:not(.view-music) .mini-player-bar--rail .mini-player-bar__button {
+    width: 32px;
+    height: 30px;
+    border-radius: 5px;
+  }
+
+  .agent-app:not(.view-music) .workspace-column,
+  .agent-app:not(.view-music) .runtime-workspace,
+  .agent-app:not(.view-music) .settings-workspace,
+  .agent-app:not(.view-music) .knowledge-workspace,
+  .agent-app:not(.view-music) .reminder-workspace,
+  .agent-app:not(.view-music) .skill-panel.panel-surface,
+  .agent-app:not(.view-music) .weather-workspace,
+  .agent-app:not(.view-music) .gallery-workspace {
+    gap: var(--quiet-gap);
+  }
+
+  .agent-app:not(.view-music) .workspace-hero.panel-surface {
+    padding: 7px 10px;
+    border-radius: var(--quiet-radius);
+  }
+
+  .agent-app:not(.view-music) .workspace-hero__masthead {
+    gap: 9px;
+  }
+
+  .agent-app:not(.view-music) .workspace-hero__brandline {
+    gap: 7px;
+  }
+
+  .agent-app:not(.view-music) .workspace-hero__brand-mark {
+    min-width: 30px;
+    min-height: 30px;
+    border-radius: 5px;
+    font-size: 0.68rem;
+  }
+
+  .agent-app:not(.view-music) .workspace-hero__brand-copy strong {
+    font-size: 0.86rem;
+  }
+
+  .agent-app:not(.view-music) .workspace-hero__meta-bar {
+    gap: 6px;
+  }
+
+  .agent-app:not(.view-music) .workspace-hero__meta-pill {
+    min-height: 24px;
+    font-size: 0.72rem;
+  }
+
+  .agent-app:not(.view-music) .workspace-hero__toolbar {
+    gap: 4px;
+  }
+
+  .agent-app:not(.view-music) .hero-theme-button,
+  .agent-app:not(.view-music) .workspace-hero__toolbar-shell .hero-theme-button,
+  .agent-app:not(.view-music) .mode-switch--inline,
+  .agent-app:not(.view-music) .hero-inspector-toggle,
+  .agent-app:not(.view-music) .shell-menu-button {
+    min-height: 30px;
+    border-radius: 5px;
+  }
+
+  .agent-app:not(.view-music) .hero-inspector-toggle,
+  .agent-app:not(.view-music) .shell-menu-button {
+    width: 30px;
+    height: 30px;
+  }
+
+  .agent-app:not(.view-music) .mode-switch__button {
+    min-height: 26px;
+    padding: 0 7px;
+  }
+
+  .agent-app:not(.view-music) .today-layout {
+    grid-template-columns: minmax(0, 1.62fr) minmax(260px, 0.68fr);
+  }
+
+  .agent-app:not(.view-music) .runtime-status-panel,
+  .agent-app:not(.view-music) .runtime-stage-card,
+  .agent-app:not(.view-music) .runtime-composer,
+  .agent-app:not(.view-music) .runtime-sidebar-card,
+  .agent-app:not(.view-music) .today-hero,
+  .agent-app:not(.view-music) .today-section,
+  .agent-app:not(.view-music) .knowledge-sidebar,
+  .agent-app:not(.view-music) .knowledge-editor,
+  .agent-app:not(.view-music) .reminder-sidebar,
+  .agent-app:not(.view-music) .reminder-editor,
+  .agent-app:not(.view-music) .skill-sidebar,
+  .agent-app:not(.view-music) .skill-editor,
+  .agent-app:not(.view-music) .skill-catalog,
+  .agent-app:not(.view-music) .settings-workspace__hero,
+  .agent-app:not(.view-music) .settings-panel,
+  .agent-app:not(.view-music) .settings-cache-panel,
+  .agent-app:not(.view-music) .weather-stage,
+  .agent-app:not(.view-music) .weather-panel,
+  .agent-app:not(.view-music) .gallery-toolbar,
+  .agent-app:not(.view-music) .gallery-stage {
+    padding: 10px;
+    border-radius: var(--quiet-radius);
+  }
+
+  .agent-app.view-settings .settings-form__grid,
+  .agent-app.view-settings .cache-grid {
+    border-radius: var(--quiet-radius);
+  }
+
+  .agent-app.view-settings .settings-form__grid .settings-form__card,
+  .agent-app.view-settings .settings-form .settings-form__card,
+  .agent-app.view-settings .cache-card {
+    padding: 9px 10px;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .agent-app.view-settings .settings-form__card--prompt,
+  .agent-app.view-settings .settings-form__footer {
+    border-radius: var(--quiet-radius);
+  }
+
+  .agent-app:not(.view-music) .today-section__head,
+  .agent-app:not(.view-music) .runtime-stage-card__head,
+  .agent-app:not(.view-music) .runtime-composer__head,
+  .agent-app:not(.view-music) .runtime-sidebar-card__head,
+  .agent-app:not(.view-music) .knowledge-editor__toolbar,
+  .agent-app:not(.view-music) .reminder-editor__toolbar,
+  .agent-app:not(.view-music) .settings-workspace__hero .section-head,
+  .agent-app:not(.view-music) .settings-panel .section-head,
+  .agent-app:not(.view-music) .settings-cache-panel .section-head {
+    min-height: 30px;
+    padding-bottom: 7px;
+  }
+
+  .agent-app:not(.view-music) .today-section__head h4,
+  .agent-app:not(.view-music) .runtime-stage-card__head h3,
+  .agent-app:not(.view-music) .runtime-composer__head h4,
+  .agent-app:not(.view-music) .runtime-sidebar-card__head h4,
+  .agent-app:not(.view-music) .knowledge-head h3,
+  .agent-app:not(.view-music) .reminder-sidebar__head h3,
+  .agent-app:not(.view-music) .skill-sidebar__intro-copy h3,
+  .agent-app:not(.view-music) .settings-workspace__hero h3,
+  .agent-app:not(.view-music) .settings-panel h3,
+  .agent-app:not(.view-music) .settings-cache-panel h3 {
+    font-size: 0.88rem;
+    line-height: 1.25;
+  }
+
+  .agent-app:not(.view-music) .today-focus-item,
+  .agent-app:not(.view-music) .today-session-item,
+  .agent-app:not(.view-music) .today-capture-item,
+  .agent-app:not(.view-music) .today-pattern-item,
+  .agent-app:not(.view-music) .runtime-session-card,
+  .agent-app:not(.view-music) .runtime-recommend-card,
+  .agent-app:not(.view-music) .runtime-activity-item,
+  .agent-app:not(.view-music) .knowledge-note-card,
+  .agent-app:not(.view-music) .reminder-card,
+  .agent-app:not(.view-music) .skill-card,
+  .agent-app:not(.view-music) .skill-template-card,
+  .agent-app:not(.view-music) .skill-recommend-card,
+  .agent-app:not(.view-music) .skill-mounted-card,
+  .agent-app:not(.view-music) .skill-version-card,
+  .agent-app:not(.view-music) .sound-track-card,
+  .agent-app:not(.view-music) .capability-card,
+  .agent-app:not(.view-music) .activity-card {
+    padding: 8px 0;
+  }
+
+  .agent-app:not(.view-music) .solid-button,
+  .agent-app:not(.view-music) .ghost-button,
+  .agent-app:not(.view-music) .runtime-sidebar-card__action,
+  .agent-app:not(.view-music) .chip-button,
+  .agent-app:not(.view-music) .skill-filter-chip,
+  .agent-app:not(.view-music) .segmented-filter__button,
+  .agent-app:not(.view-music) .skill-tools__tab {
+    min-height: 32px;
+    padding: 0 10px;
+    border-radius: 5px;
+    box-shadow: none;
+    font-size: 0.74rem;
+  }
+
+  .agent-app:not(.view-music) .field-input,
+  .agent-app:not(.view-music) .field-area,
+  .agent-app:not(.view-music) .composer textarea,
+  .agent-app:not(.view-music) .knowledge-icon-input,
+  .agent-app:not(.view-music) .knowledge-title-input,
+  .agent-app:not(.view-music) .knowledge-body-input,
+  .agent-app:not(.view-music) .skill-forge-input,
+  .agent-app:not(.view-music) .reminder-detail-input {
+    min-height: 32px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+  }
+
+  .agent-app:not(.view-music) .status-chip,
+  .agent-app:not(.view-music) .rail-nav-item__badge,
+  .agent-app:not(.view-music) .session-card__badge,
+  .agent-app:not(.view-music) .skill-meta-pill,
+  .agent-app:not(.view-music) .today-focus-item__urgency {
+    min-height: 20px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 0.66rem;
+  }
+}
+
 @media (max-width: 1180px) {
   .agent-app {
     grid-template-columns: minmax(0, 1fr);
