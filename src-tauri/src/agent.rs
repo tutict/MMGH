@@ -16,6 +16,15 @@ static HTTP_CLIENT: Lazy<Client> = Lazy::new(|| {
 });
 
 const MAX_AGENT_PROMPT_CHARS: usize = 20_000;
+const MAX_AGENT_REPLY_CHARS: usize = 12_000;
+const MAX_AGENT_HISTORY_MESSAGES: usize = 18;
+const MAX_AGENT_HISTORY_MESSAGE_CHARS: usize = 2_000;
+const MAX_SYSTEM_PROMPT_CHARS: usize = 4_000;
+const MAX_CONTEXT_NOTES_TO_SCAN: usize = 12;
+const MAX_CONTEXT_NOTE_SOURCE_CHARS: usize = 1_600;
+const MAX_STAGED_CONTEXT_NOTES: usize = 3;
+const MAX_STAGED_OPEN_REMINDERS: usize = 4;
+const MAX_MOUNTED_SKILLS_IN_PROMPT: usize = 8;
 
 #[derive(Debug, Clone)]
 struct AgentRuntimeContext {
@@ -42,6 +51,25 @@ struct ContextReminder {
   due_label: String,
   linked_note_title: Option<String>,
 }
+
+#[derive(Debug, Clone)]
+struct AgentRuntimeContract {
+  prompt: String,
+  context: AgentRuntimeContext,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct AgentContractError {
+  reason: String,
+}
+
+impl std::fmt::Display for AgentContractError {
+  fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(formatter, "runtime contract rejected provider reply: {}", self.reason)
+  }
+}
+
+impl std::error::Error for AgentContractError {}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -126,16 +154,119 @@ pub async fn forge_skill(
   }
 }
 
-pub async fn run_agent(session_id: i64, prompt: String) -> Result<db::WorkspaceSnapshot> {
-  let trimmed_prompt = normalize_agent_prompt(prompt)?;
+impl AgentRuntimeContract {
+  fn for_session(session_id: i64, prompt: String) -> Result<Self> {
+    let normalized_prompt = normalize_agent_prompt(prompt)?;
+    let context = build_runtime_context(session_id, &normalized_prompt)?;
 
-  let runtime_context = build_runtime_context(session_id, &trimmed_prompt)?;
-  let runtime_context_detail = render_runtime_context_activity(&runtime_context);
-  let plan = draft_plan(&trimmed_prompt, &runtime_context);
+    Ok(Self {
+      prompt: normalized_prompt,
+      context,
+    })
+  }
+
+  fn runtime_context_detail(&self) -> String {
+    format!(
+      "{} Contract enforced: input limit {} chars, reply limit {} chars, history limit {} messages, {} staged notes, {} open reminders, and low-permission mounted skills only.",
+      render_runtime_context_activity(&self.context),
+      MAX_AGENT_PROMPT_CHARS,
+      MAX_AGENT_REPLY_CHARS,
+      MAX_AGENT_HISTORY_MESSAGES,
+      self.context.relevant_notes.len(),
+      self.context.open_reminders.len()
+    )
+  }
+
+  fn plan(&self) -> String {
+    draft_plan(&self.prompt, &self.context)
+  }
+
+  fn compose_messages(
+    &self,
+    settings: &db::AgentSettings,
+    history: Vec<db::ChatMessage>,
+    enabled_skills: &[db::SkillDetail],
+  ) -> Vec<CompletionMessage> {
+    let mut messages = Vec::new();
+    let skill_block = render_skill_block(enabled_skills);
+    let runtime_block = render_runtime_context_block(&self.context);
+    let contract_block = render_contract_boundary_block();
+    let mut system_sections = Vec::new();
+
+    if !settings.system_prompt.trim().is_empty() {
+      system_sections.push(shorten(settings.system_prompt.trim(), MAX_SYSTEM_PROMPT_CHARS));
+    }
+    if !runtime_block.is_empty() {
+      system_sections.push(runtime_block);
+    }
+    if !skill_block.is_empty() {
+      system_sections.push(skill_block);
+    }
+    system_sections.push(contract_block);
+
+    let system_prompt = system_sections.join("\n\n");
+
+    if !system_prompt.trim().is_empty() {
+      messages.push(CompletionMessage {
+        role: "system".to_string(),
+        content: system_prompt,
+      });
+    }
+
+    for item in history.into_iter().take(MAX_AGENT_HISTORY_MESSAGES) {
+      if !matches!(item.role.as_str(), "user" | "assistant") {
+        continue;
+      }
+
+      messages.push(CompletionMessage {
+        role: item.role,
+        content: shorten(&item.content, MAX_AGENT_HISTORY_MESSAGE_CHARS),
+      });
+    }
+
+    messages.push(CompletionMessage {
+      role: "user".to_string(),
+      content: self.prompt.clone(),
+    });
+
+    messages
+  }
+
+  fn validate_reply(&self, reply: &str) -> Result<String> {
+    let trimmed = reply.trim();
+    if trimmed.is_empty() {
+      return Err(AgentContractError {
+        reason: "assistant reply is empty".to_string(),
+      }
+      .into());
+    }
+
+    if trimmed.chars().count() > MAX_AGENT_REPLY_CHARS {
+      return Err(AgentContractError {
+        reason: format!(
+          "assistant reply exceeds {} characters",
+          MAX_AGENT_REPLY_CHARS
+        ),
+      }
+      .into());
+    }
+
+    if let Some(reason) = detect_forbidden_reply_claim(trimmed) {
+      return Err(AgentContractError { reason }.into());
+    }
+
+    Ok(trimmed.to_string())
+  }
+}
+
+pub async fn run_agent(session_id: i64, prompt: String) -> Result<db::WorkspaceSnapshot> {
+  let contract = AgentRuntimeContract::for_session(session_id, prompt)?;
+  let runtime_context_detail = contract.runtime_context_detail();
+  let plan = contract.plan();
   let settings = db::load_settings()?;
 
   let (model_title, model_detail, model_status, reply) = if settings.is_ready() {
-    match request_completion(&settings, session_id, &runtime_context, &trimmed_prompt).await {
+    match request_completion(&settings, session_id, &contract).await {
       Ok(content) => (
         "Provider call finished".to_string(),
         format!(
@@ -148,14 +279,14 @@ pub async fn run_agent(session_id: i64, prompt: String) -> Result<db::WorkspaceS
         content,
       ),
       Err(error) => (
-        "Provider call failed".to_string(),
+        model_failure_title(&error).to_string(),
         shorten(&format!("{:#}", error), 200),
         "failed".to_string(),
         local_fallback_reply(
-          &trimmed_prompt,
+          &contract.prompt,
           Some(&error.to_string()),
           &settings,
-          &runtime_context,
+          &contract.context,
         ),
       ),
     }
@@ -164,13 +295,13 @@ pub async fn run_agent(session_id: i64, prompt: String) -> Result<db::WorkspaceS
       "Provider not configured".to_string(),
       "Missing baseUrl, model or apiKey. Falling back to local preview mode.".to_string(),
       "warning".to_string(),
-      local_fallback_reply(&trimmed_prompt, None, &settings, &runtime_context),
+      local_fallback_reply(&contract.prompt, None, &settings, &contract.context),
     )
   };
 
   db::persist_agent_run(db::AgentRunPersistence {
     session_id,
-    prompt: &trimmed_prompt,
+    prompt: &contract.prompt,
     runtime_context_detail: &runtime_context_detail,
     plan: &plan,
     model_title: &model_title,
@@ -183,50 +314,14 @@ pub async fn run_agent(session_id: i64, prompt: String) -> Result<db::WorkspaceS
 async fn request_completion(
   settings: &db::AgentSettings,
   session_id: i64,
-  runtime_context: &AgentRuntimeContext,
-  prompt: &str,
+  contract: &AgentRuntimeContract,
 ) -> Result<String> {
-  let history = db::recent_messages(session_id, 18)?;
+  let history = db::recent_messages(session_id, MAX_AGENT_HISTORY_MESSAGES)?;
   let enabled_skills = db::session_enabled_skills(session_id)?;
-  let mut messages = Vec::new();
-
-  let skill_block = render_skill_block(&enabled_skills);
-  let runtime_block = render_runtime_context_block(runtime_context);
-  let mut system_sections = Vec::new();
-
-  if !settings.system_prompt.trim().is_empty() {
-    system_sections.push(settings.system_prompt.trim().to_string());
-  }
-  if !runtime_block.is_empty() {
-    system_sections.push(runtime_block);
-  }
-  if !skill_block.is_empty() {
-    system_sections.push(skill_block);
-  }
-
-  let system_prompt = system_sections.join("\n\n");
-
-  if !system_prompt.trim().is_empty() {
-    messages.push(CompletionMessage {
-      role: "system".to_string(),
-      content: system_prompt,
-    });
-  }
-
-  for item in history {
-    messages.push(CompletionMessage {
-      role: item.role,
-      content: item.content,
-    });
-  }
-  messages.push(CompletionMessage {
-    role: "user".to_string(),
-    content: prompt.to_string(),
-  });
 
   let request = ChatCompletionRequest {
     model: settings.model.clone(),
-    messages,
+    messages: contract.compose_messages(settings, history, &enabled_skills),
     temperature: 0.4,
   };
 
@@ -260,11 +355,9 @@ async fn request_completion(
     .into_iter()
     .next()
     .and_then(|choice| extract_text(choice.message.content))
-    .map(|value| value.trim().to_string())
-    .filter(|value| !value.is_empty())
-    .context("provider returned an empty assistant message")?;
+    .unwrap_or_default();
 
-  Ok(content)
+  contract.validate_reply(&content)
 }
 
 async fn request_skill_draft_from_model(
@@ -369,7 +462,7 @@ fn render_skill_block(skills: &[db::SkillDetail]) -> String {
     "All custom skills are low-permission only. They may shape reasoning and output style, but they must not assume elevated access, destructive authority, or unrestricted external side effects.".to_string(),
   ];
 
-  for skill in skills {
+  for skill in skills.iter().take(MAX_MOUNTED_SKILLS_IN_PROMPT) {
     lines.push(format!(
       "- {} [{}]: Trigger when {}. Instructions: {}",
       skill.name,
@@ -378,8 +471,196 @@ fn render_skill_block(skills: &[db::SkillDetail]) -> String {
       shorten(&skill.instructions, 260)
     ));
   }
+  if skills.len() > MAX_MOUNTED_SKILLS_IN_PROMPT {
+    lines.push(format!(
+      "- {} additional mounted skills were withheld by the context budget.",
+      skills.len() - MAX_MOUNTED_SKILLS_IN_PROMPT
+    ));
+  }
 
   lines.join("\n")
+}
+
+fn render_contract_boundary_block() -> String {
+  [
+    "Non-negotiable Agent runtime contract:",
+    "- You may read only the staged session history, relevant notes, open reminders, mounted skills, and runtime capability names.",
+    "- Weather, music, gallery, settings, cache cleanup, note writes, reminder writes, and skill writes are UI surfaces unless explicitly represented in the staged context.",
+    "- You may produce only an assistant reply, an execution plan, and traceable reasoning summary. You must not claim that you created, deleted, updated, scheduled, cleared, fetched, opened, or played anything.",
+    "- If an action is needed, phrase it as a recommended next action for the operator to perform in the UI.",
+    "- Do not invent tool access beyond the staged runtime context.",
+  ]
+  .join("\n")
+}
+
+fn model_failure_title(error: &anyhow::Error) -> &'static str {
+  if error
+    .chain()
+    .any(|cause| cause.downcast_ref::<AgentContractError>().is_some())
+  {
+    "Provider reply rejected"
+  } else {
+    "Provider call failed"
+  }
+}
+
+fn detect_forbidden_reply_claim(reply: &str) -> Option<String> {
+  let normalized = reply.to_lowercase();
+  let compact = normalized.split_whitespace().collect::<Vec<_>>().join(" ");
+
+  let english_patterns: [(&str, &[&str]); 9] = [
+    (
+      "created note",
+      &[
+        "i created a note",
+        "i created the note",
+        "i have created a note",
+        "i have created the note",
+        "i've created a note",
+        "i've created the note",
+        "created the note",
+        "created a note",
+      ],
+    ),
+    (
+      "deleted note",
+      &[
+        "i deleted a note",
+        "i deleted the note",
+        "i have deleted a note",
+        "i have deleted the note",
+        "i've deleted a note",
+        "i've deleted the note",
+        "deleted the note",
+        "deleted a note",
+      ],
+    ),
+    (
+      "updated note",
+      &[
+        "i updated a note",
+        "i updated the note",
+        "i have updated a note",
+        "i have updated the note",
+        "i've updated a note",
+        "i've updated the note",
+        "updated the note",
+        "saved to notes",
+        "saved the note",
+      ],
+    ),
+    (
+      "created reminder",
+      &[
+        "i scheduled a reminder",
+        "i scheduled the reminder",
+        "i have scheduled a reminder",
+        "i have scheduled the reminder",
+        "i've scheduled a reminder",
+        "i've scheduled the reminder",
+        "created the reminder",
+        "created a reminder",
+        "set a reminder",
+      ],
+    ),
+    (
+      "modified settings",
+      &["updated settings", "changed settings", "modified settings", "saved settings"],
+    ),
+    (
+      "cleared cache",
+      &["cleared cache", "cleared the cache", "cleaned cache", "reset cache"],
+    ),
+    (
+      "weather access",
+      &[
+        "checked weather",
+        "fetched weather",
+        "queried weather",
+        "looked up weather",
+        "accessed weather",
+      ],
+    ),
+    (
+      "music access",
+      &["played music", "started playback", "changed track", "opened music"],
+    ),
+    (
+      "gallery access",
+      &["opened gallery", "updated gallery", "tagged the image", "tagged image"],
+    ),
+  ];
+
+  for (label, patterns) in english_patterns {
+    if patterns.iter().any(|pattern| compact.contains(pattern)) {
+      return Some(format!("reply claims unauthorized side effect: {label}"));
+    }
+  }
+
+  let chinese_patterns: [(&str, &[&str]); 7] = [
+    (
+      "note write",
+      &[
+        "已创建笔记",
+        "已经创建笔记",
+        "我创建了笔记",
+        "已删除笔记",
+        "已经删除笔记",
+        "我删除了笔记",
+        "已更新笔记",
+        "已经更新笔记",
+        "已保存到笔记",
+        "已经保存到笔记",
+      ],
+    ),
+    (
+      "reminder write",
+      &[
+        "已创建提醒",
+        "已经创建提醒",
+        "我创建了提醒",
+        "已设置提醒",
+        "已经设置提醒",
+        "已安排提醒",
+        "已经安排提醒",
+      ],
+    ),
+    (
+      "settings write",
+      &[
+        "已修改设置",
+        "已经修改设置",
+        "已更新设置",
+        "已经更新设置",
+        "已保存设置",
+        "已经保存设置",
+      ],
+    ),
+    (
+      "cache cleanup",
+      &["已清理缓存", "已经清理缓存", "已清缓存", "已经清缓存", "已重置缓存", "已经重置缓存"],
+    ),
+    (
+      "weather access",
+      &["已查询天气", "已经查询天气", "已获取天气", "已经获取天气", "已打开天气", "已经打开天气"],
+    ),
+    (
+      "music access",
+      &["已播放音乐", "已经播放音乐", "已切换音乐", "已经切换音乐", "已打开音乐", "已经打开音乐"],
+    ),
+    (
+      "gallery access",
+      &["已打开图库", "已经打开图库", "已更新图库", "已经更新图库", "已标记图片", "已经标记图片"],
+    ),
+  ];
+
+  for (label, patterns) in chinese_patterns {
+    if patterns.iter().any(|pattern| reply.contains(pattern)) {
+      return Some(format!("reply claims unauthorized side effect: {label}"));
+    }
+  }
+
+  None
 }
 
 fn parse_generated_skill(
@@ -593,15 +874,15 @@ fn trim_for_template(value: &str, limit: usize) -> String {
 
 fn build_runtime_context(session_id: i64, prompt: &str) -> Result<AgentRuntimeContext> {
   let session = db::agent_session_context(session_id)?;
-  let notes = db::recent_note_context(12, 1600)?;
-  let reminders = db::open_reminder_context(4)?;
+  let notes = db::recent_note_context(MAX_CONTEXT_NOTES_TO_SCAN, MAX_CONTEXT_NOTE_SOURCE_CHARS)?;
+  let reminders = db::open_reminder_context(MAX_STAGED_OPEN_REMINDERS)?;
 
   Ok(AgentRuntimeContext {
     session_title: session.title,
     session_status: session.status,
     message_count: session.message_count,
     mounted_skill_names: session.mounted_skill_names,
-    relevant_notes: select_relevant_notes(prompt, &notes, 3),
+    relevant_notes: select_relevant_notes(prompt, &notes, MAX_STAGED_CONTEXT_NOTES),
     open_reminders: select_open_reminders(&reminders),
     capability_titles: db::capability_titles(),
   })
@@ -942,5 +1223,138 @@ fn shorten(value: &str, limit: usize) -> String {
     compact
   } else {
     compact.chars().take(limit).collect::<String>() + "..."
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn contract_fixture() -> AgentRuntimeContract {
+    AgentRuntimeContract {
+      prompt: "Review the release plan".to_string(),
+      context: AgentRuntimeContext {
+        session_title: "Release".to_string(),
+        session_status: "ready".to_string(),
+        message_count: 2,
+        mounted_skill_names: vec!["Release Guard".to_string()],
+        relevant_notes: vec![ContextNote {
+          title: "Release checklist".to_string(),
+          excerpt: "Verify migrations before rollout.".to_string(),
+          tags: vec!["release".to_string()],
+        }],
+        open_reminders: vec![ContextReminder {
+          title: "Follow up rollout".to_string(),
+          severity: "medium".to_string(),
+          due_label: "due today".to_string(),
+          linked_note_title: None,
+        }],
+        capability_titles: vec!["Knowledge".to_string(), "Reminders".to_string()],
+      },
+    }
+  }
+
+  fn settings_fixture() -> db::AgentSettings {
+    db::AgentSettings {
+      provider_name: "OpenAI Compatible".to_string(),
+      base_url: "https://example.com/v1".to_string(),
+      has_api_key: true,
+      api_key: "key".to_string(),
+      model: "model".to_string(),
+      system_prompt: "Prefer concise answers.".to_string(),
+    }
+  }
+
+  fn skill_fixture(index: i64) -> db::SkillDetail {
+    db::SkillDetail {
+      id: index,
+      name: format!("Skill {index}"),
+      description: "A mounted skill.".to_string(),
+      summary: "A mounted skill.".to_string(),
+      instructions: "Keep actions low permission and explain assumptions.".to_string(),
+      trigger_hint: "release planning".to_string(),
+      enabled: true,
+      permission_level: "low".to_string(),
+      created_at: 0,
+      updated_at: 0,
+    }
+  }
+
+  #[test]
+  fn validate_reply_rejects_side_effect_claims() {
+    let contract = contract_fixture();
+    let error = contract
+      .validate_reply("I created a note and saved the rollout details.")
+      .expect_err("side-effect claim should be rejected");
+
+    assert!(error.to_string().contains("unauthorized side effect"));
+  }
+
+  #[test]
+  fn validate_reply_rejects_empty_output() {
+    let contract = contract_fixture();
+    let error = contract
+      .validate_reply("   ")
+      .expect_err("empty replies should be rejected");
+
+    assert!(error.to_string().contains("assistant reply is empty"));
+  }
+
+  #[test]
+  fn validate_reply_allows_recommended_next_actions() {
+    let contract = contract_fixture();
+    let reply = contract
+      .validate_reply("I recommend creating a note for the rollout details.")
+      .expect("recommendations should stay allowed");
+
+    assert!(reply.contains("recommend creating"));
+  }
+
+  #[test]
+  fn validate_reply_rejects_over_budget_output() {
+    let contract = contract_fixture();
+    let error = contract
+      .validate_reply(&"x".repeat(MAX_AGENT_REPLY_CHARS + 1))
+      .expect_err("oversized reply should be rejected");
+
+    assert!(error.to_string().contains("exceeds"));
+  }
+
+  #[test]
+  fn compose_messages_enforces_contract_budget() {
+    let contract = contract_fixture();
+    let settings = settings_fixture();
+    let history = vec![
+      db::ChatMessage {
+        id: 1,
+        role: "system".to_string(),
+        content: "should be dropped".to_string(),
+        created_at: 0,
+      },
+      db::ChatMessage {
+        id: 2,
+        role: "assistant".to_string(),
+        content: "a".repeat(MAX_AGENT_HISTORY_MESSAGE_CHARS + 200),
+        created_at: 0,
+      },
+    ];
+    let skills = (0..(MAX_MOUNTED_SKILLS_IN_PROMPT + 2) as i64)
+      .map(skill_fixture)
+      .collect::<Vec<_>>();
+
+    let messages = contract.compose_messages(&settings, history, &skills);
+
+    assert!(messages[0]
+      .content
+      .contains("Non-negotiable Agent runtime contract"));
+    assert!(messages[0].content.contains("additional mounted skills"));
+    assert_eq!(messages.iter().filter(|item| item.role == "system").count(), 1);
+    assert!(messages
+      .iter()
+      .all(|item| item.role == "system" || item.role == "user" || item.role == "assistant"));
+    assert!(
+      messages[1].content.chars().count() <= MAX_AGENT_HISTORY_MESSAGE_CHARS + 3
+    );
+    assert_eq!(messages.last().map(|item| item.content.as_str()), Some(contract.prompt.as_str()));
   }
 }

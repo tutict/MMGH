@@ -7,6 +7,8 @@ import {
 const STORAGE_KEY = "mmgh_agent_workspace_v1";
 const PREVIEW_WRITE_MAX_RETRIES = 4;
 const MODEL_REQUEST_TIMEOUT_MS = 45_000;
+const MAX_AGENT_PROMPT_CHARS = 20_000;
+const MAX_AGENT_REPLY_CHARS = 12_000;
 const LANG_STORAGE_KEY = "mmgh-lang";
 const PREVIEW_API_KEY_STORAGE_KEY = "mmgh_agent_preview_api_key_v1";
 const CORRUPT_WORKSPACE_BACKUP_STORAGE_KEY = "mmgh_agent_workspace_v1.corrupt_backup";
@@ -1641,11 +1643,198 @@ const localSaveSessionSkills = async ({ sessionId, skillIds, activeSessionId }) 
   );
 };
 
-const localForgeSkill = async ({ existingSkill, lang, prompt, settings, signal }) => {
+const countChars = (value) => Array.from(String(value || "")).length;
+
+const normalizeAgentPrompt = (prompt) => {
   const text = String(prompt || "").trim();
   if (!text) {
     throw new Error(storageT("promptRequired"));
   }
+  if (countChars(text) > MAX_AGENT_PROMPT_CHARS) {
+    throw new Error(`Prompt is too long; maximum is ${MAX_AGENT_PROMPT_CHARS} characters.`);
+  }
+  return text;
+};
+
+const FORBIDDEN_REPLY_PATTERNS = [
+  {
+    label: "created note",
+    patterns: [
+      "i created a note",
+      "i created the note",
+      "i have created a note",
+      "i have created the note",
+      "i've created a note",
+      "i've created the note",
+      "created the note",
+      "created a note",
+    ],
+  },
+  {
+    label: "deleted note",
+    patterns: [
+      "i deleted a note",
+      "i deleted the note",
+      "i have deleted a note",
+      "i have deleted the note",
+      "i've deleted a note",
+      "i've deleted the note",
+      "deleted the note",
+      "deleted a note",
+    ],
+  },
+  {
+    label: "updated note",
+    patterns: [
+      "i updated a note",
+      "i updated the note",
+      "i have updated a note",
+      "i have updated the note",
+      "i've updated a note",
+      "i've updated the note",
+      "updated the note",
+      "saved to notes",
+      "saved the note",
+    ],
+  },
+  {
+    label: "created reminder",
+    patterns: [
+      "i scheduled a reminder",
+      "i scheduled the reminder",
+      "i have scheduled a reminder",
+      "i have scheduled the reminder",
+      "i've scheduled a reminder",
+      "i've scheduled the reminder",
+      "created the reminder",
+      "created a reminder",
+      "set a reminder",
+    ],
+  },
+  {
+    label: "modified settings",
+    patterns: ["updated settings", "changed settings", "modified settings", "saved settings"],
+  },
+  {
+    label: "cleared cache",
+    patterns: ["cleared cache", "cleared the cache", "cleaned cache", "reset cache"],
+  },
+  {
+    label: "weather access",
+    patterns: [
+      "checked weather",
+      "fetched weather",
+      "queried weather",
+      "looked up weather",
+      "accessed weather",
+    ],
+  },
+  {
+    label: "music access",
+    patterns: ["played music", "started playback", "changed track", "opened music"],
+  },
+  {
+    label: "gallery access",
+    patterns: ["opened gallery", "updated gallery", "tagged the image", "tagged image"],
+  },
+  {
+    label: "note write",
+    patterns: [
+      "已创建笔记",
+      "已经创建笔记",
+      "我创建了笔记",
+      "已删除笔记",
+      "已经删除笔记",
+      "我删除了笔记",
+      "已更新笔记",
+      "已经更新笔记",
+      "已保存到笔记",
+      "已经保存到笔记",
+    ],
+    preserveCase: true,
+  },
+  {
+    label: "reminder write",
+    patterns: [
+      "已创建提醒",
+      "已经创建提醒",
+      "我创建了提醒",
+      "已设置提醒",
+      "已经设置提醒",
+      "已安排提醒",
+      "已经安排提醒",
+    ],
+    preserveCase: true,
+  },
+  {
+    label: "settings write",
+    patterns: ["已修改设置", "已经修改设置", "已更新设置", "已经更新设置", "已保存设置", "已经保存设置"],
+    preserveCase: true,
+  },
+  {
+    label: "cache cleanup",
+    patterns: ["已清理缓存", "已经清理缓存", "已清缓存", "已经清缓存", "已重置缓存", "已经重置缓存"],
+    preserveCase: true,
+  },
+  {
+    label: "weather access",
+    patterns: ["已查询天气", "已经查询天气", "已获取天气", "已经获取天气", "已打开天气", "已经打开天气"],
+    preserveCase: true,
+  },
+  {
+    label: "music access",
+    patterns: ["已播放音乐", "已经播放音乐", "已切换音乐", "已经切换音乐", "已打开音乐", "已经打开音乐"],
+    preserveCase: true,
+  },
+  {
+    label: "gallery access",
+    patterns: ["已打开图库", "已经打开图库", "已更新图库", "已经更新图库", "已标记图片", "已经标记图片"],
+    preserveCase: true,
+  },
+];
+
+const detectForbiddenReplyClaim = (reply) => {
+  const raw = String(reply || "");
+  const compact = raw.toLowerCase().replace(/\s+/g, " ").trim();
+
+  for (const group of FORBIDDEN_REPLY_PATTERNS) {
+    const haystack = group.preserveCase ? raw : compact;
+    if (group.patterns.some((pattern) => haystack.includes(pattern))) {
+      return `reply claims unauthorized side effect: ${group.label}`;
+    }
+  }
+
+  return "";
+};
+
+const validateAgentReply = (reply) => {
+  const text = String(reply || "").trim();
+  if (!text) {
+    throw new Error("Runtime contract rejected provider reply: assistant reply is empty.");
+  }
+  if (countChars(text) > MAX_AGENT_REPLY_CHARS) {
+    throw new Error(
+      `Runtime contract rejected provider reply: assistant reply exceeds ${MAX_AGENT_REPLY_CHARS} characters.`
+    );
+  }
+
+  const forbiddenClaim = detectForbiddenReplyClaim(text);
+  if (forbiddenClaim) {
+    throw new Error(`Runtime contract rejected provider reply: ${forbiddenClaim}.`);
+  }
+
+  return text;
+};
+
+const buildPreviewContractActivityDetail = ({ enabledSkillCount }) =>
+  [
+    `Contract enforced: input limit ${MAX_AGENT_PROMPT_CHARS} chars, reply limit ${MAX_AGENT_REPLY_CHARS} chars.`,
+    `Preview context budget: local session trace only, ${enabledSkillCount} mounted low-permission skills.`,
+    "No notes, reminders, settings, cache, weather, music, or gallery side effects are executed by preview Agent.",
+  ].join(" ");
+
+const localForgeSkill = async ({ existingSkill, lang, prompt, settings, signal }) => {
+  const text = normalizeAgentPrompt(prompt);
   if (signal?.aborted) {
     throw signal.reason || createAbortError("Skill generation was cancelled.");
   }
@@ -1692,10 +1881,7 @@ const localForgeSkill = async ({ existingSkill, lang, prompt, settings, signal }
 };
 
 const localRunAgent = async ({ sessionId, prompt }) => {
-  const text = String(prompt || "").trim();
-  if (!text) {
-    throw new Error(storageT("promptRequired"));
-  }
+  const text = normalizeAgentPrompt(prompt);
 
   const workspace = updateWorkspace((current) => {
     const ensuredSessionId = ensureExistingItem(current.sessions, sessionId, "Session");
@@ -1721,6 +1907,7 @@ const localRunAgent = async ({ sessionId, prompt }) => {
       const reply = providerReady
         ? storageT("replyConfigured", { text, suffix: skillSuffix })
         : storageT("replyPending", { text, suffix: skillSuffix });
+      const assistantContent = validateAgentReply(`${reply}\n\n${storageT("nextSteps")}`);
 
       const nextMessages = [
         ...session.messages,
@@ -1733,12 +1920,20 @@ const localRunAgent = async ({ sessionId, prompt }) => {
         {
           id: timestamp + 1,
           role: "assistant",
-          content: `${reply}\n\n${storageT("nextSteps")}`,
+          content: assistantContent,
           createdAt: timestamp + 1,
         },
       ];
 
       const nextActivity = [
+        {
+          id: timestamp + 5,
+          kind: "system",
+          title: "Runtime contract enforced",
+          detail: buildPreviewContractActivityDetail({ enabledSkillCount: enabledSkills.length }),
+          status: "completed",
+          createdAt: timestamp + 5,
+        },
         {
           id: timestamp + 2,
           kind: "output",
@@ -1773,7 +1968,7 @@ const localRunAgent = async ({ sessionId, prompt }) => {
         ...session,
         title: session.title === storageT("newMission") ? toPreview(text, 28) : session.title,
         status: "ready",
-        updatedAt: timestamp + 4,
+        updatedAt: timestamp + 5,
         messages: nextMessages,
         activity: nextActivity,
       };
@@ -2062,6 +2257,11 @@ export const runAgent = async ({ sessionId, prompt }) =>
     : localRunAgent({ sessionId, prompt });
 
 export const __previewTestUtils = {
+  agentRuntimeContract: {
+    maxPromptChars: MAX_AGENT_PROMPT_CHARS,
+    maxReplyChars: MAX_AGENT_REPLY_CHARS,
+  },
+  validateAgentReply,
   resetPreviewState() {
     volatilePreviewApiKey = "";
     if (typeof window !== "undefined") {

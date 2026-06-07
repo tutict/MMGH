@@ -272,6 +272,55 @@ test("running a preview agent session with a missing session id fails fast", asy
   ).rejects.toThrow("Session not found.");
 });
 
+test("preview agent runtime rejects oversized prompts", async () => {
+  const agent = await loadAgentModule();
+  const snapshot = await agent.bootstrap();
+  const oversizedPrompt = "x".repeat(
+    agent.__previewTestUtils.agentRuntimeContract.maxPromptChars + 1
+  );
+
+  await expect(
+    agent.runAgent({
+      sessionId: snapshot.activeSessionId,
+      prompt: oversizedPrompt,
+    })
+  ).rejects.toThrow("Prompt is too long");
+});
+
+test("preview agent runtime records contract enforcement activity", async () => {
+  const agent = await loadAgentModule();
+  const snapshot = await agent.bootstrap();
+
+  const nextSnapshot = await agent.runAgent({
+    sessionId: snapshot.activeSessionId,
+    prompt: "Check the release plan",
+  });
+
+  expect(nextSnapshot.activeSession.activity[0]).toMatchObject({
+    kind: "system",
+    title: "Runtime contract enforced",
+    status: "completed",
+  });
+  expect(nextSnapshot.activeSession.activity[0].detail).toContain("input limit");
+  expect(nextSnapshot.activeSession.messages.at(-1)).toMatchObject({
+    role: "assistant",
+  });
+});
+
+test("preview agent runtime rejects reply side-effect claims", async () => {
+  const agent = await loadAgentModule();
+
+  expect(() => agent.__previewTestUtils.validateAgentReply("   ")).toThrow("assistant reply is empty");
+  expect(() =>
+    agent.__previewTestUtils.validateAgentReply("I created a note with the rollout details.")
+  ).toThrow("unauthorized side effect");
+  expect(
+    agent.__previewTestUtils.validateAgentReply(
+      "I recommend creating a note with the rollout details."
+    )
+  ).toContain("recommend creating");
+});
+
 test("preview skill generation surfaces a warning when model generation falls back locally", async () => {
   const agent = await loadAgentModule();
   const fetchSpy = vi.spyOn(window, "fetch").mockRejectedValue(new Error("Network down"));
