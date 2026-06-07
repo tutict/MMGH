@@ -2513,6 +2513,25 @@
     gap: 6px;
   }
 
+  .agent-app.view-today .today-session-library-panel .session-list-shell {
+    display: block;
+  }
+
+  .agent-app.view-today .today-session-library-panel .session-list,
+  .agent-app.view-today .today-session-library-panel .session-group,
+  .agent-app.view-today .today-session-library-panel .session-group__list,
+  .agent-app.view-today .today-session-library-panel .session-card,
+  .agent-app.view-today .today-session-library-panel .session-card__main {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .agent-app.view-today .today-session-library-panel .session-list {
+    display: grid;
+    gap: 0;
+    padding-right: 0;
+  }
+
   .agent-app.view-today .today-session-library-panel .session-stack__danger {
     min-height: 32px;
     padding: 7px 0;
