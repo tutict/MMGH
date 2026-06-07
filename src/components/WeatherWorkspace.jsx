@@ -837,6 +837,9 @@ function parseClockToMinutes(value) {
 }
 
 function resolveWeatherStatusClass(status) {
+  if (status === "idle") {
+    return "status-idle";
+  }
   if (status === "ready") {
     return "status-completed";
   }

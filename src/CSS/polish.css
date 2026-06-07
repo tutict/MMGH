@@ -912,10 +912,14 @@ html[data-theme="light"] .runtime-recommend-card:hover {
   }
 }
 
-html[data-app-visibility="hidden"] .mini-player-bar::before,
-html[data-app-visibility="hidden"] .mini-player-bar__visualizer.is-playing span,
-html[data-app-visibility="hidden"] .music-room *,
-html[data-app-visibility="hidden"] .weather-stage * {
+html[data-app-visibility="hidden"] .agent-app *,
+html[data-desktop-visibility="tray"] .agent-app * {
   animation-play-state: paused !important;
 }
 
+html[data-app-visibility="hidden"] .agent-app__glow,
+html[data-app-visibility="hidden"] .agent-app__mesh,
+html[data-desktop-visibility="tray"] .agent-app__glow,
+html[data-desktop-visibility="tray"] .agent-app__mesh {
+  opacity: 0 !important;
+}

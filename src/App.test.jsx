@@ -1,5 +1,5 @@
 import React from "react";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import { I18nProvider } from "./i18n";
 
@@ -19,6 +19,43 @@ const skillRenderProfile = {
     this.count = 0;
   },
 };
+
+const weatherDataMock = vi.hoisted(() => {
+  const weatherLocations = [
+    {
+      id: "shanghai",
+      label: "Shanghai",
+      latitude: 31.2304,
+      longitude: 121.4737,
+      timeZone: "Asia/Shanghai",
+    },
+  ];
+  const createInitialWeatherCity = (location) => ({
+    ...location,
+    conditionKey: "app.weather.condition.loading",
+    daily: [],
+    hourly: [],
+    temperature: null,
+    timeZone: location.timeZone || "UTC",
+    updatedAt: null,
+  });
+
+  return {
+    weatherLocations,
+    createInitialWeatherCity: vi.fn(createInitialWeatherCity),
+    createInitialWeatherCities: vi.fn((locations) =>
+      (Array.isArray(locations) ? locations : weatherLocations).map(createInitialWeatherCity)
+    ),
+    fetchWeatherSnapshots: vi.fn(async (locations) =>
+      (Array.isArray(locations) ? locations : weatherLocations).map((location) => ({
+        ...createInitialWeatherCity(location),
+        conditionKey: "app.weather.condition.clear",
+        temperature: 24,
+        updatedAt: Date.now(),
+      }))
+    ),
+  };
+});
 
 const createWorkspaceSnapshot = () => {
   const now = 1_710_000_000_000;
@@ -198,6 +235,13 @@ vi.mock("./storage/agent", () => {
   };
 });
 
+vi.mock("./components/weatherData", () => ({
+  WEATHER_LOCATIONS: weatherDataMock.weatherLocations,
+  createInitialWeatherCity: weatherDataMock.createInitialWeatherCity,
+  createInitialWeatherCities: weatherDataMock.createInitialWeatherCities,
+  fetchWeatherSnapshots: weatherDataMock.fetchWeatherSnapshots,
+}));
+
 vi.mock("./components/WeatherWorkspace", () => {
   const weatherLocations = [
     {
@@ -280,6 +324,68 @@ vi.mock("./components/SkillWorkspace", async () => {
   return {
     default: WrappedSkillWorkspace,
   };
+});
+
+function installAppShellMocks() {
+  const previousMatchMedia = window.matchMedia;
+  const loadSpy = vi
+    .spyOn(window.HTMLMediaElement.prototype, "load")
+    .mockImplementation(() => {});
+  const playSpy = vi
+    .spyOn(window.HTMLMediaElement.prototype, "play")
+    .mockImplementation(async () => {});
+  const pauseSpy = vi
+    .spyOn(window.HTMLMediaElement.prototype, "pause")
+    .mockImplementation(() => {});
+
+  window.matchMedia = vi.fn().mockImplementation(() => ({
+    matches: false,
+    media: "",
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }));
+
+  return () => {
+    window.matchMedia = previousMatchMedia;
+    loadSpy.mockRestore();
+    playSpy.mockRestore();
+    pauseSpy.mockRestore();
+  };
+}
+
+beforeEach(() => {
+  weatherDataMock.fetchWeatherSnapshots.mockClear();
+});
+
+test("app defers weather sync until the weather view is opened", async () => {
+  const restoreAppShellMocks = installAppShellMocks();
+
+  try {
+    const { default: App } = await import("./App");
+
+    render(
+      <I18nProvider initialLang="en-US">
+        <App />
+      </I18nProvider>
+    );
+
+    await screen.findByRole("heading", { name: "MMGH Agent", level: 1 });
+    expect(weatherDataMock.fetchWeatherSnapshots).not.toHaveBeenCalled();
+
+    const weatherButton = screen.getAllByRole("button", { name: /Weather/i })[0];
+    await act(async () => {
+      weatherButton.click();
+    });
+
+    await screen.findByTestId("weather-workspace");
+    await waitFor(() => expect(weatherDataMock.fetchWeatherSnapshots).toHaveBeenCalledTimes(1));
+  } finally {
+    restoreAppShellMocks();
+  }
 });
 
 perfTest("app settings view skips unrelated clock tick renders", async () => {

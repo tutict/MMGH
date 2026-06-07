@@ -204,6 +204,8 @@ const EMPTY_REMINDER_COMPLETION_DRAFT = {
   followUpDueAt: "",
 };
 const EMPTY_LIST = [];
+const REMINDER_ALERT_SOUND_SRC = "/reply-pulse.mp3";
+const MAX_REMINDER_TIMER_DELAY_MS = 60 * 60 * 1000;
 const THEME_STORAGE_KEY = "mmgh-theme";
 const STARTER_SKILL_TITLE_KEYS = [
   {
@@ -290,6 +292,62 @@ function persistTheme(theme) {
     console.error("Failed to persist theme preference", error);
     throw new Error(`Failed to persist theme preference. ${normalizeError(error)}`);
   }
+}
+
+function createReminderAlertKey(reminder) {
+  return `${reminder.id}:${reminder.updatedAt}:${reminder.status}`;
+}
+
+function isOpenReminderWithDueTime(reminder) {
+  return reminder?.status !== "done" && Number.isFinite(Number(reminder?.dueAt));
+}
+
+function findDueReminder(reminders, now, triggeredReminderKeys) {
+  return reminders.find((item) => {
+    if (!isOpenReminderWithDueTime(item) || Number(item.dueAt) > now) {
+      return false;
+    }
+    return !triggeredReminderKeys.has(createReminderAlertKey(item));
+  });
+}
+
+function resolveNextReminderDelay(reminders, now, triggeredReminderKeys) {
+  const nextDueAt = reminders.reduce((nextValue, item) => {
+    if (!isOpenReminderWithDueTime(item) || triggeredReminderKeys.has(createReminderAlertKey(item))) {
+      return nextValue;
+    }
+
+    const dueAt = Number(item.dueAt);
+    if (dueAt <= now) {
+      return now;
+    }
+    return Math.min(nextValue, dueAt);
+  }, Number.POSITIVE_INFINITY);
+
+  if (!Number.isFinite(nextDueAt)) {
+    return null;
+  }
+
+  return Math.min(Math.max(nextDueAt - now, 0), MAX_REMINDER_TIMER_DELAY_MS);
+}
+
+function playReminderTone(audioRef) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  if (!audioRef.current) {
+    audioRef.current = new Audio(REMINDER_ALERT_SOUND_SRC);
+    audioRef.current.preload = "auto";
+  }
+
+  const audio = audioRef.current;
+  try {
+    audio.currentTime = 0;
+  } catch (error) {
+    console.error("Failed to rewind reminder tone", error);
+  }
+  void audio.play().catch(() => {});
 }
 
 function readInitialAppVisibility() {
@@ -702,10 +760,14 @@ function App() {
   const [galleryFilter, setGalleryFilter] = useState("all");
   const [galleryViewerId, setGalleryViewerId] = useState("");
   const [weatherLocations, setWeatherLocations] = useState(() => readWeatherLocations());
-  const [selectedWeatherCityId, setSelectedWeatherCityId] = useState(() => readWeatherLocations()[0]?.id || WEATHER_LOCATIONS[0].id);
-  const [weatherCities, setWeatherCities] = useState(() => createInitialWeatherCities(readWeatherLocations()));
+  const [selectedWeatherCityId, setSelectedWeatherCityId] = useState(
+    () => weatherLocations[0]?.id || WEATHER_LOCATIONS[0].id
+  );
+  const [weatherCities, setWeatherCities] = useState(() =>
+    createInitialWeatherCities(weatherLocations)
+  );
   const [weatherAuxCacheVersion, setWeatherAuxCacheVersion] = useState(0);
-  const [weatherStatus, setWeatherStatus] = useState("loading");
+  const [weatherStatus, setWeatherStatus] = useState("idle");
   const [weatherError, setWeatherError] = useState("");
   const [weatherUpdatedAt, setWeatherUpdatedAt] = useState(0);
   const [tracks, setTracks] = useState(BUILT_IN_TRACKS);
@@ -740,6 +802,7 @@ function App() {
   const lyricsUploadInputRef = useRef(null);
   const lastAutoPlayedReplyRef = useRef(null);
   const triggeredRemindersRef = useRef(new Set());
+  const reminderAudioRef = useRef(null);
   const uploadedTrackUrlsRef = useRef(new Set());
   const pendingWorkspaceSyncRef = useRef(false);
   const hasUnsavedWorkspaceDraftsRef = useRef(false);
@@ -1128,8 +1191,28 @@ function App() {
   }, [selectedTrackId]);
 
   useEffect(() => {
+    if (currentView !== "weather") {
+      return undefined;
+    }
+
     void loadWeatherSnapshotData(weatherLocations);
-  }, [loadWeatherSnapshotData, weatherLocations]);
+    return undefined;
+  }, [currentView, loadWeatherSnapshotData, weatherLocations]);
+
+  useEffect(() => {
+    if (currentView === "weather") {
+      return;
+    }
+
+    if (weatherAbortControllerRef.current) {
+      weatherRequestIdRef.current += 1;
+      weatherAbortControllerRef.current.abort();
+      weatherAbortControllerRef.current = null;
+      setWeatherStatus((status) =>
+        status === "loading" ? (weatherUpdatedAt ? "ready" : "idle") : status
+      );
+    }
+  }, [currentView, weatherUpdatedAt]);
 
   useEffect(
     () => () => {
@@ -2431,48 +2514,55 @@ function App() {
       return;
     }
 
-    const dueReminder = reminders.find((item) => {
-      if (item.status === "done" || !item.dueAt || item.dueAt > clockNow) {
-        return false;
-      }
-      const alertKey = `${item.id}:${item.updatedAt}:${item.status}`;
-      return !triggeredRemindersRef.current.has(alertKey);
-    });
-
-    if (!dueReminder) {
+    if (typeof window === "undefined") {
       return;
     }
 
-    const alertKey = `${dueReminder.id}:${dueReminder.updatedAt}:${dueReminder.status}`;
+    let timer = 0;
     const triggeredReminderKeys = triggeredRemindersRef.current;
-    triggeredReminderKeys.add(alertKey);
-    setNotice("");
-    setIsInspectorOpen(false);
-    openView("reminders");
 
-    void handleSelectReminder(dueReminder.id, { force: true }).then((opened) => {
-      if (!opened) {
-        triggeredReminderKeys.delete(alertKey);
-      }
-    });
+    const triggerDueReminder = (dueReminder) => {
+      const alertKey = createReminderAlertKey(dueReminder);
+      triggeredReminderKeys.add(alertKey);
+      setNotice("");
+      setIsInspectorOpen(false);
+      setIsMobileNavOpen(false);
+      setCurrentView("reminders");
 
-    if (typeof window !== "undefined") {
-      const audio = new Audio("/reply-pulse.mp3");
-      void audio.play().catch(() => {});
-      let didAlert = false;
-      const timeoutId = window.setTimeout(() => {
-        didAlert = true;
-        window.alert(t("app.reminders.alertDue", { title: dueReminder.title }));
-      }, 120);
-
-      return () => {
-        if (!didAlert) {
-          window.clearTimeout(timeoutId);
+      void handleSelectReminder(dueReminder.id, { force: true }).then((opened) => {
+        if (!opened) {
           triggeredReminderKeys.delete(alertKey);
         }
-      };
-    }
-  }, [busy, clockNow, handleSelectReminder, hasUnsavedWorkspaceDrafts, loading, openView, reminders, t]);
+      });
+
+      playReminderTone(reminderAudioRef);
+      window.setTimeout(() => {
+        window.alert(t("app.reminders.alertDue", { title: dueReminder.title }));
+      }, 120);
+    };
+
+    const scheduleNextReminderCheck = () => {
+      const now = Date.now();
+      const dueReminder = findDueReminder(reminders, now, triggeredReminderKeys);
+      if (dueReminder) {
+        triggerDueReminder(dueReminder);
+        return;
+      }
+
+      const nextDelay = resolveNextReminderDelay(reminders, now, triggeredReminderKeys);
+      if (nextDelay == null) {
+        return;
+      }
+
+      timer = window.setTimeout(scheduleNextReminderCheck, nextDelay);
+    };
+
+    scheduleNextReminderCheck();
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [busy, handleSelectReminder, hasUnsavedWorkspaceDrafts, loading, reminders, t]);
 
   function handleAddWeatherCity(location) {
     const normalizedLocation = sanitizeWeatherLocation(location);
@@ -4141,7 +4231,10 @@ function App() {
         { label: t("app.view.weather.badge.city"), value: `${weatherLocations.length}` },
         {
           label: t("app.view.weather.badge.condition"),
-          value: weatherStatus === "error" ? t("app.weather.status.error") : t(activeWeatherCity.conditionKey),
+          value:
+            weatherStatus === "idle" || weatherStatus === "error"
+              ? t(`app.weather.status.${weatherStatus}`)
+              : t(activeWeatherCity.conditionKey),
         },
         {
           label: t("app.view.weather.badge.temperature"),

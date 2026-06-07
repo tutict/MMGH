@@ -361,6 +361,7 @@ const zhCN = {
   "app.weather.unit.degree": "°",
   "app.weather.unit.celsius": "C",
   "app.weather.unit.wind": "km/h",
+  "app.weather.status.idle": "尚未同步",
   "app.weather.status.loading": "同步中",
   "app.weather.status.ready": "实时",
   "app.weather.status.partial": "部分可用",

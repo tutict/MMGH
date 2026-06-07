@@ -394,6 +394,7 @@ const enUS = {
   "app.weather.unit.degree": "°",
   "app.weather.unit.celsius": "C",
   "app.weather.unit.wind": "km/h",
+  "app.weather.status.idle": "idle",
   "app.weather.status.loading": "syncing",
   "app.weather.status.ready": "live",
   "app.weather.status.partial": "partial",

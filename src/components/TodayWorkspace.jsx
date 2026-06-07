@@ -57,8 +57,8 @@ function TodayWorkspace({
   const activeSessionTitle = activeSession?.session?.title || t("app.session.defaultTitle");
   const activeSessionStatus = activeSession?.session?.status || "idle";
   const weatherLabel =
-    weatherStatus === "error"
-      ? t("app.weather.status.error")
+    weatherStatus === "idle" || weatherStatus === "error"
+      ? t(`app.weather.status.${weatherStatus}`)
       : t(activeWeatherCity?.conditionKey || "app.weather.status.loading");
 
   return (

@@ -12,7 +12,7 @@ use std::sync::{
 use tauri::{
   menu::{Menu, MenuItemBuilder},
   tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-  AppHandle, Manager, RunEvent, WindowEvent,
+  AppHandle, Manager, WindowEvent,
 };
 
 mod agent;
@@ -78,7 +78,6 @@ fn main() {
     is_quitting: AtomicBool::new(false),
   });
   let runtime_state_for_setup = Arc::clone(&runtime_state);
-  let runtime_state_for_run = Arc::clone(&runtime_state);
 
   let app = tauri::Builder::default()
     .setup(move |app| {
@@ -108,9 +107,16 @@ fn main() {
             desktop::emit_lifecycle(&window_handle, "hidden-to-tray");
             desktop::emit_window_state(&window_handle);
           }
-          WindowEvent::Focused(_)
-          | WindowEvent::Resized(_)
-          | WindowEvent::ScaleFactorChanged { .. } => {
+          WindowEvent::Resized(_) => {
+            if window_handle.is_minimized().unwrap_or(false) {
+              let _ = window_handle.unminimize();
+              let _ = window_handle.hide();
+              desktop::emit_lifecycle(&window_handle, "hidden-to-tray");
+            }
+
+            desktop::emit_window_state(&window_handle);
+          }
+          WindowEvent::Focused(_) | WindowEvent::ScaleFactorChanged { .. } => {
             desktop::emit_window_state(&window_handle);
           }
           _ => {}
@@ -148,20 +154,5 @@ fn main() {
     .build(tauri::generate_context!())
     .expect("error while building tauri application");
 
-  app.run(move |app: &AppHandle, event: RunEvent| {
-    if let RunEvent::MainEventsCleared = event {
-      if runtime_state_for_run.is_quitting.load(Ordering::SeqCst) {
-        return;
-      }
-
-      if let Some(window) = app.get_webview_window(desktop::MAIN_WINDOW_LABEL) {
-        if window.is_minimized().unwrap_or(false) {
-          let _ = window.unminimize();
-          let _ = window.hide();
-          desktop::emit_lifecycle(&window, "hidden-to-tray");
-          desktop::emit_window_state(&window);
-        }
-      }
-    }
-  });
+  app.run(|_, _| {});
 }
