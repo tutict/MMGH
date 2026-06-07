@@ -2,6 +2,7 @@ import React, { useDeferredValue, useMemo, useState } from "react";
 import { useI18n } from "../i18n";
 
 const FILTER_MODES = ["all", "enabled", "mounted", "starter", "workspace"];
+const TOOL_MODES = ["session", "generate", "history", "templates"];
 
 const STARTER_TEMPLATE_ALIAS_FIXUPS = {
   "starter-note-recall": ["Note Recall", "笔记召回", "Local note recall"],
@@ -42,7 +43,6 @@ function SkillWorkspace({
   providerConfigured,
   setSkillDraft,
   setSkillSearch,
-  skillActionContextKey,
   skillImportInputRef,
   skillDraft,
   skillList,
@@ -50,70 +50,63 @@ function SkillWorkspace({
 }) {
   const { lang, t } = useI18n();
   const [filterMode, setFilterMode] = useState("all");
+  const [toolMode, setToolMode] = useState("session");
   const [catalogSearch, setCatalogSearch] = useState("");
   const [forgePrompt, setForgePrompt] = useState("");
   const deferredSkillSearch = useDeferredValue(skillSearch);
   const deferredCatalogSearch = useDeferredValue(catalogSearch);
 
   const templates = useMemo(() => normalizeStarterTemplates(createSkillTemplates(t)), [t]);
-  const templateNameMap = useMemo(
-    () =>
-      new Map(
-        templates.flatMap((template) =>
-          [template.name, ...(template.aliases || [])].map((alias) => [
-            normalizeName(alias),
-            template,
-          ])
-        )
-      ),
-    [templates]
-  );
-
+  const templateNameMap = useMemo(() => buildTemplateNameMap(templates), [templates]);
   const mountedSkillSet = useMemo(() => new Set(mountedSkillIds), [mountedSkillIds]);
 
-  const searchedSkills = useMemo(() => {
-    const needle = deferredSkillSearch.trim().toLowerCase();
-    if (!needle) {
-      return skillList;
-    }
-    return skillList.filter((skill) =>
-      [skill.name, skill.summary, skill.triggerHint]
-        .join(" ")
-        .toLowerCase()
-        .includes(needle)
-    );
-  }, [deferredSkillSearch, skillList]);
-
-  const visibleSkills = useMemo(
+  const skillEntries = useMemo(
     () =>
-      searchedSkills.filter((skill) => {
-        if (filterMode === "enabled") {
-          return skill.enabled;
-        }
-        if (filterMode === "mounted") {
-          return mountedSkillSet.has(skill.id);
-        }
-        if (filterMode === "starter") {
-          return isStarterSkill(skill, templateNameMap);
-        }
-        if (filterMode === "workspace") {
-          return !isStarterSkill(skill, templateNameMap);
-        }
-        return true;
-      }),
-    [filterMode, mountedSkillSet, searchedSkills, templateNameMap]
+      skillList.map((skill) => ({
+        skill,
+        display: buildSkillDisplay(skill, templateNameMap),
+      })),
+    [skillList, templateNameMap]
   );
 
-  const mountedSkills = useMemo(
-    () => skillList.filter((skill) => mountedSkillSet.has(skill.id)),
-    [mountedSkillSet, skillList]
+  const visibleSkillEntries = useMemo(() => {
+    const needle = deferredSkillSearch.trim().toLowerCase();
+    return skillEntries.filter(({ skill, display }) => {
+      const matchesSearch =
+        !needle ||
+        [display.name, display.summary, display.description, display.triggerHint]
+          .join(" ")
+          .toLowerCase()
+          .includes(needle);
+      if (!matchesSearch) {
+        return false;
+      }
+      if (filterMode === "enabled") {
+        return skill.enabled;
+      }
+      if (filterMode === "mounted") {
+        return mountedSkillSet.has(skill.id);
+      }
+      if (filterMode === "starter") {
+        return isStarterSkill(skill, templateNameMap);
+      }
+      if (filterMode === "workspace") {
+        return !isStarterSkill(skill, templateNameMap);
+      }
+      return true;
+    });
+  }, [deferredSkillSearch, filterMode, mountedSkillSet, skillEntries, templateNameMap]);
+
+  const mountedSkillEntries = useMemo(
+    () => skillEntries.filter(({ skill }) => mountedSkillSet.has(skill.id)),
+    [mountedSkillSet, skillEntries]
   );
 
   const enabledCount = useMemo(
     () => skillList.filter((skill) => skill.enabled).length,
     [skillList]
   );
-  const mountedCount = mountedSkills.length;
+  const mountedCount = mountedSkillEntries.length;
   const starterCount = useMemo(
     () => skillList.filter((skill) => isStarterSkill(skill, templateNameMap)).length,
     [skillList, templateNameMap]
@@ -135,6 +128,12 @@ function SkillWorkspace({
   const activeSkillMeta = activeSkill
     ? getSkillMeta(activeSkill, mountedSkillSet, templateNameMap, t)
     : null;
+  const activeSkillDisplay = activeSkill
+    ? buildSkillDisplay(activeSkill, templateNameMap)
+    : null;
+  const draftDisplay = activeSkill
+    ? buildDraftDisplay(skillDraft, activeSkill, activeSkillMeta?.starterTemplate)
+    : skillDraft;
 
   return (
     <section className="skill-panel panel-surface">
@@ -205,8 +204,8 @@ function SkillWorkspace({
         </div>
 
         <div className="skill-list">
-          {visibleSkills.length > 0 ? (
-            visibleSkills.map((skill) => {
+          {visibleSkillEntries.length > 0 ? (
+            visibleSkillEntries.map(({ skill, display }) => {
               const meta = getSkillMeta(skill, mountedSkillSet, templateNameMap, t);
               return (
                 <button
@@ -219,7 +218,7 @@ function SkillWorkspace({
                   disabled={busy !== "" || loading}
                 >
                   <div className="skill-card__head">
-                    <strong>{skill.name}</strong>
+                    <strong>{display.name}</strong>
                     <div className="skill-card__status-group">
                       <span className={`status-chip ${skill.enabled ? "status-completed" : "status-idle"}`}>
                         {skill.enabled ? t("app.skills.enabled") : t("app.skills.disabled")}
@@ -230,16 +229,10 @@ function SkillWorkspace({
                     </div>
                   </div>
 
-                  <div className="skill-card__pill-row">
-                    <span className="skill-meta-pill">{meta.sourceLabel}</span>
-                    <span className="skill-meta-pill">{meta.categoryLabel}</span>
-                    <span className="skill-meta-pill">{t(`app.permission.${skill.permissionLevel}`)}</span>
-                  </div>
-
-                  <p>{skill.summary}</p>
+                  <p>{display.summary}</p>
 
                   <div className="skill-card__meta">
-                    <span>{skill.triggerHint || t("app.skills.noTriggerHint")}</span>
+                    <span>{display.triggerHint || t("app.skills.noTriggerHint")}</span>
                     <span>{t("app.skills.updatedAt", { date: formatSkillDate(skill.updatedAt, lang) })}</span>
                   </div>
                 </button>
@@ -289,13 +282,13 @@ function SkillWorkspace({
           </div>
         </div>
 
-        {activeSkill && activeSkillMeta ? (
+        {activeSkill && activeSkillMeta && activeSkillDisplay ? (
           <div className="skill-editor__form skill-editor__form--dense">
             <section className="skill-profile-card skill-profile-card--hero">
               <div className="skill-profile-card__head">
                 <div>
                   <span className="eyebrow">{t("app.skills.profile.eyebrow")}</span>
-                  <h4>{activeSkill.name}</h4>
+                  <h4>{activeSkillDisplay.name}</h4>
                 </div>
                 <div className="skill-card__pill-row">
                   <span className="skill-meta-pill">{activeSkillMeta.sourceLabel}</span>
@@ -303,25 +296,7 @@ function SkillWorkspace({
                   <span className="skill-meta-pill">{t(`app.permission.${activeSkill.permissionLevel}`)}</span>
                 </div>
               </div>
-              <p>{activeSkill.description || t("app.skills.form.descriptionPlaceholder")}</p>
-              <div className="skill-profile-grid">
-                <article className="skill-profile-metric skill-profile-metric--highlight">
-                  <span>{t("app.skills.meta.permission")}</span>
-                  <strong>{t(`app.permission.${activeSkill.permissionLevel}`)}</strong>
-                </article>
-                <article className="skill-profile-metric">
-                  <span>{t("app.skills.meta.source")}</span>
-                  <strong>{activeSkillMeta.sourceLabel}</strong>
-                </article>
-                <article className="skill-profile-metric">
-                  <span>{t("app.skills.meta.category")}</span>
-                  <strong>{activeSkillMeta.categoryLabel}</strong>
-                </article>
-                <article className="skill-profile-metric">
-                  <span>{t("app.skills.meta.updated")}</span>
-                  <strong>{formatSkillDate(activeSkill.updatedAt, lang)}</strong>
-                </article>
-              </div>
+              <p>{activeSkillDisplay.description || t("app.skills.form.descriptionPlaceholder")}</p>
             </section>
 
             <div className="skill-editor__operations">
@@ -331,7 +306,6 @@ function SkillWorkspace({
                   <strong>
                     {skillDraft.enabled ? t("app.skills.enabled") : t("app.skills.disabled")}
                   </strong>
-                  <p>{t("app.skills.toggle.enabledHelp")}</p>
                   <button
                     type="button"
                     className={`toggle-pill ${skillDraft.enabled ? "is-on" : ""}`}
@@ -342,6 +316,7 @@ function SkillWorkspace({
                       }))
                     }
                     disabled={busy !== "" || loading}
+                    aria-label={t("app.skills.form.enabled")}
                   >
                     <span />
                   </button>
@@ -354,12 +329,12 @@ function SkillWorkspace({
                       ? t("app.skills.mounted")
                       : t("app.skills.unmounted")}
                   </strong>
-                  <p>{t("app.skills.toggle.mountedHelp")}</p>
                   <button
                     type="button"
                     className={`toggle-pill ${mountedSkillSet.has(activeSkill.id) ? "is-on" : ""}`}
                     onClick={() => handleToggleSkillMounted(activeSkill.id)}
                     disabled={busy !== "" || loading || !activeSkill.enabled}
+                    aria-label={t("app.skills.form.mountedOnSession")}
                   >
                     <span />
                   </button>
@@ -382,7 +357,7 @@ function SkillWorkspace({
                 <span>{t("app.skills.form.name")}</span>
                 <input
                   className="field-input"
-                  value={skillDraft.name}
+                  value={draftDisplay.name}
                   disabled={busy !== "" || loading}
                   onChange={(event) =>
                     setSkillDraft((prev) => ({
@@ -398,7 +373,7 @@ function SkillWorkspace({
                 <span>{t("app.skills.form.triggerHint")}</span>
                 <input
                   className="field-input"
-                  value={skillDraft.triggerHint}
+                  value={draftDisplay.triggerHint}
                   disabled={busy !== "" || loading}
                   onChange={(event) =>
                     setSkillDraft((prev) => ({
@@ -415,8 +390,8 @@ function SkillWorkspace({
               <span>{t("app.skills.form.description")}</span>
               <textarea
                 className="field-area"
-                rows={4}
-                value={skillDraft.description}
+                rows={3}
+                value={draftDisplay.description}
                 disabled={busy !== "" || loading}
                 onChange={(event) =>
                   setSkillDraft((prev) => ({
@@ -432,7 +407,7 @@ function SkillWorkspace({
               <span>{t("app.skills.form.instructions")}</span>
               <textarea
                 className="knowledge-body-input reminder-detail-input"
-                value={skillDraft.instructions}
+                value={draftDisplay.instructions}
                 disabled={busy !== "" || loading}
                 onChange={(event) =>
                   setSkillDraft((prev) => ({
@@ -453,280 +428,304 @@ function SkillWorkspace({
         )}
       </div>
 
-      <aside className="skill-catalog">
-        <section className="skill-catalog__panel">
-          <div className="section-head">
-            <div>
-              <span className="eyebrow">{t("app.skills.forge.eyebrow")}</span>
-              <h3>{t("app.skills.forge.title")}</h3>
-            </div>
-            <span className={`status-chip ${providerConfigured ? "status-running" : "status-idle"}`}>
-              {providerConfigured ? t("app.skills.forge.status.ai") : t("app.skills.forge.status.local")}
-            </span>
-          </div>
-          <p className="section-note skill-catalog__summary">
-            {providerConfigured
-              ? t("app.skills.forge.description.ai")
-              : t("app.skills.forge.description.local")}
-          </p>
-          <textarea
-            className="field-area skill-forge-input"
-            rows={7}
-            value={forgePrompt}
-            disabled={busy !== "" || loading}
-            onChange={(event) => setForgePrompt(event.target.value)}
-            placeholder={t("app.skills.forge.placeholder")}
-          />
-          <div className="skill-template-card__body">
+      <aside className="skill-catalog skill-tools">
+        <div className="skill-tools__tabs" role="tablist" aria-label={t("app.skills.tools.label")}>
+          {TOOL_MODES.map((mode) => (
             <button
+              key={mode}
               type="button"
-              className="solid-button"
-              disabled={!forgePrompt.trim() || busy !== "" || loading}
-              onClick={() => handleForgeSkill({ prompt: forgePrompt, mode: "new" })}
+              role="tab"
+              aria-selected={toolMode === mode}
+              className={`skill-tools__tab ${toolMode === mode ? "is-active" : ""}`}
+              onClick={() => setToolMode(mode)}
             >
-              {busy === "forge-skill"
-                ? t("app.skills.forge.generating")
-                : t("app.skills.forge.generate")}
+              {t(`app.skills.tools.${mode}`)}
             </button>
-            <button
-              type="button"
-              className="ghost-button"
-              disabled={!forgePrompt.trim() || !activeSkill || busy !== "" || loading}
-              onClick={() => handleForgeSkill({ prompt: forgePrompt, mode: "rewrite" })}
-            >
-              {t("app.skills.forge.rewrite")}
-            </button>
-          </div>
-        </section>
+          ))}
+        </div>
 
-        <section className="skill-catalog__panel skill-catalog__panel--scroll">
-          <div className="section-head">
-            <div>
-              <span className="eyebrow">{t("app.skills.history.eyebrow")}</span>
-              <h3>{t("app.skills.history.title")}</h3>
-            </div>
-            <span className="section-note">
-              {t("app.skills.history.count", { count: activeSkillVersions.length })}
-            </span>
-          </div>
-          <p className="section-note skill-catalog__summary">
-            {t("app.skills.history.description")}
-          </p>
-          <div className="skill-version-list">
-            {activeSkill && activeSkillVersions.length > 0 ? (
-              activeSkillVersions.map((version) => (
-                <article key={version.versionId} className="skill-version-card">
-                  <div className="skill-version-card__head">
-                    <div>
-                      <strong>{version.name || t("app.skills.defaultTitle")}</strong>
-                      <span className="section-note">
-                        {t(`app.skills.history.reason.${toHistoryReasonKey(version.reason)}`)}
-                      </span>
-                    </div>
-                    <span className="skill-meta-pill">
-                      {formatSkillDateTime(version.savedAt, lang)}
-                    </span>
-                  </div>
-
-                  <p>{version.description || t("app.skills.form.descriptionPlaceholder")}</p>
-
-                  <div className="skill-card__meta">
-                    <span>{version.triggerHint || t("app.skills.noTriggerHint")}</span>
-                    <span>
-                      {t("app.skills.history.savedAt", {
-                        date: formatSkillDateTime(version.savedAt, lang),
-                      })}
-                    </span>
-                  </div>
-
-                  <div className="skill-template-card__body">
-                    <button
-                      type="button"
-                      className="ghost-button"
-                      onClick={() => handleLoadSkillVersion(version)}
-                      disabled={busy !== "" || loading}
-                    >
-                      {t("app.skills.history.loadDraft")}
-                    </button>
-                    <button
-                      type="button"
-                      className="solid-button"
-                      onClick={() => handleRestoreSkillVersion(version)}
-                      disabled={busy !== "" || loading}
-                    >
-                      {busy === "restore-skill-version"
-                        ? t("app.common.saving")
-                        : t("app.skills.history.restore")}
-                    </button>
-                  </div>
-                </article>
-              ))
-            ) : (
-              <div className="skill-empty-panel">
-                <span className="eyebrow">{t("app.skills.history.eyebrow")}</span>
-                <strong>
-                  {activeSkill
-                    ? t("app.skills.history.emptyTitle")
-                    : t("app.skills.history.selectTitle")}
-                </strong>
-                <p>
-                  {activeSkill
-                    ? t("app.skills.history.emptyDescription")
-                    : t("app.skills.history.selectDescription")}
-                </p>
+        {toolMode === "session" ? (
+          <section className="skill-catalog__panel skill-tools__panel">
+            <div className="section-head">
+              <div>
+                <span className="eyebrow">{t("app.skills.currentSession")}</span>
+                <h3>{t("app.skills.sessionMount.title")}</h3>
               </div>
-            )}
-          </div>
-        </section>
-
-        <section className="skill-catalog__panel">
-          <div className="section-head">
-            <div>
-              <span className="eyebrow">{t("app.skills.currentSession")}</span>
-              <h3>{t("app.skills.sessionMount.title")}</h3>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={handleExportAllSkills}
+                disabled={!skillList.length || busy !== "" || loading}
+              >
+                {t("app.skills.export.all")}
+              </button>
             </div>
-            <button
-              type="button"
-              className="ghost-button"
-              onClick={handleExportAllSkills}
-              disabled={!skillList.length || busy !== "" || loading}
-            >
-              {t("app.skills.export.all")}
-            </button>
-          </div>
-          <p className="section-note skill-catalog__summary">
-            {t("app.skills.sessionMount.description")}
-          </p>
-          {activeSessionRecommendedSkills.length > 0 ? (
-            <div className="skill-recommend-strip">
-              <div className="skill-recommend-strip__head">
-                <span className="eyebrow">{t("app.skills.sessionMount.recommendedEyebrow")}</span>
-                <strong>{t("app.skills.sessionMount.recommendedTitle")}</strong>
+            <p className="section-note skill-catalog__summary">
+              {t("app.skills.sessionMount.description")}
+            </p>
+            {activeSessionRecommendedSkills.length > 0 ? (
+              <div className="skill-recommend-strip">
+                <div className="skill-recommend-strip__head">
+                  <span className="eyebrow">{t("app.skills.sessionMount.recommendedEyebrow")}</span>
+                  <strong>{t("app.skills.sessionMount.recommendedTitle")}</strong>
+                </div>
+                <div className="skill-recommend-list">
+                  {activeSessionRecommendedSkills.map((skill) => {
+                    const meta = getSkillMeta(skill, mountedSkillSet, templateNameMap, t);
+                    const display = buildSkillDisplay(skill, templateNameMap);
+                    return (
+                      <article key={skill.id} className="skill-recommend-card">
+                        <div>
+                          <strong>{display.name}</strong>
+                          <p>{skill.recommendationReason || display.triggerHint || t("app.skills.noTriggerHint")}</p>
+                        </div>
+                        <div className="skill-template-card__body">
+                          <span className="skill-meta-pill">{meta.categoryLabel}</span>
+                          <button
+                            type="button"
+                            className="solid-button"
+                            disabled={mountedSkillSet.has(skill.id) || busy !== "" || loading}
+                            onClick={() => handleToggleSkillMounted(skill.id)}
+                          >
+                            {mountedSkillSet.has(skill.id)
+                              ? t("app.skills.mounted")
+                              : t("app.skills.sessionMount.recommendedAction")}
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="skill-recommend-list">
-                {activeSessionRecommendedSkills.map((skill) => {
+            ) : null}
+            <div className="skill-mounted-list">
+              {mountedSkillEntries.length > 0 ? (
+                mountedSkillEntries.map(({ skill, display }) => {
                   const meta = getSkillMeta(skill, mountedSkillSet, templateNameMap, t);
                   return (
-                    <article key={skill.id} className="skill-recommend-card">
+                    <button
+                      key={skill.id}
+                      type="button"
+                      className="skill-mounted-card"
+                      onClick={() => handleOpenSkill(skill.id)}
+                      disabled={busy !== "" || loading}
+                    >
+                      <strong>{display.name}</strong>
+                      <span>{meta.categoryLabel}</span>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="skill-empty-panel skill-empty-panel--compact">
+                  <strong>{t("app.skills.sessionMount.emptyTitle")}</strong>
+                  <p>{t("app.skills.sessionMount.emptyDescription")}</p>
+                </div>
+              )}
+            </div>
+          </section>
+        ) : null}
+
+        {toolMode === "generate" ? (
+          <section className="skill-catalog__panel skill-tools__panel">
+            <div className="section-head">
+              <div>
+                <span className="eyebrow">{t("app.skills.forge.eyebrow")}</span>
+                <h3>{t("app.skills.forge.title")}</h3>
+              </div>
+              <span className={`status-chip ${providerConfigured ? "status-running" : "status-idle"}`}>
+                {providerConfigured ? t("app.skills.forge.status.ai") : t("app.skills.forge.status.local")}
+              </span>
+            </div>
+            <p className="section-note skill-catalog__summary">
+              {providerConfigured
+                ? t("app.skills.forge.description.ai")
+                : t("app.skills.forge.description.local")}
+            </p>
+            <textarea
+              className="field-area skill-forge-input"
+              rows={7}
+              value={forgePrompt}
+              disabled={busy !== "" || loading}
+              onChange={(event) => setForgePrompt(event.target.value)}
+              placeholder={t("app.skills.forge.placeholder")}
+            />
+            <div className="skill-template-card__body">
+              <button
+                type="button"
+                className="solid-button"
+                disabled={!forgePrompt.trim() || busy !== "" || loading}
+                onClick={() => handleForgeSkill({ prompt: forgePrompt, mode: "new" })}
+              >
+                {busy === "forge-skill"
+                  ? t("app.skills.forge.generating")
+                  : t("app.skills.forge.generate")}
+              </button>
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={!forgePrompt.trim() || !activeSkill || busy !== "" || loading}
+                onClick={() => handleForgeSkill({ prompt: forgePrompt, mode: "rewrite" })}
+              >
+                {t("app.skills.forge.rewrite")}
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        {toolMode === "history" ? (
+          <section className="skill-catalog__panel skill-catalog__panel--scroll skill-tools__panel">
+            <div className="section-head">
+              <div>
+                <span className="eyebrow">{t("app.skills.history.eyebrow")}</span>
+                <h3>{t("app.skills.history.title")}</h3>
+              </div>
+              <span className="section-note">
+                {t("app.skills.history.count", { count: activeSkillVersions.length })}
+              </span>
+            </div>
+            <p className="section-note skill-catalog__summary">
+              {t("app.skills.history.description")}
+            </p>
+            <div className="skill-version-list">
+              {activeSkill && activeSkillVersions.length > 0 ? (
+                activeSkillVersions.map((version) => (
+                  <article key={version.versionId} className="skill-version-card">
+                    <div className="skill-version-card__head">
                       <div>
-                        <strong>{skill.name}</strong>
-                        <p>{skill.recommendationReason || skill.triggerHint || t("app.skills.noTriggerHint")}</p>
+                        <strong>{version.name || t("app.skills.defaultTitle")}</strong>
+                        <span className="section-note">
+                          {t(`app.skills.history.reason.${toHistoryReasonKey(version.reason)}`)}
+                        </span>
+                      </div>
+                      <span className="skill-meta-pill">
+                        {formatSkillDateTime(version.savedAt, lang)}
+                      </span>
+                    </div>
+
+                    <p>{version.description || t("app.skills.form.descriptionPlaceholder")}</p>
+
+                    <div className="skill-card__meta">
+                      <span>{version.triggerHint || t("app.skills.noTriggerHint")}</span>
+                      <span>
+                        {t("app.skills.history.savedAt", {
+                          date: formatSkillDateTime(version.savedAt, lang),
+                        })}
+                      </span>
+                    </div>
+
+                    <div className="skill-template-card__body">
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => handleLoadSkillVersion(version)}
+                        disabled={busy !== "" || loading}
+                      >
+                        {t("app.skills.history.loadDraft")}
+                      </button>
+                      <button
+                        type="button"
+                        className="solid-button"
+                        onClick={() => handleRestoreSkillVersion(version)}
+                        disabled={busy !== "" || loading}
+                      >
+                        {busy === "restore-skill-version"
+                          ? t("app.common.saving")
+                          : t("app.skills.history.restore")}
+                      </button>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <div className="skill-empty-panel">
+                  <span className="eyebrow">{t("app.skills.history.eyebrow")}</span>
+                  <strong>
+                    {activeSkill
+                      ? t("app.skills.history.emptyTitle")
+                      : t("app.skills.history.selectTitle")}
+                  </strong>
+                  <p>
+                    {activeSkill
+                      ? t("app.skills.history.emptyDescription")
+                      : t("app.skills.history.selectDescription")}
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+        ) : null}
+
+        {toolMode === "templates" ? (
+          <section className="skill-catalog__panel skill-catalog__panel--scroll skill-tools__panel">
+            <div className="section-head">
+              <div>
+                <span className="eyebrow">{t("app.skills.catalog.eyebrow")}</span>
+                <h3>{t("app.skills.catalog.title")}</h3>
+              </div>
+              <span className="section-note">
+                {t("app.skills.catalog.count", { count: templates.length })}
+              </span>
+            </div>
+            <input
+              className="field-input"
+              value={catalogSearch}
+              onChange={(event) => setCatalogSearch(event.target.value)}
+              placeholder={t("app.skills.catalog.search")}
+            />
+            <div className="skill-template-list">
+              {catalogSkills.length > 0 ? (
+                catalogSkills.map((template) => {
+                  const installedSkill = findInstalledStarterSkill(template, skillList);
+
+                  return (
+                    <article key={template.id} className="skill-template-card">
+                      <div className="skill-template-card__head">
+                        <div>
+                          <strong>{template.name}</strong>
+                          <p>{template.description}</p>
+                        </div>
+                        <div className="skill-card__pill-row">
+                          <span className="skill-meta-pill">{t("app.skills.source.starter")}</span>
+                          <span className="skill-meta-pill">
+                            {t(`app.skills.category.${template.category}`)}
+                          </span>
+                        </div>
                       </div>
                       <div className="skill-template-card__body">
-                        <span className="skill-meta-pill">{meta.categoryLabel}</span>
+                        <span className="section-note">
+                          {t("app.skills.catalog.triggerHint", {
+                            trigger: template.triggerHint,
+                          })}
+                        </span>
                         <button
                           type="button"
-                          className="solid-button"
-                          disabled={mountedSkillSet.has(skill.id) || busy !== "" || loading}
-                          onClick={() => handleToggleSkillMounted(skill.id)}
+                          className={installedSkill ? "ghost-button" : "solid-button"}
+                          disabled={busy !== "" || loading}
+                          onClick={() =>
+                            installedSkill
+                              ? handleOpenSkill(installedSkill.id)
+                              : handleInstallSkillTemplate(template)
+                          }
                         >
-                          {mountedSkillSet.has(skill.id)
-                            ? t("app.skills.mounted")
-                            : t("app.skills.sessionMount.recommendedAction")}
+                          {installedSkill
+                            ? t("app.skills.catalog.openInstalled")
+                            : busy === "install-skill-template"
+                              ? t("app.skills.catalog.installing")
+                              : t("app.skills.catalog.install")}
                         </button>
                       </div>
                     </article>
                   );
-                })}
-              </div>
+                })
+              ) : (
+                <div className="skill-empty-panel">
+                  <span className="eyebrow">{t("app.skills.catalog.title")}</span>
+                  <strong>{t("app.skills.catalog.emptyTitle")}</strong>
+                  <p>{t("app.skills.catalog.emptyDescription")}</p>
+                </div>
+              )}
             </div>
-          ) : null}
-          <div className="skill-mounted-list">
-            {mountedSkills.length > 0 ? (
-              mountedSkills.map((skill) => {
-                const meta = getSkillMeta(skill, mountedSkillSet, templateNameMap, t);
-                return (
-                  <button
-                    key={skill.id}
-                    type="button"
-                    className="skill-mounted-card"
-                    onClick={() => handleOpenSkill(skill.id)}
-                    disabled={busy !== "" || loading}
-                  >
-                    <strong>{skill.name}</strong>
-                    <span>{meta.categoryLabel}</span>
-                  </button>
-                );
-              })
-            ) : (
-              <div className="skill-empty-panel skill-empty-panel--compact">
-                <strong>{t("app.skills.sessionMount.emptyTitle")}</strong>
-                <p>{t("app.skills.sessionMount.emptyDescription")}</p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="skill-catalog__panel skill-catalog__panel--scroll">
-          <div className="section-head">
-            <div>
-              <span className="eyebrow">{t("app.skills.catalog.eyebrow")}</span>
-              <h3>{t("app.skills.catalog.title")}</h3>
-            </div>
-            <span className="section-note">
-              {t("app.skills.catalog.count", { count: templates.length })}
-            </span>
-          </div>
-          <input
-            className="field-input"
-            value={catalogSearch}
-            onChange={(event) => setCatalogSearch(event.target.value)}
-            placeholder={t("app.skills.catalog.search")}
-          />
-          <div className="skill-template-list">
-            {catalogSkills.length > 0 ? (
-              catalogSkills.map((template) => {
-                const installedSkill = findInstalledStarterSkill(template, skillList);
-
-                return (
-                  <article key={template.id} className="skill-template-card">
-                    <div className="skill-template-card__head">
-                      <div>
-                        <strong>{template.name}</strong>
-                        <p>{template.description}</p>
-                      </div>
-                      <div className="skill-card__pill-row">
-                        <span className="skill-meta-pill">{t("app.skills.source.starter")}</span>
-                        <span className="skill-meta-pill">
-                          {t(`app.skills.category.${template.category}`)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="skill-template-card__body">
-                      <span className="section-note">
-                        {t("app.skills.catalog.triggerHint", {
-                          trigger: template.triggerHint,
-                        })}
-                      </span>
-                      <button
-                        type="button"
-                        className={installedSkill ? "ghost-button" : "solid-button"}
-                        disabled={busy !== "" || loading}
-                        onClick={() =>
-                          installedSkill
-                            ? handleOpenSkill(installedSkill.id)
-                            : handleInstallSkillTemplate(template)
-                        }
-                      >
-                        {installedSkill
-                          ? t("app.skills.catalog.openInstalled")
-                          : busy === "install-skill-template"
-                            ? t("app.skills.catalog.installing")
-                            : t("app.skills.catalog.install")}
-                      </button>
-                    </div>
-                  </article>
-                );
-              })
-            ) : (
-              <div className="skill-empty-panel">
-                <span className="eyebrow">{t("app.skills.catalog.title")}</span>
-                <strong>{t("app.skills.catalog.emptyTitle")}</strong>
-                <p>{t("app.skills.catalog.emptyDescription")}</p>
-              </div>
-            )}
-          </div>
-        </section>
+          </section>
+        ) : null}
       </aside>
 
       <input
@@ -844,11 +843,78 @@ function createSkillTemplates(t) {
   ];
 }
 
+function buildTemplateNameMap(templates) {
+  return new Map(
+    templates.flatMap((template) =>
+      [template.name, ...(template.aliases || [])].map((alias) => [
+        normalizeName(alias),
+        template,
+      ])
+    )
+  );
+}
+
+function buildSkillDisplay(skill, templateNameMap) {
+  const starterTemplate = templateNameMap.get(normalizeName(skill?.name));
+  if (!starterTemplate) {
+    return {
+      ...skill,
+      name: skill?.name || "",
+      description: skill?.description || "",
+      triggerHint: skill?.triggerHint || "",
+      instructions: skill?.instructions || "",
+      summary: skill?.summary || skill?.description || "",
+    };
+  }
+
+  return {
+    ...skill,
+    name: starterTemplate.name,
+    description: starterTemplate.description,
+    triggerHint: starterTemplate.triggerHint,
+    instructions: starterTemplate.instructions,
+    summary: starterTemplate.description,
+  };
+}
+
+function buildDraftDisplay(skillDraft, activeSkill, starterTemplate) {
+  if (!starterTemplate || !activeSkill) {
+    return skillDraft;
+  }
+
+  return {
+    ...skillDraft,
+    name: displayTemplateField(skillDraft.name, activeSkill.name, starterTemplate.name),
+    description: displayTemplateField(
+      skillDraft.description,
+      activeSkill.description,
+      starterTemplate.description
+    ),
+    instructions: displayTemplateField(
+      skillDraft.instructions,
+      activeSkill.instructions,
+      starterTemplate.instructions
+    ),
+    triggerHint: displayTemplateField(
+      skillDraft.triggerHint,
+      activeSkill.triggerHint,
+      starterTemplate.triggerHint
+    ),
+  };
+}
+
+function displayTemplateField(draftValue, activeValue, localizedValue) {
+  if (String(draftValue || "") === String(activeValue || "") && localizedValue) {
+    return localizedValue;
+  }
+  return draftValue || "";
+}
+
 function getSkillMeta(skill, mountedSkillSet, templateNameMap, t) {
-  const normalized = normalizeName(skill.name);
-  const starterTemplate = templateNameMap.get(normalized);
+  const starterTemplate = templateNameMap.get(normalizeName(skill.name));
   return {
     mounted: mountedSkillSet.has(skill.id),
+    starterTemplate: starterTemplate || null,
     sourceLabel: starterTemplate ? t("app.skills.source.starter") : t("app.skills.source.workspace"),
     categoryLabel: starterTemplate
       ? t(`app.skills.category.${starterTemplate.category}`)

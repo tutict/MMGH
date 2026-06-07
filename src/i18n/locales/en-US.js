@@ -507,6 +507,11 @@ const enUS = {
     "Not mounted on this session. Enable it when needed.",
   "app.skills.deleteConfirm": "Delete this skill?",
   "app.skills.save": "Save skill",
+  "app.skills.tools.label": "Skill tools",
+  "app.skills.tools.session": "Session",
+  "app.skills.tools.generate": "Generate",
+  "app.skills.tools.history": "History",
+  "app.skills.tools.templates": "Templates",
   "app.skills.editor.eyebrow": "Low-permission prompt skills",
   "app.skills.editor.description":
     "Save reusable rules as skills, then mount them only when a session needs them.",

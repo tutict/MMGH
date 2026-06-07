@@ -469,6 +469,11 @@ const zhCN = {
   "app.skills.notAttached": "未挂载到当前会话，需要时再启用。",
   "app.skills.deleteConfirm": "确认删除这个技能？",
   "app.skills.save": "保存技能",
+  "app.skills.tools.label": "技能工具",
+  "app.skills.tools.session": "会话",
+  "app.skills.tools.generate": "生成",
+  "app.skills.tools.history": "历史",
+  "app.skills.tools.templates": "模板",
   "app.skills.editor.eyebrow": "低权限技能",
   "app.skills.editor.description":
     "把常用规则保存为技能，按需挂载到当前会话。",
