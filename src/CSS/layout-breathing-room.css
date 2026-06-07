@@ -2151,3 +2151,494 @@
     border-radius: 6px;
   }
 }
+
+/* Mobile business list pass: align operational workspaces with the compact settings model. */
+@media (max-width: 760px) {
+  .agent-app:not(.view-settings) {
+    --business-row-label: minmax(90px, 32%);
+  }
+
+  .agent-app:not(.view-settings) .workspace-column,
+  .agent-app:not(.view-settings) .today-workspace,
+  .agent-app:not(.view-settings) .today-layout,
+  .agent-app:not(.view-settings) .today-primary-column,
+  .agent-app:not(.view-settings) .today-sidebar,
+  .agent-app:not(.view-settings) .runtime-workspace,
+  .agent-app:not(.view-settings) .runtime-layout,
+  .agent-app:not(.view-settings) .runtime-main-column,
+  .agent-app:not(.view-settings) .runtime-sidebar,
+  .agent-app:not(.view-settings) .knowledge-panel,
+  .agent-app:not(.view-settings) .reminder-panel,
+  .agent-app:not(.view-settings) .skill-panel,
+  .agent-app:not(.view-settings) .gallery-panel,
+  .agent-app:not(.view-settings) .weather-panel {
+    gap: 6px;
+  }
+
+  .agent-app:not(.view-settings) .today-hero,
+  .agent-app:not(.view-settings) .today-section,
+  .agent-app:not(.view-settings) .runtime-status-panel,
+  .agent-app:not(.view-settings) .runtime-stage-card,
+  .agent-app:not(.view-settings) .runtime-composer,
+  .agent-app:not(.view-settings) .runtime-sidebar-card,
+  .agent-app:not(.view-settings) .knowledge-sidebar,
+  .agent-app:not(.view-settings) .knowledge-editor,
+  .agent-app:not(.view-settings) .reminder-sidebar,
+  .agent-app:not(.view-settings) .reminder-editor,
+  .agent-app:not(.view-settings) .skill-sidebar,
+  .agent-app:not(.view-settings) .skill-editor,
+  .agent-app:not(.view-settings) .skill-catalog,
+  .agent-app:not(.view-settings) .gallery-toolbar,
+  .agent-app:not(.view-settings) .gallery-stage,
+  .agent-app:not(.view-settings) .weather-panel.panel-surface,
+  .agent-app:not(.view-settings) .weather-stage {
+    padding: 0 2px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .agent-app:not(.view-settings) .skill-panel.panel-surface,
+  .agent-app:not(.view-settings) .gallery-panel.panel-surface,
+  .agent-app:not(.view-settings) .reminder-panel.panel-surface,
+  .agent-app:not(.view-settings) .knowledge-panel.panel-surface {
+    padding: 0 2px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .agent-app.view-today .today-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--quiet-divider);
+  }
+
+  .agent-app.view-today .today-hero h3,
+  .agent-app.view-today .today-section__head h4,
+  .agent-app.view-agent .runtime-stage-card__head h3,
+  .agent-app.view-agent .runtime-composer__head h4,
+  .agent-app.view-agent .runtime-sidebar-card__head h4,
+  .agent-app.view-knowledge .knowledge-head h3,
+  .agent-app.view-reminders .reminder-sidebar__head h3,
+  .agent-app.view-skills .skill-sidebar__intro-copy h3,
+  .agent-app.view-gallery .gallery-toolbar__head h3,
+  .agent-app.view-weather .weather-card-head h3 {
+    font-size: 0.92rem;
+    line-height: 1.2;
+  }
+
+  .agent-app.view-today .today-hero__stats,
+  .agent-app.view-agent .runtime-status-panel__metrics,
+  .agent-app.view-knowledge .knowledge-sidebar__summary,
+  .agent-app.view-reminders .reminder-sidebar__summary,
+  .agent-app.view-skills .skill-sidebar__status--grid,
+  .agent-app.view-weather .weather-metric-grid {
+    width: 100%;
+    gap: 0;
+    overflow: visible;
+    border: 0;
+    border-block: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .agent-app.view-today .today-stat,
+  .agent-app.view-agent .runtime-status-panel__metric,
+  .agent-app.view-knowledge .knowledge-summary-card,
+  .agent-app.view-reminders .reminder-summary-card,
+  .agent-app.view-skills .skill-stat-card,
+  .agent-app.view-weather .weather-metric-card {
+    min-height: 40px;
+    padding: 7px 8px;
+    border: 0;
+    border-left: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .agent-app.view-today .today-stat:first-child,
+  .agent-app.view-agent .runtime-status-panel__metric:first-child,
+  .agent-app.view-knowledge .knowledge-summary-card:first-child,
+  .agent-app.view-reminders .reminder-summary-card:first-child,
+  .agent-app.view-skills .skill-stat-card:first-child,
+  .agent-app.view-weather .weather-metric-card:first-child {
+    border-left: 0;
+  }
+
+  .agent-app:not(.view-settings) .today-section__head,
+  .agent-app:not(.view-settings) .runtime-stage-card__head,
+  .agent-app:not(.view-settings) .runtime-composer__head,
+  .agent-app:not(.view-settings) .runtime-sidebar-card__head,
+  .agent-app:not(.view-settings) .knowledge-editor__toolbar,
+  .agent-app:not(.view-settings) .reminder-editor__toolbar,
+  .agent-app:not(.view-settings) .section-head.knowledge-head,
+  .agent-app:not(.view-settings) .section-head.reminder-sidebar__head,
+  .agent-app:not(.view-settings) .gallery-toolbar__head,
+  .agent-app:not(.view-settings) .skill-catalog__panel .section-head,
+  .agent-app:not(.view-settings) .weather-card-head {
+    margin: 0;
+    min-height: 0;
+    padding: 4px 0 7px;
+    border-bottom: 1px solid var(--quiet-divider);
+  }
+
+  .agent-app:not(.view-settings) .today-section,
+  .agent-app:not(.view-settings) .runtime-stage-card,
+  .agent-app:not(.view-settings) .runtime-composer,
+  .agent-app:not(.view-settings) .runtime-sidebar-card,
+  .agent-app:not(.view-settings) .knowledge-sidebar,
+  .agent-app:not(.view-settings) .knowledge-editor,
+  .agent-app:not(.view-settings) .reminder-sidebar,
+  .agent-app:not(.view-settings) .reminder-editor,
+  .agent-app:not(.view-settings) .skill-sidebar,
+  .agent-app:not(.view-settings) .skill-editor,
+  .agent-app:not(.view-settings) .skill-catalog__panel,
+  .agent-app:not(.view-settings) .skill-recommend-strip,
+  .agent-app:not(.view-settings) .gallery-toolbar,
+  .agent-app:not(.view-settings) .gallery-stage,
+  .agent-app:not(.view-settings) .weather-tilt {
+    border-top: 1px solid var(--quiet-divider);
+  }
+
+  .agent-app.view-today .today-hero__actions,
+  .agent-app.view-reminders .reminder-sidebar__head,
+  .agent-app.view-skills .skill-header-actions,
+  .agent-app.view-gallery .gallery-toolbar__actions,
+  .agent-app.view-weather .weather-stage__actions {
+    gap: 6px;
+  }
+
+  .agent-app.view-today .today-hero__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .agent-app.view-reminders .reminder-sidebar__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .agent-app.view-reminders .reminder-sidebar__head .solid-button {
+    min-height: 32px;
+    padding-inline: 10px;
+    font-size: 0.78rem;
+  }
+
+  .agent-app.view-skills .skill-sidebar .skill-sidebar__intro,
+  .agent-app.view-skills .skill-filter-row {
+    padding: 4px 0 7px;
+    border: 0;
+    border-bottom: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .agent-app.view-skills .skill-sidebar .skill-sidebar__intro {
+    gap: 8px;
+  }
+
+  .agent-app.view-skills .skill-catalog .skill-catalog__panel,
+  .agent-app.view-skills .skill-recommend-strip,
+  .agent-app.view-skills .skill-empty-panel {
+    padding: 8px 0;
+    border: 0;
+    border-top: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .agent-app.view-skills .skill-catalog .skill-catalog__panel:first-of-type,
+  .agent-app.view-skills .skill-recommend-strip:first-child,
+  .agent-app.view-skills .skill-empty-panel:first-child {
+    border-top: 0;
+  }
+
+  .agent-app.view-skills .skill-filter-row {
+    margin: 0;
+    overflow-x: auto;
+  }
+
+  .agent-app.view-skills .skill-panel.panel-surface .skill-tools__tabs {
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .agent-app.view-skills .skill-panel.panel-surface .skill-tools__tab {
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .agent-app.view-skills .skill-panel.panel-surface .skill-tools__tab.is-active {
+    border-color: transparent;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .agent-app.view-skills .skill-profile-card--hero,
+  .agent-app.view-skills .skill-profile-card__head,
+  .agent-app.view-skills .skill-catalog__panel .section-head {
+    text-align: left;
+  }
+
+  .agent-app:not(.view-settings) .field-input,
+  .agent-app:not(.view-settings) .field-area,
+  .agent-app:not(.view-settings) .knowledge-icon-input,
+  .agent-app:not(.view-settings) .knowledge-title-input,
+  .agent-app:not(.view-settings) .knowledge-body-input,
+  .agent-app:not(.view-settings) .skill-forge-input,
+  .agent-app:not(.view-settings) .reminder-detail-input,
+  .agent-app:not(.view-settings) .runtime-composer textarea {
+    min-height: 34px;
+    padding: 7px 9px;
+    border-radius: 6px;
+    box-shadow: none;
+  }
+
+  .agent-app.view-agent .runtime-thread__frame,
+  .agent-app.view-knowledge .knowledge-note-list,
+  .agent-app.view-reminders .reminder-group-list,
+  .agent-app.view-skills .skill-list,
+  .agent-app.view-skills .skill-template-list,
+  .agent-app.view-skills .skill-version-list,
+  .agent-app.view-gallery .gallery-grid,
+  .agent-app.view-weather .weather-city-widget__list,
+  .agent-app.view-weather .weather-week-list {
+    gap: 0;
+    padding-right: 0;
+    border-radius: 0;
+  }
+
+  .agent-app:not(.view-settings) .today-focus-item,
+  .agent-app:not(.view-settings) .today-session-item,
+  .agent-app:not(.view-settings) .today-capture-item,
+  .agent-app:not(.view-settings) .today-pattern-item,
+  .agent-app:not(.view-settings) .today-review-signal,
+  .agent-app:not(.view-settings) .today-rule-signal,
+  .agent-app:not(.view-settings) .today-shortcut,
+  .agent-app:not(.view-settings) .today-session-spotlight,
+  .agent-app:not(.view-settings) .session-card,
+  .agent-app:not(.view-settings) .runtime-session-card,
+  .agent-app:not(.view-settings) .runtime-recommend-card,
+  .agent-app:not(.view-settings) .runtime-activity-item,
+  .agent-app:not(.view-settings) .knowledge-note-card,
+  .agent-app:not(.view-settings) .reminder-card,
+  .agent-app:not(.view-settings) .skill-card,
+  .agent-app:not(.view-settings) .skill-mounted-card,
+  .agent-app:not(.view-settings) .skill-template-card,
+  .agent-app:not(.view-settings) .skill-recommend-card,
+  .agent-app:not(.view-settings) .skill-version-card,
+  .agent-app:not(.view-settings) .skill-toggle-card,
+  .agent-app:not(.view-settings) .skill-mount-banner,
+  .agent-app:not(.view-settings) .gallery-card,
+  .agent-app:not(.view-settings) .weather-city-widget__item,
+  .agent-app:not(.view-settings) .weather-week-row,
+  .agent-app:not(.view-settings) .weather-search-section,
+  .agent-app:not(.view-settings) .weather-search-result {
+    padding: 8px 0;
+    border: 0;
+    border-top: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .agent-app:not(.view-settings) .today-focus-item:first-child,
+  .agent-app:not(.view-settings) .today-session-item:first-child,
+  .agent-app:not(.view-settings) .today-capture-item:first-child,
+  .agent-app:not(.view-settings) .today-pattern-item:first-child,
+  .agent-app:not(.view-settings) .today-review-signal:first-child,
+  .agent-app:not(.view-settings) .today-rule-signal:first-child,
+  .agent-app:not(.view-settings) .today-shortcut:first-child,
+  .agent-app:not(.view-settings) .session-card:first-child,
+  .agent-app:not(.view-settings) .runtime-session-card:first-child,
+  .agent-app:not(.view-settings) .runtime-recommend-card:first-child,
+  .agent-app:not(.view-settings) .runtime-activity-item:first-child,
+  .agent-app:not(.view-settings) .knowledge-note-card:first-child,
+  .agent-app:not(.view-settings) .reminder-card:first-child,
+  .agent-app:not(.view-settings) .skill-card:first-child,
+  .agent-app:not(.view-settings) .skill-mounted-card:first-child,
+  .agent-app:not(.view-settings) .skill-template-card:first-child,
+  .agent-app:not(.view-settings) .skill-recommend-card:first-child,
+  .agent-app:not(.view-settings) .skill-version-card:first-child,
+  .agent-app:not(.view-settings) .skill-toggle-card:first-child,
+  .agent-app:not(.view-settings) .skill-mount-banner:first-child,
+  .agent-app:not(.view-settings) .gallery-card:first-child,
+  .agent-app:not(.view-settings) .weather-city-widget__item:first-child,
+  .agent-app:not(.view-settings) .weather-week-row:first-child,
+  .agent-app:not(.view-settings) .weather-search-section:first-child,
+  .agent-app:not(.view-settings) .weather-search-result:first-child {
+    border-top: 0;
+  }
+
+  .agent-app.view-today .today-review-grid,
+  .agent-app.view-today .today-rule-grid,
+  .agent-app.view-today .today-shortcut-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .agent-app.view-today .today-section__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    text-align: left;
+  }
+
+  .agent-app.view-today .today-section__head > div {
+    text-align: left;
+  }
+
+  .agent-app.view-today .today-session-library-panel .rail-section__head {
+    padding: 4px 0 7px;
+    border-bottom: 1px solid var(--quiet-divider);
+    text-align: left;
+  }
+
+  .agent-app.view-today .today-session-library-panel .session-stack {
+    gap: 6px;
+  }
+
+  .agent-app.view-today .today-session-library-panel .session-toolbar {
+    gap: 6px;
+  }
+
+  .agent-app.view-today .today-session-library-panel .session-stack__danger {
+    min-height: 32px;
+    padding: 7px 0;
+    border: 0;
+    border-top: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    justify-content: flex-start;
+    font-size: 0.84rem;
+    text-align: left;
+  }
+
+  .agent-app.view-today .today-review-signal,
+  .agent-app.view-today .today-rule-signal,
+  .agent-app.view-today .today-shortcut {
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px 10px;
+  }
+
+  .agent-app.view-today .today-review-signal strong,
+  .agent-app.view-today .today-rule-signal strong {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .agent-app.view-today .today-shortcut::before,
+  .agent-app.view-today .today-shortcut::after {
+    display: none;
+  }
+
+  .agent-app.view-today .today-item__actions,
+  .agent-app.view-skills .skill-template-card__body,
+  .agent-app.view-skills .skill-recommend-card .skill-template-card__body,
+  .agent-app.view-skills .skill-profile-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .agent-app.view-today .today-item__actions > *,
+  .agent-app.view-skills .skill-template-card__body > *,
+  .agent-app.view-skills .skill-recommend-card .skill-template-card__body > *,
+  .agent-app.view-skills .skill-profile-actions > * {
+    width: 100%;
+  }
+
+  .agent-app:not(.view-settings) .today-focus-item.is-active,
+  .agent-app:not(.view-settings) .today-session-item.is-active,
+  .agent-app:not(.view-settings) .session-card.is-active,
+  .agent-app:not(.view-settings) .runtime-session-card.is-active,
+  .agent-app:not(.view-settings) .knowledge-note-card.is-active,
+  .agent-app:not(.view-settings) .reminder-card.is-active,
+  .agent-app:not(.view-settings) .skill-card.is-active,
+  .agent-app:not(.view-settings) .skill-mounted-card.is-active,
+  .agent-app:not(.view-settings) .weather-city-widget__item.is-active {
+    padding-left: 8px;
+    border-left: 2px solid var(--accent);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .agent-app.view-weather .weather-scene,
+  .agent-app.view-weather .weather-ambient,
+  .agent-app.view-weather .weather-hero-card__sky {
+    display: none;
+  }
+
+  .agent-app.view-weather .weather-hero-card,
+  .agent-app.view-weather .weather-city-widget,
+  .agent-app.view-weather .weather-forecast-card {
+    padding: 8px 0;
+    border: 0;
+    border-top: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .agent-app.view-weather .weather-hero-card__body {
+    width: 100%;
+  }
+
+  .agent-app.view-weather .weather-range-row,
+  .agent-app.view-weather .weather-hourly-row {
+    gap: 0;
+  }
+
+  .agent-app.view-weather .weather-range-row span,
+  .agent-app.view-weather .weather-hourly-chip {
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .agent-app.view-reminders .reminder-empty-group,
+  .agent-app:not(.view-settings) .today-empty-state,
+  .agent-app:not(.view-settings) .knowledge-empty-state,
+  .agent-app:not(.view-settings) .gallery-empty,
+  .agent-app:not(.view-settings) .reminder-empty-state,
+  .agent-app:not(.view-settings) .weather-empty-state {
+    min-height: 0;
+    padding: 9px 0;
+    border: 0;
+    border-top: 1px solid var(--quiet-divider);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    text-align: left;
+  }
+
+  .agent-app.view-today .today-empty-state:first-child,
+  .agent-app.view-knowledge .knowledge-empty-state:first-child,
+  .agent-app.view-gallery .gallery-empty:first-child,
+  .agent-app.view-reminders .reminder-empty-group:first-child,
+  .agent-app.view-reminders .reminder-empty-state:first-child,
+  .agent-app.view-weather .weather-empty-state:first-child {
+    border-top: 0;
+  }
+
+  .agent-app:not(.view-settings) .today-empty-state p,
+  .agent-app:not(.view-settings) .knowledge-empty-state p,
+  .agent-app:not(.view-settings) .gallery-empty p,
+  .agent-app:not(.view-settings) .reminder-empty-state p {
+    line-height: 1.45;
+  }
+}
