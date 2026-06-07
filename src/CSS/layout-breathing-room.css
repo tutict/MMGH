@@ -2642,3 +2642,309 @@
     line-height: 1.45;
   }
 }
+
+/* Mobile dark graphite pass: keep business screens calm without changing desktop or music. */
+@media (max-width: 760px) {
+  html[data-theme="dark"] .agent-app:not(.view-music) {
+    --accent: #58b9c4;
+    --accent-strong: #7bd3dc;
+    --accent-soft: rgba(88, 185, 196, 0.14);
+    --accent-ring: rgba(88, 185, 196, 0.32);
+    --active-shadow: rgba(88, 185, 196, 0.1);
+    --shadow-accent: rgba(88, 185, 196, 0.14);
+    --app-background:
+      radial-gradient(circle at 12% 0%, rgba(97, 140, 126, 0.1), transparent 28%),
+      linear-gradient(180deg, #111412 0%, #0b0d0d 100%);
+    --app-text: #eef2ef;
+    --heading-text: #f5f7f3;
+    --body-text: rgba(233, 239, 235, 0.84);
+    --muted-text: rgba(187, 200, 193, 0.72);
+    --soft-text: rgba(151, 166, 158, 0.62);
+    --panel-background:
+      linear-gradient(180deg, rgba(24, 28, 27, 0.96), rgba(13, 15, 15, 0.96)),
+      #111413;
+    --panel-border: rgba(218, 228, 221, 0.14);
+    --panel-shadow: none;
+    --surface-background: rgba(255, 255, 255, 0.035);
+    --surface-elevated: rgba(255, 255, 255, 0.055);
+    --surface-border: rgba(218, 228, 221, 0.15);
+    --surface-hover: rgba(255, 255, 255, 0.07);
+    --surface-active:
+      linear-gradient(135deg, rgba(88, 185, 196, 0.13), rgba(255, 255, 255, 0.035)),
+      rgba(255, 255, 255, 0.035);
+    --surface-active-border: rgba(110, 203, 211, 0.34);
+    --input-background: rgba(17, 21, 20, 0.78);
+    --input-border: rgba(218, 228, 221, 0.16);
+    --input-focus: rgba(123, 211, 220, 0.5);
+    --ghost-background: rgba(255, 255, 255, 0.045);
+    --ghost-border: rgba(218, 228, 221, 0.14);
+    --ghost-hover: rgba(255, 255, 255, 0.075);
+    --badge-background: rgba(255, 255, 255, 0.045);
+    --control-shadow: none;
+    --control-shadow-strong: none;
+    --control-surface: rgba(255, 255, 255, 0.045);
+    --control-surface-hover: rgba(255, 255, 255, 0.075);
+    --control-surface-active: rgba(88, 185, 196, 0.12);
+    --message-user-background: rgba(88, 185, 196, 0.12);
+    --message-user-border: rgba(110, 203, 211, 0.28);
+    --message-assistant-background: rgba(255, 255, 255, 0.035);
+    --editor-background:
+      linear-gradient(180deg, rgba(18, 22, 21, 0.94), rgba(12, 14, 14, 0.94)),
+      #101312;
+    --editor-border: rgba(218, 228, 221, 0.13);
+    --tag-background: rgba(88, 185, 196, 0.1);
+    --tag-border: rgba(110, 203, 211, 0.22);
+    --tag-text: #a9dce1;
+    --chip-background: rgba(255, 255, 255, 0.045);
+    --chip-border: rgba(218, 228, 221, 0.14);
+    --quiet-divider: rgba(218, 228, 221, 0.16);
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .agent-app__glow,
+  html[data-theme="dark"] .agent-app:not(.view-music) .agent-app__mesh {
+    opacity: 0.18;
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .workspace-column {
+    color: var(--body-text);
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .workspace-hero.panel-surface {
+    border-color: var(--quiet-divider);
+    background: linear-gradient(180deg, rgba(18, 23, 22, 0.98), rgba(13, 16, 15, 0.96));
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .workspace-hero__brand-copy strong,
+  html[data-theme="dark"] .agent-app:not(.view-music) .today-section__head h4,
+  html[data-theme="dark"] .agent-app:not(.view-music) .section-head h3,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-profile-card__head h4,
+  html[data-theme="dark"] .agent-app:not(.view-music) .cache-card__head strong {
+    color: var(--heading-text);
+    text-shadow: none;
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .section-note,
+  html[data-theme="dark"] .agent-app:not(.view-music) .eyebrow,
+  html[data-theme="dark"] .agent-app:not(.view-music) .workspace-hero__meta-pill,
+  html[data-theme="dark"] .agent-app:not(.view-music) .today-meta-pill,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-card__meta,
+  html[data-theme="dark"] .agent-app:not(.view-music) .cache-card p {
+    color: var(--muted-text);
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .mobile-dock,
+  html[data-theme="dark"] .agent-app:not(.view-music) .mobile-shell-drawer__panel.session-rail,
+  html[data-theme="dark"] .agent-app:not(.view-music) .inspector-drawer__panel {
+    border-color: rgba(218, 228, 221, 0.16);
+    background: rgba(16, 20, 19, 0.98);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .mobile-dock__item {
+    color: rgba(187, 200, 193, 0.74);
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .mobile-dock__item:hover,
+  html[data-theme="dark"] .agent-app:not(.view-music) .mobile-dock__item.is-active {
+    background: rgba(255, 255, 255, 0.045);
+    color: var(--heading-text);
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .mobile-dock__item.is-active::after {
+    right: 32%;
+    left: 32%;
+    background: #77cbd3;
+    opacity: 0.86;
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .solid-button {
+    border-color: rgba(132, 209, 216, 0.42);
+    background: linear-gradient(180deg, #62bec8, #4294a1);
+    color: #071111;
+    box-shadow: none;
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .solid-button:hover {
+    background: linear-gradient(180deg, #71c9d2, #4aa1ad);
+    box-shadow: none;
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .solid-button:disabled {
+    border-color: rgba(218, 228, 221, 0.1);
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(187, 200, 193, 0.6);
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .ghost-button,
+  html[data-theme="dark"] .agent-app:not(.view-music) .runtime-sidebar-card__action,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-filter-chip,
+  html[data-theme="dark"] .agent-app:not(.view-music) .segmented-filter__button,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-tools__tab,
+  html[data-theme="dark"] .agent-app:not(.view-music) .chip-button {
+    border-color: rgba(218, 228, 221, 0.15);
+    background: rgba(255, 255, 255, 0.035);
+    color: var(--body-text);
+    box-shadow: none;
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .ghost-button:hover,
+  html[data-theme="dark"] .agent-app:not(.view-music) .runtime-sidebar-card__action:hover,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-filter-chip:hover,
+  html[data-theme="dark"] .agent-app:not(.view-music) .segmented-filter__button:hover,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-tools__tab:hover,
+  html[data-theme="dark"] .agent-app:not(.view-music) .chip-button:hover {
+    border-color: rgba(218, 228, 221, 0.22);
+    background: rgba(255, 255, 255, 0.065);
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-filter-chip.is-active,
+  html[data-theme="dark"] .agent-app:not(.view-music) .segmented-filter__button.is-active,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-tools__tab.is-active {
+    border-color: rgba(123, 211, 220, 0.28);
+    background: rgba(88, 185, 196, 0.12);
+    color: var(--heading-text);
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .field-input,
+  html[data-theme="dark"] .agent-app:not(.view-music) .field-area,
+  html[data-theme="dark"] .agent-app:not(.view-music) .composer textarea,
+  html[data-theme="dark"] .agent-app:not(.view-music) .knowledge-icon-input,
+  html[data-theme="dark"] .agent-app:not(.view-music) .knowledge-title-input,
+  html[data-theme="dark"] .agent-app:not(.view-music) .knowledge-body-input,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-forge-input,
+  html[data-theme="dark"] .agent-app:not(.view-music) .reminder-detail-input {
+    border-color: var(--input-border);
+    background: rgba(14, 18, 17, 0.82);
+    color: var(--body-text);
+    box-shadow: none;
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .field-input::placeholder,
+  html[data-theme="dark"] .agent-app:not(.view-music) .field-area::placeholder,
+  html[data-theme="dark"] .agent-app:not(.view-music) .composer textarea::placeholder,
+  html[data-theme="dark"] .agent-app:not(.view-music) .knowledge-body-input::placeholder,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-forge-input::placeholder,
+  html[data-theme="dark"] .agent-app:not(.view-music) .reminder-detail-input::placeholder {
+    color: rgba(187, 200, 193, 0.54);
+  }
+
+  html[data-theme="dark"] .agent-app.view-settings .settings-form .field-input {
+    background: transparent;
+  }
+
+  html[data-theme="dark"] .agent-app.view-settings .settings-form .settings-form__prompt {
+    border-color: var(--input-border);
+    background: rgba(14, 18, 17, 0.72);
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .status-chip,
+  html[data-theme="dark"] .agent-app:not(.view-music) .rail-nav-item__badge,
+  html[data-theme="dark"] .agent-app:not(.view-music) .session-card__badge,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-meta-pill,
+  html[data-theme="dark"] .agent-app:not(.view-music) .today-focus-item__urgency {
+    border-color: rgba(218, 228, 221, 0.15);
+    background: rgba(255, 255, 255, 0.045);
+    color: rgba(210, 222, 216, 0.84);
+    box-shadow: none;
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .status-running,
+  html[data-theme="dark"] .agent-app:not(.view-music) .status-ready,
+  html[data-theme="dark"] .agent-app:not(.view-music) .status-done,
+  html[data-theme="dark"] .agent-app:not(.view-music) .status-completed {
+    border-color: rgba(121, 188, 151, 0.28);
+    background: rgba(121, 188, 151, 0.11);
+    color: #bce3ca;
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .status-warning,
+  html[data-theme="dark"] .agent-app:not(.view-music) .status-scheduled {
+    border-color: rgba(211, 170, 92, 0.3);
+    background: rgba(211, 170, 92, 0.1);
+    color: #e3c98f;
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .status-failed,
+  html[data-theme="dark"] .agent-app:not(.view-music) .status-error,
+  html[data-theme="dark"] .agent-app:not(.view-music) .status-overdue {
+    border-color: rgba(211, 116, 112, 0.32);
+    background: rgba(211, 116, 112, 0.12);
+    color: #efb3ae;
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .today-stat,
+  html[data-theme="dark"] .agent-app:not(.view-music) .runtime-status-panel__metric,
+  html[data-theme="dark"] .agent-app:not(.view-music) .knowledge-summary-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .reminder-summary-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-stat-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .weather-metric-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .today-review-signal,
+  html[data-theme="dark"] .agent-app:not(.view-music) .today-rule-signal,
+  html[data-theme="dark"] .agent-app:not(.view-music) .today-shortcut {
+    border-color: var(--quiet-divider);
+    background: transparent;
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .today-focus-item,
+  html[data-theme="dark"] .agent-app:not(.view-music) .today-session-item,
+  html[data-theme="dark"] .agent-app:not(.view-music) .today-capture-item,
+  html[data-theme="dark"] .agent-app:not(.view-music) .today-pattern-item,
+  html[data-theme="dark"] .agent-app:not(.view-music) .session-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .runtime-session-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .runtime-recommend-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .runtime-activity-item,
+  html[data-theme="dark"] .agent-app:not(.view-music) .knowledge-note-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .reminder-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-mounted-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-template-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-recommend-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-version-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-toggle-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-mount-banner,
+  html[data-theme="dark"] .agent-app:not(.view-music) .gallery-card,
+  html[data-theme="dark"] .agent-app:not(.view-music) .weather-city-widget__item,
+  html[data-theme="dark"] .agent-app:not(.view-music) .weather-week-row,
+  html[data-theme="dark"] .agent-app:not(.view-music) .weather-search-section,
+  html[data-theme="dark"] .agent-app:not(.view-music) .weather-search-result,
+  html[data-theme="dark"] .agent-app.view-settings .cache-card,
+  html[data-theme="dark"] .agent-app.view-settings .settings-form__card {
+    border-color: var(--quiet-divider);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .today-focus-item.is-active,
+  html[data-theme="dark"] .agent-app:not(.view-music) .today-session-item.is-active,
+  html[data-theme="dark"] .agent-app:not(.view-music) .session-card.is-active,
+  html[data-theme="dark"] .agent-app:not(.view-music) .runtime-session-card.is-active,
+  html[data-theme="dark"] .agent-app:not(.view-music) .knowledge-note-card.is-active,
+  html[data-theme="dark"] .agent-app:not(.view-music) .reminder-card.is-active,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-card.is-active,
+  html[data-theme="dark"] .agent-app:not(.view-music) .skill-mounted-card.is-active,
+  html[data-theme="dark"] .agent-app:not(.view-music) .weather-city-widget__item.is-active {
+    border-left-color: #78c8d0;
+    background: rgba(88, 185, 196, 0.055);
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .toggle-pill {
+    border-color: rgba(218, 228, 221, 0.16);
+    background: rgba(255, 255, 255, 0.07);
+    box-shadow: none;
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .toggle-pill span {
+    background: rgba(242, 246, 242, 0.9);
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .toggle-pill.is-on {
+    border-color: rgba(123, 211, 220, 0.35);
+    background: rgba(88, 185, 196, 0.58);
+  }
+
+  html[data-theme="dark"] .agent-app:not(.view-music) .notice-banner,
+  html[data-theme="dark"] .agent-app:not(.view-music) .error-banner {
+    border-color: var(--quiet-divider);
+    background: rgba(18, 22, 21, 0.94);
+  }
+}
