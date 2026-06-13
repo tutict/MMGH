@@ -144,6 +144,8 @@ import {
   sanitizeWeatherLocation,
   updateStoredWeatherLocations,
 } from "./utils/weatherStorage";
+import MobileAppShell from "./components/mobile/MobileAppShell";
+import useMobileViewport from "./components/mobile/useMobileViewport";
 
 const GalleryWorkspace = lazy(() => import("./components/GalleryWorkspace"));
 const KnowledgeVault = lazy(() => import("./components/KnowledgeVault"));
@@ -703,6 +705,7 @@ function App() {
   const { lang, setLang, t } = useI18n();
   const [workspace, setWorkspace] = useState(null);
   const [currentView, setCurrentView] = useState("today");
+  const isMobileViewport = useMobileViewport("(max-width: 760px)");
   const [theme, setTheme] = useState(() => {
     const savedTheme = readStoredTheme();
     if (savedTheme === "light" || savedTheme === "dark") {
@@ -4646,6 +4649,197 @@ function App() {
   );
 
   const workspaceLoadingFallback = <WorkspaceLoadingState label={t("app.common.loading")} />;
+  const isDedicatedMobileView =
+    currentView === "today" ||
+    currentView === "agent" ||
+    currentView === "knowledge" ||
+    currentView === "weather" ||
+    currentView === "settings" ||
+    currentView === "reminders";
+  const mobileLegacyContent = isDedicatedMobileView ? null : currentView === "gallery" ? (
+    <Suspense fallback={workspaceLoadingFallback}>
+      <GalleryWorkspace
+        galleryFilter={galleryFilter}
+        galleryItems={galleryItems}
+        gallerySearch={gallerySearch}
+        galleryUploadInputRef={galleryUploadInputRef}
+        galleryViewerId={galleryViewerId}
+        handleDeleteGalleryItem={handleDeleteGalleryItem}
+        handleGalleryUpload={handleGalleryUpload}
+        handleToggleFavoriteGalleryItem={handleToggleFavoriteGalleryItem}
+        openGalleryViewer={setGalleryViewerId}
+        setGalleryFilter={setGalleryFilter}
+        setGallerySearch={setGallerySearch}
+        setGalleryViewerId={setGalleryViewerId}
+      />
+    </Suspense>
+  ) : currentView === "music" ? (
+    <Suspense fallback={workspaceLoadingFallback}>
+      <MusicWorkspace
+        autoPlayOnReply={autoPlayOnReply}
+        handleCyclePlayMode={handleCyclePlayMode}
+        handlePlayNextTrack={handlePlayNextTrack}
+        handlePlayPreviousTrack={handlePlayPreviousTrack}
+        handleRestartTrack={handleRestartTrack}
+        handleSeek={handleSeek}
+        handleSelectTrack={handleSelectTrack}
+        handleTogglePlayback={handleTogglePlayback}
+        isAppVisible={isAppVisible}
+        isPlaying={isPlaying}
+        lyricsError={selectedTrackLyricsError}
+        lyricsLines={selectedTrackLyrics}
+        lyricsSource={selectedTrackLyricsSource}
+        lyricsStatus={selectedTrackLyricsStatus}
+        onRefreshLyrics={() => void handleRefreshLyrics({ force: true, initiatedBy: "manual" })}
+        onUploadLyricsFile={handleUploadLyricsFile}
+        localizedTracks={localizedTracks}
+        playMode={playMode}
+        playerAudioElement={playerAudioElement}
+        selectedTrack={selectedTrack}
+        selectedTrackId={selectedTrackId}
+        selectedTrackSource={selectedTrackSource}
+        setAutoPlayOnReply={setAutoPlayOnReply}
+        setVolume={setVolume}
+        lyricsUploadInputRef={lyricsUploadInputRef}
+        uploadInputRef={uploadInputRef}
+        volume={volume}
+      />
+    </Suspense>
+  ) : currentView === "skills" ? (
+    <Suspense fallback={workspaceLoadingFallback}>
+      <SkillWorkspace
+        activeSkill={activeSkill}
+        activeSkillId={activeSkillId}
+        activeSkillVersions={activeSkillVersions}
+        activeSessionRecommendedSkills={runtimeRecommendedSkills}
+        activeSessionTitle={activeSession?.session?.title || t("app.skills.currentSession")}
+        busy={busy}
+        providerConfigured={providerConfigured}
+        skillList={skillList}
+        skillImportInputRef={skillImportInputRef}
+        handleCreateSkill={handleCreateSkill}
+        handleDeleteSkill={handleDeleteSkill}
+        handleExportAllSkills={handleExportAllSkills}
+        handleExportSkill={handleExportSkill}
+        handleForgeSkill={handleForgeSkill}
+        handleImportSkills={handleImportSkills}
+        handleLoadSkillVersion={handleLoadSkillVersion}
+        handleOpenSkill={handleOpenSkill}
+        handleRestoreSkillVersion={handleRestoreSkillVersion}
+        handleSaveSkill={handleSaveSkill}
+        handleInstallSkillTemplate={handleInstallSkillTemplate}
+        handleToggleSkillMounted={handleToggleSkillMounted}
+        hasUnsavedSkill={hasUnsavedSkill}
+        loading={loading}
+        mountedSkillIds={activeSessionSkillIds}
+        setSkillDraft={setSkillDraft}
+        setSkillSearch={setSkillSearch}
+        skillActionContextKey={skillActionContextKey}
+        skillDraft={skillDraft}
+        skillSearch={skillSearch}
+      />
+    </Suspense>
+  ) : null;
+
+  if (isMobileViewport) {
+    return (
+      <MobileAppShell
+        activeNote={activeNote}
+        activeNoteId={activeNoteId}
+        activeSession={activeSession}
+        activeSessionRecommendedSkills={runtimeRecommendedSkills}
+        activeSessionSkillIds={activeSessionSkillIds}
+        activeSessionSkills={activeSessionSkills}
+        activeWeatherCity={activeWeatherCity}
+        allNavigationItems={allNavigationItems}
+        busy={busy}
+        cacheCards={cacheCards}
+        capabilities={capabilities}
+        clockNow={clockNow}
+        completedTodayItems={completedTodayItems}
+        continueSessionItems={continueSessionItems}
+        currentView={currentView}
+        draft={draft}
+        dueReminderCount={dueReminderCount}
+        error={error}
+        filteredNotes={filteredNotes}
+        formatShortClock={formatShortClock}
+        formatTime={formatTime}
+        handleClearApiKey={handleClearApiKey}
+        handleCreateNote={handleCreateNote}
+        handleCreateReminder={handleCreateReminder}
+        handleDeleteNote={handleDeleteNote}
+        handleDeleteReminder={handleDeleteReminder}
+        handleOpenNote={handleOpenNote}
+        handleOpenLinkedNote={handleOpenReminderNote}
+        handleOpenSession={handleOpenSession}
+        handleRunAgent={handleRunAgent}
+        handleSaveNote={handleSaveNote}
+        handleSaveReminder={handleSaveReminder}
+        handleSaveSettings={handleSaveSettings}
+        handleSelectReminder={handleSelectReminder}
+        handleToggleSkillMounted={handleToggleSkillMounted}
+        handleToggleTodayReminderStatus={handleToggleTodayReminderStatus}
+        hasUnsavedNote={hasUnsavedNote}
+        hasUnsavedReminder={hasUnsavedReminder}
+        hasUnsavedSettings={hasUnsavedSettings}
+        lang={lang}
+        legacyContent={mobileLegacyContent}
+        loading={loading}
+        mediaSlot={
+          <>
+            <audio ref={audioRef} preload="metadata">
+              {selectedTrackSource ? <source src={selectedTrackSource.src} type="audio/mpeg" /> : null}
+            </audio>
+            {renderMiniPlayer("floating")}
+          </>
+        }
+        mobileDockItems={mobileDockItems}
+        noteDraft={noteDraft}
+        noteList={noteList}
+        noteSearch={noteSearch}
+        notice={notice}
+        onAddWeatherCity={handleAddWeatherCity}
+        onRemoveWeatherCity={handleRemoveWeatherCity}
+        onWeatherRefresh={() => void loadWeatherSnapshotData(weatherLocations)}
+        openReminderCount={openReminderCount}
+        openView={openView}
+        PanelIcon={PanelIcon}
+        providerConfigured={providerConfigured}
+        providerSecurityMessage={providerSecurityMessage}
+        providerSecurityStatus={providerSecurityAssessment.status}
+        recentCaptureItems={recentCaptureItems}
+        reminderDraft={reminderDraft}
+        reminderSearch={reminderSearch}
+        reminders={reminders}
+        ruleActionRecommendations={ruleActionRecommendations}
+        ruleEffectivenessSignals={ruleEffectivenessSignals}
+        selectedReminderId={selectedReminderId}
+        selectedWeatherCityId={selectedWeatherCityId}
+        sessionList={sessionList}
+        setDraft={setDraft}
+        setLang={setLang}
+        setReminderDraft={setReminderDraft}
+        setReminderSearch={setReminderSearch}
+        setNoteDraft={setNoteDraft}
+        setNoteSearch={setNoteSearch}
+        setSelectedWeatherCityId={setSelectedWeatherCityId}
+        settingsForm={settingsForm}
+        setSettingsForm={setSettingsForm}
+        setTheme={setTheme}
+        t={t}
+        theme={theme}
+        todayReminderItems={todayReminderItems}
+        todayReviewSignals={todayReviewSignals}
+        viewMeta={viewMeta}
+        weatherCities={weatherCities}
+        weatherError={weatherError}
+        weatherLocations={weatherLocations}
+        weatherStatus={weatherStatus}
+        weatherUpdatedAt={weatherUpdatedAt}
+      />
+    );
+  }
 
   return (
     <div

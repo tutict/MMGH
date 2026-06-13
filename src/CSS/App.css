@@ -30,3 +30,6 @@
 
 /* Final density pass: quieter shell, fewer widget-like surfaces */
 @import "./layout-breathing-room.css";
+
+/* Independent mobile shell, scoped away from legacy responsive layers */
+@import "./mobile.css";
