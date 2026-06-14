@@ -1,4 +1,9 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
+import {
+  countOpenReminders,
+  filterReminders,
+  groupReminders,
+} from "../reminderWorkspaceModel";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
 
@@ -37,29 +42,19 @@ function MobileRemindersView({
     [lang]
   );
 
-  const filteredReminders = useMemo(() => {
-    const needle = deferredSearch.trim().toLowerCase();
-    if (!needle) {
-      return reminders;
-    }
-
-    return reminders.filter((item) => {
-      const linkedTitle = noteList.find((note) => note.id === item.linkedNoteId)?.title || "";
-      return [item.title, item.preview, linkedTitle, item.severity, item.status]
-        .join(" ")
-        .toLowerCase()
-        .includes(needle);
-    });
-  }, [deferredSearch, noteList, reminders]);
+  const filteredReminders = useMemo(
+    () => filterReminders(reminders, noteList, deferredSearch),
+    [deferredSearch, noteList, reminders]
+  );
 
   const groups = useMemo(
-    () => groupMobileReminders(filteredReminders, clockNow, t),
+    () =>
+      groupReminders(filteredReminders, clockNow, (key) =>
+        t(`app.reminders.bucket.${key}`)
+      ),
     [clockNow, filteredReminders, t]
   );
-  const openCount = useMemo(
-    () => reminders.filter((item) => item.status !== "done").length,
-    [reminders]
-  );
+  const openCount = useMemo(() => countOpenReminders(reminders), [reminders]);
   const todayCount = groups.find((group) => group.key === "today")?.items.length || 0;
   const doneCount = groups.find((group) => group.key === "done")?.items.length || 0;
   const selectedLinkedNote = noteList.find(
@@ -369,57 +364,6 @@ function ReminderRow({
       </button>
     </div>
   );
-}
-
-function groupMobileReminders(reminders, now, t) {
-  const todayStart = new Date(now);
-  todayStart.setHours(0, 0, 0, 0);
-  const tomorrowStart = new Date(todayStart);
-  tomorrowStart.setDate(todayStart.getDate() + 1);
-
-  const buckets = [
-    { key: "overdue", title: t("app.reminders.bucket.overdue"), items: [] },
-    { key: "today", title: t("app.reminders.bucket.today"), items: [] },
-    { key: "upcoming", title: t("app.reminders.bucket.upcoming"), items: [] },
-    { key: "done", title: t("app.reminders.bucket.done"), items: [] },
-  ];
-
-  reminders.forEach((item) => {
-    if (item.status === "done") {
-      buckets[3].items.push(item);
-      return;
-    }
-    if (!item.dueAt) {
-      buckets[2].items.push(item);
-      return;
-    }
-    if (item.dueAt < todayStart.getTime()) {
-      buckets[0].items.push(item);
-      return;
-    }
-    if (item.dueAt < tomorrowStart.getTime()) {
-      buckets[1].items.push(item);
-      return;
-    }
-    buckets[2].items.push(item);
-  });
-
-  buckets.forEach((bucket) => {
-    bucket.items.sort((left, right) => {
-      if (!left.dueAt && !right.dueAt) {
-        return right.updatedAt - left.updatedAt;
-      }
-      if (!left.dueAt) {
-        return 1;
-      }
-      if (!right.dueAt) {
-        return -1;
-      }
-      return left.dueAt - right.dueAt;
-    });
-  });
-
-  return buckets;
 }
 
 function formatReminderDue(value, formatter) {

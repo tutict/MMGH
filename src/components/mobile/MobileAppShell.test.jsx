@@ -217,17 +217,123 @@ function createShellProps(currentView, openView, legacyContent) {
   };
 }
 
+function toShellBags(props) {
+  return {
+    shell: {
+      busy: props.busy,
+      capabilities: props.capabilities,
+      clockNow: props.clockNow,
+      error: props.error,
+      formatShortClock: props.formatShortClock,
+      lang: props.lang,
+      loading: props.loading,
+      mediaSlot: props.mediaSlot,
+      notice: props.notice,
+      PanelIcon: props.PanelIcon,
+      providerConfigured: props.providerConfigured,
+      setLang: props.setLang,
+      setTheme: props.setTheme,
+      t: props.t,
+      theme: props.theme,
+    },
+    navigation: {
+      allItems: props.allNavigationItems,
+      currentView: props.currentView,
+      dockItems: props.mobileDockItems,
+      openView: props.openView,
+      viewMeta: props.viewMeta,
+    },
+    today: {
+      activeSession: props.activeSession,
+      completedTodayItems: props.completedTodayItems,
+      continueSessionItems: props.continueSessionItems,
+      dueReminderCount: props.dueReminderCount,
+      formatTime: props.formatTime,
+      handleSelectReminder: props.handleSelectReminder,
+      handleToggleTodayReminderStatus: props.handleToggleTodayReminderStatus,
+      openReminderCount: props.openReminderCount,
+      openView: props.openView,
+      recentCaptureItems: props.recentCaptureItems,
+      ruleActionRecommendations: props.ruleActionRecommendations,
+      ruleEffectivenessSignals: props.ruleEffectivenessSignals,
+      todayReminderItems: props.todayReminderItems,
+      todayReviewSignals: props.todayReviewSignals,
+    },
+    agent: {
+      activeSession: props.activeSession,
+      activeSessionRecommendedSkills: props.activeSessionRecommendedSkills,
+      activeSessionSkillIds: props.activeSessionSkillIds,
+      activeSessionSkills: props.activeSessionSkills,
+      draft: props.draft,
+      formatTime: props.formatTime,
+      handleOpenSession: props.handleOpenSession,
+      handleRunAgent: props.handleRunAgent,
+      handleToggleSkillMounted: props.handleToggleSkillMounted,
+      sessionList: props.sessionList,
+      setDraft: props.setDraft,
+    },
+    knowledge: {
+      activeNote: props.activeNote,
+      activeNoteId: props.activeNoteId,
+      filteredNotes: props.filteredNotes,
+      formatTime: props.formatTime,
+      handleCreateNote: props.handleCreateNote,
+      handleDeleteNote: props.handleDeleteNote,
+      handleOpenNote: props.handleOpenNote,
+      handleSaveNote: props.handleSaveNote,
+      hasUnsavedNote: props.hasUnsavedNote,
+      noteDraft: props.noteDraft,
+      noteSearch: props.noteSearch,
+      setNoteDraft: props.setNoteDraft,
+      setNoteSearch: props.setNoteSearch,
+    },
+    weather: {
+      activeWeatherCity: props.activeWeatherCity,
+      onAddWeatherCity: props.onAddWeatherCity,
+      onRefresh: props.onWeatherRefresh,
+      onRemoveWeatherCity: props.onRemoveWeatherCity,
+      selectedWeatherCityId: props.selectedWeatherCityId,
+      setSelectedWeatherCityId: props.setSelectedWeatherCityId,
+      weatherCities: props.weatherCities,
+      weatherError: props.weatherError,
+      weatherLocations: props.weatherLocations,
+      weatherStatus: props.weatherStatus,
+      weatherUpdatedAt: props.weatherUpdatedAt,
+    },
+    settings: {
+      cacheCards: props.cacheCards,
+      handleClearApiKey: props.handleClearApiKey,
+      handleSaveSettings: props.handleSaveSettings,
+      hasUnsavedSettings: props.hasUnsavedSettings,
+      providerSecurityMessage: props.providerSecurityMessage,
+      providerSecurityStatus: props.providerSecurityStatus,
+      settingsForm: props.settingsForm,
+      setSettingsForm: props.setSettingsForm,
+    },
+    reminders: {
+      handleCreateReminder: props.handleCreateReminder,
+      handleDeleteReminder: props.handleDeleteReminder,
+      handleOpenLinkedNote: props.handleOpenLinkedNote,
+      handleSaveReminder: props.handleSaveReminder,
+      handleSelectReminder: props.handleSelectReminder,
+      handleToggleTodayReminderStatus: props.handleToggleTodayReminderStatus,
+      hasUnsavedReminder: props.hasUnsavedReminder,
+      noteList: props.noteList,
+      reminderDraft: props.reminderDraft,
+      reminderSearch: props.reminderSearch,
+      reminders: props.reminders,
+      selectedReminderId: props.selectedReminderId,
+      setReminderDraft: props.setReminderDraft,
+      setReminderSearch: props.setReminderSearch,
+    },
+    legacy: { content: props.legacyContent },
+  };
+}
+
 function ShellHarness() {
   const [currentView, setCurrentView] = useState("today");
-  return (
-    <MobileAppShell
-      {...createShellProps(
-        currentView,
-        setCurrentView,
-        <div>Legacy {currentView} page</div>
-      )}
-    />
-  );
+  const props = createShellProps(currentView, setCurrentView, <div>Legacy {currentView} page</div>);
+  return <MobileAppShell {...toShellBags(props)} />;
 }
 
 test("mobile shell renders four primary dock tabs plus More and keeps language/theme out of the top bar", async () => {

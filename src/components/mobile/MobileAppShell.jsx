@@ -6,112 +6,55 @@ import MobileSettingsView from "./MobileSettingsView";
 import MobileSheet from "./MobileSheet";
 import MobileTodayView from "./MobileTodayView";
 import MobileWeatherView from "./MobileWeatherView";
+import { getMobileMoreItems } from "./mobileViewRegistry";
 import { getMobileNavIconType, mobileText } from "./mobileText";
 
-const PRIMARY_VIEW_IDS = new Set(["today", "agent", "knowledge", "weather"]);
-
 function MobileAppShell({
-  activeNote,
-  activeNoteId,
-  activeSession,
-  activeSessionRecommendedSkills,
-  activeSessionSkillIds,
-  activeSessionSkills,
-  activeWeatherCity,
-  allNavigationItems = [],
-  busy,
-  cacheCards,
-  capabilities = [],
-  clockNow,
-  completedTodayItems,
-  continueSessionItems,
-  currentView,
-  draft,
-  dueReminderCount,
-  error,
-  filteredNotes,
-  formatShortClock,
-  formatTime,
-  handleCreateNote,
-  handleCreateReminder,
-  handleDeleteNote,
-  handleDeleteReminder,
-  handleOpenNote,
-  handleOpenLinkedNote,
-  handleOpenSession,
-  handleRunAgent,
-  handleSaveNote,
-  handleSaveReminder,
-  handleSaveSettings,
-  handleSelectReminder,
-  handleClearApiKey,
-  handleToggleSkillMounted,
-  handleToggleTodayReminderStatus,
-  hasUnsavedNote,
-  hasUnsavedReminder,
-  hasUnsavedSettings,
-  lang,
-  legacyContent,
-  loading,
-  mediaSlot,
-  mobileDockItems = [],
-  noteList,
-  noteDraft,
-  noteSearch,
-  notice,
-  onAddWeatherCity,
-  onRemoveWeatherCity,
-  onWeatherRefresh,
-  openReminderCount,
-  openView,
-  PanelIcon,
-  providerConfigured,
-  providerSecurityMessage,
-  providerSecurityStatus,
-  recentCaptureItems,
-  reminderDraft,
-  reminderSearch,
-  reminders,
-  ruleActionRecommendations,
-  ruleEffectivenessSignals,
-  selectedWeatherCityId,
-  selectedReminderId,
-  sessionList,
-  setDraft,
-  setLang,
-  setReminderDraft,
-  setReminderSearch,
-  setNoteDraft,
-  setNoteSearch,
-  setSelectedWeatherCityId,
-  settingsForm,
-  setSettingsForm,
-  setTheme,
-  t,
-  theme,
-  todayReminderItems,
-  todayReviewSignals,
-  viewMeta,
-  weatherCities,
-  weatherError,
-  weatherLocations,
-  weatherStatus,
-  weatherUpdatedAt,
+  agent = {},
+  knowledge = {},
+  legacy = {},
+  navigation = {},
+  reminders = {},
+  settings = {},
+  shell = {},
+  today = {},
+  weather = {},
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
+  const {
+    busy = "",
+    capabilities = [],
+    clockNow,
+    error = "",
+    formatShortClock,
+    lang,
+    loading = false,
+    mediaSlot,
+    notice = "",
+    PanelIcon,
+    providerConfigured = false,
+    setLang,
+    setTheme,
+    t,
+    theme,
+  } = shell;
+  const {
+    allItems = [],
+    currentView = "today",
+    dockItems = [],
+    openView,
+    viewMeta = {},
+  } = navigation;
   const currentMeta = viewMeta[currentView] || viewMeta.today || {};
-  const moreItems = useMemo(
-    () => allNavigationItems.filter((item) => !PRIMARY_VIEW_IDS.has(item.id)),
-    [allNavigationItems]
-  );
+  const moreItems = useMemo(() => getMobileMoreItems(allItems), [allItems]);
   const renderIcon = (viewId) => <PanelIcon type={getMobileNavIconType(viewId)} />;
 
   return (
     <div className={`agent-app mobile-app theme-${theme} view-${currentView}`}>
       <header className="mobile-topbar" data-testid="mobile-topbar">
         <div className="mobile-topbar__title">
-          <strong>MMGH · {currentMeta.title || currentView}</strong>
+          <strong>MMGH 路 {currentMeta.title || currentView}</strong>
         </div>
         <time>{formatShortClock(clockNow, lang)}</time>
         <button
@@ -128,7 +71,9 @@ function MobileAppShell({
           onClick={() => setInspectorOpen(true)}
           aria-label={mobileText(lang, "inspector")}
         >
-          <span aria-hidden="true"><PanelIcon type="trace" /></span>
+          <span aria-hidden="true">
+            <PanelIcon type="trace" />
+          </span>
         </button>
       </header>
 
@@ -137,124 +82,59 @@ function MobileAppShell({
         {error ? <div className="mobile-banner mobile-banner--error">{error}</div> : null}
         {currentView === "today" ? (
           <MobileTodayView
-            activeSession={activeSession}
+            {...today}
             busy={busy}
             clockNow={clockNow}
-            completedTodayItems={completedTodayItems}
-            continueSessionItems={continueSessionItems}
-            dueReminderCount={dueReminderCount}
             formatShortClock={formatShortClock}
-            formatTime={formatTime}
-            handleSelectReminder={handleSelectReminder}
-            handleToggleTodayReminderStatus={handleToggleTodayReminderStatus}
             lang={lang}
             loading={loading}
-            openReminderCount={openReminderCount}
-            openView={openView}
-            recentCaptureItems={recentCaptureItems}
-            ruleActionRecommendations={ruleActionRecommendations}
-            ruleEffectivenessSignals={ruleEffectivenessSignals}
-            todayReminderItems={todayReminderItems}
-            todayReviewSignals={todayReviewSignals}
           />
         ) : currentView === "agent" ? (
           <MobileAgentView
-            activeSession={activeSession}
-            activeSessionRecommendedSkills={activeSessionRecommendedSkills}
-            activeSessionSkillIds={activeSessionSkillIds}
-            activeSessionSkills={activeSessionSkills}
+            {...agent}
             busy={busy}
-            draft={draft}
-            formatTime={formatTime}
-            handleOpenSession={handleOpenSession}
-            handleRunAgent={handleRunAgent}
-            handleToggleSkillMounted={handleToggleSkillMounted}
             lang={lang}
             loading={loading}
             providerConfigured={providerConfigured}
-            sessionList={sessionList}
-            setDraft={setDraft}
           />
         ) : currentView === "knowledge" ? (
           <MobileKnowledgeView
-            activeNote={activeNote}
-            activeNoteId={activeNoteId}
+            {...knowledge}
             busy={busy}
-            filteredNotes={filteredNotes}
-            formatTime={formatTime}
-            handleCreateNote={handleCreateNote}
-            handleDeleteNote={handleDeleteNote}
-            handleOpenNote={handleOpenNote}
-            handleSaveNote={handleSaveNote}
-            hasUnsavedNote={hasUnsavedNote}
             lang={lang}
-            noteDraft={noteDraft}
-            noteSearch={noteSearch}
-            setNoteDraft={setNoteDraft}
-            setNoteSearch={setNoteSearch}
           />
         ) : currentView === "weather" ? (
           <MobileWeatherView
-            activeWeatherCity={activeWeatherCity}
+            {...weather}
             lang={lang}
-            onAddWeatherCity={onAddWeatherCity}
-            onRefresh={onWeatherRefresh}
-            onRemoveWeatherCity={onRemoveWeatherCity}
-            selectedWeatherCityId={selectedWeatherCityId}
-            setSelectedWeatherCityId={setSelectedWeatherCityId}
             t={t}
-            weatherCities={weatherCities}
-            weatherError={weatherError}
-            weatherLocations={weatherLocations}
-            weatherStatus={weatherStatus}
-            weatherUpdatedAt={weatherUpdatedAt}
           />
         ) : currentView === "settings" ? (
           <MobileSettingsView
+            {...settings}
             busy={busy}
-            cacheCards={cacheCards}
-            handleClearApiKey={handleClearApiKey}
-            handleSaveSettings={handleSaveSettings}
-            hasUnsavedSettings={hasUnsavedSettings}
             lang={lang}
             providerConfigured={providerConfigured}
-            providerSecurityMessage={providerSecurityMessage}
-            providerSecurityStatus={providerSecurityStatus}
-            settingsForm={settingsForm}
-            setSettingsForm={setSettingsForm}
             t={t}
           />
         ) : currentView === "reminders" ? (
           <MobileRemindersView
+            {...reminders}
             busy={busy}
             clockNow={clockNow}
-            handleCreateReminder={handleCreateReminder}
-            handleDeleteReminder={handleDeleteReminder}
-            handleOpenLinkedNote={handleOpenLinkedNote}
-            handleSaveReminder={handleSaveReminder}
-            handleSelectReminder={handleSelectReminder}
-            handleToggleTodayReminderStatus={handleToggleTodayReminderStatus}
-            hasUnsavedReminder={hasUnsavedReminder}
             lang={lang}
             loading={loading}
-            noteList={noteList}
-            reminderDraft={reminderDraft}
-            reminderSearch={reminderSearch}
-            reminders={reminders}
-            selectedReminderId={selectedReminderId}
-            setReminderDraft={setReminderDraft}
-            setReminderSearch={setReminderSearch}
             t={t}
           />
         ) : (
           <section className="mobile-legacy-page" aria-label={mobileText(lang, "legacy")}>
-            {legacyContent}
+            {legacy.content}
           </section>
         )}
       </main>
 
       <nav className="mobile-dock" data-testid="mobile-dock" aria-label="Mobile primary navigation">
-        {mobileDockItems.map((item) => (
+        {dockItems.map((item) => (
           <button
             key={item.id}
             type="button"
@@ -300,7 +180,9 @@ function MobileAppShell({
                 setMoreOpen(false);
               }}
             >
-              <span className="mobile-row__icon" aria-hidden="true">{renderIcon(item.id)}</span>
+              <span className="mobile-row__icon" aria-hidden="true">
+                {renderIcon(item.id)}
+              </span>
               <span className="mobile-row__body">
                 <strong>{item.label}</strong>
                 <span>{item.meta}</span>
@@ -311,10 +193,18 @@ function MobileAppShell({
         </div>
         <div className="mobile-quick-settings">
           <div className="mobile-segmented" aria-label={mobileText(lang, "language")}>
-            <button type="button" className={lang === "zh-CN" ? "is-active" : ""} onClick={() => setLang("zh-CN")}>
-              中文
+            <button
+              type="button"
+              className={lang === "zh-CN" ? "is-active" : ""}
+              onClick={() => setLang("zh-CN")}
+            >
+              涓枃
             </button>
-            <button type="button" className={lang === "en-US" ? "is-active" : ""} onClick={() => setLang("en-US")}>
+            <button
+              type="button"
+              className={lang === "en-US" ? "is-active" : ""}
+              onClick={() => setLang("en-US")}
+            >
               EN
             </button>
           </div>

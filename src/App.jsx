@@ -145,6 +145,7 @@ import {
   updateStoredWeatherLocations,
 } from "./utils/weatherStorage";
 import MobileAppShell from "./components/mobile/MobileAppShell";
+import { isDedicatedMobileView } from "./components/mobile/mobileViewRegistry";
 import useMobileViewport from "./components/mobile/useMobileViewport";
 
 const GalleryWorkspace = lazy(() => import("./components/GalleryWorkspace"));
@@ -4649,14 +4650,7 @@ function App() {
   );
 
   const workspaceLoadingFallback = <WorkspaceLoadingState label={t("app.common.loading")} />;
-  const isDedicatedMobileView =
-    currentView === "today" ||
-    currentView === "agent" ||
-    currentView === "knowledge" ||
-    currentView === "weather" ||
-    currentView === "settings" ||
-    currentView === "reminders";
-  const mobileLegacyContent = isDedicatedMobileView ? null : currentView === "gallery" ? (
+  const mobileLegacyContent = isDedicatedMobileView(currentView) ? null : currentView === "gallery" ? (
     <Suspense fallback={workspaceLoadingFallback}>
       <GalleryWorkspace
         galleryFilter={galleryFilter}
@@ -4744,99 +4738,121 @@ function App() {
   if (isMobileViewport) {
     return (
       <MobileAppShell
-        activeNote={activeNote}
-        activeNoteId={activeNoteId}
-        activeSession={activeSession}
-        activeSessionRecommendedSkills={runtimeRecommendedSkills}
-        activeSessionSkillIds={activeSessionSkillIds}
-        activeSessionSkills={activeSessionSkills}
-        activeWeatherCity={activeWeatherCity}
-        allNavigationItems={allNavigationItems}
-        busy={busy}
-        cacheCards={cacheCards}
-        capabilities={capabilities}
-        clockNow={clockNow}
-        completedTodayItems={completedTodayItems}
-        continueSessionItems={continueSessionItems}
-        currentView={currentView}
-        draft={draft}
-        dueReminderCount={dueReminderCount}
-        error={error}
-        filteredNotes={filteredNotes}
-        formatShortClock={formatShortClock}
-        formatTime={formatTime}
-        handleClearApiKey={handleClearApiKey}
-        handleCreateNote={handleCreateNote}
-        handleCreateReminder={handleCreateReminder}
-        handleDeleteNote={handleDeleteNote}
-        handleDeleteReminder={handleDeleteReminder}
-        handleOpenNote={handleOpenNote}
-        handleOpenLinkedNote={handleOpenReminderNote}
-        handleOpenSession={handleOpenSession}
-        handleRunAgent={handleRunAgent}
-        handleSaveNote={handleSaveNote}
-        handleSaveReminder={handleSaveReminder}
-        handleSaveSettings={handleSaveSettings}
-        handleSelectReminder={handleSelectReminder}
-        handleToggleSkillMounted={handleToggleSkillMounted}
-        handleToggleTodayReminderStatus={handleToggleTodayReminderStatus}
-        hasUnsavedNote={hasUnsavedNote}
-        hasUnsavedReminder={hasUnsavedReminder}
-        hasUnsavedSettings={hasUnsavedSettings}
-        lang={lang}
-        legacyContent={mobileLegacyContent}
-        loading={loading}
-        mediaSlot={
-          <>
-            <audio ref={audioRef} preload="metadata">
-              {selectedTrackSource ? <source src={selectedTrackSource.src} type="audio/mpeg" /> : null}
-            </audio>
-            {renderMiniPlayer("floating")}
-          </>
-        }
-        mobileDockItems={mobileDockItems}
-        noteDraft={noteDraft}
-        noteList={noteList}
-        noteSearch={noteSearch}
-        notice={notice}
-        onAddWeatherCity={handleAddWeatherCity}
-        onRemoveWeatherCity={handleRemoveWeatherCity}
-        onWeatherRefresh={() => void loadWeatherSnapshotData(weatherLocations)}
-        openReminderCount={openReminderCount}
-        openView={openView}
-        PanelIcon={PanelIcon}
-        providerConfigured={providerConfigured}
-        providerSecurityMessage={providerSecurityMessage}
-        providerSecurityStatus={providerSecurityAssessment.status}
-        recentCaptureItems={recentCaptureItems}
-        reminderDraft={reminderDraft}
-        reminderSearch={reminderSearch}
-        reminders={reminders}
-        ruleActionRecommendations={ruleActionRecommendations}
-        ruleEffectivenessSignals={ruleEffectivenessSignals}
-        selectedReminderId={selectedReminderId}
-        selectedWeatherCityId={selectedWeatherCityId}
-        sessionList={sessionList}
-        setDraft={setDraft}
-        setLang={setLang}
-        setReminderDraft={setReminderDraft}
-        setReminderSearch={setReminderSearch}
-        setNoteDraft={setNoteDraft}
-        setNoteSearch={setNoteSearch}
-        setSelectedWeatherCityId={setSelectedWeatherCityId}
-        settingsForm={settingsForm}
-        setSettingsForm={setSettingsForm}
-        setTheme={setTheme}
-        t={t}
-        theme={theme}
-        todayReminderItems={todayReminderItems}
-        todayReviewSignals={todayReviewSignals}
-        viewMeta={viewMeta}
-        weatherCities={weatherCities}
-        weatherError={weatherError}
-        weatherLocations={weatherLocations}
-        weatherStatus={weatherStatus}
-        weatherUpdatedAt={weatherUpdatedAt}
+        shell={{
+          busy,
+          capabilities,
+          clockNow,
+          error,
+          formatShortClock,
+          lang,
+          loading,
+          mediaSlot: (
+            <>
+              <audio ref={audioRef} preload="metadata">
+                {selectedTrackSource ? <source src={selectedTrackSource.src} type="audio/mpeg" /> : null}
+              </audio>
+              {renderMiniPlayer("floating")}
+            </>
+          ),
+          notice,
+          PanelIcon,
+          providerConfigured,
+          setLang,
+          setTheme,
+          t,
+          theme,
+        }}
+        navigation={{
+          allItems: allNavigationItems,
+          currentView,
+          dockItems: mobileDockItems,
+          openView,
+          viewMeta,
+        }}
+        today={{
+          activeSession,
+          completedTodayItems,
+          continueSessionItems,
+          dueReminderCount,
+          formatTime,
+          handleSelectReminder,
+          handleToggleTodayReminderStatus,
+          openReminderCount,
+          openView,
+          recentCaptureItems,
+          ruleActionRecommendations,
+          ruleEffectivenessSignals,
+          todayReminderItems,
+          todayReviewSignals,
+        }}
+        agent={{
+          activeSession,
+          activeSessionRecommendedSkills: runtimeRecommendedSkills,
+          activeSessionSkillIds,
+          activeSessionSkills,
+          draft,
+          formatTime,
+          handleOpenSession,
+          handleRunAgent,
+          handleToggleSkillMounted,
+          sessionList,
+          setDraft,
+        }}
+        knowledge={{
+          activeNote,
+          activeNoteId,
+          filteredNotes,
+          formatTime,
+          handleCreateNote,
+          handleDeleteNote,
+          handleOpenNote,
+          handleSaveNote,
+          hasUnsavedNote,
+          noteDraft,
+          noteSearch,
+          setNoteDraft,
+          setNoteSearch,
+        }}
+        weather={{
+          activeWeatherCity,
+          onAddWeatherCity: handleAddWeatherCity,
+          onRefresh: () => void loadWeatherSnapshotData(weatherLocations),
+          onRemoveWeatherCity: handleRemoveWeatherCity,
+          selectedWeatherCityId,
+          setSelectedWeatherCityId,
+          weatherCities,
+          weatherError,
+          weatherLocations,
+          weatherStatus,
+          weatherUpdatedAt,
+        }}
+        settings={{
+          cacheCards,
+          handleClearApiKey,
+          handleSaveSettings,
+          hasUnsavedSettings,
+          providerSecurityMessage,
+          providerSecurityStatus: providerSecurityAssessment.status,
+          settingsForm,
+          setSettingsForm,
+        }}
+        reminders={{
+          handleCreateReminder,
+          handleDeleteReminder,
+          handleOpenLinkedNote: handleOpenReminderNote,
+          handleSaveReminder,
+          handleSelectReminder,
+          handleToggleTodayReminderStatus,
+          hasUnsavedReminder,
+          noteList,
+          reminderDraft,
+          reminderSearch,
+          reminders,
+          selectedReminderId,
+          setReminderDraft,
+          setReminderSearch,
+        }}
+        legacy={{ content: mobileLegacyContent }}
       />
     );
   }

@@ -12,6 +12,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::cmd::{AgentSettingsInput, KnowledgeNoteInput, ReminderInput, SkillInput};
 
+#[path = "db/schema.rs"]
+mod schema;
+use schema::CURRENT_SCHEMA_VERSION;
+
 static SNAPSHOT_CACHE: Lazy<Mutex<Option<WorkspaceSnapshot>>> = Lazy::new(|| Mutex::new(None));
 static SETTINGS_CACHE: Lazy<Mutex<Option<AgentSettings>>> = Lazy::new(|| Mutex::new(None));
 static RUNTIME_API_KEY: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
@@ -31,7 +35,6 @@ const STARTER_SKILL_CATALOG_VERSION_KEY: &str = "starter_skill_catalog_version";
 const STARTER_SKILL_DELETED_TOMBSTONES_KEY: &str = "starter_skill_deleted_tombstones_v1";
 const LEGACY_STARTER_SKILL_CATALOG_VERSION: u32 = 1;
 const STARTER_SKILL_CATALOG_VERSION: u32 = 2;
-const CURRENT_SCHEMA_VERSION: u32 = 1;
 const DEFAULT_SESSION_TITLE: &str = "New Mission";
 const MAX_TITLE_CHARS: usize = 160;
 const MAX_SHORT_TEXT_CHARS: usize = 2_000;
@@ -1047,7 +1050,7 @@ pub fn recent_messages(session_id: i64, limit: usize) -> Result<Vec<ChatMessage>
   with_connection(|conn| {
     let mut stmt = conn.prepare(
       "SELECT id, role, content, created_at
-       FROM messages
+       FROM session_messages
        WHERE session_id = ?1
        ORDER BY id DESC
        LIMIT ?2",
@@ -1183,8 +1186,13 @@ fn initialize_or_migrate_schema_in(conn: &Connection) -> Result<()> {
   let schema_version = database_user_version(conn)?;
   ensure_supported_schema_version(schema_version)?;
 
-  conn.execute_batch(include_str!("../sql/schema.sql"))?;
-  migrate_schema_from_version_in(conn, schema_version)?;
+  if schema_version == 0 {
+    conn.execute_batch(schema::V2_SCHEMA)?;
+    set_database_user_version(conn, CURRENT_SCHEMA_VERSION)?;
+  } else {
+    migrate_schema_from_version_in(conn, schema_version)?;
+    conn.execute_batch(schema::V2_SCHEMA)?;
+  }
   run_post_init_migrations_in(conn)?;
 
   Ok(())
@@ -1217,13 +1225,211 @@ fn migrate_schema_from_version_in(conn: &Connection, mut version: u32) -> Result
   Ok(())
 }
 
-fn migrate_next_schema_version_in(_conn: &Connection, version: u32) -> Result<u32> {
+fn migrate_next_schema_version_in(conn: &Connection, version: u32) -> Result<u32> {
   match version {
-    0 => Ok(1),
+    1 => {
+      migrate_v1_to_v2_in(conn)?;
+      Ok(2)
+    }
     _ => Err(anyhow!(
       "unsupported database schema migration path from version {version}"
     )),
   }
+}
+
+fn migrate_v1_to_v2_in(conn: &Connection) -> Result<()> {
+  conn.execute_batch("PRAGMA foreign_keys = OFF;")?;
+
+  let result = (|| -> Result<()> {
+    conn.execute_batch(
+      "BEGIN IMMEDIATE;
+       ALTER TABLE settings RENAME TO settings_v1;
+       ALTER TABLE sessions RENAME TO sessions_v1;
+       ALTER TABLE messages RENAME TO messages_v1;
+       ALTER TABLE activity RENAME TO activity_v1;
+       ALTER TABLE notes RENAME TO notes_v1;
+       ALTER TABLE reminders RENAME TO reminders_v1;
+       ALTER TABLE skills RENAME TO skills_v1;
+       ALTER TABLE session_skills RENAME TO session_skills_v1;",
+    )?;
+
+    conn.execute_batch(schema::V2_SCHEMA)?;
+
+    conn.execute(
+      "INSERT INTO app_meta (key, value)
+       SELECT key, value FROM settings_v1 WHERE key != ?1",
+      params![SETTINGS_KEY],
+    )?;
+    migrate_v1_provider_settings_in(conn)?;
+
+    conn.execute_batch(
+      "INSERT INTO agent_sessions (id, title, status, created_at, updated_at)
+         SELECT id, title, status, created_at, updated_at FROM sessions_v1;
+
+       INSERT INTO session_messages (id, session_id, role, content, created_at)
+         SELECT id, session_id, role, content, created_at FROM messages_v1;
+
+       INSERT INTO session_activity (id, session_id, kind, title, detail, status, created_at)
+         SELECT id, session_id, kind, title, detail, status, created_at FROM activity_v1;
+
+       INSERT INTO knowledge_notes (id, icon, title, body, created_at, updated_at)
+         SELECT id, icon, title, body, created_at, updated_at FROM notes_v1;
+
+       INSERT INTO reminders (id, title, detail, due_at, severity, status, linked_note_id, created_at, updated_at)
+         SELECT id, title, detail, due_at, severity, status, linked_note_id, created_at, updated_at FROM reminders_v1;
+
+       INSERT INTO skills (id, name, description, instructions, trigger_hint, enabled, permission_level, created_at, updated_at)
+         SELECT id, name, description, instructions, trigger_hint, enabled, permission_level, created_at, updated_at FROM skills_v1;
+
+       INSERT INTO session_skill_mounts (session_id, skill_id, created_at)
+         SELECT session_id, skill_id, created_at FROM session_skills_v1;",
+    )?;
+
+    migrate_v1_note_tags_in(conn)?;
+    migrate_v1_starter_skill_metadata_in(conn)?;
+    assert_v2_migration_counts_in(conn)?;
+
+    let foreign_key_errors: i64 =
+      conn.query_row("SELECT COUNT(*) FROM pragma_foreign_key_check", [], |row| row.get(0))?;
+    if foreign_key_errors != 0 {
+      return Err(anyhow!("v2 migration produced {foreign_key_errors} foreign key errors"));
+    }
+
+    conn.execute_batch(
+      "DROP TABLE settings_v1;
+       DROP TABLE sessions_v1;
+       DROP TABLE messages_v1;
+       DROP TABLE activity_v1;
+       DROP TABLE notes_v1;
+       DROP TABLE reminders_v1;
+       DROP TABLE skills_v1;
+       DROP TABLE session_skills_v1;
+       COMMIT;",
+    )?;
+    Ok(())
+  })();
+
+  if let Err(error) = result {
+    let _ = conn.execute_batch("ROLLBACK;");
+    let _ = conn.execute_batch("PRAGMA foreign_keys = ON;");
+    return Err(error);
+  }
+
+  conn.execute_batch("PRAGMA foreign_keys = ON;")?;
+  Ok(())
+}
+
+fn migrate_v1_provider_settings_in(conn: &Connection) -> Result<()> {
+  let raw = conn
+    .query_row(
+      "SELECT value FROM settings_v1 WHERE key = ?1",
+      params![SETTINGS_KEY],
+      |row| row.get::<_, String>(0),
+    )
+    .optional()?;
+
+  let Some(value) = raw else {
+    return Ok(());
+  };
+
+  let settings = serde_json::from_str::<AgentSettings>(&value).unwrap_or_else(|_| default_settings());
+  let sanitized = sanitize_settings_for_persistence(&settings);
+  if !settings.api_key.trim().is_empty() {
+    store_api_key_in_keyring(&settings.api_key)?;
+    store_runtime_api_key(settings.api_key)?;
+  }
+
+  conn.execute(
+    "INSERT INTO provider_settings (id, provider_name, base_url, model, system_prompt, updated_at)
+     VALUES (1, ?1, ?2, ?3, ?4, ?5)
+     ON CONFLICT(id) DO UPDATE SET
+       provider_name = excluded.provider_name,
+       base_url = excluded.base_url,
+       model = excluded.model,
+       system_prompt = excluded.system_prompt,
+       updated_at = excluded.updated_at",
+    params![
+      sanitized.provider_name,
+      sanitized.base_url,
+      sanitized.model,
+      sanitized.system_prompt,
+      now_millis()
+    ],
+  )?;
+  Ok(())
+}
+
+fn migrate_v1_note_tags_in(conn: &Connection) -> Result<()> {
+  let mut stmt = conn.prepare("SELECT id, tags FROM notes_v1 ORDER BY id ASC")?;
+  let rows = stmt.query_map([], |row| {
+    Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+  })?;
+
+  for row in rows {
+    let (note_id, raw_tags) = row?;
+    let tags = normalize_tags(decode_tags(raw_tags));
+    replace_note_tags_in(conn, note_id, &tags)?;
+  }
+  Ok(())
+}
+
+fn migrate_v1_starter_skill_metadata_in(conn: &Connection) -> Result<()> {
+  let mut stmt = conn.prepare("SELECT id, name FROM skills ORDER BY id ASC")?;
+  let rows = stmt.query_map([], |row| {
+    Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+  })?;
+
+  for row in rows {
+    let (skill_id, name) = row?;
+    if let Some(catalog_key) = canonical_starter_skill_name(&name) {
+      conn.execute(
+        "UPDATE skills SET origin = 'starter', catalog_key = ?1 WHERE id = ?2",
+        params![catalog_key, skill_id],
+      )?;
+    }
+  }
+
+  if let Some(value) = conn
+    .query_row(
+      "SELECT value FROM app_meta WHERE key = ?1",
+      params![STARTER_SKILL_DELETED_TOMBSTONES_KEY],
+      |row| row.get::<_, String>(0),
+    )
+    .optional()?
+  {
+    let tombstones = normalize_starter_skill_tombstones(
+      serde_json::from_str::<Vec<String>>(&value).unwrap_or_default(),
+    );
+    store_starter_skill_tombstones_in(conn, &tombstones)?;
+  }
+
+  Ok(())
+}
+
+fn assert_v2_migration_counts_in(conn: &Connection) -> Result<()> {
+  let table_pairs = [
+    ("sessions_v1", "agent_sessions"),
+    ("messages_v1", "session_messages"),
+    ("activity_v1", "session_activity"),
+    ("notes_v1", "knowledge_notes"),
+    ("reminders_v1", "reminders"),
+    ("skills_v1", "skills"),
+    ("session_skills_v1", "session_skill_mounts"),
+  ];
+
+  for (old_table, new_table) in table_pairs {
+    let old_count: i64 =
+      conn.query_row(&format!("SELECT COUNT(*) FROM {old_table}"), [], |row| row.get(0))?;
+    let new_count: i64 =
+      conn.query_row(&format!("SELECT COUNT(*) FROM {new_table}"), [], |row| row.get(0))?;
+    if old_count != new_count {
+      return Err(anyhow!(
+        "v2 migration count mismatch for {old_table} -> {new_table}: {old_count} != {new_count}"
+      ));
+    }
+  }
+
+  Ok(())
 }
 
 fn with_transaction<T, F>(action: F) -> Result<T>
@@ -1630,33 +1836,31 @@ fn load_settings_in(conn: &Connection) -> Result<AgentSettings> {
     return Ok(cached);
   }
 
-  let raw = load_setting_value_in(conn, SETTINGS_KEY)?;
+  let mut settings = conn
+    .query_row(
+      "SELECT provider_name, base_url, model, system_prompt
+       FROM provider_settings
+       WHERE id = 1",
+      [],
+      |row| {
+        Ok(AgentSettings {
+          provider_name: row.get(0)?,
+          base_url: row.get(1)?,
+          has_api_key: false,
+          api_key: String::new(),
+          model: row.get(2)?,
+          system_prompt: row.get(3)?,
+        })
+      },
+    )
+    .optional()?
+    .unwrap_or_else(default_settings);
 
-  match raw {
-    Some(value) => {
-      let mut settings =
-        serde_json::from_str::<AgentSettings>(&value).unwrap_or_else(|_| default_settings());
-      let legacy_api_key = settings.api_key.trim().to_string();
-      let sanitized_settings = sanitize_settings_for_persistence(&settings);
-
-      if !legacy_api_key.is_empty() {
-        let sanitized_payload = serde_json::to_string(&sanitized_settings)?;
-        upsert_setting_value_in(conn, SETTINGS_KEY, &sanitized_payload)?;
-      }
-
-      store_settings_cache(&sanitized_settings)?;
-      settings.api_key = resolve_effective_api_key(Some(&legacy_api_key))?;
-      settings.has_api_key = !settings.api_key.trim().is_empty();
-      Ok(settings)
-    }
-    None => {
-      let mut settings = default_settings();
-      store_settings_cache(&sanitize_settings_for_persistence(&settings))?;
-      settings.api_key = resolve_effective_api_key(None)?;
-      settings.has_api_key = !settings.api_key.trim().is_empty();
-      Ok(settings)
-    }
-  }
+  let sanitized_settings = sanitize_settings_for_persistence(&settings);
+  store_settings_cache(&sanitized_settings)?;
+  settings.api_key = resolve_effective_api_key(None)?;
+  settings.has_api_key = !settings.api_key.trim().is_empty();
+  Ok(settings)
 }
 
 fn store_settings_in(conn: &Connection, settings: &AgentSettings) -> Result<()> {
@@ -1667,15 +1871,30 @@ fn store_settings_in(conn: &Connection, settings: &AgentSettings) -> Result<()> 
   }
   store_runtime_api_key(settings.api_key.clone())?;
   let sanitized = sanitize_settings_for_persistence(settings);
-  let payload = serde_json::to_string(&sanitized)?;
-  upsert_setting_value_in(conn, SETTINGS_KEY, &payload)?;
+  conn.execute(
+    "INSERT INTO provider_settings (id, provider_name, base_url, model, system_prompt, updated_at)
+     VALUES (1, ?1, ?2, ?3, ?4, ?5)
+     ON CONFLICT(id) DO UPDATE SET
+       provider_name = excluded.provider_name,
+       base_url = excluded.base_url,
+       model = excluded.model,
+       system_prompt = excluded.system_prompt,
+       updated_at = excluded.updated_at",
+    params![
+      &sanitized.provider_name,
+      &sanitized.base_url,
+      &sanitized.model,
+      &sanitized.system_prompt,
+      now_millis()
+    ],
+  )?;
   store_settings_cache(&sanitized)
 }
 
 fn load_setting_value_in(conn: &Connection, key: &str) -> Result<Option<String>> {
   conn
     .query_row(
-      "SELECT value FROM settings WHERE key = ?1",
+      "SELECT value FROM app_meta WHERE key = ?1",
       params![key],
       |row| row.get(0),
     )
@@ -1685,7 +1904,7 @@ fn load_setting_value_in(conn: &Connection, key: &str) -> Result<Option<String>>
 
 fn upsert_setting_value_in(conn: &Connection, key: &str, value: &str) -> Result<()> {
   conn.execute(
-    "INSERT INTO settings (key, value) VALUES (?1, ?2)
+    "INSERT INTO app_meta (key, value) VALUES (?1, ?2)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value",
     params![key, value],
   )?;
@@ -1746,9 +1965,23 @@ fn load_starter_skill_catalog_version_in(conn: &Connection) -> Result<u32> {
 }
 
 fn load_starter_skill_tombstones_in(conn: &Connection) -> Result<BTreeSet<String>> {
+  let mut stmt = conn.prepare("SELECT name FROM starter_skill_tombstones ORDER BY name ASC")?;
+  let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
+  let mut stored_names = Vec::new();
+  for row in rows {
+    stored_names.push(row?);
+  }
+  if !stored_names.is_empty() {
+    return Ok(normalize_starter_skill_tombstones(stored_names));
+  }
+
   if let Some(value) = load_setting_value_in(conn, STARTER_SKILL_DELETED_TOMBSTONES_KEY)? {
     let names = serde_json::from_str::<Vec<String>>(&value).unwrap_or_default();
-    return Ok(normalize_starter_skill_tombstones(names));
+    let tombstones = normalize_starter_skill_tombstones(names);
+    if !tombstones.is_empty() {
+      store_starter_skill_tombstones_in(conn, &tombstones)?;
+    }
+    return Ok(tombstones);
   }
 
   if load_setting_value_in(conn, STARTER_SKILL_SEED_MIGRATION_KEY)?.is_some() {
@@ -1762,8 +1995,17 @@ fn store_starter_skill_tombstones_in(
   conn: &Connection,
   tombstones: &BTreeSet<String>,
 ) -> Result<()> {
-  let payload = serde_json::to_string(tombstones)?;
-  upsert_setting_value_in(conn, STARTER_SKILL_DELETED_TOMBSTONES_KEY, &payload)
+  conn.execute("DELETE FROM starter_skill_tombstones", [])?;
+  let now = now_millis();
+  for name in tombstones {
+    conn.execute(
+      "INSERT INTO starter_skill_tombstones (name, created_at)
+       VALUES (?1, ?2)
+       ON CONFLICT(name) DO UPDATE SET created_at = excluded.created_at",
+      params![name, now],
+    )?;
+  }
+  Ok(())
 }
 
 fn append_starter_skill_tombstone_in(conn: &Connection, name: &str) -> Result<()> {
@@ -1777,7 +2019,7 @@ fn append_starter_skill_tombstone_in(conn: &Connection, name: &str) -> Result<()
 fn run_post_init_migrations_in(conn: &Connection) -> Result<()> {
   let migration_done: Option<String> = conn
     .query_row(
-      "SELECT value FROM settings WHERE key = ?1",
+      "SELECT value FROM app_meta WHERE key = ?1",
       params![SESSION_SKILL_MIGRATION_KEY],
       |row| row.get(0),
     )
@@ -1794,7 +2036,7 @@ fn run_post_init_migrations_in(conn: &Connection) -> Result<()> {
 
     let has_session_skills: bool = conn
       .query_row(
-        "SELECT EXISTS(SELECT 1 FROM session_skills LIMIT 1)",
+        "SELECT EXISTS(SELECT 1 FROM session_skill_mounts LIMIT 1)",
         [],
         |row| row.get::<_, i64>(0),
       )
@@ -1802,7 +2044,7 @@ fn run_post_init_migrations_in(conn: &Connection) -> Result<()> {
 
     if !has_session_skills && !enabled_skill_ids.is_empty() {
       let mut session_ids = Vec::new();
-      let mut session_stmt = conn.prepare("SELECT id FROM sessions ORDER BY id ASC")?;
+      let mut session_stmt = conn.prepare("SELECT id FROM agent_sessions ORDER BY id ASC")?;
       let session_rows = session_stmt.query_map([], |row| row.get::<_, i64>(0))?;
       for row in session_rows {
         session_ids.push(row?);
@@ -1814,7 +2056,7 @@ fn run_post_init_migrations_in(conn: &Connection) -> Result<()> {
     }
 
     conn.execute(
-      "INSERT INTO settings (key, value) VALUES (?1, ?2)
+      "INSERT INTO app_meta (key, value) VALUES (?1, ?2)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value",
       params![SESSION_SKILL_MIGRATION_KEY, "done"],
     )?;
@@ -1847,7 +2089,7 @@ fn seed_starter_skill_catalog_in(conn: &Connection) -> Result<()> {
 fn prune_disabled_session_skill_mounts_in(conn: &Connection) -> Result<()> {
   let mut stmt = conn.prepare(
     "SELECT DISTINCT ss.session_id
-     FROM session_skills ss
+     FROM session_skill_mounts ss
      INNER JOIN skills s ON s.id = ss.skill_id
      WHERE s.enabled = 0",
   )?;
@@ -1863,7 +2105,7 @@ fn prune_disabled_session_skill_mounts_in(conn: &Connection) -> Result<()> {
   }
 
   conn.execute(
-    "DELETE FROM session_skills
+    "DELETE FROM session_skill_mounts
      WHERE skill_id IN (
        SELECT id FROM skills WHERE enabled = 0
      )",
@@ -1873,7 +2115,7 @@ fn prune_disabled_session_skill_mounts_in(conn: &Connection) -> Result<()> {
   let updated_at = now_millis();
   for session_id in session_ids {
     conn.execute(
-      "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
+      "UPDATE agent_sessions SET updated_at = ?1 WHERE id = ?2",
       params![updated_at, session_id],
     )?;
   }
@@ -1913,8 +2155,8 @@ fn find_skill_id_by_names(conn: &Connection, seed: &StarterSkillSeed) -> Option<
 fn insert_starter_skill_in(conn: &Connection, seed: &StarterSkillSeed) -> Result<i64> {
   let now = now_millis();
   conn.execute(
-    "INSERT INTO skills (name, description, instructions, trigger_hint, enabled, permission_level, created_at, updated_at)
-     VALUES (?1, ?2, ?3, ?4, 1, 'low', ?5, ?6)",
+    "INSERT INTO skills (name, description, instructions, trigger_hint, enabled, permission_level, origin, catalog_key, created_at, updated_at)
+     VALUES (?1, ?2, ?3, ?4, 1, 'low', 'starter', ?1, ?5, ?6)",
     params![
       seed.name,
       seed.description,
@@ -1932,7 +2174,7 @@ fn insert_starter_skill_in(conn: &Connection, seed: &StarterSkillSeed) -> Result
 fn ensure_seed_session_in(conn: &Connection) -> Result<i64> {
   let existing: Option<i64> = conn
     .query_row(
-      "SELECT id FROM sessions ORDER BY updated_at DESC LIMIT 1",
+      "SELECT id FROM agent_sessions ORDER BY updated_at DESC LIMIT 1",
       [],
       |row| row.get(0),
     )
@@ -1948,7 +2190,7 @@ fn ensure_seed_session_in(conn: &Connection) -> Result<i64> {
 fn ensure_seed_note_in(conn: &Connection) -> Result<i64> {
   let existing: Option<i64> = conn
     .query_row(
-      "SELECT id FROM notes ORDER BY updated_at DESC LIMIT 1",
+      "SELECT id FROM knowledge_notes ORDER BY updated_at DESC LIMIT 1",
       [],
       |row| row.get(0),
     )
@@ -1991,7 +2233,7 @@ fn create_session_detail_in(conn: &Connection, title: Option<String>) -> Result<
   )?;
 
   conn.execute(
-    "INSERT INTO sessions (title, status, created_at, updated_at)
+    "INSERT INTO agent_sessions (title, status, created_at, updated_at)
      VALUES (?1, 'idle', ?2, ?3)",
     params![session_title, now, now],
   )?;
@@ -2043,9 +2285,9 @@ fn create_note_detail_in(conn: &Connection, title: Option<String>) -> Result<Kno
   };
 
   conn.execute(
-    "INSERT INTO notes (icon, title, body, tags, created_at, updated_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-    params!["*", &note_title, &body, "[]", now, now],
+    "INSERT INTO knowledge_notes (icon, title, body, created_at, updated_at)
+     VALUES (?1, ?2, ?3, ?4, ?5)",
+    params!["*", &note_title, &body, now, now],
   )?;
 
   Ok(build_note_detail(
@@ -2074,7 +2316,7 @@ fn create_reminder_detail_in(conn: &Connection, title: Option<String>) -> Result
   )?;
   let linked_note_id: Option<i64> = conn
     .query_row(
-      "SELECT id FROM notes ORDER BY updated_at DESC LIMIT 1",
+      "SELECT id FROM knowledge_notes ORDER BY updated_at DESC LIMIT 1",
       [],
       |row| row.get(0),
     )
@@ -2172,22 +2414,17 @@ fn save_note_detail_in(
   let created_at = load_note_created_at_in(conn, input.id)?;
 
   let changed = conn.execute(
-    "UPDATE notes
-     SET icon = ?1, title = ?2, body = ?3, tags = ?4, updated_at = ?5
-     WHERE id = ?6",
-    params![
-      &icon,
-      &title,
-      &body,
-      serde_json::to_string(&tags).unwrap_or_else(|_| "[]".to_string()),
-      updated_at,
-      input.id
-    ],
+    "UPDATE knowledge_notes
+     SET icon = ?1, title = ?2, body = ?3, updated_at = ?4
+     WHERE id = ?5",
+    params![&icon, &title, &body, updated_at, input.id],
   )?;
 
   if changed == 0 {
     return Err(anyhow!("note not found"));
   }
+
+  replace_note_tags_in(conn, input.id, &tags)?;
 
   Ok(build_note_detail(
     input.id, icon, title, body, tags, created_at, updated_at,
@@ -2196,14 +2433,14 @@ fn save_note_detail_in(
 
 fn delete_session_in(conn: &Connection, session_id: i64) -> Result<()> {
   conn.execute(
-    "DELETE FROM activity WHERE session_id = ?1",
+    "DELETE FROM session_activity WHERE session_id = ?1",
     params![session_id],
   )?;
   conn.execute(
-    "DELETE FROM messages WHERE session_id = ?1",
+    "DELETE FROM session_messages WHERE session_id = ?1",
     params![session_id],
   )?;
-  let changed = conn.execute("DELETE FROM sessions WHERE id = ?1", params![session_id])?;
+  let changed = conn.execute("DELETE FROM agent_sessions WHERE id = ?1", params![session_id])?;
   if changed == 0 {
     return Err(anyhow!("session not found"));
   }
@@ -2211,7 +2448,7 @@ fn delete_session_in(conn: &Connection, session_id: i64) -> Result<()> {
 }
 
 fn delete_note_in(conn: &Connection, note_id: i64) -> Result<()> {
-  let changed = conn.execute("DELETE FROM notes WHERE id = ?1", params![note_id])?;
+  let changed = conn.execute("DELETE FROM knowledge_notes WHERE id = ?1", params![note_id])?;
   if changed == 0 {
     return Err(anyhow!("note not found"));
   }
@@ -2299,7 +2536,7 @@ fn delete_reminder_in(conn: &Connection, reminder_id: i64) -> Result<()> {
 fn session_exists_in(conn: &Connection, session_id: i64) -> Result<bool> {
   conn
     .query_row(
-      "SELECT EXISTS(SELECT 1 FROM sessions WHERE id = ?1)",
+      "SELECT EXISTS(SELECT 1 FROM agent_sessions WHERE id = ?1)",
       params![session_id],
       |row| row.get::<_, i64>(0),
     )
@@ -2310,7 +2547,7 @@ fn session_exists_in(conn: &Connection, session_id: i64) -> Result<bool> {
 fn note_exists_in(conn: &Connection, note_id: i64) -> Result<bool> {
   conn
     .query_row(
-      "SELECT EXISTS(SELECT 1 FROM notes WHERE id = ?1)",
+      "SELECT EXISTS(SELECT 1 FROM knowledge_notes WHERE id = ?1)",
       params![note_id],
       |row| row.get::<_, i64>(0),
     )
@@ -2420,7 +2657,7 @@ fn create_skill_detail_for_active_session_in(
 fn ensure_session_title_in(conn: &Connection, session_id: i64, prompt: &str) -> Result<()> {
   let existing: Option<String> = conn
     .query_row(
-      "SELECT title FROM sessions WHERE id = ?1",
+      "SELECT title FROM agent_sessions WHERE id = ?1",
       params![session_id],
       |row| row.get(0),
     )
@@ -2430,7 +2667,7 @@ fn ensure_session_title_in(conn: &Connection, session_id: i64, prompt: &str) -> 
     if is_default_session_title(&title) {
       let next_title = infer_title(prompt);
       conn.execute(
-        "UPDATE sessions SET title = ?1, updated_at = ?2 WHERE id = ?3",
+        "UPDATE agent_sessions SET title = ?1, updated_at = ?2 WHERE id = ?3",
         params![next_title, now_millis(), session_id],
       )?;
     }
@@ -2443,7 +2680,7 @@ fn delete_skill_in(conn: &Connection, skill_id: i64) -> Result<()> {
   let deleted_skill_name = get_skill_name_in(conn, skill_id)?.context("skill not found")?;
   let mut stmt = conn.prepare(
     "SELECT DISTINCT session_id
-     FROM session_skills
+     FROM session_skill_mounts
      WHERE skill_id = ?1",
   )?;
   let rows = stmt.query_map(params![skill_id], |row| row.get::<_, i64>(0))?;
@@ -2465,7 +2702,7 @@ fn delete_skill_in(conn: &Connection, skill_id: i64) -> Result<()> {
     let updated_at = now_millis();
     for session_id in session_ids {
       conn.execute(
-        "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
+        "UPDATE agent_sessions SET updated_at = ?1 WHERE id = ?2",
         params![updated_at, session_id],
       )?;
     }
@@ -2527,7 +2764,7 @@ fn save_skill_detail_in(conn: &Connection, input: SkillInput) -> Result<SkillDet
   if !input.enabled {
     let mut stmt = conn.prepare(
       "SELECT DISTINCT session_id
-       FROM session_skills
+       FROM session_skill_mounts
        WHERE skill_id = ?1",
     )?;
     let rows = stmt.query_map(params![input.id], |row| row.get::<_, i64>(0))?;
@@ -2537,13 +2774,13 @@ fn save_skill_detail_in(conn: &Connection, input: SkillInput) -> Result<SkillDet
     }
 
     conn.execute(
-      "DELETE FROM session_skills WHERE skill_id = ?1",
+      "DELETE FROM session_skill_mounts WHERE skill_id = ?1",
       params![input.id],
     )?;
 
     for session_id in session_ids {
       conn.execute(
-        "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
+        "UPDATE agent_sessions SET updated_at = ?1 WHERE id = ?2",
         params![updated_at, session_id],
       )?;
     }
@@ -2569,7 +2806,7 @@ fn save_session_skills_in(
 ) -> Result<Vec<i64>> {
   let session_exists = conn
     .query_row(
-      "SELECT EXISTS(SELECT 1 FROM sessions WHERE id = ?1)",
+      "SELECT EXISTS(SELECT 1 FROM agent_sessions WHERE id = ?1)",
       params![session_id],
       |row| row.get::<_, i64>(0),
     )
@@ -2606,7 +2843,7 @@ fn save_session_skills_in(
   }
 
   conn.execute(
-    "DELETE FROM session_skills WHERE session_id = ?1",
+    "DELETE FROM session_skill_mounts WHERE session_id = ?1",
     params![session_id],
   )?;
 
@@ -2614,14 +2851,14 @@ fn save_session_skills_in(
 
   for (index, skill_id) in next_skill_ids.iter().copied().enumerate() {
     conn.execute(
-      "INSERT OR IGNORE INTO session_skills (session_id, skill_id, created_at)
+      "INSERT OR IGNORE INTO session_skill_mounts (session_id, skill_id, created_at)
        VALUES (?1, ?2, ?3)",
       params![session_id, skill_id, base_timestamp + index as i64],
     )?;
   }
 
   conn.execute(
-    "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
+    "UPDATE agent_sessions SET updated_at = ?1 WHERE id = ?2",
     params![base_timestamp + next_skill_ids.len() as i64, session_id],
   )?;
 
@@ -2842,16 +3079,16 @@ fn list_sessions_in(conn: &Connection) -> Result<Vec<SessionSummary>> {
             COALESCE(message_stats.message_count, 0) AS message_count,
             COALESCE(substr(last_message.content, 1, 256), '') AS last_message_preview,
             COALESCE(skill_stats.mounted_skill_count, 0) AS mounted_skill_count
-     FROM sessions s
+     FROM agent_sessions s
      LEFT JOIN (
        SELECT session_id, COUNT(*) AS message_count, MAX(id) AS last_message_id
-       FROM messages
+       FROM session_messages
        GROUP BY session_id
      ) AS message_stats ON message_stats.session_id = s.id
-     LEFT JOIN messages AS last_message ON last_message.id = message_stats.last_message_id
+     LEFT JOIN session_messages AS last_message ON last_message.id = message_stats.last_message_id
      LEFT JOIN (
        SELECT ss.session_id, COUNT(*) AS mounted_skill_count
-       FROM session_skills ss
+       FROM session_skill_mounts ss
        INNER JOIN skills s ON s.id = ss.skill_id
        WHERE s.enabled = 1
        GROUP BY ss.session_id
@@ -2878,16 +3115,16 @@ fn load_session_summary_in(conn: &Connection, session_id: i64) -> Result<Session
               COALESCE(message_stats.message_count, 0) AS message_count,
               COALESCE(substr(last_message.content, 1, 256), '') AS last_message_preview,
               COALESCE(skill_stats.mounted_skill_count, 0) AS mounted_skill_count
-       FROM sessions s
+       FROM agent_sessions s
        LEFT JOIN (
          SELECT session_id, COUNT(*) AS message_count, MAX(id) AS last_message_id
-         FROM messages
+         FROM session_messages
          GROUP BY session_id
        ) AS message_stats ON message_stats.session_id = s.id
-       LEFT JOIN messages AS last_message ON last_message.id = message_stats.last_message_id
+       LEFT JOIN session_messages AS last_message ON last_message.id = message_stats.last_message_id
        LEFT JOIN (
          SELECT ss.session_id, COUNT(*) AS mounted_skill_count
-         FROM session_skills ss
+         FROM session_skill_mounts ss
          INNER JOIN skills s ON s.id = ss.skill_id
          WHERE s.enabled = 1
          GROUP BY ss.session_id
@@ -2902,8 +3139,8 @@ fn load_session_summary_in(conn: &Connection, session_id: i64) -> Result<Session
 
 fn list_notes_in(conn: &Connection) -> Result<Vec<KnowledgeNoteSummary>> {
   let mut stmt = conn.prepare(
-    "SELECT id, icon, title, substr(body, 1, 512), tags, updated_at
-     FROM notes
+    "SELECT id, icon, title, substr(body, 1, 512), updated_at
+     FROM knowledge_notes
      ORDER BY updated_at DESC, id DESC",
   )?;
   let rows = stmt.query_map([], |row| {
@@ -2912,14 +3149,16 @@ fn list_notes_in(conn: &Connection) -> Result<Vec<KnowledgeNoteSummary>> {
       icon: row.get(1)?,
       title: row.get(2)?,
       summary: preview_text(&row.get::<_, String>(3)?, 120),
-      tags: decode_tags(row.get(4)?),
-      updated_at: row.get(5)?,
+      tags: Vec::new(),
+      updated_at: row.get(4)?,
     })
   })?;
 
   let mut notes = Vec::new();
   for row in rows {
-    notes.push(row?);
+    let mut note = row?;
+    note.tags = load_note_tags_in(conn, note.id)?;
+    notes.push(note);
   }
 
   Ok(notes)
@@ -2931,26 +3170,30 @@ fn list_note_context_in(
   body_char_limit: usize,
 ) -> Result<Vec<KnowledgeNoteContext>> {
   let mut stmt = conn.prepare(
-    "SELECT title, substr(body, 1, ?2), tags, updated_at
-     FROM notes
+    "SELECT id, title, substr(body, 1, ?2), updated_at
+     FROM knowledge_notes
      ORDER BY updated_at DESC, id DESC
      LIMIT ?1",
   )?;
   let rows = stmt.query_map(params![limit as i64, body_char_limit as i64], |row| {
-    let body_excerpt: String = row.get(1)?;
-    let tags_json: String = row.get(2)?;
-    Ok(KnowledgeNoteContext {
-      title: row.get(0)?,
-      summary: preview_text(&body_excerpt, 120),
-      body_excerpt,
-      tags: decode_tags(tags_json),
-      updated_at: row.get(3)?,
-    })
+    let body_excerpt: String = row.get(2)?;
+    Ok((
+      row.get::<_, i64>(0)?,
+      KnowledgeNoteContext {
+        title: row.get(1)?,
+        summary: preview_text(&body_excerpt, 120),
+        body_excerpt,
+        tags: Vec::new(),
+        updated_at: row.get(3)?,
+      },
+    ))
   })?;
 
   let mut notes = Vec::new();
   for row in rows {
-    notes.push(row?);
+    let (note_id, mut note) = row?;
+    note.tags = load_note_tags_in(conn, note_id)?;
+    notes.push(note);
   }
 
   Ok(notes)
@@ -3018,7 +3261,7 @@ fn list_open_reminder_context_in(
   let mut stmt = conn.prepare(
     "SELECT r.title, r.severity, r.due_at, n.title
      FROM reminders r
-     LEFT JOIN notes n ON n.id = r.linked_note_id
+     LEFT JOIN knowledge_notes n ON n.id = r.linked_note_id
      WHERE r.status != 'done'
      ORDER BY CASE WHEN r.due_at IS NULL THEN 1 ELSE 0 END ASC,
               r.due_at ASC,
@@ -3074,7 +3317,7 @@ fn list_session_enabled_skills_in(conn: &Connection, session_id: i64) -> Result<
   let mut stmt = conn.prepare(
     "SELECT s.id, s.name, s.description, s.instructions, s.trigger_hint, s.enabled, s.permission_level, s.created_at, s.updated_at
      FROM skills s
-     INNER JOIN session_skills ss ON ss.skill_id = s.id
+     INNER JOIN session_skill_mounts ss ON ss.skill_id = s.id
      WHERE ss.session_id = ?1
        AND s.enabled = 1
      ORDER BY ss.created_at ASC, s.id ASC",
@@ -3106,7 +3349,7 @@ fn list_session_enabled_skills_in(conn: &Connection, session_id: i64) -> Result<
 fn list_session_skill_ids_in(conn: &Connection, session_id: i64) -> Result<Vec<i64>> {
   let mut stmt = conn.prepare(
     "SELECT ss.skill_id
-     FROM session_skills ss
+     FROM session_skill_mounts ss
      INNER JOIN skills s ON s.id = ss.skill_id
      WHERE ss.session_id = ?1
        AND s.enabled = 1
@@ -3156,10 +3399,10 @@ fn load_agent_session_context_in(
               s.status,
               COALESCE((
                 SELECT COUNT(*)
-                FROM messages m
+                FROM session_messages m
                 WHERE m.session_id = s.id
               ), 0) AS message_count
-       FROM sessions s
+       FROM agent_sessions s
        WHERE s.id = ?1",
       params![session_id],
       |row| {
@@ -3176,7 +3419,7 @@ fn load_agent_session_context_in(
   let mut stmt = conn.prepare(
     "SELECT s.name
      FROM skills s
-     INNER JOIN session_skills ss ON ss.skill_id = s.id
+     INNER JOIN session_skill_mounts ss ON ss.skill_id = s.id
      WHERE ss.session_id = ?1
        AND s.enabled = 1
      ORDER BY ss.created_at ASC, s.id ASC",
@@ -3210,7 +3453,7 @@ fn build_session_detail_with_summary_in(
   } else {
     let mut messages_stmt = conn.prepare(
       "SELECT id, role, content, created_at
-         FROM messages
+         FROM session_messages
          WHERE session_id = ?1
          ORDER BY created_at ASC, id ASC",
     )?;
@@ -3229,7 +3472,7 @@ fn build_session_detail_with_summary_in(
 
     let mut activity_stmt = conn.prepare(
       "SELECT id, kind, title, detail, status, created_at
-         FROM activity
+         FROM session_activity
          WHERE session_id = ?1
          ORDER BY created_at DESC, id DESC
          LIMIT 24",
@@ -3830,30 +4073,30 @@ fn build_skill_recommendation_reason_stable(
   })
 }
 fn build_note_detail_in(conn: &Connection, note_id: i64) -> Result<KnowledgeNoteDetail> {
-  let note = conn
+  let mut note = conn
     .query_row(
-      "SELECT id, icon, title, body, tags, created_at, updated_at
-       FROM notes
+      "SELECT id, icon, title, body, created_at, updated_at
+       FROM knowledge_notes
        WHERE id = ?1",
       params![note_id],
       |row| {
         let body: String = row.get(3)?;
-        let tags_json: String = row.get(4)?;
         Ok(KnowledgeNoteDetail {
           id: row.get(0)?,
           icon: row.get(1)?,
           title: row.get(2)?,
           summary: preview_text(&body, 120),
           body,
-          tags: decode_tags(tags_json),
-          created_at: row.get(5)?,
-          updated_at: row.get(6)?,
+          tags: Vec::new(),
+          created_at: row.get(4)?,
+          updated_at: row.get(5)?,
         })
       },
     )
     .optional()?
     .context("note not found")?;
 
+  note.tags = load_note_tags_in(conn, note.id)?;
   Ok(note)
 }
 
@@ -3910,7 +4153,7 @@ fn append_message_in(
   let now = now_millis();
   let trimmed = content.trim();
   conn.execute(
-    "INSERT INTO messages (session_id, role, content, created_at)
+    "INSERT INTO session_messages (session_id, role, content, created_at)
      VALUES (?1, ?2, ?3, ?4)",
     params![session_id, role, trimmed, now],
   )?;
@@ -3921,7 +4164,7 @@ fn append_message_in(
     created_at: now,
   };
   conn.execute(
-    "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
+    "UPDATE agent_sessions SET updated_at = ?1 WHERE id = ?2",
     params![now, session_id],
   )?;
   Ok(message)
@@ -3937,7 +4180,7 @@ fn append_activity_in(
 ) -> Result<ActivityItem> {
   let now = now_millis();
   conn.execute(
-    "INSERT INTO activity (session_id, kind, title, detail, status, created_at)
+    "INSERT INTO session_activity (session_id, kind, title, detail, status, created_at)
      VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
     params![session_id, kind, title, detail, status, now],
   )?;
@@ -3950,7 +4193,7 @@ fn append_activity_in(
     created_at: now,
   };
   conn.execute(
-    "UPDATE sessions SET updated_at = ?1 WHERE id = ?2",
+    "UPDATE agent_sessions SET updated_at = ?1 WHERE id = ?2",
     params![now, session_id],
   )?;
   Ok(activity)
@@ -3958,7 +4201,7 @@ fn append_activity_in(
 
 fn touch_session_in(conn: &Connection, session_id: i64, status: &str) -> Result<()> {
   conn.execute(
-    "UPDATE sessions SET status = ?1, updated_at = ?2 WHERE id = ?3",
+    "UPDATE agent_sessions SET status = ?1, updated_at = ?2 WHERE id = ?3",
     params![status, now_millis(), session_id],
   )?;
   Ok(())
@@ -3966,6 +4209,37 @@ fn touch_session_in(conn: &Connection, session_id: i64, status: &str) -> Result<
 
 fn decode_tags(raw: String) -> Vec<String> {
   serde_json::from_str::<Vec<String>>(&raw).unwrap_or_default()
+}
+
+fn load_note_tags_in(conn: &Connection, note_id: i64) -> Result<Vec<String>> {
+  let mut stmt = conn.prepare(
+    "SELECT tag
+     FROM knowledge_note_tags
+     WHERE note_id = ?1
+     ORDER BY position ASC, tag ASC",
+  )?;
+  let rows = stmt.query_map(params![note_id], |row| row.get::<_, String>(0))?;
+
+  let mut tags = Vec::new();
+  for row in rows {
+    tags.push(row?);
+  }
+  Ok(tags)
+}
+
+fn replace_note_tags_in(conn: &Connection, note_id: i64, tags: &[String]) -> Result<()> {
+  conn.execute(
+    "DELETE FROM knowledge_note_tags WHERE note_id = ?1",
+    params![note_id],
+  )?;
+  for (position, tag) in tags.iter().enumerate() {
+    conn.execute(
+      "INSERT INTO knowledge_note_tags (note_id, tag, position)
+       VALUES (?1, ?2, ?3)",
+      params![note_id, tag, position as i64],
+    )?;
+  }
+  Ok(())
 }
 
 fn normalize_tags(tags: Vec<String>) -> Vec<String> {
@@ -4101,7 +4375,7 @@ fn build_skill_summary_from_detail(detail: &SkillDetail) -> SkillSummary {
 fn load_note_created_at_in(conn: &Connection, note_id: i64) -> Result<i64> {
   conn
     .query_row(
-      "SELECT created_at FROM notes WHERE id = ?1",
+      "SELECT created_at FROM knowledge_notes WHERE id = ?1",
       params![note_id],
       |row| row.get(0),
     )
@@ -4341,8 +4615,100 @@ mod tests {
   }
 
   fn persisted_settings(conn: &Connection) -> Result<AgentSettings> {
-    let raw = load_setting_value_in(conn, SETTINGS_KEY)?.context("missing settings payload")?;
-    serde_json::from_str(&raw).map_err(Into::into)
+    conn
+      .query_row(
+        "SELECT provider_name, base_url, model, system_prompt
+         FROM provider_settings
+         WHERE id = 1",
+        [],
+        |row| {
+          Ok(AgentSettings {
+            provider_name: row.get(0)?,
+            base_url: row.get(1)?,
+            has_api_key: false,
+            api_key: String::new(),
+            model: row.get(2)?,
+            system_prompt: row.get(3)?,
+          })
+        },
+      )
+      .optional()?
+      .context("missing provider settings")
+  }
+
+  fn create_v1_schema_in(conn: &Connection) -> Result<()> {
+    conn.execute_batch(
+      "CREATE TABLE settings (
+         key TEXT PRIMARY KEY,
+         value TEXT NOT NULL
+       );
+       CREATE TABLE sessions (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         title TEXT NOT NULL,
+         status TEXT NOT NULL,
+         created_at INTEGER NOT NULL,
+         updated_at INTEGER NOT NULL
+       );
+       CREATE TABLE messages (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         session_id INTEGER NOT NULL,
+         role TEXT NOT NULL,
+         content TEXT NOT NULL,
+         created_at INTEGER NOT NULL,
+         FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+       );
+       CREATE TABLE activity (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         session_id INTEGER NOT NULL,
+         kind TEXT NOT NULL,
+         title TEXT NOT NULL,
+         detail TEXT NOT NULL,
+         status TEXT NOT NULL,
+         created_at INTEGER NOT NULL,
+         FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+       );
+       CREATE TABLE notes (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         icon TEXT NOT NULL,
+         title TEXT NOT NULL,
+         body TEXT NOT NULL,
+         tags TEXT NOT NULL,
+         created_at INTEGER NOT NULL,
+         updated_at INTEGER NOT NULL
+       );
+       CREATE TABLE reminders (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         title TEXT NOT NULL,
+         detail TEXT NOT NULL,
+         due_at INTEGER,
+         severity TEXT NOT NULL,
+         status TEXT NOT NULL,
+         linked_note_id INTEGER,
+         created_at INTEGER NOT NULL,
+         updated_at INTEGER NOT NULL,
+         FOREIGN KEY (linked_note_id) REFERENCES notes(id) ON DELETE SET NULL
+       );
+       CREATE TABLE skills (
+         id INTEGER PRIMARY KEY AUTOINCREMENT,
+         name TEXT NOT NULL,
+         description TEXT NOT NULL,
+         instructions TEXT NOT NULL,
+         trigger_hint TEXT NOT NULL,
+         enabled INTEGER NOT NULL DEFAULT 1,
+         permission_level TEXT NOT NULL DEFAULT 'low',
+         created_at INTEGER NOT NULL,
+         updated_at INTEGER NOT NULL
+       );
+       CREATE TABLE session_skills (
+         session_id INTEGER NOT NULL,
+         skill_id INTEGER NOT NULL,
+         created_at INTEGER NOT NULL,
+         PRIMARY KEY (session_id, skill_id),
+         FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE,
+         FOREIGN KEY (skill_id) REFERENCES skills(id) ON DELETE CASCADE
+       );",
+    )?;
+    set_database_user_version(conn, 1)
   }
 
   #[test]
@@ -4379,7 +4745,7 @@ mod tests {
       .lock()
       .map_err(|_| anyhow!("test state mutex poisoned"))?;
     let conn = Connection::open_in_memory()?;
-    conn.execute_batch(include_str!("../sql/schema.sql"))?;
+    conn.execute_batch(schema::V2_SCHEMA)?;
     assert_eq!(database_user_version(&conn)?, 0);
 
     initialize_or_migrate_schema_in(&conn)?;
@@ -4445,22 +4811,62 @@ mod tests {
   }
 
   #[test]
-  fn load_settings_migrates_legacy_plaintext_api_key_out_of_db() -> Result<()> {
+  fn v1_schema_migration_moves_plaintext_api_key_out_of_db() -> Result<()> {
     let _serial = TEST_STATE_LOCK
       .lock()
       .map_err(|_| anyhow!("test state mutex poisoned"))?;
     let _env = EnvGuard::clear_openai_vars();
     reset_secret_state()?;
 
-    let conn = test_connection()?;
-    upsert_setting_value_in(
-      &conn,
-      SETTINGS_KEY,
-      &serde_json::to_string(&sample_settings("legacy-key"))?,
+    let conn = Connection::open_in_memory()?;
+    create_v1_schema_in(&conn)?;
+    conn.execute(
+      "INSERT INTO settings (key, value) VALUES (?1, ?2)",
+      params![SETTINGS_KEY, serde_json::to_string(&sample_settings("legacy-key"))?],
     )?;
+    conn.execute(
+      "INSERT INTO sessions (id, title, status, created_at, updated_at)
+       VALUES (10, 'Legacy session', 'idle', 1, 2)",
+      [],
+    )?;
+    conn.execute(
+      "INSERT INTO notes (id, icon, title, body, tags, created_at, updated_at)
+       VALUES (20, '*', 'Legacy note', 'Body', ?1, 1, 2)",
+      params![serde_json::to_string(&vec!["ops".to_string(), "deploy".to_string()])?],
+    )?;
+    conn.execute(
+      "INSERT INTO reminders (id, title, detail, due_at, severity, status, linked_note_id, created_at, updated_at)
+       VALUES (30, 'Legacy reminder', 'Detail', 3, 'high', 'scheduled', 20, 1, 2)",
+      [],
+    )?;
+    conn.execute(
+      "INSERT INTO skills (id, name, description, instructions, trigger_hint, enabled, permission_level, created_at, updated_at)
+       VALUES (40, 'Note Recall', 'Desc', 'Instructions', 'Hint', 1, 'low', 1, 2)",
+      [],
+    )?;
+    conn.execute(
+      "INSERT INTO session_skills (session_id, skill_id, created_at)
+       VALUES (10, 40, 4)",
+      [],
+    )?;
+
+    initialize_or_migrate_schema_in(&conn)?;
 
     let loaded = load_settings_in(&conn)?;
     let persisted = persisted_settings(&conn)?;
+    let migrated_tags = load_note_tags_in(&conn, 20)?;
+    let linked_note_id: Option<i64> = conn.query_row(
+      "SELECT linked_note_id FROM reminders WHERE id = 30",
+      [],
+      |row| row.get(0),
+    )?;
+    let mounted_count: i64 = conn.query_row(
+      "SELECT COUNT(*) FROM session_skill_mounts WHERE session_id = 10 AND skill_id = 40",
+      [],
+      |row| row.get(0),
+    )?;
+    let origin: String =
+      conn.query_row("SELECT origin FROM skills WHERE id = 40", [], |row| row.get(0))?;
 
     assert_eq!(loaded.api_key, "legacy-key");
     assert!(loaded.has_api_key);
@@ -4468,6 +4874,10 @@ mod tests {
     assert_eq!(load_api_key_from_keyring()?, Some("legacy-key".to_string()));
     assert_eq!(persisted.api_key, "");
     assert!(!persisted.has_api_key);
+    assert_eq!(migrated_tags, vec!["ops".to_string(), "deploy".to_string()]);
+    assert_eq!(linked_note_id, Some(20));
+    assert_eq!(mounted_count, 1);
+    assert_eq!(origin, "starter");
     Ok(())
   }
 

@@ -1,5 +1,10 @@
 import React, { useDeferredValue, useMemo } from "react";
 import { useI18n } from "../i18n";
+import {
+  countOpenReminders,
+  filterReminders,
+  groupReminders,
+} from "./reminderWorkspaceModel";
 
 function ReminderWorkspace({
   busy,
@@ -32,29 +37,19 @@ function ReminderWorkspace({
     [lang]
   );
 
-  const filteredReminders = useMemo(() => {
-    const needle = deferredReminderSearch.trim().toLowerCase();
-    return reminders.filter((item) => {
-      if (!needle) {
-        return true;
-      }
-      const linkedTitle =
-        noteList.find((note) => note.id === item.linkedNoteId)?.title || "";
-      return [item.title, item.preview, linkedTitle, item.severity, item.status]
-        .join(" ")
-        .toLowerCase()
-        .includes(needle);
-    });
-  }, [deferredReminderSearch, noteList, reminders]);
+  const filteredReminders = useMemo(
+    () => filterReminders(reminders, noteList, deferredReminderSearch),
+    [deferredReminderSearch, noteList, reminders]
+  );
 
   const groups = useMemo(
-    () => groupReminders(filteredReminders, clockNow, t),
+    () =>
+      groupReminders(filteredReminders, clockNow, (key) =>
+        t(`app.reminders.bucket.${key}`)
+      ),
     [clockNow, filteredReminders, t]
   );
-  const openCount = useMemo(
-    () => reminders.filter((item) => item.status !== "done").length,
-    [reminders]
-  );
+  const openCount = useMemo(() => countOpenReminders(reminders), [reminders]);
   const dueTodayCount = groups.find((group) => group.key === "today")?.items.length || 0;
   const doneCount = groups.find((group) => group.key === "done")?.items.length || 0;
 
@@ -326,57 +321,6 @@ function ReminderWorkspace({
       </div>
     </section>
   );
-}
-
-function groupReminders(reminders, now, t) {
-  const todayStart = new Date(now);
-  todayStart.setHours(0, 0, 0, 0);
-  const tomorrowStart = new Date(todayStart);
-  tomorrowStart.setDate(todayStart.getDate() + 1);
-
-  const buckets = [
-    { key: "overdue", title: t("app.reminders.bucket.overdue"), items: [] },
-    { key: "today", title: t("app.reminders.bucket.today"), items: [] },
-    { key: "upcoming", title: t("app.reminders.bucket.upcoming"), items: [] },
-    { key: "done", title: t("app.reminders.bucket.done"), items: [] },
-  ];
-
-  reminders.forEach((item) => {
-    if (item.status === "done") {
-      buckets[3].items.push(item);
-      return;
-    }
-    if (!item.dueAt) {
-      buckets[2].items.push(item);
-      return;
-    }
-    if (item.dueAt < todayStart.getTime()) {
-      buckets[0].items.push(item);
-      return;
-    }
-    if (item.dueAt < tomorrowStart.getTime()) {
-      buckets[1].items.push(item);
-      return;
-    }
-    buckets[2].items.push(item);
-  });
-
-  buckets.forEach((bucket) => {
-    bucket.items.sort((left, right) => {
-      if (!left.dueAt && !right.dueAt) {
-        return right.updatedAt - left.updatedAt;
-      }
-      if (!left.dueAt) {
-        return 1;
-      }
-      if (!right.dueAt) {
-        return -1;
-      }
-      return left.dueAt - right.dueAt;
-    });
-  });
-
-  return buckets;
 }
 
 function formatClock(value, lang) {

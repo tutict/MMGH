@@ -1,10 +1,10 @@
-/* Base tokens and global defaults */
+/* 1. Base tokens and global defaults. */
 @import "./base-layer.css";
 
-/* Core workspace surfaces and feature domains */
+/* 2. Desktop workspace surfaces and feature domains. */
 @import "./workspace-layer.css";
 
-/* Early responsive rules that current domain files rely on */
+/* 3. Desktop responsive rules that current domain files rely on. */
 @import "./responsive-core-layer.css";
 
 /* Feature themes and shell-level presentation */
@@ -13,23 +13,23 @@
 /* Late responsive overrides for specialized panels */
 @import "./responsive-context-layer.css";
 
-/* Visual polish and ambient scene details */
+/* 4. Desktop visual polish and ambient scene details. */
 @import "./polish-layer.css";
 
-/* Final corrective overrides */
+/* 5. Desktop corrective overrides. */
 @import "./refinement-layer.css";
 
 /* Tauri shell state polish */
 @import "./tauri-shell.css";
 
-/* Minimal workspace system */
+/* 6. Minimal desktop workspace system. */
 @import "./muji-refresh.css";
 
-/* UI/UX Pro Max refactor pass */
+/* 7. Desktop UI/UX refactor pass. */
 @import "./ui-ux-pro-max-refactor.css";
 
-/* Final density pass: quieter shell, fewer widget-like surfaces */
+/* 8. Desktop density pass: quieter shell, fewer widget-like surfaces. */
 @import "./layout-breathing-room.css";
 
-/* Independent mobile shell, scoped away from legacy responsive layers */
+/* 9. Independent mobile shell and views, scoped away from legacy responsive layers. */
 @import "./mobile.css";
