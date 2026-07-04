@@ -1,22 +1,26 @@
-# MMGH Agent Deck
+# 归流
 
-一个面向本地桌面场景的 Agent 工作台，采用 `Rust + Tauri + React` 构建，将会话、知识、提醒、技能和日常任务流整合到统一桌面界面中。项目强调本地持久化、桌面端安全存储和多工作区协同，适合用作个人智能工作台或桌面 AI 助手产品原型。
+归流是一款面向本地桌面与移动适配场景的个人 Agent 工作台，采用 `Rust + Tauri + React` 构建，将会话、知识、提醒、技能和日常任务流整合到一个轻量、可回溯的工作流界面中。
+
+“归流”强调把分散的信息、任务和上下文收束成连续流：今天要处理什么、Agent 正在推进什么、知识沉淀在哪里、提醒如何闭环，都尽量在本地完成并保持清晰边界。项目适合用作个人智能工作台、桌面 AI 助手产品原型，或 Tauri + React + Rust 本地应用工程实践样例。
 
 ## 项目概览
 
-- 项目类型：本地桌面端 Agent 工作台
+- 项目名称：归流
+- 项目类型：本地优先的 Agent 工作台
 - 业务方向：桌面 AI 助手、知识管理、提醒管理与技能编排
-- 主要能力：本地会话上下文管理、知识沉淀、提醒闭环、技能编辑、桌面端安全配置
+- 主要能力：本地会话上下文管理、知识沉淀、提醒闭环、技能编辑、桌面端安全配置与移动端轻量体验
 - 适合阅读对象：HR 初筛、客户端开发、桌面应用、全栈产品与 AI 工具方向面试官
 
 ## 核心功能
 
-- Today Workspace：日程队列、会话续接、快速捕获与状态汇总
-- Runtime Workspace：主对话线程、执行上下文、技能挂载与交互入口
-- Knowledge Vault：本地笔记、提示词、运行手册和产品事实存储
-- Reminder Workspace：提醒事项、关联笔记、完成回写和后续动作生成
-- Skill Workspace：技能创建、编辑、版本历史、导入导出与技能流程
-- Weather / Music / Gallery：辅助工作区与上下文扩展界面
+- 今日工作流：日程队列、会话续接、快速捕获与状态汇总
+- Agent 工作流：主对话线程、执行上下文、技能挂载与交互入口
+- 知识库：本地笔记、提示词、运行手册和产品事实存储
+- 提醒闭环：提醒事项、关联笔记、完成回写和后续动作生成
+- 技能工作区：技能创建、编辑、版本历史、导入导出与技能流程
+- 天气 / 音乐 / 图库：辅助工作区与上下文扩展界面
+- 移动端体验：独立移动组件树、底部 Tab、更多 Sheet、极简列表化业务页面
 
 ## 承担内容
 
@@ -24,15 +28,18 @@
 - 完成 React 前端、Tauri 桌面容器和 Rust 本地能力实现
 - 完成本地 SQLite 持久化、系统 keyring 密钥存储与提供方配置约束
 - 完成 Today / Runtime / Reminder / Skill 等核心工作区页面与数据流
-- 完成桌面打包、发布校验和基础测试链路
+- 完成移动端专用页面拆分、暗色适配和旧卡片布局清理
+- 完成桌面打包、发布校验、SQLite 迁移和基础测试链路
 
 ## 关键技术实现
 
 - 使用 `React 18 + Vite` 构建桌面端前端界面
 - 使用 `Tauri 2` 将前端与 Rust 本地能力整合为桌面应用
-- 使用 `Rust + rusqlite` 管理本地数据库与命令调用
+- 使用 `Rust + rusqlite` 管理本地 SQLite、迁移逻辑与命令调用
 - 使用系统 `keyring` 保存 API Key，避免将明文密钥写入 SQLite
 - 对模型提供方地址实施协议与主机白名单约束
+- 使用领域化前端组件与共享业务模型降低主应用编排复杂度
+- 移动端采用独立组件树，避免继续叠加旧桌面响应式补丁
 - 在无在线模型配置时提供本地预览回复与草稿回退逻辑
 - 支持桌面打包、版本化发布说明和安装产物校验
 
@@ -43,7 +50,7 @@
 | 前端 | React 18、Vite |
 | 桌面容器 | Tauri 2 |
 | 本地后端 | Rust、Tauri Command |
-| 本地存储 | SQLite、rusqlite |
+| 本地存储 | SQLite、rusqlite、schema migration |
 | 安全存储 | system keyring |
 | 模型接入 | OpenAI-compatible provider |
 | 测试与质量 | ESLint、Vitest、Cargo Test |
@@ -51,7 +58,7 @@
 ## 仓库结构
 
 ```text
-MMGH
+归流 / MMGH
 ├─ src/                # React 应用、工作区组件、样式与 i18n
 ├─ src-tauri/          # Tauri 运行时、Rust 命令、本地数据库
 ├─ docs/               # 安全、发布与操作文档
@@ -69,13 +76,26 @@ MMGH
 - 路径：`src/`
 - 技术关键词：`React`、`Vite`
 - 主要工作区：
-  - `Today Workspace`
-  - `Runtime Workspace`
-  - `Knowledge Vault`
-  - `Reminder Workspace`
-  - `Skill Workspace`
+  - 今日工作流
+  - Agent 工作流
+  - 知识库
+  - 提醒闭环
+  - 技能工作区
 
-### 2. Tauri 与 Rust 本地能力
+### 2. 移动端专用体验
+
+负责手机宽度下的独立业务界面，避免复用桌面卡片布局。
+
+- 路径：`src/components/mobile/`、`src/CSS/mobile.css`
+- 技术关键词：`React`、`CSS scoped classes`、`bottom sheet`
+- 主要能力：
+  - 独立移动端 Shell 与底部 Dock
+  - Today / Agent / 知识 / 天气常驻 Tab
+  - 设置与提醒专用移动页面
+  - 更多 Sheet 与 Inspector Sheet
+  - 极简列表化布局、低圆角、细分割线、暗色模式适配
+
+### 3. Tauri 与 Rust 本地能力
 
 负责桌面运行时、本地命令和持久化能力。
 
@@ -85,9 +105,10 @@ MMGH
   - Tauri runtime
   - Rust commands
   - SQLite persistence
+  - SQLite schema migration
   - 桌面打包与平台构建
 
-### 3. 数据与安全
+### 4. 数据与安全
 
 负责本地状态落盘、配置管理和 API Key 安全约束。
 
@@ -135,6 +156,12 @@ npm run dev:tauri
 npm run build
 ```
 
+统一测试：
+
+```bash
+npm test
+```
+
 桌面发行构建：
 
 ```bash
@@ -147,7 +174,7 @@ npm run build:desktop
 npm run build:desktop:debug
 ```
 
-统一校验：
+发布校验：
 
 ```bash
 npm run release:check
@@ -200,4 +227,3 @@ Windows 下常见产物包括：
 - 发布指南：[docs/RELEASE.md](docs/RELEASE.md)
 - 变更记录：[CHANGELOG.md](CHANGELOG.md)
 - 首个桌面发行版：[release/0.1.0/README.md](release/0.1.0/README.md)
-
