@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { ButtonBase } from "@mui/material";
 import { useI18n } from "../i18n";
 
 function RuntimeWorkspace({
@@ -162,13 +163,14 @@ function RuntimeWorkspace({
                   ? t("app.agent.composer.providerConfigured")
                   : t("app.agent.composer.providerPending")}
               </span>
-              <button
+              <ButtonBase
+                component="button"
                 type="submit"
                 className="solid-button"
                 disabled={busy !== "" || loading || !draft.trim()}
               >
                 {isRunning ? t("app.common.sending") : t("app.common.send")}
-              </button>
+              </ButtonBase>
             </div>
           </form>
         </div>
@@ -184,13 +186,14 @@ function RuntimeWorkspace({
                     : t("app.agent.mount.emptyTitle")}
                 </h4>
               </div>
-              <button
+              <ButtonBase
+                component="button"
                 type="button"
                 className="ghost-button runtime-sidebar-card__action"
                 onClick={() => openView("skills")}
               >
                 {t("app.mode.skills")}
-              </button>
+              </ButtonBase>
             </div>
 
             <div className="runtime-context-stack">
@@ -199,7 +202,8 @@ function RuntimeWorkspace({
                 {activeSessionSkills.length > 0 ? (
                   <div className="runtime-chip-list">
                     {activeSessionSkills.map((skill) => (
-                      <button
+                      <ButtonBase
+                        component="button"
                         key={skill.id}
                         type="button"
                         className={`chip-button ${skill.enabled ? "is-active" : ""}`}
@@ -211,7 +215,7 @@ function RuntimeWorkspace({
                         }}
                       >
                         {skill.name}
-                      </button>
+                      </ButtonBase>
                     ))}
                   </div>
                 ) : (
@@ -227,7 +231,8 @@ function RuntimeWorkspace({
                   <div className="runtime-recommend-list runtime-recommend-list--compact">
                     {recommendedSkillsPreview.map((skill) => (
                       <article key={skill.id} className="runtime-recommend-card">
-                        <button
+                        <ButtonBase
+                          component="button"
                           type="button"
                           className="runtime-recommend-card__body"
                           onClick={async () => {
@@ -239,9 +244,10 @@ function RuntimeWorkspace({
                         >
                           <strong>{skill.name}</strong>
                           <span>{skill.recommendationReason || skill.triggerHint}</span>
-                        </button>
+                        </ButtonBase>
                         <div className="runtime-recommend-card__actions">
-                          <button
+                          <ButtonBase
+                            component="button"
                             type="button"
                             className="ghost-button runtime-sidebar-card__action"
                             disabled={mountedSkillSet.has(skill.id) || busy !== "" || loading}
@@ -252,18 +258,19 @@ function RuntimeWorkspace({
                             {mountedSkillSet.has(skill.id)
                               ? t("app.skills.mounted")
                               : t("app.skills.sessionMount.recommendedAction")}
-                          </button>
+                          </ButtonBase>
                         </div>
                       </article>
                     ))}
                     {activeSessionRecommendedSkills.length > recommendedSkillsPreview.length ? (
-                      <button
+                      <ButtonBase
+                        component="button"
                         type="button"
                         className="runtime-inline-link"
                         onClick={() => openView("skills")}
                       >
                         {t("app.mode.skills")}
-                      </button>
+                      </ButtonBase>
                     ) : null}
                   </div>
                 ) : (
@@ -297,15 +304,17 @@ function RuntimeWorkspace({
                   ) : null}
                 </div>
                 <div className="runtime-quick-actions">
-                  <button
+                  <ButtonBase
+                    component="button"
                     type="button"
                     className="chip-button is-active"
                     disabled={busy !== "" || loading}
                     onClick={handleCaptureSessionNote}
                   >
                     {isCapturingNote ? t("app.common.saving") : t("app.agent.quick.saveNote")}
-                  </button>
-                  <button
+                  </ButtonBase>
+                  <ButtonBase
+                    component="button"
                     type="button"
                     className="chip-button"
                     disabled={busy !== "" || loading}
@@ -314,7 +323,7 @@ function RuntimeWorkspace({
                     {isCapturingReminder
                       ? t("app.common.saving")
                       : t("app.agent.quick.saveReminder")}
-                  </button>
+                  </ButtonBase>
                 </div>
               </>
             ) : (
@@ -324,7 +333,8 @@ function RuntimeWorkspace({
             )}
 
             <div className="runtime-mini-actions">
-              <button
+              <ButtonBase
+                component="button"
                 type="button"
                 className={`ghost-button runtime-sidebar-card__action ${
                   isInspectorOpen ? "is-active" : ""
@@ -332,14 +342,15 @@ function RuntimeWorkspace({
                 onClick={() => openInspector("activity")}
               >
                 {t("app.activity.title")}
-              </button>
-              <button
+              </ButtonBase>
+              <ButtonBase
+                component="button"
                 type="button"
                 className="ghost-button runtime-sidebar-card__action"
                 onClick={() => openView("skills")}
               >
                 {t("app.mode.skills")}
-              </button>
+              </ButtonBase>
             </div>
 
             <div className="runtime-disclosure-stack">
@@ -391,7 +402,8 @@ function RuntimeWorkspace({
                 </summary>
                 <div className="runtime-session-list">
                   {recentSessions.map((session) => (
-                    <button
+                    <ButtonBase
+                      component="button"
                       key={session.id}
                       type="button"
                       className={`runtime-session-card ${
@@ -407,7 +419,7 @@ function RuntimeWorkspace({
                       </div>
                       <p>{session.lastMessagePreview || t("app.session.emptyMessages")}</p>
                       <span className="section-note">{formatTime(session.updatedAt, lang)}</span>
-                    </button>
+                    </ButtonBase>
                   ))}
                 </div>
               </details>
