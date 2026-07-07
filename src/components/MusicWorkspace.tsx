@@ -1,3 +1,4 @@
+import { IconButton, Slider } from "@mui/material";
 import React from "react";
 import { useI18n } from "../i18n";
 import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
@@ -138,6 +139,13 @@ function MusicWorkspace({
   const currentTrackLabel = selectedTrack?.title || t("app.music.noTrack");
   const currentArtistLabel = selectedTrack?.artist || t("app.music.noArtist");
   const progressValue = Math.min(currentTime, duration || 0);
+  const handleProgressChange = (_event: Event, value: number | number[]) => {
+    const nextValue = Array.isArray(value) ? value[0] : value;
+    handleSeek({ target: { value: nextValue } });
+  };
+  const handleVolumeChange = (_event: Event, value: number | number[]) => {
+    setVolume(Array.isArray(value) ? value[0] : value);
+  };
   const syncStateLabel = autoPlayOnReply
     ? t("app.music.replySyncOn")
     : t("app.music.manualMode");
@@ -402,75 +410,77 @@ function MusicWorkspace({
           <footer className="music-room__footer">
             <div className="music-room__progress">
               <span>{formatDuration(currentTime)}</span>
-              <input
+              <Slider
                 className="music-room__range"
-                type="range"
-                min="0"
+                min={0}
                 max={Math.max(duration, 1)}
-                step="0.1"
+                step={0.1}
                 value={progressValue}
-                onChange={handleSeek}
+                onChange={handleProgressChange}
+                aria-label={t("app.music.miniPlayer.progress")}
+                size="small"
               />
               <span>{formatDuration(duration)}</span>
             </div>
 
             <div className="music-room__controls">
               <div className="music-room__player-actions">
-                <button
-                  type="button"
+                <IconButton
                   className="music-room__icon-button"
                   aria-label={t("app.music.previous")}
                   onClick={handlePlayPreviousTrack}
+                  size="small"
                 >
                   <PreviousIcon />
-                </button>
-                <button
-                  type="button"
+                </IconButton>
+                <IconButton
                   className="music-room__icon-button is-primary"
                   aria-label={isPlaying ? t("app.music.pause") : t("app.music.play")}
                   onClick={handleTogglePlayback}
+                  size="small"
                 >
                   {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                </button>
-                <button
-                  type="button"
+                </IconButton>
+                <IconButton
                   className="music-room__icon-button"
                   aria-label={t("app.music.next")}
                   onClick={handlePlayNextTrack}
+                  size="small"
                 >
                   <NextIcon />
-                </button>
+                </IconButton>
               </div>
 
               <div className="music-room__secondary-actions">
-                <button
-                  type="button"
+                <IconButton
                   className="music-room__mode-button"
                   aria-label={`${t("app.music.playMode")} ${t(playModeMeta.labelKey)}`}
                   onClick={handleCyclePlayMode}
+                  size="small"
                 >
                   <ModeIcon mode={playMode} />
                   <span>{playModeMeta.shortLabel}</span>
-                </button>
-                <button
-                  type="button"
+                </IconButton>
+                <IconButton
                   className="music-room__icon-button"
                   aria-label={t("app.music.restart")}
                   onClick={handleRestartTrack}
+                  size="small"
                 >
                   <ReplayIcon />
-                </button>
+                </IconButton>
               </div>
 
               <label className="music-room__volume">
                 <VolumeIcon />
-                <input
+                <Slider
                   className="music-room__range"
-                  type="range"
-                  min="0"
-                  max="100"
+                  min={0}
+                  max={100}
                   value={volume}
-                  onChange={(event) => setVolume(Number(event.target.value))}
+                  onChange={handleVolumeChange}
+                  aria-label={t("app.music.volume")}
+                  size="small"
                 />
                 <span>{volume}%</span>
               </label>
