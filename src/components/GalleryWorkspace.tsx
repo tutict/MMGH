@@ -1,3 +1,4 @@
+import { ButtonBase } from "@mui/material";
 import React, { useDeferredValue, useEffect, useMemo, useRef } from "react";
 import { useI18n } from "../i18n";
 
@@ -159,32 +160,28 @@ function GalleryWorkspace({
               placeholder={t("app.gallery.search")}
             />
             <div className="segmented-filter">
-              <button
-                type="button"
-                className={`segmented-filter__button ${
-                  galleryFilter === "all" ? "is-active" : ""
-                }`}
+              <ButtonBase
+                component="button"
+                className={`segmented-filter__button ${galleryFilter === "all" ? "is-active" : ""}`}
                 onClick={() => setGalleryFilter("all")}
               >
                 {t("app.gallery.filter.all")}
-              </button>
-              <button
-                type="button"
-                className={`segmented-filter__button ${
-                  galleryFilter === "favorites" ? "is-active" : ""
-                }`}
+              </ButtonBase>
+              <ButtonBase
+                component="button"
+                className={`segmented-filter__button ${galleryFilter === "favorites" ? "is-active" : ""}`}
                 onClick={() => setGalleryFilter("favorites")}
               >
                 {t("app.gallery.filter.favorites")}
-              </button>
+              </ButtonBase>
             </div>
-            <button
-              type="button"
+            <ButtonBase
+              component="button"
               className="solid-button"
               onClick={() => galleryUploadInputRef.current?.click()}
             >
               {t("app.gallery.import")}
-            </button>
+            </ButtonBase>
           </div>
         </div>
 
@@ -207,8 +204,8 @@ function GalleryWorkspace({
                       key={item.id}
                       className={`gallery-card ${item.favorite ? "is-favorite" : ""}`}
                     >
-                      <button
-                        type="button"
+                      <ButtonBase
+                        component="button"
                         className="gallery-card__image"
                         onClick={() => openGalleryViewer(item.id)}
                         aria-haspopup="dialog"
@@ -221,29 +218,29 @@ function GalleryWorkspace({
                             ? t("app.gallery.favoriteImage")
                             : t("app.gallery.libraryImage")}
                         </span>
-                      </button>
+                      </ButtonBase>
                       <div className="gallery-card__meta">
                         <div className="gallery-card__copy">
                           <strong>{item.name}</strong>
                           <p>{item.caption || formatGalleryTime(item.createdAt, lang)}</p>
                         </div>
                         <div className="gallery-card__actions">
-                          <button
-                            type="button"
+                          <ButtonBase
+                            component="button"
                             className={`chip-button ${item.favorite ? "is-active" : ""}`}
                             onClick={() => handleToggleFavoriteGalleryItem(item.id)}
                           >
                             {item.favorite
                               ? t("app.gallery.favorited")
                               : t("app.gallery.favorite")}
-                          </button>
-                          <button
-                            type="button"
+                          </ButtonBase>
+                          <ButtonBase
+                            component="button"
                             className="chip-button danger"
                             onClick={() => handleDeleteGalleryItem(item.id)}
                           >
                             {t("app.gallery.remove")}
-                          </button>
+                          </ButtonBase>
                         </div>
                       </div>
                     </article>
@@ -284,13 +281,13 @@ function GalleryWorkspace({
                 <span className="eyebrow">{t("app.gallery.preview")}</span>
                 <h3 id="gallery-viewer-title">{activeImage.name}</h3>
               </div>
-              <button
-                type="button"
+              <ButtonBase
+                component="button"
                 className="ghost-button"
                 onClick={() => setGalleryViewerId("")}
               >
                 {t("app.common.close")}
-              </button>
+              </ButtonBase>
             </div>
             <div className="gallery-viewer__image">
               <img src={activeImage.src} alt={activeImage.name} />
@@ -305,17 +302,17 @@ function GalleryWorkspace({
                 </strong>
               </div>
               <div className="gallery-card__actions gallery-viewer__actions">
-                <button
-                  type="button"
+                <ButtonBase
+                  component="button"
                   className={`chip-button ${activeImage.favorite ? "is-active" : ""}`}
                   onClick={() => handleToggleFavoriteGalleryItem(activeImage.id)}
                 >
                   {activeImage.favorite
                     ? t("app.gallery.favorited")
                     : t("app.gallery.favorite")}
-                </button>
-                <button
-                  type="button"
+                </ButtonBase>
+                <ButtonBase
+                  component="button"
                   className="chip-button danger"
                   onClick={() => {
                     handleDeleteGalleryItem(activeImage.id);
@@ -323,7 +320,7 @@ function GalleryWorkspace({
                   }}
                 >
                   {t("app.gallery.remove")}
-                </button>
+                </ButtonBase>
               </div>
             </div>
           </div>
