@@ -1,3 +1,7 @@
+import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
+import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
+import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
+import { Box, ButtonBase, IconButton, Slider } from "@mui/material";
 import { useRef } from "react";
 import { useI18n } from "../i18n";
 import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
@@ -11,7 +15,7 @@ type MiniPlayerTrack = {
 type MiniPlayerBarProps = {
   handleOpenMusicWorkspace: () => void;
   handleRestartTrack: () => void;
-  handleSeek: (event: any) => void;
+  handleSeek: (event: { target: { value: number | string } }) => void;
   handleTogglePlayback: () => void;
   isPlaying: boolean;
   isAppVisible?: boolean;
@@ -32,7 +36,7 @@ function MiniPlayerBar({
   const rootRef = useRef<HTMLElement | null>(null);
   const { currentTime, duration } = usePlaybackSnapshot();
 
-  const handlePointerMove = (event: any) => {
+  const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
     const element = rootRef.current;
     if (!element) {
       return;
@@ -56,6 +60,11 @@ function MiniPlayerBar({
     element.style.setProperty("--mini-glow-y", "50%");
   };
 
+  const handleSliderChange = (_event: Event, value: number | number[]) => {
+    const nextValue = Array.isArray(value) ? value[0] : value;
+    handleSeek({ target: { value: nextValue } });
+  };
+
   return (
     <section
       ref={rootRef}
@@ -64,10 +73,11 @@ function MiniPlayerBar({
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
     >
-      <button
-        type="button"
+      <ButtonBase
+        component="button"
         className="mini-player-bar__meta"
         onClick={handleOpenMusicWorkspace}
+        disableRipple
       >
         <img
           className="mini-player-bar__cover"
@@ -90,32 +100,25 @@ function MiniPlayerBar({
           <strong>{selectedTrack?.title || t("app.music.noTrack")}</strong>
           <p>{selectedTrack?.artist || t("app.music.noArtist")}</p>
         </div>
-      </button>
+      </ButtonBase>
 
       <div className="mini-player-bar__controls">
-        <button
-          type="button"
+        <IconButton
           className="mini-player-bar__button"
           onClick={handleRestartTrack}
           aria-label={t("app.music.restart")}
+          size="small"
         >
-          <span className="mini-player-bar__button-icon mini-player-bar__button-icon--restart" aria-hidden="true" />
-        </button>
-        <button
-          type="button"
+          <ReplayRoundedIcon fontSize="small" />
+        </IconButton>
+        <IconButton
           className="mini-player-bar__button mini-player-bar__button--primary"
           onClick={handleTogglePlayback}
           aria-label={isPlaying ? t("app.music.pause") : t("app.music.play")}
+          size="small"
         >
-          <span
-            className={`mini-player-bar__button-icon ${
-              isPlaying
-                ? "mini-player-bar__button-icon--pause"
-                : "mini-player-bar__button-icon--play"
-            }`}
-            aria-hidden="true"
-          />
-        </button>
+          {isPlaying ? <PauseRoundedIcon fontSize="small" /> : <PlayArrowRoundedIcon fontSize="small" />}
+        </IconButton>
       </div>
 
       <div className="mini-player-bar__timeline">
@@ -123,18 +126,18 @@ function MiniPlayerBar({
           <span>{formatDuration(currentTime)}</span>
           <span>{formatDuration(duration)}</span>
         </div>
-        <div className="mini-player-bar__rail">
-          <input
+        <Box className="mini-player-bar__rail">
+          <Slider
             className="mini-player-bar__slider"
-            type="range"
-            min="0"
+            min={0}
             max={Math.max(duration, 1)}
-            step="0.1"
+            step={0.1}
             value={Math.min(currentTime, duration || 0)}
-            onChange={handleSeek}
+            onChange={handleSliderChange}
             aria-label={t("app.music.miniPlayer.progress")}
+            size="small"
           />
-        </div>
+        </Box>
       </div>
     </section>
   );
@@ -152,4 +155,3 @@ function formatDuration(value: number) {
 }
 
 export default MiniPlayerBar;
-
