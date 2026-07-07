@@ -1,4 +1,5 @@
 import React from "react";
+import { Button, IconButton } from "@mui/material";
 import { getMobileDaypart, mobileText } from "./mobileText";
 
 function MobileTodayView({
@@ -21,7 +22,7 @@ function MobileTodayView({
   ruleEffectivenessSignals = [],
   todayReminderItems = [],
   todayReviewSignals = [],
-}) {
+}: Record<string, any>) {
   const summaryItems = [
     { label: mobileText(lang, "openTasks"), value: openReminderCount },
     { label: mobileText(lang, "due"), value: dueReminderCount },
@@ -49,12 +50,12 @@ function MobileTodayView({
           ))}
         </div>
         <div className="mobile-action-row">
-          <button type="button" className="mobile-primary-action" onClick={() => openView("agent")}>
+          <Button type="button" variant="contained" className="mobile-primary-action" onClick={() => openView("agent")}>
             {mobileText(lang, "continueAgent")}
-          </button>
-          <button type="button" className="mobile-secondary-action" onClick={() => openView("reminders")}>
+          </Button>
+          <Button type="button" variant="outlined" className="mobile-secondary-action" onClick={() => openView("reminders")}>
             {mobileText(lang, "openReminders")}
-          </button>
+          </Button>
         </div>
       </section>
 
@@ -69,17 +70,19 @@ function MobileTodayView({
           ) : (
             todayReminderItems.map((item) => (
               <div key={item.id} className="mobile-row mobile-row--interactive">
-                <button
+                <IconButton
                   type="button"
                   className={`mobile-check ${item.status === "done" ? "is-done" : ""}`}
                   onClick={() => handleToggleTodayReminderStatus(item)}
                   disabled={busy !== "" || loading}
                   aria-label={item.status === "done" ? mobileText(lang, "completed") : mobileText(lang, "due")}
+                  size="small"
                 >
                   <span aria-hidden="true">{item.status === "done" ? "✓" : ""}</span>
-                </button>
-                <button
+                </IconButton>
+                <Button
                   type="button"
+                  variant="text"
                   className="mobile-row__body"
                   onClick={() => {
                     void handleSelectReminder(item.id);
@@ -88,7 +91,7 @@ function MobileTodayView({
                 >
                   <strong>{item.title}</strong>
                   <span>{item.preview || item.detail || formatTime(item.dueAt, lang)}</span>
-                </button>
+                </Button>
                 <time>{item.dueAt ? formatTime(item.dueAt, lang) : ""}</time>
               </div>
             ))
@@ -103,13 +106,13 @@ function MobileTodayView({
           </div>
           <div className="mobile-list">
             {sessions.map((session) => (
-              <button key={session.id} type="button" className="mobile-row" onClick={() => openView("agent")}>
+              <Button key={session.id} type="button" variant="text" className="mobile-row" onClick={() => openView("agent")}>
                 <span className="mobile-row__body">
                   <strong>{session.title}</strong>
                   <span>{session.lastMessagePreview}</span>
                 </span>
                 <time>{session.updatedAt ? formatTime(session.updatedAt, lang) : ""}</time>
-              </button>
+              </Button>
             ))}
           </div>
         </section>
@@ -156,3 +159,5 @@ function MobileTodayView({
 }
 
 export default MobileTodayView;
+
+

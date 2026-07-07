@@ -46,7 +46,7 @@ function SkillWorkspace({
   skillDraft,
   skillList,
   skillSearch,
-}) {
+}: Record<string, any>) {
   const { lang, t } = useI18n();
   const [filterMode, setFilterMode] = useState("all");
   const [toolMode, setToolMode] = useState("session");
@@ -740,7 +740,7 @@ function SkillWorkspace({
   );
 }
 
-function areSkillWorkspacePropsEqual(previousProps, nextProps) {
+function areSkillWorkspacePropsEqual(previousProps: Record<string, any>, nextProps: Record<string, any>) {
   return (
     previousProps.activeSkill === nextProps.activeSkill &&
     previousProps.activeSkillId === nextProps.activeSkillId &&
@@ -761,3 +761,6 @@ function areSkillWorkspacePropsEqual(previousProps, nextProps) {
 }
 
 export default React.memo(SkillWorkspace, areSkillWorkspacePropsEqual);
+
+
+

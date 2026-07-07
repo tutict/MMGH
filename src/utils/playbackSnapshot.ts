@@ -1,14 +1,19 @@
 import { useSyncExternalStore } from "react";
 
-const EMPTY_PLAYBACK_SNAPSHOT = Object.freeze({
+export type PlaybackSnapshot = {
+  currentTime: number;
+  duration: number;
+};
+
+const EMPTY_PLAYBACK_SNAPSHOT: PlaybackSnapshot = Object.freeze({
   currentTime: 0,
   duration: 0,
 });
 
-let playbackSnapshot = EMPTY_PLAYBACK_SNAPSHOT;
-const listeners = new Set();
+let playbackSnapshot: PlaybackSnapshot = EMPTY_PLAYBACK_SNAPSHOT;
+const listeners = new Set<() => void>();
 
-function normalizeTimeValue(value) {
+function normalizeTimeValue(value: unknown) {
   const numericValue = Number(value);
   if (!Number.isFinite(numericValue) || numericValue <= 0) {
     return 0;
@@ -17,14 +22,14 @@ function normalizeTimeValue(value) {
   return Math.round(numericValue * 10) / 10;
 }
 
-function createPlaybackSnapshot(value) {
+function createPlaybackSnapshot(value: Partial<PlaybackSnapshot> | null | undefined): PlaybackSnapshot {
   return {
     currentTime: normalizeTimeValue(value?.currentTime),
     duration: normalizeTimeValue(value?.duration),
   };
 }
 
-function arePlaybackSnapshotsEqual(left, right) {
+function arePlaybackSnapshotsEqual(left: PlaybackSnapshot, right: PlaybackSnapshot) {
   return left.currentTime === right.currentTime && left.duration === right.duration;
 }
 
@@ -32,7 +37,7 @@ function emitPlaybackSnapshot() {
   listeners.forEach((listener) => listener());
 }
 
-export function patchPlaybackSnapshot(partialSnapshot) {
+export function patchPlaybackSnapshot(partialSnapshot: Partial<PlaybackSnapshot> | null | undefined) {
   const nextSnapshot = createPlaybackSnapshot({
     ...playbackSnapshot,
     ...(partialSnapshot || {}),

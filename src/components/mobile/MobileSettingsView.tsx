@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { Button, TextField } from "@mui/material";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
 
@@ -15,7 +16,7 @@ function MobileSettingsView({
   settingsForm = {},
   setSettingsForm,
   t,
-}) {
+}: Record<string, any>) {
   const [providerOpen, setProviderOpen] = useState(false);
   const [cacheTarget, setCacheTarget] = useState(null);
   const providerStateKey = providerConfigured ? "configured" : "pending";
@@ -58,13 +59,15 @@ function MobileSettingsView({
             <span className="mobile-eyebrow">{t("app.settings.page.eyebrow")}</span>
             <h1>{t("app.settings.page.title")}</h1>
           </div>
-          <button
+          <Button
             type="button"
             className="mobile-secondary-action"
             onClick={() => setProviderOpen(true)}
+            variant="outlined"
+            size="small"
           >
             {t("app.settings.title")}
-          </button>
+          </Button>
         </div>
 
         <div className="mobile-summary-grid" aria-label={t("app.settings.page.title")}>
@@ -114,9 +117,10 @@ function MobileSettingsView({
         <p className="mobile-muted">{t("app.settings.cache.description")}</p>
         <div className="mobile-list">
           {cacheCards.map((card) => (
-            <button
+            <Button
               key={card.id}
               type="button"
+              variant="text"
               className={`mobile-row mobile-cache-row ${card.danger ? "is-danger" : ""}`}
               onClick={() => setCacheTarget(card)}
             >
@@ -125,7 +129,7 @@ function MobileSettingsView({
                 <span>{card.summary}</span>
               </span>
               <small>{card.countLabel}</small>
-            </button>
+            </Button>
           ))}
         </div>
         <p className="mobile-muted">{t("app.settings.cache.safeNote")}</p>
@@ -140,21 +144,23 @@ function MobileSettingsView({
         eyebrow={t("app.settings.eyebrow")}
         actions={
           <>
-            <button
+            <Button
               type="button"
               className="mobile-secondary-action"
               onClick={() => setProviderOpen(false)}
+              variant="outlined"
             >
               {t("app.common.cancel")}
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               form="mobile-settings-provider-form"
               className="mobile-primary-action"
               disabled={busy !== "" || !hasUnsavedSettings}
+              variant="contained"
             >
               {busy === "save-settings" ? t("app.common.saving") : t("app.settings.save")}
-            </button>
+            </Button>
           </>
         }
       >
@@ -163,18 +169,30 @@ function MobileSettingsView({
           className="mobile-form mobile-settings-form"
           onSubmit={handleSaveSettings}
         >
-          <label>
-            <span>{t("app.settings.providerName")}</span>
-            <input value={settingsForm.providerName || ""} onChange={updateField("providerName")} />
-          </label>
-          <label>
-            <span>{t("app.settings.model")}</span>
-            <input value={settingsForm.model || ""} onChange={updateField("model")} />
-          </label>
-          <label>
-            <span>{t("app.settings.baseUrl")}</span>
-            <input value={settingsForm.baseUrl || ""} onChange={updateField("baseUrl")} />
-          </label>
+          <TextField
+            label={t("app.settings.providerName")}
+            value={settingsForm.providerName || ""}
+            onChange={updateField("providerName")}
+            variant="outlined"
+            size="small"
+            fullWidth
+          />
+          <TextField
+            label={t("app.settings.model")}
+            value={settingsForm.model || ""}
+            onChange={updateField("model")}
+            variant="outlined"
+            size="small"
+            fullWidth
+          />
+          <TextField
+            label={t("app.settings.baseUrl")}
+            value={settingsForm.baseUrl || ""}
+            onChange={updateField("baseUrl")}
+            variant="outlined"
+            size="small"
+            fullWidth
+          />
           {providerSecurityMessage ? (
             <p
               className={`mobile-inline-warning ${
@@ -184,21 +202,22 @@ function MobileSettingsView({
               {providerSecurityMessage}
             </p>
           ) : null}
-          <label>
-            <span>{t("app.settings.apiKey")}</span>
-            <input
-              type="password"
-              value={settingsForm.apiKey || ""}
-              placeholder={
-                settingsForm.clearApiKey
-                  ? t("app.settings.apiKeyPlaceholder.clearing")
-                  : settingsForm.hasApiKey
-                    ? t("app.settings.apiKeyPlaceholder.keep")
-                    : t("app.settings.apiKeyPlaceholder.enter")
-              }
-              onChange={updateApiKey}
-            />
-          </label>
+          <TextField
+            type="password"
+            label={t("app.settings.apiKey")}
+            value={settingsForm.apiKey || ""}
+            placeholder={
+              settingsForm.clearApiKey
+                ? t("app.settings.apiKeyPlaceholder.clearing")
+                : settingsForm.hasApiKey
+                  ? t("app.settings.apiKeyPlaceholder.keep")
+                  : t("app.settings.apiKeyPlaceholder.enter")
+            }
+            onChange={updateApiKey}
+            variant="outlined"
+            size="small"
+            fullWidth
+          />
           <div className="mobile-field-note">
             <span>
               {settingsForm.clearApiKey
@@ -208,24 +227,30 @@ function MobileSettingsView({
                   : t("app.settings.apiKeyHint.missing")}
             </span>
             {settingsForm.hasApiKey || settingsForm.clearApiKey ? (
-              <button
+              <Button
                 type="button"
                 className={`mobile-secondary-action ${settingsForm.clearApiKey ? "is-danger" : ""}`}
                 onClick={handleClearApiKey}
+                variant="outlined"
+                color={settingsForm.clearApiKey ? "error" : "primary"}
+                size="small"
               >
                 {settingsForm.clearApiKey
                   ? t("app.settings.apiKeyAction.undoClear")
                   : t("app.settings.apiKeyAction.clear")}
-              </button>
+              </Button>
             ) : null}
           </div>
-          <label>
-            <span>{t("app.settings.systemPrompt")}</span>
-            <textarea
-              value={settingsForm.systemPrompt || ""}
-              onChange={updateField("systemPrompt")}
-            />
-          </label>
+          <TextField
+            label={t("app.settings.systemPrompt")}
+            value={settingsForm.systemPrompt || ""}
+            onChange={updateField("systemPrompt")}
+            variant="outlined"
+            size="small"
+            fullWidth
+            multiline
+            minRows={4}
+          />
         </form>
       </MobileSheet>
 
@@ -238,21 +263,24 @@ function MobileSettingsView({
         eyebrow={t("app.settings.cache.eyebrow")}
         actions={
           <>
-            <button
+            <Button
               type="button"
               className="mobile-secondary-action"
               onClick={() => setCacheTarget(null)}
+              variant="outlined"
             >
               {t("app.common.cancel")}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               className={cacheTarget?.danger ? "mobile-danger-action" : "mobile-primary-action"}
               onClick={() => void clearCacheTarget()}
               disabled={busy !== ""}
+              variant={cacheTarget?.danger ? "outlined" : "contained"}
+              color={cacheTarget?.danger ? "error" : "primary"}
             >
               {cacheTarget?.buttonLabel || t("app.settings.cache.clear")}
-            </button>
+            </Button>
           </>
         }
       >
@@ -278,3 +306,6 @@ function SummaryRow({ label, value }) {
 }
 
 export default MobileSettingsView;
+
+
+

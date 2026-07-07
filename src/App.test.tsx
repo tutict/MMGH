@@ -282,10 +282,11 @@ vi.mock("./components/MiniPlayerBar", () => ({
 
 vi.mock("./components/SettingsWorkspace", async () => {
   const ReactModule = await import("react");
-  const actual = await vi.importActual("./components/SettingsWorkspace");
-  const WrappedSettingsWorkspace = ReactModule.memo((props) => {
+  const actual = await vi.importActual<typeof import("./components/SettingsWorkspace")>("./components/SettingsWorkspace");
+  const ActualSettingsWorkspace = actual.default as React.ComponentType<Record<string, any>>;
+  const WrappedSettingsWorkspace = ReactModule.memo((props: Record<string, any>) => {
     settingsRenderProfile.count += 1;
-    return <actual.default {...props} />;
+    return <ActualSettingsWorkspace {...props} />;
   });
 
   return {
@@ -293,7 +294,7 @@ vi.mock("./components/SettingsWorkspace", async () => {
   };
 });
 
-function areSkillWorkspaceTestPropsEqual(previousProps, nextProps) {
+function areSkillWorkspaceTestPropsEqual(previousProps: Record<string, any>, nextProps: Record<string, any>) {
   return (
     previousProps.activeSkill === nextProps.activeSkill &&
     previousProps.activeSkillId === nextProps.activeSkillId &&
@@ -315,17 +316,17 @@ function areSkillWorkspaceTestPropsEqual(previousProps, nextProps) {
 
 vi.mock("./components/SkillWorkspace", async () => {
   const ReactModule = await import("react");
-  const actual = await vi.importActual("./components/SkillWorkspace");
-  const WrappedSkillWorkspace = ReactModule.memo((props) => {
+  const actual = await vi.importActual<typeof import("./components/SkillWorkspace")>("./components/SkillWorkspace");
+  const ActualSkillWorkspace = actual.default as React.ComponentType<Record<string, any>>;
+  const WrappedSkillWorkspace = ReactModule.memo((props: Record<string, any>) => {
     skillRenderProfile.count += 1;
-    return <actual.default {...props} />;
+    return <ActualSkillWorkspace {...props} />;
   }, areSkillWorkspaceTestPropsEqual);
 
   return {
     default: WrappedSkillWorkspace,
   };
 });
-
 function installAppShellMocks() {
   const previousMatchMedia = window.matchMedia;
   const loadSpy = vi
@@ -519,3 +520,7 @@ perfTest("app skills view skips unrelated clock tick renders", async () => {
     pauseSpy.mockRestore();
   }
 }, 15000);
+
+
+
+

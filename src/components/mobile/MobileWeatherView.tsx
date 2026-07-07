@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { Button, Chip, TextField } from "@mui/material";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
 import {
@@ -24,7 +25,7 @@ function MobileWeatherView({
   weatherLocations = [],
   weatherStatus,
   weatherUpdatedAt,
-}) {
+}: Record<string, any>) {
   const [citySheetOpen, setCitySheetOpen] = useState(false);
   const [cityQuery, setCityQuery] = useState("");
   const savedLocationIds = new Set(weatherLocations.map((city) => city.id));
@@ -59,12 +60,17 @@ function MobileWeatherView({
           <strong>{valueWithDegree(activeWeatherCity?.temperature, t)}</strong>
         </div>
         <div className="mobile-action-row">
-          <button type="button" className="mobile-primary-action" onClick={onRefresh}>
+          <Button type="button" variant="contained" className="mobile-primary-action" onClick={onRefresh}>
             {mobileText(lang, "refresh")}
-          </button>
-          <button type="button" className="mobile-secondary-action" onClick={() => setCitySheetOpen(true)}>
+          </Button>
+          <Button
+            type="button"
+            variant="outlined"
+            className="mobile-secondary-action"
+            onClick={() => setCitySheetOpen(true)}
+          >
             {mobileText(lang, "city")}
-          </button>
+          </Button>
         </div>
         <p className="mobile-muted">
           {weatherStatus === "error"
@@ -130,20 +136,22 @@ function MobileWeatherView({
         title={mobileText(lang, "citySheet")}
       >
         <div className="mobile-form mobile-form--compact">
-          <label>
-            <span>{mobileText(lang, "search")}</span>
-            <input
-              value={cityQuery}
-              onChange={(event) => setCityQuery(event.target.value)}
-              placeholder={t("app.weather.search.placeholder")}
-            />
-          </label>
+          <TextField
+            label={mobileText(lang, "search")}
+            value={cityQuery}
+            onChange={(event) => setCityQuery(event.target.value)}
+            placeholder={t("app.weather.search.placeholder")}
+            fullWidth
+            size="small"
+            className="mobile-field"
+          />
         </div>
         <div className="mobile-list">
           {weatherCities.map((city) => (
             <div key={city.id} className={`mobile-row ${city.id === selectedWeatherCityId ? "is-active" : ""}`}>
-              <button
+              <Button
                 type="button"
+                variant="text"
                 className="mobile-row__body"
                 onClick={() => {
                   setSelectedWeatherCityId(city.id);
@@ -152,15 +160,17 @@ function MobileWeatherView({
               >
                 <strong>{resolveWeatherCityName(city, t)}</strong>
                 <span>{resolveWeatherCondition(city, t)}</span>
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Chip
+                component="button"
+                clickable
+                color="default"
+                variant="outlined"
                 className="mobile-pill-button"
+                label={mobileText(lang, "remove")}
                 onClick={() => onRemoveWeatherCity(city.id)}
                 disabled={weatherCities.length <= 1}
-              >
-                {mobileText(lang, "remove")}
-              </button>
+              />
             </div>
           ))}
         </div>
@@ -173,18 +183,20 @@ function MobileWeatherView({
                   <strong>{resolveWeatherCityName(city, t)}</strong>
                   <span>{resolveWeatherRegion(city, t)}</span>
                 </span>
-                <button
-                  type="button"
+                <Chip
+                  component="button"
+                  clickable
+                  color={isSaved ? "primary" : "default"}
+                  variant={isSaved ? "filled" : "outlined"}
                   className={`mobile-pill-button ${isSaved ? "is-active" : ""}`}
+                  label={isSaved ? t("app.weather.search.open") : t("app.weather.search.add")}
                   onClick={() => {
                     if (!isSaved) {
                       onAddWeatherCity(city);
                     }
                     setSelectedWeatherCityId(city.id);
                   }}
-                >
-                  {isSaved ? t("app.weather.search.open") : t("app.weather.search.add")}
-                </button>
+                />
               </div>
             );
           })}
@@ -207,3 +219,6 @@ function windValue(value, t) {
 }
 
 export default MobileWeatherView;
+
+
+

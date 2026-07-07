@@ -1,4 +1,5 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { Button, IconButton, MenuItem, TextField } from "@mui/material";
 import {
   countOpenReminders,
   filterReminders,
@@ -27,7 +28,7 @@ function MobileRemindersView({
   setReminderDraft,
   setReminderSearch,
   t,
-}) {
+}: Record<string, any>) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [openAfterCreate, setOpenAfterCreate] = useState(false);
   const deferredSearch = useDeferredValue(reminderSearch);
@@ -107,14 +108,15 @@ function MobileRemindersView({
             <span className="mobile-eyebrow">{t("app.reminders.eyebrow")}</span>
             <h1>{t("app.reminders.title")}</h1>
           </div>
-          <button
+          <Button
             type="button"
+            variant="contained"
             className="mobile-primary-action"
             onClick={() => void createReminderAndOpen()}
             disabled={busy !== "" || loading}
           >
             {t("app.reminders.newReminder")}
-          </button>
+          </Button>
         </div>
 
         <div className="mobile-summary-grid" aria-label={t("app.reminders.title")}>
@@ -133,11 +135,14 @@ function MobileRemindersView({
         </div>
 
         <div className="mobile-search-row">
-          <input
+          <TextField
             value={reminderSearch}
             onChange={(event) => setReminderSearch(event.target.value)}
             placeholder={t("app.reminders.search")}
             aria-label={t("app.reminders.search")}
+            fullWidth
+            size="small"
+            className="mobile-field"
           />
         </div>
       </section>
@@ -182,134 +187,154 @@ function MobileRemindersView({
         eyebrow={t("app.reminders.editor.eyebrow")}
         actions={
           <>
-            <button
+            <Button
               type="button"
+              color="error"
+              variant="text"
               className="mobile-danger-action"
               onClick={() => void handleDeleteReminder()}
               disabled={!reminderDraft.id || busy !== "" || loading}
             >
               {t("app.common.delete")}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="contained"
               className="mobile-primary-action"
               onClick={handleSaveReminder}
               disabled={!reminderDraft.id || !hasUnsavedReminder || busy !== "" || loading}
             >
               {busy === "save-reminder" ? t("app.common.saving") : t("app.reminders.save")}
-            </button>
+            </Button>
           </>
         }
       >
         {reminderDraft.id ? (
           <div className="mobile-form mobile-reminder-form">
-            <label>
-              <span>{t("app.reminders.form.title")}</span>
-              <input
-                value={reminderDraft.title || ""}
-                onChange={(event) =>
-                  setReminderDraft((prev) => ({
-                    ...prev,
-                    title: event.target.value,
-                  }))
-                }
-                placeholder={t("app.reminders.form.titlePlaceholder")}
-              />
-            </label>
+            <TextField
+              label={t("app.reminders.form.title")}
+              value={reminderDraft.title || ""}
+              onChange={(event) =>
+                setReminderDraft((prev) => ({
+                  ...prev,
+                  title: event.target.value,
+                }))
+              }
+              placeholder={t("app.reminders.form.titlePlaceholder")}
+              fullWidth
+              size="small"
+              className="mobile-field"
+            />
 
             <div className="mobile-form-grid">
-              <label>
-                <span>{t("app.reminders.form.dueTime")}</span>
-                <input
-                  type="datetime-local"
-                  value={reminderDraft.dueAt || ""}
-                  onChange={(event) =>
-                    setReminderDraft((prev) => ({
-                      ...prev,
-                      dueAt: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-
-              <label>
-                <span>{t("app.reminders.form.severity")}</span>
-                <select
-                  value={reminderDraft.severity || "medium"}
-                  onChange={(event) =>
-                    setReminderDraft((prev) => ({
-                      ...prev,
-                      severity: event.target.value,
-                    }))
-                  }
-                >
-                  <option value="low">{t("app.reminders.severity.low")}</option>
-                  <option value="medium">{t("app.reminders.severity.medium")}</option>
-                  <option value="high">{t("app.reminders.severity.high")}</option>
-                  <option value="critical">{t("app.reminders.severity.critical")}</option>
-                </select>
-              </label>
-
-              <label>
-                <span>{t("app.reminders.form.status")}</span>
-                <select
-                  value={reminderDraft.status || "scheduled"}
-                  onChange={(event) =>
-                    setReminderDraft((prev) => ({
-                      ...prev,
-                      status: event.target.value,
-                    }))
-                  }
-                >
-                  <option value="scheduled">{t("app.reminders.status.scheduled")}</option>
-                  <option value="done">{t("app.reminders.status.done")}</option>
-                </select>
-              </label>
-
-              <label>
-                <span>{t("app.reminders.form.linkedNote")}</span>
-                <select
-                  value={String(reminderDraft.linkedNoteId || "")}
-                  onChange={(event) =>
-                    setReminderDraft((prev) => ({
-                      ...prev,
-                      linkedNoteId: event.target.value,
-                    }))
-                  }
-                >
-                  <option value="">{t("app.reminders.form.noLinkedNote")}</option>
-                  {noteList.map((note) => (
-                    <option key={note.id} value={note.id}>
-                      {note.title}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <label>
-              <span>{t("app.reminders.form.note")}</span>
-              <textarea
-                value={reminderDraft.detail || ""}
+              <TextField
+                label={t("app.reminders.form.dueTime")}
+                type="datetime-local"
+                value={reminderDraft.dueAt || ""}
                 onChange={(event) =>
                   setReminderDraft((prev) => ({
                     ...prev,
-                    detail: event.target.value,
+                    dueAt: event.target.value,
                   }))
                 }
-                placeholder={t("app.reminders.form.notePlaceholder")}
+                fullWidth
+                size="small"
+                className="mobile-field"
+                slotProps={{ inputLabel: { shrink: true } }}
               />
-            </label>
+
+              <TextField
+                label={t("app.reminders.form.severity")}
+                select
+                value={reminderDraft.severity || "medium"}
+                onChange={(event) =>
+                  setReminderDraft((prev) => ({
+                    ...prev,
+                    severity: event.target.value,
+                  }))
+                }
+                fullWidth
+                size="small"
+                className="mobile-field"
+              >
+                <MenuItem value="low">{t("app.reminders.severity.low")}</MenuItem>
+                <MenuItem value="medium">{t("app.reminders.severity.medium")}</MenuItem>
+                <MenuItem value="high">{t("app.reminders.severity.high")}</MenuItem>
+                <MenuItem value="critical">{t("app.reminders.severity.critical")}</MenuItem>
+              </TextField>
+
+              <TextField
+                label={t("app.reminders.form.status")}
+                select
+                value={reminderDraft.status || "scheduled"}
+                onChange={(event) =>
+                  setReminderDraft((prev) => ({
+                    ...prev,
+                    status: event.target.value,
+                  }))
+                }
+                fullWidth
+                size="small"
+                className="mobile-field"
+              >
+                <MenuItem value="scheduled">{t("app.reminders.status.scheduled")}</MenuItem>
+                <MenuItem value="done">{t("app.reminders.status.done")}</MenuItem>
+              </TextField>
+
+              <TextField
+                label={t("app.reminders.form.linkedNote")}
+                select
+                value={String(reminderDraft.linkedNoteId || "")}
+                onChange={(event) =>
+                  setReminderDraft((prev) => ({
+                    ...prev,
+                    linkedNoteId: event.target.value,
+                  }))
+                }
+                fullWidth
+                size="small"
+                className="mobile-field"
+              >
+                <MenuItem value="">{t("app.reminders.form.noLinkedNote")}</MenuItem>
+                {noteList.map((note) => (
+                  <MenuItem key={note.id} value={note.id}>
+                    {note.title}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </div>
+
+            <TextField
+              label={t("app.reminders.form.note")}
+              value={reminderDraft.detail || ""}
+              onChange={(event) =>
+                setReminderDraft((prev) => ({
+                  ...prev,
+                  detail: event.target.value,
+                }))
+              }
+              placeholder={t("app.reminders.form.notePlaceholder")}
+              fullWidth
+              multiline
+              minRows={4}
+              size="small"
+              className="mobile-field"
+            />
 
             {reminderDraft.linkedNoteId ? (
               <div className="mobile-linked-note-row">
                 <span>
-                  {t("app.reminders.linkedTo")}{" "}
+                  {t("app.reminders.linkedTo")} {" "}
                   {selectedLinkedNote?.title || t("app.reminders.note")}
                 </span>
-                <button type="button" className="mobile-secondary-action" onClick={openLinkedNote}>
+                <Button
+                  type="button"
+                  variant="outlined"
+                  className="mobile-secondary-action"
+                  onClick={openLinkedNote}
+                >
                   {t("app.reminders.openNote")}
-                </button>
+                </Button>
               </div>
             ) : null}
           </div>
@@ -338,17 +363,19 @@ function ReminderRow({
 
   return (
     <div className={`mobile-row mobile-reminder-row ${selected ? "is-active" : ""}`}>
-      <button
+      <IconButton
         type="button"
         className={`mobile-check ${item.status === "done" ? "is-done" : ""}`}
         onClick={() => void handleToggleTodayReminderStatus(item)}
         disabled={busy !== "" || loading}
         aria-label={`${t(`app.reminders.status.${statusKey}`)} ${item.title}`}
+        size="small"
       >
-        <span aria-hidden="true">{item.status === "done" ? "↺" : "✓"}</span>
-      </button>
-      <button
+        <span aria-hidden="true">{item.status === "done" ? "↩" : "✓"}</span>
+      </IconButton>
+      <Button
         type="button"
+        variant="text"
         className="mobile-row__body"
         onClick={onOpen}
         disabled={busy !== "" || loading}
@@ -361,7 +388,7 @@ function ReminderRow({
           <span>{t(`app.reminders.status.${statusKey}`)}</span>
         </span>
         {linkedNote ? <small>{t("app.reminders.linked", { title: linkedNote.title })}</small> : null}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -375,3 +402,7 @@ function formatReminderDue(value, formatter) {
 }
 
 export default MobileRemindersView;
+
+
+
+

@@ -3,9 +3,11 @@ import { act, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import useMobileViewport from "./useMobileViewport";
 
-function installMatchMedia(initialMatches) {
+type MatchMediaChange = { matches: boolean; media: string };
+
+function installMatchMedia(initialMatches: boolean) {
   const previousMatchMedia = window.matchMedia;
-  const listeners = new Set();
+  const listeners = new Set<(event: MatchMediaChange) => void>();
   const mediaQuery = {
     matches: initialMatches,
     media: "(max-width: 760px)",
@@ -68,3 +70,5 @@ test("useMobileViewport follows the <=760px media query and change events", () =
     media.restore();
   }
 });
+
+

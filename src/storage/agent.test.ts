@@ -329,6 +329,7 @@ test("preview skill generation surfaces a warning when model generation falls ba
     existingSkill: null,
     lang: "en-US",
     prompt: "Create a review skill for React components",
+    signal: undefined,
     settings: {
       baseUrl: "https://example.com/v1",
       apiKey: "preview-key",
@@ -511,3 +512,7 @@ perfTest("preview perf profile reports hot paths", async () => {
   console.log(`PERF_JS save_session_skills_ms=${saveSessionSkillsMs.toFixed(3)}`);
   console.log(`PERF_JS run_agent_ms=${runAgentMs.toFixed(3)}`);
 });
+
+
+
+

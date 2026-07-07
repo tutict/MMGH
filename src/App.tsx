@@ -159,7 +159,7 @@ const SkillWorkspace = lazy(() => import("./components/SkillWorkspace"));
 const TodayWorkspace = lazy(() => import("./components/TodayWorkspace"));
 const WeatherWorkspace = lazy(() => import("./components/WeatherWorkspace"));
 
-const BUILT_IN_TRACKS = [
+const BUILT_IN_TRACKS: Array<Record<string, any>> = [
   {
     id: "builtin-reply-pulse",
     titleKey: "app.music.builtin.replyPulse.title",
@@ -789,9 +789,9 @@ function App() {
   const deferredNoteSearch = useDeferredValue(noteSearch);
   const deferredSessionSearch = useDeferredValue(sessionSearch);
 
-  const localizedTracks = useMemo(
+  const localizedTracks = useMemo<Array<Record<string, any>>>(
     () =>
-      tracks.map((track) => ({
+      tracks.map((track: Record<string, any>) => ({
         ...track,
         title: track.titleKey ? t(track.titleKey) : track.title,
         artist: track.artistKey ? t(track.artistKey) : track.artist,
@@ -942,7 +942,7 @@ function App() {
     }
   }, [t]);
 
-  const syncWorkspaceFromStorage = useCallback(async (options = {}) => {
+  const syncWorkspaceFromStorage = useCallback(async (options: { force?: boolean } = {}) => {
     const syncDeferredMessage = t("app.workspace.syncDeferred");
     if (
       !options.force &&
@@ -1122,7 +1122,7 @@ function App() {
       }
 
       try {
-        const unlistenLifecycle = await listenToDesktopLifecycle((payload) => {
+        const unlistenLifecycle = await listenToDesktopLifecycle((payload: Record<string, any> | null | undefined) => {
           if (disposed) {
             return;
           }
@@ -1354,13 +1354,13 @@ function App() {
       return undefined;
     }
 
-    const nextUrls = new Set(
+    const nextUrls = new Set<string>(
       tracks
         .map((track) => track?.src)
         .filter((src) => typeof src === "string" && src.startsWith("blob:"))
     );
 
-    uploadedTrackUrlsRef.current.forEach((url) => {
+    uploadedTrackUrlsRef.current.forEach((url: string) => {
       if (!nextUrls.has(url)) {
         window.URL.revokeObjectURL(url);
       }
@@ -1376,7 +1376,7 @@ function App() {
       if (typeof window === "undefined") {
         return;
       }
-      uploadedTrackUrlsRef.current.forEach((url) => {
+      uploadedTrackUrlsRef.current.forEach((url: string) => {
         window.URL.revokeObjectURL(url);
       });
       uploadedTrackUrlsRef.current.clear();
@@ -1675,7 +1675,7 @@ function App() {
     lyricsRequestVersionRef.current = nextVersions;
   }, [selectedTrackId]);
 
-  const handleRefreshLyrics = useCallback(async (options = {}) => {
+  const handleRefreshLyrics = useCallback(async (options: { force?: boolean; initiatedBy?: string } = {}) => {
     const track = selectedTrack;
     if (!track) {
       return;
@@ -2090,7 +2090,7 @@ function App() {
     return window.confirm(t("app.common.discardChangesConfirm"));
   }, [hasUnsavedWorkspaceDrafts, t]);
 
-  const handleSelectReminder = useCallback(async (reminderId, options = {}) => {
+  const handleSelectReminder = useCallback(async (reminderId: number, options: { force?: boolean } = {}) => {
     if (!reminderId || reminderId === selectedReminderId) {
       return false;
     }
@@ -2140,8 +2140,8 @@ function App() {
   );
   const skillHistoryEntryCount = useMemo(
     () =>
-      Object.values(skillHistoryMap).reduce(
-        (total, versions) => total + (Array.isArray(versions) ? versions.length : 0),
+      Object.values(skillHistoryMap as Record<string, any[]>).reduce(
+        (total: number, versions) => total + (Array.isArray(versions) ? versions.length : 0),
         0
       ),
     [skillHistoryMap]
@@ -2525,7 +2525,7 @@ function App() {
     let timer = 0;
     const triggeredReminderKeys = triggeredRemindersRef.current;
 
-    const triggerDueReminder = (dueReminder) => {
+    const triggerDueReminder = (dueReminder: Record<string, any>) => {
       const alertKey = createReminderAlertKey(dueReminder);
       triggeredReminderKeys.add(alertKey);
       setNotice("");
@@ -3177,7 +3177,6 @@ function App() {
         prompt,
         signal: controller.signal,
         settings: settingsForm,
-        t,
       });
       if (forgeSkillRequestVersionRef.current !== requestVersion) {
         return;
@@ -3967,8 +3966,8 @@ function App() {
     }
   }
 
-  function handleUploadTracks(event) {
-    const files = Array.from(event.target.files || []);
+  function handleUploadTracks(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files || []) as File[];
     if (files.length === 0) {
       return;
     }
@@ -3987,8 +3986,8 @@ function App() {
     event.target.value = "";
   }
 
-  const handleGalleryUpload = useCallback(async (event) => {
-    const files = Array.from(event.target.files || []);
+  const handleGalleryUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []) as File[];
     if (files.length === 0) {
       return;
     }
@@ -4319,7 +4318,7 @@ function App() {
   const activeInspectorMeta =
     inspectorTabs.find((tab) => tab.id === activeInspectorTab) || inspectorTabs[0];
   const isModalOpen = isInspectorOpen || isMobileNavOpen || isReminderCompletionOpen;
-  const modalBackgroundProps = isModalOpen ? { "aria-hidden": "true", inert: "" } : {};
+  const modalBackgroundProps = isModalOpen ? { "aria-hidden": true, inert: "" } : {};
 
   function openInspector(tab = "runtime") {
     if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
@@ -5575,7 +5574,7 @@ function App() {
   );
 }
 
-function getFocusableElements(container) {
+function getFocusableElements(container: ParentNode | null): HTMLElement[] {
   if (!container) {
     return [];
   }
@@ -5584,7 +5583,7 @@ function getFocusableElements(container) {
     container.querySelectorAll(
       'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     )
-  ).filter((element) => {
+  ).filter((element): element is HTMLElement => {
     if (
       element.hasAttribute("hidden") ||
       element.getAttribute("aria-hidden") === "true" ||
@@ -5602,7 +5601,7 @@ function getFocusableElements(container) {
   });
 }
 
-function focusDialogPanel(panel) {
+function focusDialogPanel(panel: HTMLElement | null) {
   if (!panel) {
     return;
   }
@@ -5615,7 +5614,7 @@ function focusDialogPanel(panel) {
   }
 }
 
-function trapFocusWithinPanel(event, panel) {
+function trapFocusWithinPanel(event: KeyboardEvent, panel: HTMLElement) {
   const focusableElements = getFocusableElements(panel);
 
   if (!focusableElements.length) {
@@ -5907,6 +5906,12 @@ function WorkspaceLoadingState({ label }) {
 }
 
 export default App;
+
+
+
+
+
+
 
 
 

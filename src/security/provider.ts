@@ -1,25 +1,50 @@
+type ProviderAssessmentStatus = "idle" | "blocked" | "local" | "trusted" | "warning";
+type ProviderAssessmentReason =
+  | "empty"
+  | "invalidUrl"
+  | "missingHost"
+  | "unsupportedScheme"
+  | "embeddedCredentials"
+  | "queryOrFragment"
+  | "remoteHttp"
+  | "localHost"
+  | "trustedHost"
+  | "untrustedHost";
+
+type ProviderBaseUrlOptions = {
+  trustedHosts?: string[];
+  enforceTrustedHosts?: boolean;
+};
+
+type ProviderBaseUrlAssessment = {
+  status: ProviderAssessmentStatus;
+  reason: ProviderAssessmentReason;
+  host: string;
+  trustedHosts: string[];
+};
+
 const DEFAULT_TRUSTED_PROVIDER_HOSTS = ["api.openai.com"];
 
-const readEnv = (name) => {
+const readEnv = (name: string): string => {
   if (typeof import.meta !== "undefined" && import.meta.env) {
     return String(import.meta.env[name] || "");
   }
   return "";
 };
 
-const normalizeHost = (value) => String(value || "").trim().toLowerCase();
+const normalizeHost = (value: unknown): string => String(value || "").trim().toLowerCase();
 
-const parseHostList = (value) =>
+const parseHostList = (value: unknown): string[] =>
   String(value || "")
     .split(",")
     .map((item) => normalizeHost(item))
     .filter(Boolean);
 
-const isTruthy = (value) => /^(1|true|yes|on)$/i.test(String(value || "").trim());
+const isTruthy = (value: unknown): boolean => /^(1|true|yes|on)$/i.test(String(value || "").trim());
 
-const isIpv4 = (host) => /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host);
+const isIpv4 = (host: string): boolean => /^\d{1,3}(?:\.\d{1,3}){3}$/.test(host);
 
-const isPrivateIpv4 = (host) => {
+const isPrivateIpv4 = (host: string): boolean => {
   if (!isIpv4(host)) {
     return false;
   }
@@ -38,18 +63,18 @@ const isPrivateIpv4 = (host) => {
   );
 };
 
-const isLocalHostname = (host) =>
+const isLocalHostname = (host: string): boolean =>
   host === "localhost" ||
   host === "::1" ||
   host === "[::1]" ||
   host.endsWith(".local");
 
-const isLocalProviderHost = (host) => {
+const isLocalProviderHost = (host: string): boolean => {
   const normalized = normalizeHost(host);
   return isLocalHostname(normalized) || isPrivateIpv4(normalized);
 };
 
-const hostMatchesAllowlist = (host, allowlist) => {
+const hostMatchesAllowlist = (host: string, allowlist: string[]): boolean => {
   const normalizedHost = normalizeHost(host);
   return allowlist.some((allowed) => {
     const normalizedAllowed = normalizeHost(allowed);
@@ -60,15 +85,18 @@ const hostMatchesAllowlist = (host, allowlist) => {
   });
 };
 
-export const readTrustedProviderHosts = () => {
+export const readTrustedProviderHosts = (): string[] => {
   const configured = parseHostList(readEnv("VITE_TRUSTED_PROVIDER_HOSTS"));
   return configured.length > 0 ? configured : DEFAULT_TRUSTED_PROVIDER_HOSTS;
 };
 
-export const shouldEnforceTrustedProviderHosts = () =>
+export const shouldEnforceTrustedProviderHosts = (): boolean =>
   isTruthy(readEnv("VITE_ENFORCE_TRUSTED_PROVIDER_HOSTS"));
 
-export const assessProviderBaseUrl = (baseUrl, options = {}) => {
+export const assessProviderBaseUrl = (
+  baseUrl: unknown,
+  options: ProviderBaseUrlOptions = {}
+): ProviderBaseUrlAssessment => {
   const trimmed = String(baseUrl || "").trim();
   const trustedHosts = options.trustedHosts || readTrustedProviderHosts();
   const enforceTrustedHosts =
@@ -83,7 +111,7 @@ export const assessProviderBaseUrl = (baseUrl, options = {}) => {
     };
   }
 
-  let parsedUrl;
+  let parsedUrl: URL;
   try {
     parsedUrl = new URL(trimmed);
   } catch {
@@ -180,7 +208,7 @@ export const assessProviderBaseUrl = (baseUrl, options = {}) => {
   };
 };
 
-export const providerBaseUrlErrorMessage = (assessment) => {
+export const providerBaseUrlErrorMessage = (assessment?: ProviderBaseUrlAssessment | null): string => {
   switch (assessment?.reason) {
     case "invalidUrl":
       return "Provider base URL must be a valid absolute URL.";
@@ -200,4 +228,3 @@ export const providerBaseUrlErrorMessage = (assessment) => {
       return "";
   }
 };
-

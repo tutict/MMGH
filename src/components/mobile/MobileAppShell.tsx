@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { Button, IconButton, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import MobileAgentView from "./MobileAgentView";
 import MobileKnowledgeView from "./MobileKnowledgeView";
 import MobileRemindersView from "./MobileRemindersView";
@@ -19,7 +20,7 @@ function MobileAppShell({
   shell = {},
   today = {},
   weather = {},
-}) {
+}: Record<string, any>) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const {
@@ -54,27 +55,29 @@ function MobileAppShell({
     <div className={`agent-app mobile-app theme-${theme} view-${currentView}`}>
       <header className="mobile-topbar" data-testid="mobile-topbar">
         <div className="mobile-topbar__title">
-          <strong>MMGH 路 {currentMeta.title || currentView}</strong>
+          <strong>归流 · {currentMeta.title || currentView}</strong>
         </div>
         <time>{formatShortClock(clockNow, lang)}</time>
-        <button
+        <IconButton
           type="button"
           className="mobile-icon-button"
           onClick={() => setMoreOpen(true)}
           aria-label={mobileText(lang, "more")}
+          size="small"
         >
           <span aria-hidden="true">{renderIcon("more")}</span>
-        </button>
-        <button
+        </IconButton>
+        <IconButton
           type="button"
           className="mobile-icon-button"
           onClick={() => setInspectorOpen(true)}
           aria-label={mobileText(lang, "inspector")}
+          size="small"
         >
           <span aria-hidden="true">
             <PanelIcon type="trace" />
           </span>
-        </button>
+        </IconButton>
       </header>
 
       <main className="mobile-main">
@@ -135,30 +138,32 @@ function MobileAppShell({
 
       <nav className="mobile-dock" data-testid="mobile-dock" aria-label="Mobile primary navigation">
         {dockItems.map((item) => (
-          <button
+          <Button
             key={item.id}
             type="button"
             className={`mobile-dock__item ${currentView === item.id ? "is-active" : ""}`}
             onClick={() => openView(item.id)}
             aria-current={currentView === item.id ? "page" : undefined}
+            variant="text"
           >
             <span className="mobile-dock__icon" aria-hidden="true">
               {renderIcon(item.id)}
             </span>
             <span>{item.label}</span>
-          </button>
+          </Button>
         ))}
-        <button
+        <Button
           type="button"
           className={`mobile-dock__item ${moreOpen ? "is-active" : ""}`}
           onClick={() => setMoreOpen(true)}
           aria-expanded={moreOpen}
+          variant="text"
         >
           <span className="mobile-dock__icon" aria-hidden="true">
             {renderIcon("more")}
           </span>
           <span>{mobileText(lang, "more")}</span>
-        </button>
+        </Button>
       </nav>
 
       <MobileSheet
@@ -171,7 +176,7 @@ function MobileAppShell({
       >
         <div className="mobile-list">
           {moreItems.map((item) => (
-            <button
+            <Button
               key={item.id}
               type="button"
               className="mobile-row"
@@ -179,6 +184,7 @@ function MobileAppShell({
                 openView(item.id);
                 setMoreOpen(false);
               }}
+              variant="text"
             >
               <span className="mobile-row__icon" aria-hidden="true">
                 {renderIcon(item.id)}
@@ -188,33 +194,33 @@ function MobileAppShell({
                 <span>{item.meta}</span>
               </span>
               <small>{item.badge}</small>
-            </button>
+            </Button>
           ))}
         </div>
         <div className="mobile-quick-settings">
-          <div className="mobile-segmented" aria-label={mobileText(lang, "language")}>
-            <button
-              type="button"
-              className={lang === "zh-CN" ? "is-active" : ""}
-              onClick={() => setLang("zh-CN")}
-            >
-              涓枃
-            </button>
-            <button
-              type="button"
-              className={lang === "en-US" ? "is-active" : ""}
-              onClick={() => setLang("en-US")}
-            >
-              EN
-            </button>
-          </div>
-          <button
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            className="mobile-segmented"
+            aria-label={mobileText(lang, "language")}
+            value={lang}
+            onChange={(_, nextLang) => {
+              if (nextLang) {
+                setLang(nextLang);
+              }
+            }}
+          >
+            <ToggleButton value="zh-CN">中文</ToggleButton>
+            <ToggleButton value="en-US">EN</ToggleButton>
+          </ToggleButtonGroup>
+          <Button
             type="button"
+            variant="outlined"
             className="mobile-secondary-action"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           >
             {theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
-          </button>
+          </Button>
         </div>
       </MobileSheet>
 
@@ -253,3 +259,5 @@ function MobileAppShell({
 }
 
 export default MobileAppShell;
+
+

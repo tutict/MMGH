@@ -108,7 +108,7 @@ export function createInitialWeatherCity(location) {
   };
 }
 
-async function fetchWeatherForLocation(location, { signal } = {}) {
+async function fetchWeatherForLocation(location, { signal }: { signal?: AbortSignal } = {}) {
   const forecastRequest = fetch(buildForecastUrl(location), { signal });
   const airQualityRequest = fetch(buildAirQualityUrl(location), { signal }).catch(() => null);
   const forecastResponse = await forecastRequest;
@@ -230,7 +230,7 @@ function findCurrentHourlyIndex(payload) {
   return Math.max(times.findIndex((time) => time >= currentTime), 0);
 }
 
-function mapWeatherCodeToKey(code, windSpeed) {
+function mapWeatherCodeToKey(code, windSpeed?: number) {
   const normalizedCode = Number(code);
   const normalizedWind = normalizeNumber(windSpeed);
 
@@ -308,3 +308,4 @@ function formatApiClock(value) {
   }
   return String(value).slice(11, 16);
 }
+

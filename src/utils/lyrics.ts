@@ -4,7 +4,23 @@ import { updateStoredValue } from "./localStorageCache";
 export const LYRICS_CACHE_STORAGE_KEY = "mmgh-lyrics-cache-v1";
 export const LYRICS_CACHE_CLEAR_MARKER_STORAGE_KEY = "mmgh-lyrics-cache-cleared-at-v1";
 
-export function readLyricsCache() {
+type LyricsTrack = Record<string, any> & { id?: string | number };
+
+type LyricsLookupEntry = {
+  status?: string;
+  error?: string;
+};
+
+type LyricsLookupState = Record<string, LyricsLookupEntry>;
+
+type LyricsCacheEntry = Record<string, any> & {
+  fingerprint?: string;
+  source?: string;
+};
+
+type LyricsCache = Record<string, LyricsCacheEntry>;
+
+export function readLyricsCache(): LyricsCache {
   if (typeof window === "undefined") {
     return {};
   }
@@ -30,7 +46,7 @@ export function readLyricsCacheClearMarker() {
   }
 }
 
-export function writeLyricsCacheClearMarker(marker) {
+export function writeLyricsCacheClearMarker(marker: unknown) {
   if (typeof window === "undefined") {
     return String(marker || "");
   }
@@ -50,7 +66,7 @@ export function writeLyricsCacheClearMarker(marker) {
   }
 }
 
-export function parseLyricsCacheRaw(raw) {
+export function parseLyricsCacheRaw(raw: string | null | undefined): LyricsCache {
   if (!raw) {
     return {};
   }
@@ -64,7 +80,7 @@ export function parseLyricsCacheRaw(raw) {
   }
 }
 
-export function updateStoredLyricsCache(updater) {
+export function updateStoredLyricsCache(updater: (cache: LyricsCache) => LyricsCache) {
   return updateStoredValue({
     key: LYRICS_CACHE_STORAGE_KEY,
     parseRaw: parseLyricsCacheRaw,
@@ -74,24 +90,10 @@ export function updateStoredLyricsCache(updater) {
   });
 }
 
-export function buildLyricsLookupStateFromCache(cache, trackList) {
-  return (Array.isArray(trackList) ? trackList : []).reduce((accumulator, track) => {
-    const cacheKey = getLyricsCacheEntryKey(track);
-    const entry = cache?.[cacheKey];
-
-    if (entry?.fingerprint !== cacheKey || !entry?.source) {
-      return accumulator;
-    }
-
-    accumulator[track.id] = {
-      status: entry.source === "manual" ? "manual" : "ready",
-      error: "",
-    };
-    return accumulator;
-  }, {});
-}
-
-export function buildLyricsLookupStateWithClearMarker(cache, trackList) {
+export function buildLyricsLookupStateFromCache(
+  cache: LyricsCache | null | undefined,
+  trackList: LyricsTrack[] | null | undefined
+): LyricsLookupState {
   return (Array.isArray(trackList) ? trackList : []).reduce((accumulator, track) => {
     if (!track?.id) {
       return accumulator;
@@ -99,7 +101,31 @@ export function buildLyricsLookupStateWithClearMarker(cache, trackList) {
 
     const cacheKey = getLyricsCacheEntryKey(track);
     const entry = cache?.[cacheKey];
-    accumulator[track.id] =
+
+    if (entry?.fingerprint !== cacheKey || !entry?.source) {
+      return accumulator;
+    }
+
+    accumulator[String(track.id)] = {
+      status: entry.source === "manual" ? "manual" : "ready",
+      error: "",
+    };
+    return accumulator;
+  }, {} as LyricsLookupState);
+}
+
+export function buildLyricsLookupStateWithClearMarker(
+  cache: LyricsCache | null | undefined,
+  trackList: LyricsTrack[] | null | undefined
+): LyricsLookupState {
+  return (Array.isArray(trackList) ? trackList : []).reduce((accumulator, track) => {
+    if (!track?.id) {
+      return accumulator;
+    }
+
+    const cacheKey = getLyricsCacheEntryKey(track);
+    const entry = cache?.[cacheKey];
+    accumulator[String(track.id)] =
       entry?.fingerprint === cacheKey && entry?.source
         ? {
             status: entry.source === "manual" ? "manual" : "ready",
@@ -110,10 +136,18 @@ export function buildLyricsLookupStateWithClearMarker(cache, trackList) {
             error: "",
           };
     return accumulator;
-  }, {});
+  }, {} as LyricsLookupState);
 }
 
-export function mergeLyricsLookupStateFromCache({ cache, previousState, trackList }) {
+export function mergeLyricsLookupStateFromCache({
+  cache,
+  previousState,
+  trackList,
+}: {
+  cache?: LyricsCache | null;
+  previousState?: LyricsLookupState | null;
+  trackList?: LyricsTrack[] | null;
+}): LyricsLookupState {
   const cacheState = buildLyricsLookupStateFromCache(cache, trackList);
 
   return Object.entries(previousState || {}).reduce((accumulator, [trackId, entry]) => {
@@ -129,37 +163,38 @@ export function mergeLyricsLookupStateFromCache({ cache, previousState, trackLis
       accumulator[trackId] = entry;
     }
     return accumulator;
-  }, { ...cacheState });
+  }, { ...cacheState } as LyricsLookupState);
 }
 
-export function clearClearedLyricsLookupState(lookupState) {
+export function clearClearedLyricsLookupState(
+  lookupState: LyricsLookupState | null | undefined
+): LyricsLookupState {
   return Object.entries(lookupState || {}).reduce((accumulator, [trackId, entry]) => {
     if (entry?.status !== "cleared") {
       accumulator[trackId] = entry;
     }
     return accumulator;
-  }, {});
+  }, {} as LyricsLookupState);
 }
 
-export function getLyricsCacheEntryKey(track, duration) {
+export function getLyricsCacheEntryKey(track: LyricsTrack | null | undefined, duration?: number) {
   void duration;
   const title = resolveLyricsCacheIdentityPart(track, "title");
   const artist = resolveLyricsCacheIdentityPart(track, "artist");
   return `${title}__${artist}`;
 }
 
-export function resolveLyricsCacheIdentityPart(track, field) {
+export function resolveLyricsCacheIdentityPart(track: LyricsTrack | null | undefined, field: string) {
   const translationKeyField = `${field}Key`;
   return sanitizeLyricsSearchPart(track?.[translationKeyField] || track?.[field] || "");
 }
 
-export function sanitizeLyricsSearchPart(value) {
+export function sanitizeLyricsSearchPart(value: unknown) {
   return String(value || "")
     .trim()
     .toLowerCase()
     .replace(/\s+/g, " ");
 }
-
 export function resolveLyricsLines({ duration, entry, fallbackArtist, fallbackTitle, t }) {
   const syncedLines = parseLrcLyrics(entry?.syncedLyrics || "");
   if (syncedLines.length > 0) {
@@ -314,3 +349,5 @@ export function normalizeLyricsError(error, t) {
 
   return t("app.music.lyrics.status.error");
 }
+
+

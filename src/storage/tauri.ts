@@ -1,13 +1,24 @@
-let invokePromise = null;
-let eventModulePromise = null;
+type InvokeFn = typeof import("@tauri-apps/api/core")["invoke"];
+type EventModule = typeof import("@tauri-apps/api/event");
+type UnlistenFn = () => void;
+
+declare global {
+  interface Window {
+    __TAURI_INTERNALS__?: unknown;
+    __TAURI__?: unknown;
+  }
+}
+
+let invokePromise: Promise<InvokeFn> | null = null;
+let eventModulePromise: Promise<EventModule> | null = null;
 
 export const DESKTOP_WINDOW_STATE_EVENT = "mmgh://desktop-window-state";
 export const DESKTOP_LIFECYCLE_EVENT = "mmgh://desktop-lifecycle";
 
-export const isTauriAvailable = () =>
+export const isTauriAvailable = (): boolean =>
   typeof window !== "undefined" && Boolean(window.__TAURI_INTERNALS__ || window.__TAURI__);
 
-const loadInvoke = async () => {
+const loadInvoke = async (): Promise<InvokeFn> => {
   if (!invokePromise) {
     invokePromise = import("@tauri-apps/api/core")
       .then((module) => module.invoke)
@@ -20,7 +31,7 @@ const loadInvoke = async () => {
   return invokePromise;
 };
 
-const loadEventModule = async () => {
+const loadEventModule = async (): Promise<EventModule> => {
   if (!eventModulePromise) {
     eventModulePromise = import("@tauri-apps/api/event")
       .then((module) => module)
@@ -33,18 +44,18 @@ const loadEventModule = async () => {
   return eventModulePromise;
 };
 
-export const invokeTauri = async (command, args) => {
+export const invokeTauri = async <T = any>(command: string, args?: Record<string, unknown>): Promise<T> => {
   if (!isTauriAvailable()) {
     throw new Error("Tauri runtime is not available.");
   }
 
   const invoke = await loadInvoke();
-  return invoke(command, args);
+  return invoke<T>(command, args);
 };
 
 export const getDesktopWindowState = async () => invokeTauri("desktop_window_state");
 
-export const listenToDesktopWindowState = async (handler) => {
+export const listenToDesktopWindowState = async (handler?: (payload: unknown) => void): Promise<UnlistenFn> => {
   if (!isTauriAvailable()) {
     return () => {};
   }
@@ -55,7 +66,7 @@ export const listenToDesktopWindowState = async (handler) => {
   });
 };
 
-export const listenToDesktopLifecycle = async (handler) => {
+export const listenToDesktopLifecycle = async (handler?: (payload: unknown) => void): Promise<UnlistenFn> => {
   if (!isTauriAvailable()) {
     return () => {};
   }
@@ -65,3 +76,4 @@ export const listenToDesktopLifecycle = async (handler) => {
     handler?.(event.payload);
   });
 };
+

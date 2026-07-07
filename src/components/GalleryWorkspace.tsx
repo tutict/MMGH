@@ -69,7 +69,7 @@ function GalleryWorkspace({
 
   const latestImage = filteredGalleryItems[0] || galleryItems[0] || null;
   const activeImage = galleryItems.find((item) => item.id === galleryViewerId) || null;
-  const viewerBackgroundProps = galleryViewerId && activeImage ? { "aria-hidden": "true", inert: "" } : {};
+  const viewerBackgroundProps = galleryViewerId && activeImage ? { "aria-hidden": true, inert: "" } : {};
 
   useEffect(() => {
     if (!galleryViewerId || !activeImage) {
@@ -333,7 +333,7 @@ function GalleryWorkspace({
   );
 }
 
-function getViewerFocusableElements(container) {
+function getViewerFocusableElements(container: ParentNode | null): HTMLElement[] {
   if (!container) {
     return [];
   }
@@ -342,7 +342,7 @@ function getViewerFocusableElements(container) {
     container.querySelectorAll(
       'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     )
-  ).filter((element) => {
+  ).filter((element): element is HTMLElement => {
     if (
       element.hasAttribute("hidden") ||
       element.getAttribute("aria-hidden") === "true" ||
@@ -360,7 +360,7 @@ function getViewerFocusableElements(container) {
   });
 }
 
-function focusViewerPanel(panel) {
+function focusViewerPanel(panel: HTMLElement | null) {
   if (!panel) {
     return;
   }
@@ -373,7 +373,7 @@ function focusViewerPanel(panel) {
   }
 }
 
-function trapFocusWithinViewer(event, panel) {
+function trapFocusWithinViewer(event: KeyboardEvent, panel: HTMLElement) {
   const focusableElements = getViewerFocusableElements(panel);
 
   if (!focusableElements.length) {
@@ -412,3 +412,4 @@ function formatGalleryTime(value, lang) {
 }
 
 export default React.memo(GalleryWorkspace);
+

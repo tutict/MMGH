@@ -9,7 +9,7 @@ const MAX_RECENT_SEARCHES = 6;
 const MAX_COMMON_CITY_SUGGESTIONS = 6;
 const WEATHER_AUX_CACHE_WRITE_MAX_RETRIES = 5;
 
-export async function searchWeatherLocations(query, lang, options = {}) {
+export async function searchWeatherLocations(query: unknown, lang: unknown, options: { signal?: AbortSignal } = {}) {
   const keyword = String(query || "").trim();
   if (!keyword) {
     return [];
@@ -48,7 +48,7 @@ function WeatherWorkspace({
   onRefresh,
   onAddCity,
   onRemoveCity,
-}) {
+}: Record<string, any>) {
   const { lang, t } = useI18n();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -249,7 +249,7 @@ function WeatherWorkspace({
     return sections;
   }, [commonCities, recentSearches, searchError, searchQuery, searchResults, searchStatus, t]);
 
-  function rememberCityUsage(city, options = {}) {
+  function rememberCityUsage(city: any, options: { includeRecent?: boolean } = {}) {
     const normalizedCity = sanitizeSearchSuggestion(city);
     if (!normalizedCity) {
       return;
@@ -293,7 +293,7 @@ function WeatherWorkspace({
     <section className="weather-panel panel-surface">
       <div
         className={`weather-stage weather-stage--${weatherAppearance.tone} weather-stage--clock-${weatherMood.phase} weather-stage--thermal-${weatherMood.thermalBand}`}
-        style={weatherAmbientStyle}
+        style={weatherAmbientStyle as React.CSSProperties}
       >
         <div className={`weather-scene weather-scene--${weatherAppearance.scene}`} aria-hidden="true">
           <span className="weather-scene__glow weather-scene__glow--one" />
@@ -759,7 +759,7 @@ function WeatherTiltCard({
   onMouseLeave,
   onMouseMove,
   ...props
-}) {
+}: Record<string, any>) {
   return (
     <Component
       {...props}
@@ -946,8 +946,8 @@ function isNetworkFetchErrorMessage(message) {
   );
 }
 
-function buildCommonCitySuggestions({ recentSearches, usageMap, weatherCities }) {
-  const rankedUsageEntries = Object.values(usageMap || {})
+function buildCommonCitySuggestions({ recentSearches, usageMap, weatherCities }: Record<string, any>) {
+  const rankedUsageEntries = Object.values((usageMap || {}) as Record<string, any>)
     .filter((entry) => entry?.city)
     .sort((left, right) => (right?.count || 0) - (left?.count || 0))
     .map((entry) => sanitizeSearchSuggestion(entry.city));
@@ -1104,7 +1104,7 @@ function readWeatherUsageMap() {
   }
 }
 
-function parseWeatherUsageMapRaw(raw) {
+function parseWeatherUsageMapRaw(raw: string | null | undefined): Record<string, any> {
   if (!raw) {
     return {};
   }
@@ -1115,7 +1115,7 @@ function parseWeatherUsageMapRaw(raw) {
       return {};
     }
 
-    return Object.entries(parsed).reduce((accumulator, [key, value]) => {
+    return Object.entries(parsed as Record<string, any>).reduce((accumulator, [key, value]) => {
       if (!value || typeof value !== "object") {
         return accumulator;
       }
@@ -1128,20 +1128,20 @@ function parseWeatherUsageMapRaw(raw) {
         city,
       };
       return accumulator;
-    }, {});
+    }, {} as Record<string, any>);
   } catch (error) {
     console.error("Failed to parse weather usage map", error);
     return {};
   }
 }
 
-function updateStoredWeatherUsageMap(updater) {
+function updateStoredWeatherUsageMap(updater: (usageMap: Record<string, any>) => Record<string, any>) {
   return updateStoredWeatherAuxValue({
     key: WEATHER_USAGE_STORAGE_KEY,
     parseRaw: parseWeatherUsageMapRaw,
     serialize: (usageMap) =>
       JSON.stringify(
-        Object.entries(usageMap || {}).reduce((accumulator, [key, value]) => {
+        Object.entries((usageMap || {}) as Record<string, any>).reduce((accumulator, [key, value]) => {
           const city = sanitizeSearchSuggestion(value?.city);
           if (!city) {
             return accumulator;
@@ -1151,7 +1151,7 @@ function updateStoredWeatherUsageMap(updater) {
             city,
           };
           return accumulator;
-        }, {})
+        }, {} as Record<string, any>)
       ),
     updater,
     cacheLabel: "weather usage cache",
@@ -1170,3 +1170,9 @@ function matchesCityKeyword(city, keyword) {
 }
 
 export default WeatherWorkspace;
+
+
+
+
+
+

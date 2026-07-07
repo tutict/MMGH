@@ -14,7 +14,7 @@ function Icon() {
   return <span data-testid="mobile-test-icon" />;
 }
 
-function t(key, params = {}) {
+function t(key: string, params: Record<string, any> = {}) {
   const copy = {
     "app.common.cancel": "Cancel",
     "app.common.delete": "Delete",
@@ -581,3 +581,4 @@ test("mobile Reminders opens editor and routes save delete linked note and quick
   expect(handleDeleteReminder).toHaveBeenCalledTimes(1);
   expect(handleOpenLinkedNote).toHaveBeenCalledWith(2);
 });
+

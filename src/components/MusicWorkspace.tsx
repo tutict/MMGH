@@ -104,7 +104,7 @@ function MusicWorkspace({
   setVolume,
   uploadInputRef,
   volume,
-}) {
+}: Record<string, any>) {
   const { t } = useI18n();
   const { currentTime, duration } = usePlaybackSnapshot();
   const [isLibraryOpen, setIsLibraryOpen] = React.useState(
@@ -261,7 +261,7 @@ function MusicWorkspace({
           </header>
 
           <div className="music-room__stage">
-            <div className="music-room__turntable" style={{ "--music-pulse-level": pulseLevel }}>
+            <div className="music-room__turntable" style={{ "--music-pulse-level": pulseLevel } as React.CSSProperties}>
               <div className="music-room__plinth" aria-hidden="true">
                 <span className="music-room__plinth-mark music-room__plinth-mark--left" />
                 <span className="music-room__plinth-mark music-room__plinth-mark--right" />
@@ -328,7 +328,7 @@ function MusicWorkspace({
                       style={{
                         "--bar-height": `${bar.height}%`,
                         "--bar-delay": `${bar.delay}ms`,
-                      }}
+                      } as React.CSSProperties}
                     />
                   ))}
                 </div>
@@ -548,7 +548,7 @@ function getTrackDurationLabel(track, index, selectedTrackId, currentDuration) {
   return formatDuration(188 + index * 13);
 }
 
-function buildCosmicDust({ particles, pulseLevel, isPlaying, currentTime }) {
+function buildCosmicDust({ particles, pulseLevel, isPlaying }: Record<string, any>) {
   const center = 200;
   const pulseRadiusBoost = isPlaying ? 5 * pulseLevel : 1;
 
@@ -610,14 +610,14 @@ const CosmicDustRing = React.memo(function CosmicDustRing({
   isPlaying,
   particleCount,
   pulseLevel,
-}) {
+}: Record<string, any>) {
   const cosmicDust = React.useMemo(
     () =>
       buildCosmicDust({
         particles: COSMIC_DUST_PARTICLES.slice(0, particleCount),
         pulseLevel,
         isPlaying,
-        currentTime: 0,
+
       }),
     [isPlaying, particleCount, pulseLevel]
   );
@@ -851,3 +851,9 @@ function ModeIcon({ mode }) {
 }
 
 export default MusicWorkspace;
+
+
+
+
+
+

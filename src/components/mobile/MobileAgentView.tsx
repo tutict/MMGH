@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { Button, Chip, TextField } from "@mui/material";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
 
@@ -35,7 +36,7 @@ function MobileAgentView({
   providerConfigured,
   sessionList = [],
   setDraft,
-}) {
+}: Record<string, any>) {
   const [sheet, setSheet] = useState("");
   const isRunning = busy === "run";
   const timeline = useMemo(() => {
@@ -63,15 +64,15 @@ function MobileAgentView({
           <span className={`mobile-status-dot ${providerConfigured ? "is-ready" : "is-pending"}`} />
         </div>
         <div className="mobile-action-row mobile-action-row--three">
-          <button type="button" className="mobile-secondary-action" onClick={() => setSheet("sessions")}>
+          <Button type="button" variant="outlined" className="mobile-secondary-action" onClick={() => setSheet("sessions")}>
             {mobileText(lang, "sessionLibrary")}
-          </button>
-          <button type="button" className="mobile-secondary-action" onClick={() => setSheet("skills")}>
+          </Button>
+          <Button type="button" variant="outlined" className="mobile-secondary-action" onClick={() => setSheet("skills")}>
             {mobileText(lang, "skills")}
-          </button>
-          <button type="button" className="mobile-secondary-action" onClick={() => setSheet("details")}>
+          </Button>
+          <Button type="button" variant="outlined" className="mobile-secondary-action" onClick={() => setSheet("details")}>
             {mobileText(lang, "details")}
-          </button>
+          </Button>
         </div>
       </section>
 
@@ -95,20 +96,25 @@ function MobileAgentView({
       </section>
 
       <form className="mobile-agent-composer" onSubmit={handleRunAgent}>
-        <textarea
+        <TextField
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder={mobileText(lang, "send")}
-          rows={1}
-          aria-label={mobileText(lang, "send")}
+          fullWidth
+          multiline
+          maxRows={4}
+          size="small"
+          className="mobile-field mobile-agent-composer__field"
+          slotProps={{ htmlInput: { "aria-label": mobileText(lang, "send") } }}
         />
-        <button
+        <Button
           type="submit"
+          variant="contained"
           className="mobile-primary-action"
           disabled={loading || isRunning || !draft.trim()}
         >
           {mobileText(lang, "send")}
-        </button>
+        </Button>
       </form>
 
       <MobileSheet
@@ -120,9 +126,10 @@ function MobileAgentView({
       >
         <div className="mobile-list">
           {sessionList.map((session) => (
-            <button
+            <Button
               key={session.id}
               type="button"
+              variant="text"
               className="mobile-row"
               onClick={() => {
                 void handleOpenSession?.(session.id);
@@ -134,7 +141,7 @@ function MobileAgentView({
                 <span>{session.lastMessagePreview}</span>
               </span>
               <time>{session.updatedAt ? formatTime(session.updatedAt, lang) : ""}</time>
-            </button>
+            </Button>
           ))}
         </div>
       </MobileSheet>
@@ -155,14 +162,16 @@ function MobileAgentView({
                   <strong>{skill.name}</strong>
                   <span>{skill.summary || skill.description || skill.triggerHint}</span>
                 </span>
-                <button
-                  type="button"
+                <Chip
+                  component="button"
+                  clickable
+                  color={isMounted ? "primary" : "default"}
+                  variant={isMounted ? "filled" : "outlined"}
                   className={`mobile-pill-button ${isMounted ? "is-active" : ""}`}
+                  label={isMounted ? "On" : "Add"}
                   onClick={() => handleToggleSkillMounted(skill.id)}
                   disabled={busy !== ""}
-                >
-                  {isMounted ? "On" : "Add"}
-                </button>
+                />
               </div>
             );
           })}
@@ -199,3 +208,7 @@ function MobileAgentView({
 }
 
 export default MobileAgentView;
+
+
+
+

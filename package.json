@@ -3,15 +3,19 @@
   "version": "0.1.1",
   "private": true,
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.2.0",
+    "@mui/material": "^9.2.0",
     "@tauri-apps/api": "^2.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "scripts": {
-    "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test:unit": "vitest run --configLoader runner",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml -- --test-threads=1",
-    "test": "npm run lint && npm run test:unit && npm run build && npm run test:rust",
+    "test": "npm run lint && npm run typecheck && npm run test:unit && npm run build && npm run test:rust",
     "dev": "vite --host 127.0.0.1 --port 5173",
     "dev:web": "vite",
     "dev:tauri": "tauri dev",
@@ -19,7 +23,8 @@
     "build:desktop": "tauri build",
     "build:desktop:debug": "tauri build --debug",
     "release:check": "npm test",
-    "serve": "vite preview"
+    "serve": "vite preview",
+    "typecheck": "tsc --noEmit"
   },
   "browserslist": {
     "production": [
@@ -34,19 +39,26 @@
     ]
   },
   "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/eslint-parser": "^7.28.5",
+    "@babel/preset-react": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
     "@tauri-apps/cli": "2.10.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^26.1.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^8.57.1",
     "eslint-config-react-app": "^7.0.1",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "jsdom": "^26.1.0",
+    "typescript": "^7.0.1-rc",
     "vite": "^7.2.4",
     "vitest": "^3.2.4"
   }

@@ -8,16 +8,13 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes("node_modules")) {
-            if (id.includes("react")) {
-              return "react-vendor";
-            }
             if (id.includes("@tauri-apps")) {
               return "tauri-vendor";
             }
             return "vendor";
           }
 
-          if (id.includes("src/components/WeatherWorkspace.jsx")) {
+          if (id.includes("src/components/WeatherWorkspace.tsx")) {
             return "weather-workspace";
           }
 
@@ -37,6 +34,6 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
-    setupFiles: "./src/test/setup.js",
+    setupFiles: "./src/test/setup.ts",
   },
 });

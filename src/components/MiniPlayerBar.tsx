@@ -1,6 +1,23 @@
-import React, { useRef } from "react";
+import { useRef } from "react";
 import { useI18n } from "../i18n";
 import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
+
+type MiniPlayerTrack = {
+  cover?: string;
+  title?: string;
+  artist?: string;
+};
+
+type MiniPlayerBarProps = {
+  handleOpenMusicWorkspace: () => void;
+  handleRestartTrack: () => void;
+  handleSeek: (event: any) => void;
+  handleTogglePlayback: () => void;
+  isPlaying: boolean;
+  isAppVisible?: boolean;
+  placement?: string;
+  selectedTrack?: MiniPlayerTrack | null;
+};
 
 function MiniPlayerBar({
   handleOpenMusicWorkspace,
@@ -10,12 +27,12 @@ function MiniPlayerBar({
   isPlaying,
   placement = "floating",
   selectedTrack,
-}) {
+}: MiniPlayerBarProps) {
   const { t } = useI18n();
-  const rootRef = useRef(null);
+  const rootRef = useRef<HTMLElement | null>(null);
   const { currentTime, duration } = usePlaybackSnapshot();
 
-  const handlePointerMove = (event) => {
+  const handlePointerMove = (event: any) => {
     const element = rootRef.current;
     if (!element) {
       return;
@@ -123,7 +140,7 @@ function MiniPlayerBar({
   );
 }
 
-function formatDuration(value) {
+function formatDuration(value: number) {
   if (!value || Number.isNaN(value)) {
     return "0:00";
   }
@@ -135,3 +152,4 @@ function formatDuration(value) {
 }
 
 export default MiniPlayerBar;
+

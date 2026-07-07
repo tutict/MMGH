@@ -6,10 +6,43 @@ import {
 const STORAGE_KEY = "mmgh_notes_v1";
 const DESKTOP_NOTES_COMMANDS_ENABLED = false;
 
-const isTauriAvailable = () => DESKTOP_NOTES_COMMANDS_ENABLED && isTauriRuntimeAvailable();
-const invokeTauri = (command, args) => invokeRuntimeTauri(command, args);
+type NoteInput = {
+  id?: number;
+  title?: string;
+  content?: string;
+  mood?: string;
+  tags?: string[] | string;
+  createdAt?: number;
+  updatedAt?: number;
+};
 
-const normalizeTags = (tags) => {
+type Note = {
+  id: number;
+  title: string;
+  content: string;
+  mood: string;
+  tags: string[];
+  createdAt: number;
+  updatedAt: number;
+};
+
+type ListNotesArgs = {
+  query?: string;
+  limit?: number;
+};
+
+type SaveNoteArgs = {
+  id?: number;
+  title?: string;
+  content?: string;
+  mood?: string;
+  tags?: string[] | string;
+};
+
+const isTauriAvailable = () => DESKTOP_NOTES_COMMANDS_ENABLED && isTauriRuntimeAvailable();
+const invokeTauri = <T = unknown>(command: string, args?: Record<string, unknown>) => invokeRuntimeTauri<T>(command, args);
+
+const normalizeTags = (tags?: string[] | string): string[] => {
   if (!tags) {
     return [];
   }
@@ -25,8 +58,8 @@ const normalizeTags = (tags) => {
   return [];
 };
 
-const normalizeNote = (note) => ({
-  id: note.id,
+const normalizeNote = (note: NoteInput): Note => ({
+  id: note.id ?? Date.now(),
   title: note.title ?? "",
   content: note.content ?? "",
   mood: note.mood ?? "",
@@ -35,7 +68,7 @@ const normalizeNote = (note) => ({
   updatedAt: note.updatedAt ?? note.createdAt ?? Date.now(),
 });
 
-const readLocalNotes = () => {
+const readLocalNotes = (): Note[] => {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
@@ -46,7 +79,7 @@ const readLocalNotes = () => {
   }
 };
 
-const writeLocalNotes = (notes) => {
+const writeLocalNotes = (notes: Note[]): void => {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
   } catch (error) {
@@ -54,7 +87,7 @@ const writeLocalNotes = (notes) => {
   }
 };
 
-const filterNotes = (notes, query) => {
+const filterNotes = (notes: Note[], query?: string): Note[] => {
   if (!query) {
     return notes;
   }
@@ -76,9 +109,9 @@ const filterNotes = (notes, query) => {
   });
 };
 
-export const listNotes = async ({ query, limit } = {}) => {
+export const listNotes = async ({ query, limit }: ListNotesArgs = {}): Promise<Note[]> => {
   if (isTauriAvailable()) {
-    return invokeTauri("list_notes", { query, limit });
+    return invokeTauri<Note[]>("list_notes", { query, limit });
   }
   const notes = filterNotes(readLocalNotes(), query);
   if (typeof limit === "number") {
@@ -87,9 +120,9 @@ export const listNotes = async ({ query, limit } = {}) => {
   return notes;
 };
 
-export const addNote = async ({ title, content, mood, tags } = {}) => {
+export const addNote = async ({ title, content, mood, tags }: SaveNoteArgs = {}): Promise<Note> => {
   if (isTauriAvailable()) {
-    return invokeTauri("add_note", { title, content, mood, tags });
+    return invokeTauri<Note>("add_note", { title, content, mood, tags });
   }
   const now = Date.now();
   const note = normalizeNote({
@@ -106,9 +139,9 @@ export const addNote = async ({ title, content, mood, tags } = {}) => {
   return note;
 };
 
-export const updateNote = async ({ id, title, content, mood, tags }) => {
+export const updateNote = async ({ id, title, content, mood, tags }: SaveNoteArgs): Promise<Note | undefined> => {
   if (isTauriAvailable()) {
-    return invokeTauri("update_note", { id, title, content, mood, tags });
+    return invokeTauri<Note>("update_note", { id, title, content, mood, tags });
   }
   const notes = readLocalNotes();
   const updatedAt = Date.now();
@@ -128,9 +161,9 @@ export const updateNote = async ({ id, title, content, mood, tags }) => {
   return nextNotes.find((note) => note.id === id);
 };
 
-export const deleteNote = async (id) => {
+export const deleteNote = async (id: number): Promise<boolean> => {
   if (isTauriAvailable()) {
-    return invokeTauri("delete_note", { id });
+    return invokeTauri<boolean>("delete_note", { id });
   }
   const notes = readLocalNotes().filter((note) => note.id !== id);
   writeLocalNotes(notes);

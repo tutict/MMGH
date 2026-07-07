@@ -188,7 +188,7 @@ const getCurrentLang = () => {
   return DEFAULT_LANG;
 };
 
-const storageT = (key, vars) => {
+const storageT = (key, vars = undefined) => {
   const lang = getCurrentLang();
   const dict = STORAGE_TEXT[lang] || STORAGE_TEXT[DEFAULT_LANG];
   const template = dict[key] || STORAGE_TEXT[DEFAULT_LANG][key] || key;
@@ -2291,3 +2291,4 @@ export const __previewTestUtils = {
     return raw ? JSON.parse(raw) : null;
   },
 };
+

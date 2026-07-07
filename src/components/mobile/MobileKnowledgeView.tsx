@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Button, TextField } from "@mui/material";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
 
@@ -17,7 +18,7 @@ function MobileKnowledgeView({
   noteSearch,
   setNoteDraft,
   setNoteSearch,
-}) {
+}: Record<string, any>) {
   const [editorOpen, setEditorOpen] = useState(false);
 
   useEffect(() => {
@@ -42,15 +43,24 @@ function MobileKnowledgeView({
     <div className="mobile-page mobile-page--knowledge">
       <section className="mobile-section mobile-section--flush">
         <div className="mobile-search-row">
-          <input
+          <TextField
             value={noteSearch}
             onChange={(event) => setNoteSearch(event.target.value)}
             placeholder={mobileText(lang, "search")}
             aria-label={mobileText(lang, "search")}
+            fullWidth
+            size="small"
+            className="mobile-field"
           />
-          <button type="button" className="mobile-primary-action" onClick={createNote} disabled={busy !== ""}>
+          <Button
+            type="button"
+            variant="contained"
+            className="mobile-primary-action"
+            onClick={createNote}
+            disabled={busy !== ""}
+          >
             {mobileText(lang, "newNote")}
-          </button>
+          </Button>
         </div>
       </section>
 
@@ -64,9 +74,10 @@ function MobileKnowledgeView({
             <p className="mobile-empty">{mobileText(lang, "emptyNotes")}</p>
           ) : (
             filteredNotes.map((note) => (
-              <button
+              <Button
                 key={note.id}
                 type="button"
+                variant="text"
                 className={`mobile-row ${note.id === activeNoteId ? "is-active" : ""}`}
                 onClick={() => void openNote(note)}
               >
@@ -77,7 +88,7 @@ function MobileKnowledgeView({
                   {note.tags?.length ? <small>{note.tags.join(" / ")}</small> : null}
                 </span>
                 <time>{note.updatedAt ? formatTime(note.updatedAt, lang) : ""}</time>
-              </button>
+              </Button>
             ))
           )}
         </div>
@@ -91,48 +102,55 @@ function MobileKnowledgeView({
         title={activeNote?.title || mobileText(lang, "knowledge")}
         actions={
           <>
-            <button
+            <Button
               type="button"
+              color="error"
+              variant="text"
               className="mobile-danger-action"
               onClick={handleDeleteNote}
               disabled={busy !== "" || !activeNote}
             >
               Delete
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="contained"
               className="mobile-primary-action"
               onClick={handleSaveNote}
               disabled={busy !== "" || !noteDraft?.id}
             >
               {mobileText(lang, "save")}
-            </button>
+            </Button>
           </>
         }
       >
         <div className="mobile-form">
-          <label>
-            <span>Title</span>
-            <input
-              value={noteDraft.title}
-              onChange={(event) => setNoteDraft((prev) => ({ ...prev, title: event.target.value }))}
-            />
-          </label>
-          <label>
-            <span>{mobileText(lang, "tags")}</span>
-            <input
-              value={noteDraft.tagsText}
-              onChange={(event) => setNoteDraft((prev) => ({ ...prev, tagsText: event.target.value }))}
-            />
-          </label>
-          <label>
-            <span>{mobileText(lang, "body")}</span>
-            <textarea
-              value={noteDraft.body}
-              onChange={(event) => setNoteDraft((prev) => ({ ...prev, body: event.target.value }))}
-              rows={10}
-            />
-          </label>
+          <TextField
+            label="Title"
+            value={noteDraft.title}
+            onChange={(event) => setNoteDraft((prev) => ({ ...prev, title: event.target.value }))}
+            fullWidth
+            size="small"
+            className="mobile-field"
+          />
+          <TextField
+            label={mobileText(lang, "tags")}
+            value={noteDraft.tagsText}
+            onChange={(event) => setNoteDraft((prev) => ({ ...prev, tagsText: event.target.value }))}
+            fullWidth
+            size="small"
+            className="mobile-field"
+          />
+          <TextField
+            label={mobileText(lang, "body")}
+            value={noteDraft.body}
+            onChange={(event) => setNoteDraft((prev) => ({ ...prev, body: event.target.value }))}
+            fullWidth
+            multiline
+            minRows={10}
+            size="small"
+            className="mobile-field"
+          />
         </div>
       </MobileSheet>
     </div>
@@ -140,3 +158,6 @@ function MobileKnowledgeView({
 }
 
 export default MobileKnowledgeView;
+
+
+

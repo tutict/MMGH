@@ -14,23 +14,36 @@ const DICTS = {
   "en-US": enUS,
 };
 
-const DEFAULT_LANG = "zh-CN";
+type Lang = keyof typeof DICTS;
+type I18nVars = Record<string, unknown>;
+type I18nContextValue = {
+  lang: Lang;
+  setLang: (nextLang: Lang | string | ((currentLang: Lang) => Lang | string)) => void;
+  t: (key: string, vars?: I18nVars) => string;
+};
+
+type I18nProviderProps = {
+  children: React.ReactNode;
+  initialLang?: Lang | string;
+};
+
+const DEFAULT_LANG: Lang = "zh-CN";
 const LANG_STORAGE_KEY = "mmgh-lang";
 export const LANG_PERSIST_ERROR_EVENT = "mmgh:lang-persist-error";
 
-const I18nContext = createContext({
+const I18nContext = createContext<I18nContextValue>({
   lang: DEFAULT_LANG,
   setLang: () => {},
-  t: (key) => key,
+  t: (key: string) => key,
 });
 
-const normalizeLang = (value) => {
+const normalizeLang = (value?: string | null): Lang => {
   if (!value) {
     return DEFAULT_LANG;
   }
 
-  if (DICTS[value]) {
-    return value;
+  if (value in DICTS) {
+    return value as Lang;
   }
 
   const base = String(value).toLowerCase();
@@ -44,7 +57,7 @@ const normalizeLang = (value) => {
   return DEFAULT_LANG;
 };
 
-const readStoredLang = () => {
+const readStoredLang = (): string => {
   if (typeof window === "undefined") {
     return "";
   }
@@ -57,7 +70,7 @@ const readStoredLang = () => {
   }
 };
 
-const persistLang = (lang) => {
+const persistLang = (lang: Lang): boolean => {
   if (typeof window === "undefined") {
     return true;
   }
@@ -76,7 +89,7 @@ const persistLang = (lang) => {
   }
 };
 
-const getInitialLang = (initialLang) => {
+const getInitialLang = (initialLang?: string): Lang => {
   if (initialLang) {
     return normalizeLang(initialLang);
   }
@@ -93,18 +106,18 @@ const getInitialLang = (initialLang) => {
   return DEFAULT_LANG;
 };
 
-const formatMessage = (message, vars) => {
+const formatMessage = (message: string, vars?: I18nVars): string => {
   if (!vars) {
     return message;
   }
-  return message.replace(/\{(\w+)\}/g, (_, token) => {
+  return message.replace(/\{(\w+)\}/g, (_, token: string) => {
     const value = vars[token];
     return value == null ? "" : String(value);
   });
 };
 
-export const I18nProvider = ({ children, initialLang }) => {
-  const [lang, setLangState] = useState(() => getInitialLang(initialLang));
+export const I18nProvider = ({ children, initialLang }: I18nProviderProps) => {
+  const [lang, setLangState] = useState<Lang>(() => getInitialLang(initialLang));
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -112,7 +125,7 @@ export const I18nProvider = ({ children, initialLang }) => {
     }
   }, [lang]);
 
-  const setLang = useCallback((nextLang) => {
+  const setLang = useCallback((nextLang: Lang | string | ((currentLang: Lang) => Lang | string)) => {
     const resolvedLang =
       typeof nextLang === "function" ? normalizeLang(nextLang(lang)) : normalizeLang(nextLang);
     persistLang(resolvedLang);
@@ -120,16 +133,16 @@ export const I18nProvider = ({ children, initialLang }) => {
   }, [lang]);
 
   const t = useCallback(
-    (key, vars) => {
+    (key: string, vars?: I18nVars) => {
       const dict = DICTS[lang] || DICTS[DEFAULT_LANG];
       const fallback = DICTS[DEFAULT_LANG] || {};
-      const message = dict[key] ?? fallback[key] ?? key;
-      return formatMessage(message, vars);
+      const message = dict[key as keyof typeof dict] ?? fallback[key as keyof typeof fallback] ?? key;
+      return formatMessage(String(message), vars);
     },
     [lang]
   );
 
-  const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
+  const value = useMemo<I18nContextValue>(() => ({ lang, setLang, t }), [lang, setLang, t]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 };
