@@ -1,4 +1,5 @@
 import React from "react";
+import { ButtonBase } from "@mui/material";
 import { useI18n } from "../i18n";
 
 function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, panelRef, setDraft }) {
@@ -22,9 +23,9 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
             <h3 id="completion-dialog-title">{t("app.today.review.title")}</h3>
             <p>{t("app.today.review.description")}</p>
           </div>
-          <button type="button" className="ghost-button" onClick={onClose}>
+          <ButtonBase component="button" type="button" className="ghost-button" onClick={onClose}>
             {t("app.common.close")}
-          </button>
+          </ButtonBase>
         </div>
 
         <div className="completion-dialog__subject">
@@ -131,10 +132,11 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
         ) : null}
 
         <div className="completion-dialog__actions">
-          <button type="button" className="ghost-button" onClick={onClose}>
+          <ButtonBase component="button" type="button" className="ghost-button" onClick={onClose}>
             {t("app.common.cancel")}
-          </button>
-          <button
+          </ButtonBase>
+          <ButtonBase
+            component="button"
             type="button"
             className="solid-button"
             onClick={onSubmit}
@@ -143,7 +145,7 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
             {busy === "complete-reminder"
               ? t("app.common.saving")
               : t("app.today.review.submit")}
-          </button>
+          </ButtonBase>
         </div>
       </section>
     </div>
