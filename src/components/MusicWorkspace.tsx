@@ -1,4 +1,4 @@
-import { IconButton, Slider } from "@mui/material";
+import { ButtonBase, IconButton, Slider } from "@mui/material";
 import React from "react";
 import { useI18n } from "../i18n";
 import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
@@ -202,15 +202,15 @@ function MusicWorkspace({
       <div className="music-room__scrim" aria-hidden="true" />
 
       <div className={`music-room__surface ${isLibraryOpen ? "is-library-open" : "is-library-collapsed"}`}>
-        <button
-          type="button"
+        <ButtonBase
+          component="button"
           className={`music-room__library-toggle ${isLibraryOpen ? "is-open" : ""}`}
           onClick={() => setIsLibraryOpen((prev) => !prev)}
           aria-label={t("app.music.libraryToggle")}
         >
           <LibraryIcon />
           <span>{t("app.music.libraryToggle")}</span>
-        </button>
+        </ButtonBase>
 
         <div className="music-room__main">
           <header className="music-room__header">
@@ -257,14 +257,14 @@ function MusicWorkspace({
                   <span />
                 </button>
               </label>
-              <button
-                type="button"
+              <ButtonBase
+                component="button"
                 className="music-room__utility"
                 onClick={() => uploadInputRef.current?.click()}
               >
                 <UploadIcon />
                 <span>{t("app.music.upload")}</span>
-              </button>
+              </ButtonBase>
             </div>
           </header>
 
@@ -355,23 +355,23 @@ function MusicWorkspace({
                   </div>
                   <div className="music-room__lyrics-tools">
                     <span className={`music-room__lyrics-source is-${lyricsStatus}`}>{lyricsStatusLabel}</span>
-                    <button
-                      type="button"
+                    <ButtonBase
+                      component="button"
                       className="music-room__lyrics-action"
                       disabled={lyricsStatus === "loading"}
                       onClick={onRefreshLyrics}
                     >
                       <SearchIcon />
                       <span>{t("app.music.lyrics.search")}</span>
-                    </button>
-                    <button
-                      type="button"
+                    </ButtonBase>
+                    <ButtonBase
+                      component="button"
                       className="music-room__lyrics-action"
                       onClick={() => lyricsUploadInputRef.current?.click()}
                     >
                       <UploadIcon />
                       <span>{t("app.music.lyrics.upload")}</span>
-                    </button>
+                    </ButtonBase>
                     <input
                       ref={lyricsUploadInputRef}
                       className="upload-input"
@@ -494,14 +494,14 @@ function MusicWorkspace({
               <span className="eyebrow">{t("app.music.queueEyebrow")}</span>
               <h3>{t("app.music.queueTitle")}</h3>
             </div>
-            <button
-              type="button"
+            <IconButton
               className="music-room__library-close"
               onClick={() => setIsLibraryOpen(false)}
               aria-label={t("app.music.queueCollapse")}
+              size="small"
             >
               <ChevronRightIcon />
-            </button>
+            </IconButton>
           </div>
 
           <div className="music-room__library-hint">
@@ -514,9 +514,9 @@ function MusicWorkspace({
               <div className="music-room__library-empty">{t("app.music.queueEmpty")}</div>
             ) : (
               localizedTracks.map((track, index) => (
-                <button
+                <ButtonBase
                   key={track.id}
-                  type="button"
+                  component="button"
                   className={`music-room__track ${track.id === selectedTrackId ? "is-active" : ""}`}
                   onClick={() => handleTrackPick(track.id)}
                 >
@@ -535,7 +535,7 @@ function MusicWorkspace({
                     />
                     <span>{getTrackDurationLabel(track, index, selectedTrackId, duration)}</span>
                   </div>
-                </button>
+                </ButtonBase>
               ))
             )}
           </div>
