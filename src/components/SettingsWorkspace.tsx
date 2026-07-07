@@ -1,3 +1,4 @@
+import { ButtonBase } from "@mui/material";
 import React from "react";
 import { useI18n } from "../i18n";
 
@@ -133,15 +134,15 @@ function SettingsWorkspace({
                     : t("app.settings.apiKeyHint.missing")}
                 </span>
                 {(settingsForm.hasApiKey || settingsForm.clearApiKey) && (
-                  <button
-                    type="button"
+                  <ButtonBase
+                    component="button"
                     className={`ghost-button ${settingsForm.clearApiKey ? "danger-button" : ""}`}
                     onClick={handleClearApiKey}
                   >
                     {settingsForm.clearApiKey
                       ? t("app.settings.apiKeyAction.undoClear")
                       : t("app.settings.apiKeyAction.clear")}
-                  </button>
+                  </ButtonBase>
                 )}
               </label>
             </div>
@@ -163,13 +164,14 @@ function SettingsWorkspace({
 
             <div className="settings-form__footer">
               <p className="section-note">{t("app.hero.settingsHint")}</p>
-              <button
+              <ButtonBase
+                component="button"
                 type="submit"
                 className="solid-button"
                 disabled={busy !== "" || !hasUnsavedSettings}
               >
                 {busy === "save-settings" ? t("app.common.saving") : t("app.settings.save")}
-              </button>
+              </ButtonBase>
             </div>
           </form>
         </section>
@@ -197,13 +199,13 @@ function SettingsWorkspace({
                   <span className="status-chip status-idle">{card.countLabel}</span>
                 </div>
                 <p>{card.description}</p>
-                <button
-                  type="button"
+                <ButtonBase
+                  component="button"
                   className={`ghost-button ${card.danger ? "danger-button" : ""}`}
                   onClick={card.onClear}
                 >
                   {card.buttonLabel}
-                </button>
+                </ButtonBase>
               </article>
             ))}
           </div>
