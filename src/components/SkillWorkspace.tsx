@@ -1,5 +1,6 @@
 import React, { useDeferredValue, useMemo, useState } from "react";
-import { ButtonBase, TextField } from "@mui/material";
+import { TextField } from "@mui/material";
+import AppButton from "./ui/AppButton";
 import { useI18n } from "../i18n";
 import {
   buildDraftDisplay,
@@ -145,22 +146,22 @@ function SkillWorkspace({
             <p>{t("app.skills.editor.description")}</p>
           </div>
           <div className="skill-header-actions">
-            <ButtonBase component="button"
+            <AppButton
               type="button"
               className="ghost-button"
               onClick={() => skillImportInputRef.current?.click()}
               disabled={busy !== "" || loading}
             >
               {t("app.skills.import.button")}
-            </ButtonBase>
-            <ButtonBase component="button"
+            </AppButton>
+            <AppButton
               type="button"
               className="solid-button"
               onClick={handleCreateSkill}
               disabled={busy !== "" || loading}
             >
               {t("app.skills.newSkill")}
-            </ButtonBase>
+            </AppButton>
           </div>
         </div>
 
@@ -194,14 +195,14 @@ function SkillWorkspace({
 
         <div className="skill-filter-row" aria-label={t("app.skills.title")}>
           {FILTER_MODES.map((mode) => (
-            <ButtonBase component="button"
+            <AppButton
               key={mode}
               type="button"
               className={`skill-filter-chip ${filterMode === mode ? "is-active" : ""}`}
               onClick={() => setFilterMode(mode)}
             >
               {t(`app.skills.filter.${mode}`)}
-            </ButtonBase>
+            </AppButton>
           ))}
         </div>
 
@@ -210,7 +211,7 @@ function SkillWorkspace({
             visibleSkillEntries.map(({ skill, display }) => {
               const meta = getSkillMeta(skill, mountedSkillSet, templateNameMap, t);
               return (
-                <ButtonBase component="button"
+                <AppButton
                   key={skill.id}
                   type="button"
                   className={`skill-card skill-card--library ${
@@ -237,7 +238,7 @@ function SkillWorkspace({
                     <span>{display.triggerHint || t("app.skills.noTriggerHint")}</span>
                     <span>{t("app.skills.updatedAt", { date: formatSkillDate(skill.updatedAt, lang) })}</span>
                   </div>
-                </ButtonBase>
+                </AppButton>
               );
             })
           ) : (
@@ -257,30 +258,30 @@ function SkillWorkspace({
             <p>{t("app.skills.editor.description")}</p>
           </div>
           <div className="knowledge-editor__actions">
-            <ButtonBase component="button"
+            <AppButton
               type="button"
               className="ghost-button"
               onClick={() => handleExportSkill(activeSkill)}
               disabled={!activeSkill || busy !== "" || loading}
             >
               {t("app.skills.export.selected")}
-            </ButtonBase>
-            <ButtonBase component="button"
+            </AppButton>
+            <AppButton
               type="button"
               className="ghost-button"
               onClick={handleDeleteSkill}
               disabled={!activeSkill || busy !== "" || loading}
             >
               {t("app.common.delete")}
-            </ButtonBase>
-            <ButtonBase component="button"
+            </AppButton>
+            <AppButton
               type="button"
               className="solid-button"
               onClick={handleSaveSkill}
               disabled={!hasUnsavedSkill || busy !== "" || loading}
             >
               {busy === "save-skill" ? t("app.common.saving") : t("app.skills.save")}
-            </ButtonBase>
+            </AppButton>
           </div>
         </div>
 
@@ -308,7 +309,7 @@ function SkillWorkspace({
                   <strong>
                     {skillDraft.enabled ? t("app.skills.enabled") : t("app.skills.disabled")}
                   </strong>
-                  <ButtonBase component="button"
+                  <AppButton
                     type="button"
                     className={`toggle-pill ${skillDraft.enabled ? "is-on" : ""}`}
                     onClick={() =>
@@ -321,7 +322,7 @@ function SkillWorkspace({
                     aria-label={t("app.skills.form.enabled")}
                   >
                     <span />
-                  </ButtonBase>
+                  </AppButton>
                 </div>
 
                 <div className="skill-toggle-card">
@@ -331,7 +332,7 @@ function SkillWorkspace({
                       ? t("app.skills.mounted")
                       : t("app.skills.unmounted")}
                   </strong>
-                  <ButtonBase component="button"
+                  <AppButton
                     type="button"
                     className={`toggle-pill ${mountedSkillSet.has(activeSkill.id) ? "is-on" : ""}`}
                     onClick={() => handleToggleSkillMounted(activeSkill.id)}
@@ -339,7 +340,7 @@ function SkillWorkspace({
                     aria-label={t("app.skills.form.mountedOnSession")}
                   >
                     <span />
-                  </ButtonBase>
+                  </AppButton>
                 </div>
               </div>
 
@@ -442,7 +443,7 @@ function SkillWorkspace({
       <aside className="skill-catalog skill-tools">
         <div className="skill-tools__tabs" role="tablist" aria-label={t("app.skills.tools.label")}>
           {TOOL_MODES.map((mode) => (
-            <ButtonBase component="button"
+            <AppButton
               key={mode}
               type="button"
               role="tab"
@@ -451,7 +452,7 @@ function SkillWorkspace({
               onClick={() => setToolMode(mode)}
             >
               {t(`app.skills.tools.${mode}`)}
-            </ButtonBase>
+            </AppButton>
           ))}
         </div>
 
@@ -462,14 +463,14 @@ function SkillWorkspace({
                 <span className="eyebrow">{t("app.skills.currentSession")}</span>
                 <h3>{t("app.skills.sessionMount.title")}</h3>
               </div>
-              <ButtonBase component="button"
+              <AppButton
                 type="button"
                 className="ghost-button"
                 onClick={handleExportAllSkills}
                 disabled={!skillList.length || busy !== "" || loading}
               >
                 {t("app.skills.export.all")}
-              </ButtonBase>
+              </AppButton>
             </div>
             <p className="section-note skill-catalog__summary">
               {t("app.skills.sessionMount.description")}
@@ -492,7 +493,7 @@ function SkillWorkspace({
                         </div>
                         <div className="skill-template-card__body">
                           <span className="skill-meta-pill">{meta.categoryLabel}</span>
-                          <ButtonBase component="button"
+                          <AppButton
                             type="button"
                             className="solid-button"
                             disabled={mountedSkillSet.has(skill.id) || busy !== "" || loading}
@@ -501,7 +502,7 @@ function SkillWorkspace({
                             {mountedSkillSet.has(skill.id)
                               ? t("app.skills.mounted")
                               : t("app.skills.sessionMount.recommendedAction")}
-                          </ButtonBase>
+                          </AppButton>
                         </div>
                       </article>
                     );
@@ -514,7 +515,7 @@ function SkillWorkspace({
                 mountedSkillEntries.map(({ skill, display }) => {
                   const meta = getSkillMeta(skill, mountedSkillSet, templateNameMap, t);
                   return (
-                    <ButtonBase component="button"
+                    <AppButton
                       key={skill.id}
                       type="button"
                       className={`skill-mounted-card ${
@@ -525,7 +526,7 @@ function SkillWorkspace({
                     >
                       <strong>{display.name}</strong>
                       <span>{meta.categoryLabel}</span>
-                    </ButtonBase>
+                    </AppButton>
                   );
                 })
               ) : (
@@ -565,7 +566,7 @@ function SkillWorkspace({
               fullWidth
             />
             <div className="skill-template-card__body">
-              <ButtonBase component="button"
+              <AppButton
                 type="button"
                 className="solid-button"
                 disabled={!forgePrompt.trim() || busy !== "" || loading}
@@ -574,15 +575,15 @@ function SkillWorkspace({
                 {busy === "forge-skill"
                   ? t("app.skills.forge.generating")
                   : t("app.skills.forge.generate")}
-              </ButtonBase>
-              <ButtonBase component="button"
+              </AppButton>
+              <AppButton
                 type="button"
                 className="ghost-button"
                 disabled={!forgePrompt.trim() || !activeSkill || busy !== "" || loading}
                 onClick={() => handleForgeSkill({ prompt: forgePrompt, mode: "rewrite" })}
               >
                 {t("app.skills.forge.rewrite")}
-              </ButtonBase>
+              </AppButton>
             </div>
           </section>
         ) : null}
@@ -629,15 +630,15 @@ function SkillWorkspace({
                     </div>
 
                     <div className="skill-template-card__body">
-                      <ButtonBase component="button"
+                      <AppButton
                         type="button"
                         className="ghost-button"
                         onClick={() => handleLoadSkillVersion(version)}
                         disabled={busy !== "" || loading}
                       >
                         {t("app.skills.history.loadDraft")}
-                      </ButtonBase>
-                      <ButtonBase component="button"
+                      </AppButton>
+                      <AppButton
                         type="button"
                         className="solid-button"
                         onClick={() => handleRestoreSkillVersion(version)}
@@ -646,7 +647,7 @@ function SkillWorkspace({
                         {busy === "restore-skill-version"
                           ? t("app.common.saving")
                           : t("app.skills.history.restore")}
-                      </ButtonBase>
+                      </AppButton>
                     </div>
                   </article>
                 ))
@@ -713,7 +714,7 @@ function SkillWorkspace({
                             trigger: template.triggerHint,
                           })}
                         </span>
-                        <ButtonBase component="button"
+                        <AppButton
                           type="button"
                           className={installedSkill ? "ghost-button" : "solid-button"}
                           disabled={busy !== "" || loading}
@@ -728,7 +729,7 @@ function SkillWorkspace({
                             : busy === "install-skill-template"
                               ? t("app.skills.catalog.installing")
                               : t("app.skills.catalog.install")}
-                        </ButtonBase>
+                        </AppButton>
                       </div>
                     </article>
                   );
