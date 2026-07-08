@@ -249,13 +249,14 @@ function MusicWorkspace({
               <span className="music-room__chip">{t(playModeMeta.labelKey)}</span>
               <label className="music-room__sync">
                 <span>{t("app.sound.autoPlay")}</span>
-                <button
+                <ButtonBase
+                  component="button"
                   type="button"
                   className={`toggle-pill ${autoPlayOnReply ? "is-on" : ""}`}
                   onClick={() => setAutoPlayOnReply((prev) => !prev)}
                 >
                   <span />
-                </button>
+                </ButtonBase>
               </label>
               <ButtonBase
                 component="button"
