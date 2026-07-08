@@ -1,4 +1,4 @@
-import { ButtonBase } from "@mui/material";
+import { ButtonBase, TextField } from "@mui/material";
 import React from "react";
 import { useI18n } from "../i18n";
 
@@ -61,11 +61,13 @@ function KnowledgeVault({
           <span className="section-note">
             {t("app.stats.notes")}: {filteredNotes.length}
           </span>
-          <input
-            className="field-input"
+          <TextField
+            className="mui-field"
             value={noteSearch}
             onChange={(event) => setNoteSearch(event.target.value)}
             placeholder={t("app.knowledge.search")}
+            size="small"
+            fullWidth
           />
         </div>
 
@@ -146,19 +148,20 @@ function KnowledgeVault({
             </div>
           </div>
           <div className="knowledge-editor__title-row">
-            <input
-              className="knowledge-icon-input"
+            <TextField
+              className="mui-field knowledge-icon-input"
               value={noteDraft.icon}
-              maxLength={2}
+              slotProps={{ htmlInput: { maxLength: 2 } }}
               onChange={(event) =>
                 setNoteDraft((prev) => ({
                   ...prev,
                   icon: event.target.value,
                 }))
               }
+              size="small"
             />
-            <input
-              className="knowledge-title-input"
+            <TextField
+              className="mui-field knowledge-title-input"
               value={noteDraft.title}
               onChange={(event) =>
                 setNoteDraft((prev) => ({
@@ -167,11 +170,13 @@ function KnowledgeVault({
                 }))
               }
               placeholder={t("app.knowledge.defaultTitle")}
+              size="small"
+              fullWidth
             />
           </div>
 
-          <input
-            className="field-input"
+          <TextField
+            className="mui-field"
             value={noteDraft.tagsText}
             onChange={(event) =>
               setNoteDraft((prev) => ({
@@ -180,10 +185,12 @@ function KnowledgeVault({
               }))
             }
             placeholder={t("app.knowledge.tags")}
+            size="small"
+            fullWidth
           />
 
-          <textarea
-            className="knowledge-body-input"
+          <TextField
+            className="mui-field knowledge-body-input"
             value={noteDraft.body}
             onChange={(event) =>
               setNoteDraft((prev) => ({
@@ -192,6 +199,9 @@ function KnowledgeVault({
               }))
             }
             placeholder={t("app.knowledge.bodyPlaceholder")}
+            multiline
+            minRows={10}
+            fullWidth
           />
         </div>
       </div>
