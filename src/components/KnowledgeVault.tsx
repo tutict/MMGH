@@ -1,4 +1,5 @@
-import { ButtonBase, TextField } from "@mui/material";
+import { TextField } from "@mui/material";
+import AppButton from "./ui/AppButton";
 import React from "react";
 import { useI18n } from "../i18n";
 
@@ -31,14 +32,13 @@ function KnowledgeVault({
               <span className="eyebrow">{t("app.knowledge.eyebrow")}</span>
               <h3>{t("app.knowledge.title")}</h3>
             </div>
-            <ButtonBase
-              component="button"
+            <AppButton
               className="solid-button"
               onClick={handleCreateNote}
               disabled={busy !== "" || loading}
             >
               {t("app.knowledge.newPage")}
-            </ButtonBase>
+            </AppButton>
           </div>
           <div className="knowledge-sidebar__summary">
             <article className="knowledge-summary-card">
@@ -74,9 +74,8 @@ function KnowledgeVault({
         <div className="knowledge-note-list">
           {filteredNotes.length > 0 ? (
             filteredNotes.map((note) => (
-              <ButtonBase
+              <AppButton
                 key={note.id}
-                component="button"
                 className={`knowledge-note-card ${note.id === activeNoteId ? "is-active" : ""}`}
                 onClick={() => handleOpenNote(note.id)}
               >
@@ -92,7 +91,7 @@ function KnowledgeVault({
                   <span>{(note.tags || []).slice(0, 2).join(" | ") || t("app.knowledge.noTags")}</span>
                   <span>{t("app.knowledge.editor.eyebrow")}</span>
                 </div>
-              </ButtonBase>
+              </AppButton>
             ))
           ) : (
             <div className="knowledge-empty-state">
@@ -110,22 +109,20 @@ function KnowledgeVault({
             <p>{t("app.knowledge.editor.description")}</p>
           </div>
           <div className="knowledge-editor__actions">
-            <ButtonBase
-              component="button"
+            <AppButton
               className="ghost-button"
               onClick={handleDeleteNote}
               disabled={!activeNote || busy !== "" || loading}
             >
               {t("app.common.delete")}
-            </ButtonBase>
-            <ButtonBase
-              component="button"
+            </AppButton>
+            <AppButton
               className="solid-button"
               onClick={handleSaveNote}
               disabled={!hasUnsavedNote || busy !== "" || loading}
             >
               {busy === "save-note" ? t("app.common.saving") : t("app.knowledge.savePage")}
-            </ButtonBase>
+            </AppButton>
           </div>
         </div>
 

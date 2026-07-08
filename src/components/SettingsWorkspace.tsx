@@ -1,4 +1,5 @@
-import { ButtonBase, TextField } from "@mui/material";
+import { TextField } from "@mui/material";
+import AppButton from "./ui/AppButton";
 import React from "react";
 import { useI18n } from "../i18n";
 
@@ -142,15 +143,14 @@ function SettingsWorkspace({
                     : t("app.settings.apiKeyHint.missing")}
                 </span>
                 {(settingsForm.hasApiKey || settingsForm.clearApiKey) && (
-                  <ButtonBase
-                    component="button"
+                  <AppButton
                     className={`ghost-button ${settingsForm.clearApiKey ? "danger-button" : ""}`}
                     onClick={handleClearApiKey}
                   >
                     {settingsForm.clearApiKey
                       ? t("app.settings.apiKeyAction.undoClear")
                       : t("app.settings.apiKeyAction.clear")}
-                  </ButtonBase>
+                  </AppButton>
                 )}
               </label>
             </div>
@@ -174,14 +174,13 @@ function SettingsWorkspace({
 
             <div className="settings-form__footer">
               <p className="section-note">{t("app.hero.settingsHint")}</p>
-              <ButtonBase
-                component="button"
+              <AppButton
                 type="submit"
                 className="solid-button"
                 disabled={busy !== "" || !hasUnsavedSettings}
               >
                 {busy === "save-settings" ? t("app.common.saving") : t("app.settings.save")}
-              </ButtonBase>
+              </AppButton>
             </div>
           </form>
         </section>
@@ -209,13 +208,12 @@ function SettingsWorkspace({
                   <span className="status-chip status-idle">{card.countLabel}</span>
                 </div>
                 <p>{card.description}</p>
-                <ButtonBase
-                  component="button"
+                <AppButton
                   className={`ghost-button ${card.danger ? "danger-button" : ""}`}
                   onClick={card.onClear}
                 >
                   {card.buttonLabel}
-                </ButtonBase>
+                </AppButton>
               </article>
             ))}
           </div>

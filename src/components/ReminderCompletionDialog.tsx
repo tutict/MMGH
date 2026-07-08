@@ -1,5 +1,6 @@
 import React from "react";
-import { ButtonBase, Checkbox, TextField } from "@mui/material";
+import { Checkbox, TextField } from "@mui/material";
+import AppButton from "./ui/AppButton";
 import { useI18n } from "../i18n";
 
 function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, panelRef, setDraft }) {
@@ -10,8 +11,7 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
 
   return (
     <div className="completion-dialog" role="dialog" aria-modal="true" aria-labelledby="completion-dialog-title">
-      <ButtonBase
-        component="button"
+      <AppButton
         type="button"
         className="completion-dialog__scrim"
         onClick={onClose}
@@ -25,9 +25,9 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
             <h3 id="completion-dialog-title">{t("app.today.review.title")}</h3>
             <p>{t("app.today.review.description")}</p>
           </div>
-          <ButtonBase component="button" type="button" className="ghost-button" onClick={onClose}>
+          <AppButton type="button" className="ghost-button" onClick={onClose}>
             {t("app.common.close")}
-          </ButtonBase>
+          </AppButton>
         </div>
 
         <div className="completion-dialog__subject">
@@ -141,11 +141,10 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
         ) : null}
 
         <div className="completion-dialog__actions">
-          <ButtonBase component="button" type="button" className="ghost-button" onClick={onClose}>
+          <AppButton type="button" className="ghost-button" onClick={onClose}>
             {t("app.common.cancel")}
-          </ButtonBase>
-          <ButtonBase
-            component="button"
+          </AppButton>
+          <AppButton
             type="button"
             className="solid-button"
             onClick={onSubmit}
@@ -154,7 +153,7 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
             {busy === "complete-reminder"
               ? t("app.common.saving")
               : t("app.today.review.submit")}
-          </ButtonBase>
+          </AppButton>
         </div>
       </section>
     </div>
