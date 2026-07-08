@@ -1,4 +1,4 @@
-import { ButtonBase } from "@mui/material";
+import { ButtonBase, TextField } from "@mui/material";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 import { WEATHER_LOCATIONS, createInitialWeatherCity } from "./weatherData";
@@ -428,11 +428,13 @@ function WeatherWorkspace({
             </div>
 
             <div className="weather-city-search">
-              <input
-                className="field-input"
+              <TextField
+                className="mui-field"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder={t("app.weather.search.placeholder")}
+                size="small"
+                fullWidth
               />
 
               <div className="weather-search-results">

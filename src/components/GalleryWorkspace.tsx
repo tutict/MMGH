@@ -1,4 +1,4 @@
-import { ButtonBase } from "@mui/material";
+import { ButtonBase, TextField } from "@mui/material";
 import React, { useDeferredValue, useEffect, useMemo, useRef } from "react";
 import { useI18n } from "../i18n";
 
@@ -153,11 +153,13 @@ function GalleryWorkspace({
           </div>
 
           <div className="gallery-toolbar__actions">
-            <input
-              className="field-input"
+            <TextField
+              className="mui-field"
               value={gallerySearch}
               onChange={(event) => setGallerySearch(event.target.value)}
               placeholder={t("app.gallery.search")}
+              size="small"
+              fullWidth
             />
             <div className="segmented-filter">
               <ButtonBase
