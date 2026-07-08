@@ -1,5 +1,6 @@
 import React, { useDeferredValue, useMemo } from "react";
-import { ButtonBase, MenuItem, TextField } from "@mui/material";
+import { MenuItem, TextField } from "@mui/material";
+import AppButton from "./ui/AppButton";
 import { useI18n } from "../i18n";
 import {
   countOpenReminders,
@@ -63,15 +64,14 @@ function ReminderWorkspace({
               <span className="eyebrow">{t("app.reminders.eyebrow")}</span>
               <h3>{t("app.reminders.title")}</h3>
             </div>
-            <ButtonBase
-              component="button"
+            <AppButton
               type="button"
               className="solid-button"
               onClick={handleCreateReminder}
               disabled={busy !== "" || loading}
             >
               {t("app.reminders.newReminder")}
-            </ButtonBase>
+            </AppButton>
           </div>
 
           <div className="reminder-sidebar__summary">
@@ -117,8 +117,7 @@ function ReminderWorkspace({
                     const linkedNote =
                       noteList.find((note) => note.id === item.linkedNoteId) || null;
                     return (
-                      <ButtonBase
-                        component="button"
+                      <AppButton
                         key={item.id}
                         type="button"
                         className={`reminder-card ${
@@ -147,7 +146,7 @@ function ReminderWorkspace({
                             {t("app.reminders.linked", { title: linkedNote.title })}
                           </span>
                         ) : null}
-                      </ButtonBase>
+                      </AppButton>
                     );
                   })
                 ) : (
@@ -166,24 +165,22 @@ function ReminderWorkspace({
             <p>{t("app.reminders.editor.description")}</p>
           </div>
           <div className="knowledge-editor__actions">
-            <ButtonBase
-              component="button"
+            <AppButton
               type="button"
               className="ghost-button"
               onClick={handleDeleteReminder}
               disabled={!reminderDraft.id || busy !== "" || loading}
             >
               {t("app.common.delete")}
-            </ButtonBase>
-            <ButtonBase
-              component="button"
+            </AppButton>
+            <AppButton
               type="button"
               className="solid-button"
               onClick={handleSaveReminder}
               disabled={!reminderDraft.id || !hasUnsavedReminder || busy !== "" || loading}
             >
               {busy === "save-reminder" ? t("app.common.saving") : t("app.reminders.save")}
-            </ButtonBase>
+            </AppButton>
           </div>
         </div>
 
@@ -324,14 +321,13 @@ function ReminderWorkspace({
                   {noteList.find((note) => String(note.id) === String(reminderDraft.linkedNoteId))
                     ?.title || t("app.reminders.note")}
                 </span>
-                <ButtonBase
-                  component="button"
+                <AppButton
                   type="button"
                   className="ghost-button"
                   onClick={() => handleOpenLinkedNote(Number(reminderDraft.linkedNoteId))}
                 >
                   {t("app.reminders.openNote")}
-                </ButtonBase>
+                </AppButton>
               </div>
             ) : null}
           </div>

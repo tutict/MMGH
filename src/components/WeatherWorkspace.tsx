@@ -1,4 +1,5 @@
-import { ButtonBase, TextField } from "@mui/material";
+import { TextField } from "@mui/material";
+import AppButton from "./ui/AppButton";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 import { WEATHER_LOCATIONS, createInitialWeatherCity } from "./weatherData";
@@ -345,14 +346,13 @@ function WeatherWorkspace({
           </div>
 
           <div className="weather-stage__actions">
-            <ButtonBase
-              component="button"
+            <AppButton
               className="ghost-button"
               onClick={onRefresh}
               disabled={weatherStatus === "loading"}
             >
               {weatherStatus === "loading" ? t("app.common.loading") : t("app.weather.refresh")}
-            </ButtonBase>
+            </AppButton>
           </div>
         </div>
 
@@ -450,8 +450,7 @@ function WeatherWorkspace({
                         const alreadyAdded = weatherCityIds.has(getCityIdentity(result));
                         return (
                           <div key={`${section.key}-${result.id}`} className="weather-search-result">
-                            <ButtonBase
-                              component="button"
+                            <AppButton
                               className="weather-search-result__button"
                               onClick={() => handleSuggestionSelect(result)}
                             >
@@ -459,14 +458,13 @@ function WeatherWorkspace({
                                 <strong>{getCityName(result, t)}</strong>
                                 <span>{getCityRegion(result, t)}</span>
                               </div>
-                            </ButtonBase>
-                            <ButtonBase
-                              component="button"
+                            </AppButton>
+                            <AppButton
                               className={`chip-button ${alreadyAdded ? "is-active" : ""}`}
                               onClick={() => handleSuggestionSelect(result)}
                             >
                               {alreadyAdded ? t("app.weather.search.open") : t("app.weather.search.add")}
-                            </ButtonBase>
+                            </AppButton>
                           </div>
                         );
                       })
@@ -487,8 +485,7 @@ function WeatherWorkspace({
                     key={city.id}
                     className={`weather-city-widget__item ${isActive ? "is-active" : ""}`}
                   >
-                    <ButtonBase
-                      component="button"
+                    <AppButton
                       className="weather-city-widget__select"
                       onClick={() => {
                         rememberCityUsage(city, { includeRecent: false });
@@ -504,9 +501,8 @@ function WeatherWorkspace({
                         <strong>{formatMetricValue(city.temperature, t("app.weather.unit.degree"))}</strong>
                         <span>{formatCityTime(clockNow, city.timeZone, lang)}</span>
                       </div>
-                    </ButtonBase>
-                    <ButtonBase
-                      component="button"
+                    </AppButton>
+                    <AppButton
                       className="weather-city-widget__remove"
                       onClick={() => {
                         if (canRemove) {
@@ -517,7 +513,7 @@ function WeatherWorkspace({
                       aria-label={t("app.weather.cityWidget.remove")}
                     >
                       {t("app.weather.cityWidget.remove")}
-                    </ButtonBase>
+                    </AppButton>
                   </article>
                 );
               })}
