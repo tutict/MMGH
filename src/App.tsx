@@ -4877,11 +4877,13 @@ function App() {
 
       {isMobileNavOpen ? (
         <div className="mobile-shell-drawer is-open">
-          <button
+          <ButtonBase
+            component="button"
             type="button"
             className="mobile-shell-drawer__backdrop"
             onClick={() => setIsMobileNavOpen(false)}
             aria-label={t("app.common.close")}
+            disableRipple
           />
           <aside
             id="mobile-shell-drawer-panel"
@@ -5258,11 +5260,13 @@ function App() {
 
       {isInspectorOpen ? (
         <div className="inspector-drawer is-open">
-          <button
+          <ButtonBase
+            component="button"
             type="button"
             className="inspector-drawer__backdrop"
             onClick={() => setIsInspectorOpen(false)}
             aria-label={t("app.common.close")}
+            disableRipple
           />
           <aside
             id="inspector-drawer-panel"

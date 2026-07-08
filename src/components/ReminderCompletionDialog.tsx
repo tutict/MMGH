@@ -10,11 +10,13 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
 
   return (
     <div className="completion-dialog" role="dialog" aria-modal="true" aria-labelledby="completion-dialog-title">
-      <button
+      <ButtonBase
+        component="button"
         type="button"
         className="completion-dialog__scrim"
         onClick={onClose}
         aria-label={t("app.common.close")}
+        disableRipple
       />
       <section ref={panelRef} className="completion-dialog__panel panel-surface" tabIndex={-1}>
         <div className="completion-dialog__head">
