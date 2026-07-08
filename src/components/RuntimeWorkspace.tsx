@@ -190,7 +190,6 @@ function RuntimeWorkspace({
                 </h4>
               </div>
               <AppButton
-                type="button"
                 className="ghost-button runtime-sidebar-card__action"
                 onClick={() => openView("skills")}
               >
@@ -206,7 +205,6 @@ function RuntimeWorkspace({
                     {activeSessionSkills.map((skill) => (
                       <AppButton
                         key={skill.id}
-                        type="button"
                         className={`chip-button ${skill.enabled ? "is-active" : ""}`}
                         onClick={async () => {
                           const opened = await handleOpenSkill(skill.id);
@@ -233,7 +231,6 @@ function RuntimeWorkspace({
                     {recommendedSkillsPreview.map((skill) => (
                       <article key={skill.id} className="runtime-recommend-card">
                         <AppButton
-                          type="button"
                           className="runtime-recommend-card__body"
                           onClick={async () => {
                             const opened = await handleOpenSkill(skill.id);
@@ -247,7 +244,6 @@ function RuntimeWorkspace({
                         </AppButton>
                         <div className="runtime-recommend-card__actions">
                           <AppButton
-                            type="button"
                             className="ghost-button runtime-sidebar-card__action"
                             disabled={mountedSkillSet.has(skill.id) || busy !== "" || loading}
                             onClick={() => {
@@ -263,7 +259,6 @@ function RuntimeWorkspace({
                     ))}
                     {activeSessionRecommendedSkills.length > recommendedSkillsPreview.length ? (
                       <AppButton
-                        type="button"
                         className="runtime-inline-link"
                         onClick={() => openView("skills")}
                       >
@@ -303,7 +298,6 @@ function RuntimeWorkspace({
                 </div>
                 <div className="runtime-quick-actions">
                   <AppButton
-                    type="button"
                     className="chip-button is-active"
                     disabled={busy !== "" || loading}
                     onClick={handleCaptureSessionNote}
@@ -311,7 +305,6 @@ function RuntimeWorkspace({
                     {isCapturingNote ? t("app.common.saving") : t("app.agent.quick.saveNote")}
                   </AppButton>
                   <AppButton
-                    type="button"
                     className="chip-button"
                     disabled={busy !== "" || loading}
                     onClick={handleCaptureSessionReminder}
@@ -330,7 +323,6 @@ function RuntimeWorkspace({
 
             <div className="runtime-mini-actions">
               <AppButton
-                type="button"
                 className={`ghost-button runtime-sidebar-card__action ${
                   isInspectorOpen ? "is-active" : ""
                 }`}
@@ -339,7 +331,6 @@ function RuntimeWorkspace({
                 {t("app.activity.title")}
               </AppButton>
               <AppButton
-                type="button"
                 className="ghost-button runtime-sidebar-card__action"
                 onClick={() => openView("skills")}
               >
@@ -398,7 +389,6 @@ function RuntimeWorkspace({
                   {recentSessions.map((session) => (
                     <AppButton
                       key={session.id}
-                      type="button"
                       className={`runtime-session-card ${
                         session.id === activeSessionId ? "is-active" : ""
                       }`}

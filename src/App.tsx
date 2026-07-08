@@ -4411,7 +4411,6 @@ function App() {
             <strong>{t("app.nav.sessions.title")}</strong>
           </div>
           <AppButton
-            type="button"
             className="rail-section__toggle"
             onClick={handleToggleSessionLibrary}
             aria-expanded={!isSessionLibraryCollapsed}
@@ -4446,7 +4445,6 @@ function App() {
                 fullWidth
               />
               <AppButton
-                type="button"
                 className="solid-button"
                 onClick={handleCreateSession}
                 disabled={busy !== "" || loading}
@@ -4478,7 +4476,6 @@ function App() {
                     return (
                       <div key={group.id} className="session-group">
                         <AppButton
-                          type="button"
                           className="session-group__head session-group__toggle"
                           onClick={() => handleToggleSessionGroup(group.id)}
                           aria-expanded={!isGroupCollapsed}
@@ -4505,7 +4502,6 @@ function App() {
                                   }`}
                                 >
                                   <AppButton
-                                    type="button"
                                     className="session-card__main"
                                     onClick={() => handleOpenSession(session.id)}
                                   >
@@ -4531,7 +4527,6 @@ function App() {
                                     </div>
                                   </AppButton>
                                   <AppButton
-                                    type="button"
                                     className="session-card__toggle"
                                     onClick={() => handleToggleSessionPreview(session.id)}
                                     aria-expanded={!isPreviewCollapsed}
@@ -4564,7 +4559,6 @@ function App() {
             </div>
 
             <AppButton
-              type="button"
               className="ghost-button danger-button session-stack__danger"
               onClick={() => handleDeleteSession(activeSessionId)}
               disabled={!activeSessionId || busy !== "" || loading}
@@ -4627,7 +4621,6 @@ function App() {
                 {group.items.map((item) => (
                   <AppButton
                     key={item.id}
-                    type="button"
                     className={`rail-nav-item ${currentView === item.id ? "is-active" : ""}`}
                     onClick={() => handleSelectView(item.id)}
                     aria-current={currentView === item.id ? "page" : undefined}
@@ -4879,7 +4872,6 @@ function App() {
       {isMobileNavOpen ? (
         <div className="mobile-shell-drawer is-open">
           <AppButton
-            type="button"
             className="mobile-shell-drawer__backdrop"
             onClick={() => setIsMobileNavOpen(false)}
             aria-label={t("app.common.close")}
@@ -4921,7 +4913,6 @@ function App() {
                 </span>
               ) : null}
               <AppButton
-                type="button"
                 className="shell-menu-button"
                 onClick={handleToggleMobileNav}
                 aria-expanded={isMobileNavOpen}
@@ -4943,7 +4934,6 @@ function App() {
               <div className="workspace-hero__toolbar">
                 <div className="hero-control-card hero-control-card--theme hero-control-card--compact">
                   <AppButton
-                    type="button"
                     className="ghost-button hero-theme-button"
                     onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
                     aria-label={theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
@@ -4954,7 +4944,6 @@ function App() {
                 <div className="hero-control-card hero-control-card--locale hero-control-card--compact">
                   <div className="mode-switch mode-switch--inline" aria-label={t("app.language.label")}>
                     <AppButton
-                      type="button"
                       className={`mode-switch__button ${lang === "zh-CN" ? "is-active" : ""}`}
                       onClick={() => setLang("zh-CN")}
                       aria-label={"\u4E2D\u6587"}
@@ -4963,7 +4952,6 @@ function App() {
                       {"\u4E2D\u6587"}
                     </AppButton>
                     <AppButton
-                      type="button"
                       className={`mode-switch__button ${lang === "en-US" ? "is-active" : ""}`}
                       onClick={() => setLang("en-US")}
                       aria-label="English"
@@ -4974,7 +4962,6 @@ function App() {
                   </div>
                 </div>
                 <AppButton
-                  type="button"
                   className={`hero-inspector-toggle ${isInspectorOpen ? "is-active" : ""}`}
                   onClick={() => handleToggleInspector("runtime")}
                   aria-expanded={isInspectorOpen}
@@ -4993,7 +4980,6 @@ function App() {
             {allNavigationItems.map((item) => (
               <AppButton
                 key={`hero-${item.id}`}
-                type="button"
                 className={`workspace-switcher-button ${currentView === item.id ? "is-active" : ""}`}
                 onClick={() => handleSelectView(item.id)}
                 aria-current={currentView === item.id ? "page" : undefined}
@@ -5261,7 +5247,6 @@ function App() {
       {isInspectorOpen ? (
         <div className="inspector-drawer is-open">
           <AppButton
-            type="button"
             className="inspector-drawer__backdrop"
             onClick={() => setIsInspectorOpen(false)}
             aria-label={t("app.common.close")}
@@ -5283,7 +5268,6 @@ function App() {
                 <p>{viewMeta[currentView].title}</p>
               </div>
               <AppButton
-                type="button"
                 className="ghost-button inspector-drawer__close"
                 onClick={() => setIsInspectorOpen(false)}
               >
@@ -5295,7 +5279,6 @@ function App() {
                 <AppButton
                   key={tab.id}
                   id={`inspector-tab-${tab.id}`}
-                  type="button"
                   role="tab"
                   tabIndex={activeInspectorTab === tab.id ? 0 : -1}
                   aria-controls={`inspector-panel-${tab.id}`}
@@ -5357,7 +5340,6 @@ function App() {
                     <h3>{t("app.sound.title")}</h3>
                   </div>
                   <AppButton
-                    type="button"
                     className="ghost-button"
                     onClick={() => uploadInputRef.current?.click()}
                   >
@@ -5368,7 +5350,6 @@ function App() {
                 <label className="toggle-row">
                   <span>{t("app.sound.autoPlay")}</span>
                   <AppButton
-                    type="button"
                     className={`toggle-pill ${autoPlayOnReply ? "is-on" : ""}`}
                     onClick={() => setAutoPlayOnReply((prev) => !prev)}
                   >
@@ -5380,7 +5361,6 @@ function App() {
                   {localizedTracks.map((track) => (
                     <AppButton
                       key={track.id}
-                      type="button"
                       className={`sound-track-card ${
                         track.id === selectedTrackId ? "is-active" : ""
                       }`}
@@ -5484,7 +5464,6 @@ function App() {
                     <span className="hero-control-card__label">{t("app.language.label")}</span>
                     <div className="mode-switch mode-switch--inline" aria-label={t("app.language.label")}>
                       <AppButton
-                        type="button"
                         className={`mode-switch__button ${lang === "zh-CN" ? "is-active" : ""}`}
                         onClick={() => setLang("zh-CN")}
                         aria-label={"\u4E2D\u6587"}
@@ -5493,7 +5472,6 @@ function App() {
                         {"\u4E2D\u6587"}
                       </AppButton>
                       <AppButton
-                        type="button"
                         className={`mode-switch__button ${lang === "en-US" ? "is-active" : ""}`}
                         onClick={() => setLang("en-US")}
                         aria-label="English"
@@ -5507,7 +5485,6 @@ function App() {
                   <div className="quick-setting-card">
                     <span className="hero-control-card__label">{t("app.hero.appearance")}</span>
                     <AppButton
-                      type="button"
                       className="ghost-button hero-theme-button"
                       onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
                       aria-label={theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
@@ -5524,7 +5501,6 @@ function App() {
                   </div>
                   <p className="section-note">{t("app.settings.page.railDescription")}</p>
                   <AppButton
-                    type="button"
                     className="solid-button"
                     onClick={() => {
                       openView("settings");
@@ -5545,7 +5521,6 @@ function App() {
         {mobileDockItems.map((item) => (
           <AppButton
             key={`dock-${item.id}`}
-            type="button"
             className={`mobile-dock__item ${currentView === item.id ? "is-active" : ""}`}
             onClick={() => handleSelectView(item.id)}
             aria-current={currentView === item.id ? "page" : undefined}
@@ -5557,7 +5532,6 @@ function App() {
           </AppButton>
         ))}
         <AppButton
-          type="button"
           className={`mobile-dock__item ${isMobileNavOpen ? "is-active" : ""}`}
           onClick={handleToggleMobileNav}
           aria-expanded={isMobileNavOpen}

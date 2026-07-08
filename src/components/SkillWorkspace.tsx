@@ -147,7 +147,6 @@ function SkillWorkspace({
           </div>
           <div className="skill-header-actions">
             <AppButton
-              type="button"
               className="ghost-button"
               onClick={() => skillImportInputRef.current?.click()}
               disabled={busy !== "" || loading}
@@ -155,7 +154,6 @@ function SkillWorkspace({
               {t("app.skills.import.button")}
             </AppButton>
             <AppButton
-              type="button"
               className="solid-button"
               onClick={handleCreateSkill}
               disabled={busy !== "" || loading}
@@ -197,7 +195,6 @@ function SkillWorkspace({
           {FILTER_MODES.map((mode) => (
             <AppButton
               key={mode}
-              type="button"
               className={`skill-filter-chip ${filterMode === mode ? "is-active" : ""}`}
               onClick={() => setFilterMode(mode)}
             >
@@ -213,7 +210,6 @@ function SkillWorkspace({
               return (
                 <AppButton
                   key={skill.id}
-                  type="button"
                   className={`skill-card skill-card--library ${
                     skill.id === activeSkillId ? "is-active" : ""
                   }`}
@@ -259,7 +255,6 @@ function SkillWorkspace({
           </div>
           <div className="knowledge-editor__actions">
             <AppButton
-              type="button"
               className="ghost-button"
               onClick={() => handleExportSkill(activeSkill)}
               disabled={!activeSkill || busy !== "" || loading}
@@ -267,7 +262,6 @@ function SkillWorkspace({
               {t("app.skills.export.selected")}
             </AppButton>
             <AppButton
-              type="button"
               className="ghost-button"
               onClick={handleDeleteSkill}
               disabled={!activeSkill || busy !== "" || loading}
@@ -275,7 +269,6 @@ function SkillWorkspace({
               {t("app.common.delete")}
             </AppButton>
             <AppButton
-              type="button"
               className="solid-button"
               onClick={handleSaveSkill}
               disabled={!hasUnsavedSkill || busy !== "" || loading}
@@ -310,7 +303,6 @@ function SkillWorkspace({
                     {skillDraft.enabled ? t("app.skills.enabled") : t("app.skills.disabled")}
                   </strong>
                   <AppButton
-                    type="button"
                     className={`toggle-pill ${skillDraft.enabled ? "is-on" : ""}`}
                     onClick={() =>
                       setSkillDraft((prev) => ({
@@ -333,7 +325,6 @@ function SkillWorkspace({
                       : t("app.skills.unmounted")}
                   </strong>
                   <AppButton
-                    type="button"
                     className={`toggle-pill ${mountedSkillSet.has(activeSkill.id) ? "is-on" : ""}`}
                     onClick={() => handleToggleSkillMounted(activeSkill.id)}
                     disabled={busy !== "" || loading || !activeSkill.enabled}
@@ -445,7 +436,6 @@ function SkillWorkspace({
           {TOOL_MODES.map((mode) => (
             <AppButton
               key={mode}
-              type="button"
               role="tab"
               aria-selected={toolMode === mode}
               className={`skill-tools__tab ${toolMode === mode ? "is-active" : ""}`}
@@ -464,7 +454,6 @@ function SkillWorkspace({
                 <h3>{t("app.skills.sessionMount.title")}</h3>
               </div>
               <AppButton
-                type="button"
                 className="ghost-button"
                 onClick={handleExportAllSkills}
                 disabled={!skillList.length || busy !== "" || loading}
@@ -494,7 +483,6 @@ function SkillWorkspace({
                         <div className="skill-template-card__body">
                           <span className="skill-meta-pill">{meta.categoryLabel}</span>
                           <AppButton
-                            type="button"
                             className="solid-button"
                             disabled={mountedSkillSet.has(skill.id) || busy !== "" || loading}
                             onClick={() => handleToggleSkillMounted(skill.id)}
@@ -517,7 +505,6 @@ function SkillWorkspace({
                   return (
                     <AppButton
                       key={skill.id}
-                      type="button"
                       className={`skill-mounted-card ${
                         skill.id === activeSkillId ? "is-active" : ""
                       }`}
@@ -567,7 +554,6 @@ function SkillWorkspace({
             />
             <div className="skill-template-card__body">
               <AppButton
-                type="button"
                 className="solid-button"
                 disabled={!forgePrompt.trim() || busy !== "" || loading}
                 onClick={() => handleForgeSkill({ prompt: forgePrompt, mode: "new" })}
@@ -577,7 +563,6 @@ function SkillWorkspace({
                   : t("app.skills.forge.generate")}
               </AppButton>
               <AppButton
-                type="button"
                 className="ghost-button"
                 disabled={!forgePrompt.trim() || !activeSkill || busy !== "" || loading}
                 onClick={() => handleForgeSkill({ prompt: forgePrompt, mode: "rewrite" })}
@@ -631,7 +616,6 @@ function SkillWorkspace({
 
                     <div className="skill-template-card__body">
                       <AppButton
-                        type="button"
                         className="ghost-button"
                         onClick={() => handleLoadSkillVersion(version)}
                         disabled={busy !== "" || loading}
@@ -639,7 +623,6 @@ function SkillWorkspace({
                         {t("app.skills.history.loadDraft")}
                       </AppButton>
                       <AppButton
-                        type="button"
                         className="solid-button"
                         onClick={() => handleRestoreSkillVersion(version)}
                         disabled={busy !== "" || loading}
@@ -715,7 +698,6 @@ function SkillWorkspace({
                           })}
                         </span>
                         <AppButton
-                          type="button"
                           className={installedSkill ? "ghost-button" : "solid-button"}
                           disabled={busy !== "" || loading}
                           onClick={() =>

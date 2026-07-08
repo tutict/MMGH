@@ -65,7 +65,6 @@ function ReminderWorkspace({
               <h3>{t("app.reminders.title")}</h3>
             </div>
             <AppButton
-              type="button"
               className="solid-button"
               onClick={handleCreateReminder}
               disabled={busy !== "" || loading}
@@ -119,7 +118,6 @@ function ReminderWorkspace({
                     return (
                       <AppButton
                         key={item.id}
-                        type="button"
                         className={`reminder-card ${
                           item.id === selectedReminderId ? "is-active" : ""
                         }`}
@@ -166,7 +164,6 @@ function ReminderWorkspace({
           </div>
           <div className="knowledge-editor__actions">
             <AppButton
-              type="button"
               className="ghost-button"
               onClick={handleDeleteReminder}
               disabled={!reminderDraft.id || busy !== "" || loading}
@@ -174,7 +171,6 @@ function ReminderWorkspace({
               {t("app.common.delete")}
             </AppButton>
             <AppButton
-              type="button"
               className="solid-button"
               onClick={handleSaveReminder}
               disabled={!reminderDraft.id || !hasUnsavedReminder || busy !== "" || loading}
@@ -322,7 +318,6 @@ function ReminderWorkspace({
                     ?.title || t("app.reminders.note")}
                 </span>
                 <AppButton
-                  type="button"
                   className="ghost-button"
                   onClick={() => handleOpenLinkedNote(Number(reminderDraft.linkedNoteId))}
                 >

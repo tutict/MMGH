@@ -104,10 +104,10 @@ function TodayWorkspace({
             </span>
           </div>
           <div className="today-hero__actions">
-            <AppButton type="button" className="solid-button" onClick={() => openView("agent")}>
+            <AppButton className="solid-button" onClick={() => openView("agent")}>
               {t("app.today.action.resume")}
             </AppButton>
-            <AppButton type="button" className="ghost-button" onClick={() => openView("reminders")}>
+            <AppButton className="ghost-button" onClick={() => openView("reminders")}>
               {t("app.today.action.reminders")}
             </AppButton>
           </div>
@@ -120,7 +120,7 @@ function TodayWorkspace({
                 <span className="eyebrow">{t("app.today.focus.eyebrow")}</span>
                 <h4>{t("app.today.focus.title")}</h4>
               </div>
-              <AppButton type="button" className="ghost-button" onClick={() => openView("reminders")}>
+              <AppButton className="ghost-button" onClick={() => openView("reminders")}>
                 {t("app.mode.reminders")}
               </AppButton>
             </div>
@@ -135,7 +135,6 @@ function TodayWorkspace({
                       className={`today-focus-item urgency-${urgency}`}
                     >
                       <AppButton
-                        type="button"
                         className="today-focus-item__body"
                         disabled={todayActionsDisabled}
                         onClick={async () => {
@@ -165,7 +164,6 @@ function TodayWorkspace({
                       </AppButton>
                       <div className="today-item__actions">
                         <AppButton
-                          type="button"
                           className="ghost-button today-inline-action"
                           disabled={todayActionsDisabled}
                           onClick={() => {
@@ -200,7 +198,7 @@ function TodayWorkspace({
                   <span className="eyebrow">{t("app.today.sessions.eyebrow")}</span>
                   <h4>{t("app.today.sessions.title")}</h4>
                 </div>
-                <AppButton type="button" className="ghost-button" onClick={() => openView("agent")}>
+                <AppButton className="ghost-button" onClick={() => openView("agent")}>
                   {t("app.mode.agent")}
                 </AppButton>
               </div>
@@ -209,7 +207,7 @@ function TodayWorkspace({
                 <span className="section-note">{t("app.today.sessions.active")}</span>
                 <strong>{activeSessionTitle}</strong>
                 <div className="today-session-spotlight__actions">
-                  <AppButton type="button" className="solid-button" onClick={() => openView("agent")}>
+                  <AppButton className="solid-button" onClick={() => openView("agent")}>
                     {t("app.today.sessions.continue")}
                   </AppButton>
                 </div>
@@ -220,7 +218,6 @@ function TodayWorkspace({
                   {continueSessionItems.map((session) => (
                     <AppButton
                       key={session.id}
-                      type="button"
                       className={`today-session-item ${session.id === activeSessionId ? "is-active" : ""}`}
                       onClick={async () => {
                         await handleOpenSession(session.id);
@@ -271,7 +268,6 @@ function TodayWorkspace({
                       className={`today-pattern-item today-rule-item today-rule-item--${item.actionType}`}
                     >
                       <AppButton
-                        type="button"
                         className="today-pattern-item__body today-rule-item__body"
                         disabled={todayActionsDisabled}
                         onClick={async () => {
@@ -296,7 +292,6 @@ function TodayWorkspace({
                       <div className="today-item__actions">
                         {item.actionType === "tune" ? (
                           <AppButton
-                            type="button"
                             className="ghost-button today-inline-action"
                             disabled={todayActionsDisabled}
                             onClick={async () => {
@@ -310,7 +305,6 @@ function TodayWorkspace({
                           </AppButton>
                         ) : (
                           <AppButton
-                            type="button"
                             className="ghost-button today-inline-action"
                             disabled={todayActionsDisabled}
                             onClick={() => {
@@ -348,7 +342,6 @@ function TodayWorkspace({
                   {ruleEffectivenessInsights.map((item) => (
                     <article key={`rule-${item.title}`} className="today-pattern-item today-rule-item">
                       <AppButton
-                        type="button"
                         className="today-pattern-item__body today-rule-item__body"
                         disabled={todayActionsDisabled}
                         onClick={async () => {
@@ -387,7 +380,6 @@ function TodayWorkspace({
                       <div className="today-item__actions">
                         {item.status === "available" ? (
                           <AppButton
-                            type="button"
                             className="ghost-button today-inline-action"
                             disabled={todayActionsDisabled}
                             onClick={() => {
@@ -400,7 +392,6 @@ function TodayWorkspace({
                           </AppButton>
                         ) : (
                           <AppButton
-                            type="button"
                             className="ghost-button today-inline-action"
                             disabled={todayActionsDisabled}
                             onClick={async () => {
@@ -428,7 +419,6 @@ function TodayWorkspace({
                 {recurringPatternInsights.map((item) => (
                   <article key={item.title} className="today-pattern-item">
                     <AppButton
-                      type="button"
                       className="today-pattern-item__body"
                       disabled={todayActionsDisabled}
                       onClick={() => {
@@ -459,7 +449,6 @@ function TodayWorkspace({
                     <div className="today-item__actions">
                       {item.status === "missing" ? (
                         <AppButton
-                          type="button"
                           className="ghost-button today-inline-action"
                           disabled={todayActionsDisabled}
                           onClick={() => {
@@ -472,7 +461,6 @@ function TodayWorkspace({
                         </AppButton>
                       ) : item.status === "available" ? (
                         <AppButton
-                          type="button"
                           className="ghost-button today-inline-action"
                           disabled={todayActionsDisabled}
                           onClick={() => {
@@ -485,7 +473,6 @@ function TodayWorkspace({
                         </AppButton>
                       ) : (
                         <AppButton
-                          type="button"
                           className="ghost-button today-inline-action"
                           disabled={todayActionsDisabled}
                           onClick={async () => {
@@ -525,7 +512,6 @@ function TodayWorkspace({
                   return (
                     <article key={item.id} className="today-capture-item today-completion-item">
                       <AppButton
-                        type="button"
                         className="today-capture-item__body"
                         disabled={todayActionsDisabled}
                         onClick={async () => {
@@ -555,7 +541,6 @@ function TodayWorkspace({
                       </AppButton>
                       <div className="today-item__actions">
                         <AppButton
-                          type="button"
                           className="ghost-button today-inline-action"
                           disabled={todayActionsDisabled}
                           onClick={() => {
@@ -591,7 +576,6 @@ function TodayWorkspace({
                 {recentCaptureItems.map((item) => (
                   <AppButton
                     key={item.id}
-                    type="button"
                     className="today-capture-item"
                     onClick={async () => {
                       if (item.kind === "note") {
@@ -633,19 +617,19 @@ function TodayWorkspace({
               </div>
             </div>
             <div className="today-shortcut-grid">
-              <AppButton type="button" className="today-shortcut" onClick={() => openView("knowledge")}>
+              <AppButton className="today-shortcut" onClick={() => openView("knowledge")}>
                 <strong>{t("app.mode.knowledge")}</strong>
                 <span>{t("app.today.shortcuts.knowledge")}</span>
               </AppButton>
-              <AppButton type="button" className="today-shortcut" onClick={() => openView("skills")}>
+              <AppButton className="today-shortcut" onClick={() => openView("skills")}>
                 <strong>{t("app.mode.skills")}</strong>
                 <span>{t("app.today.shortcuts.skills")}</span>
               </AppButton>
-              <AppButton type="button" className="today-shortcut" onClick={() => openView("weather")}>
+              <AppButton className="today-shortcut" onClick={() => openView("weather")}>
                 <strong>{t("app.mode.weather")}</strong>
                 <span>{t("app.today.shortcuts.weather")}</span>
               </AppButton>
-              <AppButton type="button" className="today-shortcut" onClick={() => openView("settings")}>
+              <AppButton className="today-shortcut" onClick={() => openView("settings")}>
                 <strong>{t("app.mode.settings")}</strong>
                 <span>{t("app.today.shortcuts.settings")}</span>
               </AppButton>

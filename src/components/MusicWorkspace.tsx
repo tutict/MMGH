@@ -250,7 +250,6 @@ function MusicWorkspace({
               <label className="music-room__sync">
                 <span>{t("app.sound.autoPlay")}</span>
                 <AppButton
-                  type="button"
                   className={`toggle-pill ${autoPlayOnReply ? "is-on" : ""}`}
                   onClick={() => setAutoPlayOnReply((prev) => !prev)}
                 >

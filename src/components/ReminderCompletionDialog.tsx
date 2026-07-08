@@ -12,7 +12,6 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
   return (
     <div className="completion-dialog" role="dialog" aria-modal="true" aria-labelledby="completion-dialog-title">
       <AppButton
-        type="button"
         className="completion-dialog__scrim"
         onClick={onClose}
         aria-label={t("app.common.close")}
@@ -25,7 +24,7 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
             <h3 id="completion-dialog-title">{t("app.today.review.title")}</h3>
             <p>{t("app.today.review.description")}</p>
           </div>
-          <AppButton type="button" className="ghost-button" onClick={onClose}>
+          <AppButton className="ghost-button" onClick={onClose}>
             {t("app.common.close")}
           </AppButton>
         </div>
@@ -141,11 +140,10 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
         ) : null}
 
         <div className="completion-dialog__actions">
-          <AppButton type="button" className="ghost-button" onClick={onClose}>
+          <AppButton className="ghost-button" onClick={onClose}>
             {t("app.common.cancel")}
           </AppButton>
           <AppButton
-            type="button"
             className="solid-button"
             onClick={onSubmit}
             disabled={busy !== "" && busy !== "complete-reminder"}
