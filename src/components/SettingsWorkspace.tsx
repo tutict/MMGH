@@ -1,4 +1,4 @@
-import { ButtonBase } from "@mui/material";
+import { ButtonBase, TextField } from "@mui/material";
 import React from "react";
 import { useI18n } from "../i18n";
 
@@ -59,8 +59,8 @@ function SettingsWorkspace({
             <div className="settings-form__grid">
               <label className="settings-form__card settings-form__card--compact">
                 <span>{t("app.settings.providerName")}</span>
-                <input
-                  className="field-input"
+                <TextField
+                  className="mui-field"
                   value={settingsForm.providerName || ""}
                   onChange={(event) =>
                     setSettingsForm((prev) => ({
@@ -68,12 +68,14 @@ function SettingsWorkspace({
                       providerName: event.target.value,
                     }))
                   }
+                  size="small"
+                  fullWidth
                 />
               </label>
               <label className="settings-form__card settings-form__card--compact">
                 <span>{t("app.settings.model")}</span>
-                <input
-                  className="field-input"
+                <TextField
+                  className="mui-field"
                   value={settingsForm.model || ""}
                   onChange={(event) =>
                     setSettingsForm((prev) => ({
@@ -81,12 +83,14 @@ function SettingsWorkspace({
                       model: event.target.value,
                     }))
                   }
+                  size="small"
+                  fullWidth
                 />
               </label>
               <label className="settings-form__card settings-form__card--wide">
                 <span>{t("app.settings.baseUrl")}</span>
-                <input
-                  className="field-input"
+                <TextField
+                  className="mui-field"
                   value={settingsForm.baseUrl || ""}
                   onChange={(event) =>
                     setSettingsForm((prev) => ({
@@ -94,6 +98,8 @@ function SettingsWorkspace({
                       baseUrl: event.target.value,
                     }))
                   }
+                  size="small"
+                  fullWidth
                 />
                 {providerSecurityMessage ? (
                   <span
@@ -107,8 +113,8 @@ function SettingsWorkspace({
               </label>
               <label className="settings-form__card settings-form__card--wide">
                 <span>{t("app.settings.apiKey")}</span>
-                <input
-                  className="field-input"
+                <TextField
+                  className="mui-field"
                   type="password"
                   value={settingsForm.apiKey || ""}
                   placeholder={
@@ -125,6 +131,8 @@ function SettingsWorkspace({
                       apiKey: event.target.value,
                     }))
                   }
+                  size="small"
+                  fullWidth
                 />
                 <span className="section-note">
                   {settingsForm.clearApiKey
@@ -149,9 +157,8 @@ function SettingsWorkspace({
 
             <label className="settings-form__card settings-form__card--prompt">
               <span>{t("app.settings.systemPrompt")}</span>
-              <textarea
-                className="field-area settings-form__prompt"
-                rows={6}
+              <TextField
+                className="mui-field settings-form__prompt"
                 value={settingsForm.systemPrompt || ""}
                 onChange={(event) =>
                   setSettingsForm((prev) => ({
@@ -159,6 +166,9 @@ function SettingsWorkspace({
                     systemPrompt: event.target.value,
                   }))
                 }
+                multiline
+                minRows={6}
+                fullWidth
               />
             </label>
 
