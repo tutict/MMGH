@@ -1,5 +1,5 @@
 import React from "react";
-import { ButtonBase } from "@mui/material";
+import { ButtonBase, Checkbox, TextField } from "@mui/material";
 import { useI18n } from "../i18n";
 
 function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, panelRef, setDraft }) {
@@ -47,8 +47,8 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
 
         <label className="settings-form__row">
           <span>{t("app.today.review.result")}</span>
-          <textarea
-            className="field-area completion-dialog__textarea"
+          <TextField
+            className="mui-field completion-dialog__textarea"
             value={draft.result}
             onChange={(event) =>
               setDraft((prev) => ({
@@ -57,13 +57,16 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
               }))
             }
             placeholder={t("app.today.review.resultPlaceholder")}
+            multiline
+            minRows={4}
+            fullWidth
           />
         </label>
 
         <div className="completion-dialog__toggles">
           <label className="completion-dialog__toggle">
-            <input
-              type="checkbox"
+            <Checkbox
+              className="mui-checkbox"
               checked={draft.saveToNote}
               onChange={(event) =>
                 setDraft((prev) => ({
@@ -82,8 +85,8 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
             </span>
           </label>
           <label className="completion-dialog__toggle">
-            <input
-              type="checkbox"
+            <Checkbox
+              className="mui-checkbox"
               checked={draft.createFollowUp}
               onChange={(event) =>
                 setDraft((prev) => ({
@@ -103,8 +106,8 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
           <div className="completion-dialog__grid">
             <label className="settings-form__row">
               <span>{t("app.today.review.followUpTitle")}</span>
-              <input
-                className="field-input"
+              <TextField
+                className="mui-field"
                 value={draft.followUpTitle}
                 onChange={(event) =>
                   setDraft((prev) => ({
@@ -112,12 +115,14 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
                     followUpTitle: event.target.value,
                   }))
                 }
+                size="small"
+                fullWidth
               />
             </label>
             <label className="settings-form__row">
               <span>{t("app.today.review.followUpDueAt")}</span>
-              <input
-                className="field-input"
+              <TextField
+                className="mui-field"
                 type="datetime-local"
                 value={draft.followUpDueAt}
                 onChange={(event) =>
@@ -126,6 +131,8 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
                     followUpDueAt: event.target.value,
                   }))
                 }
+                size="small"
+                fullWidth
               />
             </label>
           </div>
