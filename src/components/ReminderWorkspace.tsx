@@ -1,5 +1,5 @@
 import React, { useDeferredValue, useMemo } from "react";
-import { ButtonBase } from "@mui/material";
+import { ButtonBase, MenuItem, TextField } from "@mui/material";
 import { useI18n } from "../i18n";
 import {
   countOpenReminders,
@@ -95,11 +95,13 @@ function ReminderWorkspace({
           <span>{formatClockDate(clockNow, lang)}</span>
         </div>
 
-        <input
-          className="field-input"
+        <TextField
+          className="mui-field"
           value={reminderSearch}
           onChange={(event) => setReminderSearch(event.target.value)}
           placeholder={t("app.reminders.search")}
+          size="small"
+          fullWidth
         />
 
         <div className="reminder-group-list">
@@ -197,8 +199,8 @@ function ReminderWorkspace({
             </div>
             <label className="settings-form__row">
               <span>{t("app.reminders.form.title")}</span>
-              <input
-                className="field-input"
+              <TextField
+                className="mui-field"
                 value={reminderDraft.title}
                 onChange={(event) =>
                   setReminderDraft((prev) => ({
@@ -207,14 +209,16 @@ function ReminderWorkspace({
                   }))
                 }
                 placeholder={t("app.reminders.form.titlePlaceholder")}
+                size="small"
+                fullWidth
               />
             </label>
 
             <div className="reminder-editor__grid">
               <label className="settings-form__row">
                 <span>{t("app.reminders.form.dueTime")}</span>
-                <input
-                  className="field-input"
+                <TextField
+                  className="mui-field"
                   type="datetime-local"
                   value={reminderDraft.dueAt}
                   onChange={(event) =>
@@ -223,13 +227,15 @@ function ReminderWorkspace({
                       dueAt: event.target.value,
                     }))
                   }
+                  size="small"
+                  fullWidth
                 />
               </label>
 
               <label className="settings-form__row">
                 <span>{t("app.reminders.form.severity")}</span>
-                <select
-                  className="field-input"
+                <TextField
+                  className="mui-field"
                   value={reminderDraft.severity}
                   onChange={(event) =>
                     setReminderDraft((prev) => ({
@@ -237,18 +243,21 @@ function ReminderWorkspace({
                       severity: event.target.value,
                     }))
                   }
+                  select
+                  size="small"
+                  fullWidth
                 >
-                  <option value="low">{t("app.reminders.severity.low")}</option>
-                  <option value="medium">{t("app.reminders.severity.medium")}</option>
-                  <option value="high">{t("app.reminders.severity.high")}</option>
-                  <option value="critical">{t("app.reminders.severity.critical")}</option>
-                </select>
+                  <MenuItem value="low">{t("app.reminders.severity.low")}</MenuItem>
+                  <MenuItem value="medium">{t("app.reminders.severity.medium")}</MenuItem>
+                  <MenuItem value="high">{t("app.reminders.severity.high")}</MenuItem>
+                  <MenuItem value="critical">{t("app.reminders.severity.critical")}</MenuItem>
+                </TextField>
               </label>
 
               <label className="settings-form__row">
                 <span>{t("app.reminders.form.status")}</span>
-                <select
-                  className="field-input"
+                <TextField
+                  className="mui-field"
                   value={reminderDraft.status}
                   onChange={(event) =>
                     setReminderDraft((prev) => ({
@@ -256,16 +265,19 @@ function ReminderWorkspace({
                       status: event.target.value,
                     }))
                   }
+                  select
+                  size="small"
+                  fullWidth
                 >
-                  <option value="scheduled">{t("app.reminders.status.scheduled")}</option>
-                  <option value="done">{t("app.reminders.status.done")}</option>
-                </select>
+                  <MenuItem value="scheduled">{t("app.reminders.status.scheduled")}</MenuItem>
+                  <MenuItem value="done">{t("app.reminders.status.done")}</MenuItem>
+                </TextField>
               </label>
 
               <label className="settings-form__row">
                 <span>{t("app.reminders.form.linkedNote")}</span>
-                <select
-                  className="field-input"
+                <TextField
+                  className="mui-field"
                   value={reminderDraft.linkedNoteId}
                   onChange={(event) =>
                     setReminderDraft((prev) => ({
@@ -273,21 +285,24 @@ function ReminderWorkspace({
                       linkedNoteId: event.target.value,
                     }))
                   }
+                  select
+                  size="small"
+                  fullWidth
                 >
-                  <option value="">{t("app.reminders.form.noLinkedNote")}</option>
+                  <MenuItem value="">{t("app.reminders.form.noLinkedNote")}</MenuItem>
                   {noteList.map((note) => (
-                    <option key={note.id} value={note.id}>
+                    <MenuItem key={note.id} value={note.id}>
                       {note.title}
-                    </option>
+                    </MenuItem>
                   ))}
-                </select>
+                </TextField>
               </label>
             </div>
 
             <label className="settings-form__row">
               <span>{t("app.reminders.form.note")}</span>
-              <textarea
-                className="knowledge-body-input reminder-detail-input"
+              <TextField
+                className="mui-field knowledge-body-input reminder-detail-input"
                 value={reminderDraft.detail}
                 onChange={(event) =>
                   setReminderDraft((prev) => ({
@@ -296,6 +311,9 @@ function ReminderWorkspace({
                   }))
                 }
                 placeholder={t("app.reminders.form.notePlaceholder")}
+                multiline
+                minRows={6}
+                fullWidth
               />
             </label>
 
