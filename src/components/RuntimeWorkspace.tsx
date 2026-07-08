@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { ButtonBase } from "@mui/material";
+import { ButtonBase, TextField } from "@mui/material";
 import { useI18n } from "../i18n";
 
 function RuntimeWorkspace({
@@ -151,11 +151,14 @@ function RuntimeWorkspace({
                 {t(`app.provider.${providerConfigured ? "configured" : "pending"}`)}
               </span>
             </div>
-            <textarea
+            <TextField
+              className="mui-field runtime-composer__input"
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               placeholder={t("app.agent.composer.placeholder")}
-              rows={6}
+              multiline
+              minRows={6}
+              fullWidth
             />
             <div className="composer__actions runtime-composer__actions">
               <span className="runtime-composer__hint">
