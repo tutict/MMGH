@@ -1,4 +1,5 @@
-import { ButtonBase, IconButton, Slider } from "@mui/material";
+import { IconButton, Slider } from "@mui/material";
+import AppButton from "./ui/AppButton";
 import React from "react";
 import { useI18n } from "../i18n";
 import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
@@ -202,15 +203,14 @@ function MusicWorkspace({
       <div className="music-room__scrim" aria-hidden="true" />
 
       <div className={`music-room__surface ${isLibraryOpen ? "is-library-open" : "is-library-collapsed"}`}>
-        <ButtonBase
-          component="button"
+        <AppButton
           className={`music-room__library-toggle ${isLibraryOpen ? "is-open" : ""}`}
           onClick={() => setIsLibraryOpen((prev) => !prev)}
           aria-label={t("app.music.libraryToggle")}
         >
           <LibraryIcon />
           <span>{t("app.music.libraryToggle")}</span>
-        </ButtonBase>
+        </AppButton>
 
         <div className="music-room__main">
           <header className="music-room__header">
@@ -249,23 +249,21 @@ function MusicWorkspace({
               <span className="music-room__chip">{t(playModeMeta.labelKey)}</span>
               <label className="music-room__sync">
                 <span>{t("app.sound.autoPlay")}</span>
-                <ButtonBase
-                  component="button"
+                <AppButton
                   type="button"
                   className={`toggle-pill ${autoPlayOnReply ? "is-on" : ""}`}
                   onClick={() => setAutoPlayOnReply((prev) => !prev)}
                 >
                   <span />
-                </ButtonBase>
+                </AppButton>
               </label>
-              <ButtonBase
-                component="button"
+              <AppButton
                 className="music-room__utility"
                 onClick={() => uploadInputRef.current?.click()}
               >
                 <UploadIcon />
                 <span>{t("app.music.upload")}</span>
-              </ButtonBase>
+              </AppButton>
             </div>
           </header>
 
@@ -356,23 +354,21 @@ function MusicWorkspace({
                   </div>
                   <div className="music-room__lyrics-tools">
                     <span className={`music-room__lyrics-source is-${lyricsStatus}`}>{lyricsStatusLabel}</span>
-                    <ButtonBase
-                      component="button"
+                    <AppButton
                       className="music-room__lyrics-action"
                       disabled={lyricsStatus === "loading"}
                       onClick={onRefreshLyrics}
                     >
                       <SearchIcon />
                       <span>{t("app.music.lyrics.search")}</span>
-                    </ButtonBase>
-                    <ButtonBase
-                      component="button"
+                    </AppButton>
+                    <AppButton
                       className="music-room__lyrics-action"
                       onClick={() => lyricsUploadInputRef.current?.click()}
                     >
                       <UploadIcon />
                       <span>{t("app.music.lyrics.upload")}</span>
-                    </ButtonBase>
+                    </AppButton>
                     <input
                       ref={lyricsUploadInputRef}
                       className="upload-input"
@@ -515,9 +511,8 @@ function MusicWorkspace({
               <div className="music-room__library-empty">{t("app.music.queueEmpty")}</div>
             ) : (
               localizedTracks.map((track, index) => (
-                <ButtonBase
+                <AppButton
                   key={track.id}
-                  component="button"
                   className={`music-room__track ${track.id === selectedTrackId ? "is-active" : ""}`}
                   onClick={() => handleTrackPick(track.id)}
                 >
@@ -536,7 +531,7 @@ function MusicWorkspace({
                     />
                     <span>{getTrackDurationLabel(track, index, selectedTrackId, duration)}</span>
                   </div>
-                </ButtonBase>
+                </AppButton>
               ))
             )}
           </div>

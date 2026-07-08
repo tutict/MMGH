@@ -1,7 +1,8 @@
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
-import { Box, ButtonBase, IconButton, Slider } from "@mui/material";
+import { Box, IconButton, Slider } from "@mui/material";
+import AppButton from "./ui/AppButton";
 import { useRef } from "react";
 import { useI18n } from "../i18n";
 import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
@@ -73,8 +74,7 @@ function MiniPlayerBar({
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
     >
-      <ButtonBase
-        component="button"
+      <AppButton
         className="mini-player-bar__meta"
         onClick={handleOpenMusicWorkspace}
         disableRipple
@@ -100,7 +100,7 @@ function MiniPlayerBar({
           <strong>{selectedTrack?.title || t("app.music.noTrack")}</strong>
           <p>{selectedTrack?.artist || t("app.music.noArtist")}</p>
         </div>
-      </ButtonBase>
+      </AppButton>
 
       <div className="mini-player-bar__controls">
         <IconButton
