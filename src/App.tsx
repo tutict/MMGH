@@ -9,7 +9,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { TextField } from "@mui/material";
+import AppTextField from "./components/ui/AppTextField";
 import AppButton from "./components/ui/AppButton";
 import "./CSS/App.css";
 import {
@@ -4435,11 +4435,10 @@ function App() {
         ) : (
           <div className="session-stack">
             <div className="session-toolbar">
-              <TextField
+              <AppTextField
                 value={newSessionTitle}
                 onChange={(event) => setNewSessionTitle(event.target.value)}
                 placeholder={t("app.session.newPlaceholder")}
-                className="mui-field"
                 aria-label={t("app.session.newPlaceholder")}
                 size="small"
                 fullWidth
@@ -4453,11 +4452,11 @@ function App() {
               </AppButton>
             </div>
 
-            <TextField
+            <AppTextField
               value={sessionSearch}
               onChange={(event) => setSessionSearch(event.target.value)}
               placeholder={t("app.session.searchPlaceholder")}
-              className="mui-field session-search-input"
+              className="session-search-input"
               aria-label={t("app.session.searchLabel")}
               size="small"
               fullWidth

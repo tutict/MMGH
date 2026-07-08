@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { TextField } from "@mui/material";
+import AppTextField from "./ui/AppTextField";
 import AppButton from "./ui/AppButton";
 import { useI18n } from "../i18n";
 
@@ -152,8 +152,8 @@ function RuntimeWorkspace({
                 {t(`app.provider.${providerConfigured ? "configured" : "pending"}`)}
               </span>
             </div>
-            <TextField
-              className="mui-field runtime-composer__input"
+            <AppTextField
+              className="runtime-composer__input"
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               placeholder={t("app.agent.composer.placeholder")}

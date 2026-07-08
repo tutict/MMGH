@@ -1,5 +1,6 @@
 import React from "react";
-import { Checkbox, TextField } from "@mui/material";
+import { Checkbox } from "@mui/material";
+import AppTextField from "./ui/AppTextField";
 import AppButton from "./ui/AppButton";
 import { useI18n } from "../i18n";
 
@@ -48,8 +49,8 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
 
         <label className="settings-form__row">
           <span>{t("app.today.review.result")}</span>
-          <TextField
-            className="mui-field completion-dialog__textarea"
+          <AppTextField
+            className="completion-dialog__textarea"
             value={draft.result}
             onChange={(event) =>
               setDraft((prev) => ({
@@ -107,8 +108,7 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
           <div className="completion-dialog__grid">
             <label className="settings-form__row">
               <span>{t("app.today.review.followUpTitle")}</span>
-              <TextField
-                className="mui-field"
+              <AppTextField
                 value={draft.followUpTitle}
                 onChange={(event) =>
                   setDraft((prev) => ({
@@ -122,8 +122,7 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
             </label>
             <label className="settings-form__row">
               <span>{t("app.today.review.followUpDueAt")}</span>
-              <TextField
-                className="mui-field"
+              <AppTextField
                 type="datetime-local"
                 value={draft.followUpDueAt}
                 onChange={(event) =>

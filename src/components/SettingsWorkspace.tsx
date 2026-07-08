@@ -1,4 +1,4 @@
-import { TextField } from "@mui/material";
+import AppTextField from "./ui/AppTextField";
 import AppButton from "./ui/AppButton";
 import React from "react";
 import { useI18n } from "../i18n";
@@ -60,8 +60,7 @@ function SettingsWorkspace({
             <div className="settings-form__grid">
               <label className="settings-form__card settings-form__card--compact">
                 <span>{t("app.settings.providerName")}</span>
-                <TextField
-                  className="mui-field"
+                <AppTextField
                   value={settingsForm.providerName || ""}
                   onChange={(event) =>
                     setSettingsForm((prev) => ({
@@ -75,8 +74,7 @@ function SettingsWorkspace({
               </label>
               <label className="settings-form__card settings-form__card--compact">
                 <span>{t("app.settings.model")}</span>
-                <TextField
-                  className="mui-field"
+                <AppTextField
                   value={settingsForm.model || ""}
                   onChange={(event) =>
                     setSettingsForm((prev) => ({
@@ -90,8 +88,7 @@ function SettingsWorkspace({
               </label>
               <label className="settings-form__card settings-form__card--wide">
                 <span>{t("app.settings.baseUrl")}</span>
-                <TextField
-                  className="mui-field"
+                <AppTextField
                   value={settingsForm.baseUrl || ""}
                   onChange={(event) =>
                     setSettingsForm((prev) => ({
@@ -114,8 +111,7 @@ function SettingsWorkspace({
               </label>
               <label className="settings-form__card settings-form__card--wide">
                 <span>{t("app.settings.apiKey")}</span>
-                <TextField
-                  className="mui-field"
+                <AppTextField
                   type="password"
                   value={settingsForm.apiKey || ""}
                   placeholder={
@@ -157,8 +153,8 @@ function SettingsWorkspace({
 
             <label className="settings-form__card settings-form__card--prompt">
               <span>{t("app.settings.systemPrompt")}</span>
-              <TextField
-                className="mui-field settings-form__prompt"
+              <AppTextField
+                className="settings-form__prompt"
                 value={settingsForm.systemPrompt || ""}
                 onChange={(event) =>
                   setSettingsForm((prev) => ({

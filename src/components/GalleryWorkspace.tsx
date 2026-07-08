@@ -1,4 +1,4 @@
-import { TextField } from "@mui/material";
+import AppTextField from "./ui/AppTextField";
 import AppButton from "./ui/AppButton";
 import React, { useDeferredValue, useEffect, useMemo, useRef } from "react";
 import { useI18n } from "../i18n";
@@ -154,8 +154,7 @@ function GalleryWorkspace({
           </div>
 
           <div className="gallery-toolbar__actions">
-            <TextField
-              className="mui-field"
+            <AppTextField
               value={gallerySearch}
               onChange={(event) => setGallerySearch(event.target.value)}
               placeholder={t("app.gallery.search")}

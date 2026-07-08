@@ -1,5 +1,5 @@
 import React, { useDeferredValue, useMemo, useState } from "react";
-import { TextField } from "@mui/material";
+import AppTextField from "./ui/AppTextField";
 import AppButton from "./ui/AppButton";
 import { useI18n } from "../i18n";
 import {
@@ -182,8 +182,7 @@ function SkillWorkspace({
           </article>
         </div>
 
-        <TextField
-          className="mui-field"
+        <AppTextField
           value={skillSearch}
           onChange={(event) => setSkillSearch(event.target.value)}
           placeholder={t("app.skills.search")}
@@ -349,8 +348,7 @@ function SkillWorkspace({
             <div className="skill-form-grid">
               <label className="settings-form__row">
                 <span>{t("app.skills.form.name")}</span>
-                <TextField
-                  className="mui-field"
+                <AppTextField
                   value={draftDisplay.name}
                   disabled={busy !== "" || loading}
                   onChange={(event) =>
@@ -367,8 +365,7 @@ function SkillWorkspace({
 
               <label className="settings-form__row">
                 <span>{t("app.skills.form.triggerHint")}</span>
-                <TextField
-                  className="mui-field"
+                <AppTextField
                   value={draftDisplay.triggerHint}
                   disabled={busy !== "" || loading}
                   onChange={(event) =>
@@ -386,8 +383,7 @@ function SkillWorkspace({
 
             <label className="settings-form__row">
               <span>{t("app.skills.form.description")}</span>
-              <TextField
-                className="mui-field"
+              <AppTextField
                 value={draftDisplay.description}
                 disabled={busy !== "" || loading}
                 onChange={(event) =>
@@ -405,8 +401,8 @@ function SkillWorkspace({
 
             <label className="settings-form__row">
               <span>{t("app.skills.form.instructions")}</span>
-              <TextField
-                className="mui-field knowledge-body-input reminder-detail-input"
+              <AppTextField
+                className="knowledge-body-input reminder-detail-input"
                 value={draftDisplay.instructions}
                 disabled={busy !== "" || loading}
                 onChange={(event) =>
@@ -542,8 +538,8 @@ function SkillWorkspace({
                 ? t("app.skills.forge.description.ai")
                 : t("app.skills.forge.description.local")}
             </p>
-            <TextField
-              className="mui-field skill-forge-input"
+            <AppTextField
+              className="skill-forge-input"
               value={forgePrompt}
               disabled={busy !== "" || loading}
               onChange={(event) => setForgePrompt(event.target.value)}
@@ -664,8 +660,7 @@ function SkillWorkspace({
                 {t("app.skills.catalog.count", { count: templates.length })}
               </span>
             </div>
-            <TextField
-              className="mui-field"
+            <AppTextField
               value={catalogSearch}
               onChange={(event) => setCatalogSearch(event.target.value)}
               placeholder={t("app.skills.catalog.search")}

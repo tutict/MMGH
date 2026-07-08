@@ -1,5 +1,6 @@
 import React, { useDeferredValue, useMemo } from "react";
-import { MenuItem, TextField } from "@mui/material";
+import { MenuItem } from "@mui/material";
+import AppTextField from "./ui/AppTextField";
 import AppButton from "./ui/AppButton";
 import { useI18n } from "../i18n";
 import {
@@ -94,8 +95,7 @@ function ReminderWorkspace({
           <span>{formatClockDate(clockNow, lang)}</span>
         </div>
 
-        <TextField
-          className="mui-field"
+        <AppTextField
           value={reminderSearch}
           onChange={(event) => setReminderSearch(event.target.value)}
           placeholder={t("app.reminders.search")}
@@ -192,8 +192,7 @@ function ReminderWorkspace({
             </div>
             <label className="settings-form__row">
               <span>{t("app.reminders.form.title")}</span>
-              <TextField
-                className="mui-field"
+              <AppTextField
                 value={reminderDraft.title}
                 onChange={(event) =>
                   setReminderDraft((prev) => ({
@@ -210,8 +209,7 @@ function ReminderWorkspace({
             <div className="reminder-editor__grid">
               <label className="settings-form__row">
                 <span>{t("app.reminders.form.dueTime")}</span>
-                <TextField
-                  className="mui-field"
+                <AppTextField
                   type="datetime-local"
                   value={reminderDraft.dueAt}
                   onChange={(event) =>
@@ -227,8 +225,7 @@ function ReminderWorkspace({
 
               <label className="settings-form__row">
                 <span>{t("app.reminders.form.severity")}</span>
-                <TextField
-                  className="mui-field"
+                <AppTextField
                   value={reminderDraft.severity}
                   onChange={(event) =>
                     setReminderDraft((prev) => ({
@@ -244,13 +241,12 @@ function ReminderWorkspace({
                   <MenuItem value="medium">{t("app.reminders.severity.medium")}</MenuItem>
                   <MenuItem value="high">{t("app.reminders.severity.high")}</MenuItem>
                   <MenuItem value="critical">{t("app.reminders.severity.critical")}</MenuItem>
-                </TextField>
+                </AppTextField>
               </label>
 
               <label className="settings-form__row">
                 <span>{t("app.reminders.form.status")}</span>
-                <TextField
-                  className="mui-field"
+                <AppTextField
                   value={reminderDraft.status}
                   onChange={(event) =>
                     setReminderDraft((prev) => ({
@@ -264,13 +260,12 @@ function ReminderWorkspace({
                 >
                   <MenuItem value="scheduled">{t("app.reminders.status.scheduled")}</MenuItem>
                   <MenuItem value="done">{t("app.reminders.status.done")}</MenuItem>
-                </TextField>
+                </AppTextField>
               </label>
 
               <label className="settings-form__row">
                 <span>{t("app.reminders.form.linkedNote")}</span>
-                <TextField
-                  className="mui-field"
+                <AppTextField
                   value={reminderDraft.linkedNoteId}
                   onChange={(event) =>
                     setReminderDraft((prev) => ({
@@ -288,14 +283,14 @@ function ReminderWorkspace({
                       {note.title}
                     </MenuItem>
                   ))}
-                </TextField>
+                </AppTextField>
               </label>
             </div>
 
             <label className="settings-form__row">
               <span>{t("app.reminders.form.note")}</span>
-              <TextField
-                className="mui-field knowledge-body-input reminder-detail-input"
+              <AppTextField
+                className="knowledge-body-input reminder-detail-input"
                 value={reminderDraft.detail}
                 onChange={(event) =>
                   setReminderDraft((prev) => ({

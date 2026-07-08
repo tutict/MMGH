@@ -1,4 +1,4 @@
-import { TextField } from "@mui/material";
+import AppTextField from "./ui/AppTextField";
 import AppButton from "./ui/AppButton";
 import React from "react";
 import { useI18n } from "../i18n";
@@ -61,8 +61,7 @@ function KnowledgeVault({
           <span className="section-note">
             {t("app.stats.notes")}: {filteredNotes.length}
           </span>
-          <TextField
-            className="mui-field"
+          <AppTextField
             value={noteSearch}
             onChange={(event) => setNoteSearch(event.target.value)}
             placeholder={t("app.knowledge.search")}
@@ -145,8 +144,8 @@ function KnowledgeVault({
             </div>
           </div>
           <div className="knowledge-editor__title-row">
-            <TextField
-              className="mui-field knowledge-icon-input"
+            <AppTextField
+              className="knowledge-icon-input"
               value={noteDraft.icon}
               slotProps={{ htmlInput: { maxLength: 2 } }}
               onChange={(event) =>
@@ -157,8 +156,8 @@ function KnowledgeVault({
               }
               size="small"
             />
-            <TextField
-              className="mui-field knowledge-title-input"
+            <AppTextField
+              className="knowledge-title-input"
               value={noteDraft.title}
               onChange={(event) =>
                 setNoteDraft((prev) => ({
@@ -172,8 +171,7 @@ function KnowledgeVault({
             />
           </div>
 
-          <TextField
-            className="mui-field"
+          <AppTextField
             value={noteDraft.tagsText}
             onChange={(event) =>
               setNoteDraft((prev) => ({
@@ -186,8 +184,8 @@ function KnowledgeVault({
             fullWidth
           />
 
-          <TextField
-            className="mui-field knowledge-body-input"
+          <AppTextField
+            className="knowledge-body-input"
             value={noteDraft.body}
             onChange={(event) =>
               setNoteDraft((prev) => ({
