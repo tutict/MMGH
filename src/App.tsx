@@ -9,7 +9,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ButtonBase } from "@mui/material";
+import { ButtonBase, TextField } from "@mui/material";
 import "./CSS/App.css";
 import {
   PREVIEW_WORKSPACE_STORAGE_KEY,
@@ -4435,12 +4435,14 @@ function App() {
         ) : (
           <div className="session-stack">
             <div className="session-toolbar">
-              <input
+              <TextField
                 value={newSessionTitle}
                 onChange={(event) => setNewSessionTitle(event.target.value)}
                 placeholder={t("app.session.newPlaceholder")}
-                className="field-input"
+                className="mui-field"
                 aria-label={t("app.session.newPlaceholder")}
+                size="small"
+                fullWidth
               />
               <ButtonBase component="button"
                 type="button"
@@ -4452,12 +4454,14 @@ function App() {
               </ButtonBase>
             </div>
 
-            <input
+            <TextField
               value={sessionSearch}
               onChange={(event) => setSessionSearch(event.target.value)}
               placeholder={t("app.session.searchPlaceholder")}
-              className="field-input session-search-input"
+              className="mui-field session-search-input"
               aria-label={t("app.session.searchLabel")}
+              size="small"
+              fullWidth
             />
 
             <div className="session-list-shell">
