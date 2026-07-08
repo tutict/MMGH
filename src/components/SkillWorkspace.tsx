@@ -1,5 +1,5 @@
 import React, { useDeferredValue, useMemo, useState } from "react";
-import { ButtonBase } from "@mui/material";
+import { ButtonBase, TextField } from "@mui/material";
 import { useI18n } from "../i18n";
 import {
   buildDraftDisplay,
@@ -183,11 +183,13 @@ function SkillWorkspace({
           </article>
         </div>
 
-        <input
-          className="field-input"
+        <TextField
+          className="mui-field"
           value={skillSearch}
           onChange={(event) => setSkillSearch(event.target.value)}
           placeholder={t("app.skills.search")}
+          size="small"
+          fullWidth
         />
 
         <div className="skill-filter-row" aria-label={t("app.skills.title")}>
@@ -355,8 +357,8 @@ function SkillWorkspace({
             <div className="skill-form-grid">
               <label className="settings-form__row">
                 <span>{t("app.skills.form.name")}</span>
-                <input
-                  className="field-input"
+                <TextField
+                  className="mui-field"
                   value={draftDisplay.name}
                   disabled={busy !== "" || loading}
                   onChange={(event) =>
@@ -366,13 +368,15 @@ function SkillWorkspace({
                     }))
                   }
                   placeholder={t("app.skills.form.namePlaceholder")}
+                  size="small"
+                  fullWidth
                 />
               </label>
 
               <label className="settings-form__row">
                 <span>{t("app.skills.form.triggerHint")}</span>
-                <input
-                  className="field-input"
+                <TextField
+                  className="mui-field"
                   value={draftDisplay.triggerHint}
                   disabled={busy !== "" || loading}
                   onChange={(event) =>
@@ -382,15 +386,16 @@ function SkillWorkspace({
                     }))
                   }
                   placeholder={t("app.skills.form.triggerHintPlaceholder")}
+                  size="small"
+                  fullWidth
                 />
               </label>
             </div>
 
             <label className="settings-form__row">
               <span>{t("app.skills.form.description")}</span>
-              <textarea
-                className="field-area"
-                rows={3}
+              <TextField
+                className="mui-field"
                 value={draftDisplay.description}
                 disabled={busy !== "" || loading}
                 onChange={(event) =>
@@ -400,13 +405,16 @@ function SkillWorkspace({
                   }))
                 }
                 placeholder={t("app.skills.form.descriptionPlaceholder")}
+                multiline
+                minRows={3}
+                fullWidth
               />
             </label>
 
             <label className="settings-form__row">
               <span>{t("app.skills.form.instructions")}</span>
-              <textarea
-                className="knowledge-body-input reminder-detail-input"
+              <TextField
+                className="mui-field knowledge-body-input reminder-detail-input"
                 value={draftDisplay.instructions}
                 disabled={busy !== "" || loading}
                 onChange={(event) =>
@@ -416,6 +424,9 @@ function SkillWorkspace({
                   }))
                 }
                 placeholder={t("app.skills.form.instructionsPlaceholder")}
+                multiline
+                minRows={10}
+                fullWidth
               />
             </label>
           </div>
@@ -543,13 +554,15 @@ function SkillWorkspace({
                 ? t("app.skills.forge.description.ai")
                 : t("app.skills.forge.description.local")}
             </p>
-            <textarea
-              className="field-area skill-forge-input"
-              rows={7}
+            <TextField
+              className="mui-field skill-forge-input"
               value={forgePrompt}
               disabled={busy !== "" || loading}
               onChange={(event) => setForgePrompt(event.target.value)}
               placeholder={t("app.skills.forge.placeholder")}
+              multiline
+              minRows={7}
+              fullWidth
             />
             <div className="skill-template-card__body">
               <ButtonBase component="button"
@@ -667,11 +680,13 @@ function SkillWorkspace({
                 {t("app.skills.catalog.count", { count: templates.length })}
               </span>
             </div>
-            <input
-              className="field-input"
+            <TextField
+              className="mui-field"
               value={catalogSearch}
               onChange={(event) => setCatalogSearch(event.target.value)}
               placeholder={t("app.skills.catalog.search")}
+              size="small"
+              fullWidth
             />
             <div className="skill-template-list">
               {catalogSkills.length > 0 ? (
