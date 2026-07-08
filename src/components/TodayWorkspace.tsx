@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { ButtonBase } from "@mui/material";
 import { useI18n } from "../i18n";
 
 function TodayWorkspace({
@@ -103,12 +104,12 @@ function TodayWorkspace({
             </span>
           </div>
           <div className="today-hero__actions">
-            <button type="button" className="solid-button" onClick={() => openView("agent")}>
+            <ButtonBase component="button" type="button" className="solid-button" onClick={() => openView("agent")}>
               {t("app.today.action.resume")}
-            </button>
-            <button type="button" className="ghost-button" onClick={() => openView("reminders")}>
+            </ButtonBase>
+            <ButtonBase component="button" type="button" className="ghost-button" onClick={() => openView("reminders")}>
               {t("app.today.action.reminders")}
-            </button>
+            </ButtonBase>
           </div>
         </section>
 
@@ -119,9 +120,9 @@ function TodayWorkspace({
                 <span className="eyebrow">{t("app.today.focus.eyebrow")}</span>
                 <h4>{t("app.today.focus.title")}</h4>
               </div>
-              <button type="button" className="ghost-button" onClick={() => openView("reminders")}>
+              <ButtonBase component="button" type="button" className="ghost-button" onClick={() => openView("reminders")}>
                 {t("app.mode.reminders")}
-              </button>
+              </ButtonBase>
             </div>
 
             {todayReminderItems.length > 0 ? (
@@ -133,7 +134,7 @@ function TodayWorkspace({
                       key={reminder.id}
                       className={`today-focus-item urgency-${urgency}`}
                     >
-                      <button
+                      <ButtonBase component="button"
                         type="button"
                         className="today-focus-item__body"
                         disabled={todayActionsDisabled}
@@ -161,9 +162,9 @@ function TodayWorkspace({
                               : t("app.reminders.noDueDate")}
                           </span>
                         </div>
-                      </button>
+                      </ButtonBase>
                       <div className="today-item__actions">
-                        <button
+                        <ButtonBase component="button"
                           type="button"
                           className="ghost-button today-inline-action"
                           disabled={todayActionsDisabled}
@@ -178,7 +179,7 @@ function TodayWorkspace({
                                   reminder.status === "done" ? "reopen" : "markDone"
                                 }`
                               )}
-                        </button>
+                        </ButtonBase>
                       </div>
                     </article>
                   );
@@ -199,25 +200,25 @@ function TodayWorkspace({
                   <span className="eyebrow">{t("app.today.sessions.eyebrow")}</span>
                   <h4>{t("app.today.sessions.title")}</h4>
                 </div>
-                <button type="button" className="ghost-button" onClick={() => openView("agent")}>
+                <ButtonBase component="button" type="button" className="ghost-button" onClick={() => openView("agent")}>
                   {t("app.mode.agent")}
-                </button>
+                </ButtonBase>
               </div>
 
               <div className="today-session-spotlight">
                 <span className="section-note">{t("app.today.sessions.active")}</span>
                 <strong>{activeSessionTitle}</strong>
                 <div className="today-session-spotlight__actions">
-                  <button type="button" className="solid-button" onClick={() => openView("agent")}>
+                  <ButtonBase component="button" type="button" className="solid-button" onClick={() => openView("agent")}>
                     {t("app.today.sessions.continue")}
-                  </button>
+                  </ButtonBase>
                 </div>
               </div>
 
               {continueSessionItems.length > 0 ? (
                 <div className="today-session-list">
                   {continueSessionItems.map((session) => (
-                    <button
+                    <ButtonBase component="button"
                       key={session.id}
                       type="button"
                       className={`today-session-item ${session.id === activeSessionId ? "is-active" : ""}`}
@@ -234,7 +235,7 @@ function TodayWorkspace({
                       </div>
                       <p>{session.lastMessagePreview || t("app.session.emptyMessages")}</p>
                       <span className="section-note">{formatTime(session.updatedAt, lang)}</span>
-                    </button>
+                    </ButtonBase>
                   ))}
                 </div>
               ) : null}
@@ -269,7 +270,7 @@ function TodayWorkspace({
                       key={`${item.actionType}-${item.matchedSkillId}-${item.title}`}
                       className={`today-pattern-item today-rule-item today-rule-item--${item.actionType}`}
                     >
-                      <button
+                      <ButtonBase component="button"
                         type="button"
                         className="today-pattern-item__body today-rule-item__body"
                         disabled={todayActionsDisabled}
@@ -291,10 +292,10 @@ function TodayWorkspace({
                           <span>{t("app.today.review.rule.loop", { title: item.title })}</span>
                           <span>{item.reason}</span>
                         </div>
-                      </button>
+                      </ButtonBase>
                       <div className="today-item__actions">
                         {item.actionType === "tune" ? (
-                          <button
+                          <ButtonBase component="button"
                             type="button"
                             className="ghost-button today-inline-action"
                             disabled={todayActionsDisabled}
@@ -306,9 +307,9 @@ function TodayWorkspace({
                             }}
                           >
                             {t("app.today.review.skill.open")}
-                          </button>
+                          </ButtonBase>
                         ) : (
-                          <button
+                          <ButtonBase component="button"
                             type="button"
                             className="ghost-button today-inline-action"
                             disabled={todayActionsDisabled}
@@ -321,7 +322,7 @@ function TodayWorkspace({
                               : item.actionType === "unmount"
                                 ? t("app.today.review.rule.action.unmount.button")
                                 : t("app.skills.sessionMount.recommendedAction")}
-                          </button>
+                          </ButtonBase>
                         )}
                       </div>
                     </article>
@@ -346,7 +347,7 @@ function TodayWorkspace({
                 <div className="today-rule-list">
                   {ruleEffectivenessInsights.map((item) => (
                     <article key={`rule-${item.title}`} className="today-pattern-item today-rule-item">
-                      <button
+                      <ButtonBase component="button"
                         type="button"
                         className="today-pattern-item__body today-rule-item__body"
                         disabled={todayActionsDisabled}
@@ -382,10 +383,10 @@ function TodayWorkspace({
                             </span>
                           </div>
                         </div>
-                      </button>
+                      </ButtonBase>
                       <div className="today-item__actions">
                         {item.status === "available" ? (
-                          <button
+                          <ButtonBase component="button"
                             type="button"
                             className="ghost-button today-inline-action"
                             disabled={todayActionsDisabled}
@@ -396,9 +397,9 @@ function TodayWorkspace({
                             {busy === "save-session-skills"
                               ? t("app.common.saving")
                               : t("app.skills.sessionMount.recommendedAction")}
-                          </button>
+                          </ButtonBase>
                         ) : (
-                          <button
+                          <ButtonBase component="button"
                             type="button"
                             className="ghost-button today-inline-action"
                             disabled={todayActionsDisabled}
@@ -410,7 +411,7 @@ function TodayWorkspace({
                             }}
                           >
                             {t("app.today.review.skill.open")}
-                          </button>
+                          </ButtonBase>
                         )}
                       </div>
                     </article>
@@ -426,7 +427,7 @@ function TodayWorkspace({
                 <span className="section-note">{t("app.today.review.recurringTitle")}</span>
                 {recurringPatternInsights.map((item) => (
                   <article key={item.title} className="today-pattern-item">
-                    <button
+                    <ButtonBase component="button"
                       type="button"
                       className="today-pattern-item__body"
                       disabled={todayActionsDisabled}
@@ -454,10 +455,10 @@ function TodayWorkspace({
                             : t("app.today.review.pattern.noSkill")}
                         </span>
                       </div>
-                    </button>
+                    </ButtonBase>
                     <div className="today-item__actions">
                       {item.status === "missing" ? (
-                        <button
+                        <ButtonBase component="button"
                           type="button"
                           className="ghost-button today-inline-action"
                           disabled={todayActionsDisabled}
@@ -468,9 +469,9 @@ function TodayWorkspace({
                           {busy === "promote-pattern-skill"
                             ? t("app.common.saving")
                             : t("app.today.review.skill.action")}
-                        </button>
+                        </ButtonBase>
                       ) : item.status === "available" ? (
-                        <button
+                        <ButtonBase component="button"
                           type="button"
                           className="ghost-button today-inline-action"
                           disabled={todayActionsDisabled}
@@ -481,9 +482,9 @@ function TodayWorkspace({
                           {busy === "save-session-skills"
                             ? t("app.common.saving")
                             : t("app.skills.sessionMount.recommendedAction")}
-                        </button>
+                        </ButtonBase>
                       ) : (
-                        <button
+                        <ButtonBase component="button"
                           type="button"
                           className="ghost-button today-inline-action"
                           disabled={todayActionsDisabled}
@@ -495,7 +496,7 @@ function TodayWorkspace({
                           }}
                         >
                           {t("app.today.review.skill.open")}
-                        </button>
+                        </ButtonBase>
                       )}
                     </div>
                   </article>
@@ -523,7 +524,7 @@ function TodayWorkspace({
                     noteList.find((note) => String(note.id) === String(item.linkedNoteId)) || null;
                   return (
                     <article key={item.id} className="today-capture-item today-completion-item">
-                      <button
+                      <ButtonBase component="button"
                         type="button"
                         className="today-capture-item__body"
                         disabled={todayActionsDisabled}
@@ -551,9 +552,9 @@ function TodayWorkspace({
                             {t("app.reminders.linked", { title: linkedNote.title })}
                           </span>
                         ) : null}
-                      </button>
+                      </ButtonBase>
                       <div className="today-item__actions">
-                        <button
+                        <ButtonBase component="button"
                           type="button"
                           className="ghost-button today-inline-action"
                           disabled={todayActionsDisabled}
@@ -564,7 +565,7 @@ function TodayWorkspace({
                           {todayActionBusy
                             ? t("app.common.saving")
                             : t("app.today.action.reopen")}
-                        </button>
+                        </ButtonBase>
                       </div>
                     </article>
                   );
@@ -588,7 +589,7 @@ function TodayWorkspace({
             {recentCaptureItems.length > 0 ? (
               <div className="today-capture-list">
                 {recentCaptureItems.map((item) => (
-                  <button
+                  <ButtonBase component="button"
                     key={item.id}
                     type="button"
                     className="today-capture-item"
@@ -614,7 +615,7 @@ function TodayWorkspace({
                     </div>
                     <strong>{item.title}</strong>
                     <p>{item.detail || t("app.common.empty")}</p>
-                  </button>
+                  </ButtonBase>
                 ))}
               </div>
             ) : (
@@ -632,22 +633,22 @@ function TodayWorkspace({
               </div>
             </div>
             <div className="today-shortcut-grid">
-              <button type="button" className="today-shortcut" onClick={() => openView("knowledge")}>
+              <ButtonBase component="button" type="button" className="today-shortcut" onClick={() => openView("knowledge")}>
                 <strong>{t("app.mode.knowledge")}</strong>
                 <span>{t("app.today.shortcuts.knowledge")}</span>
-              </button>
-              <button type="button" className="today-shortcut" onClick={() => openView("skills")}>
+              </ButtonBase>
+              <ButtonBase component="button" type="button" className="today-shortcut" onClick={() => openView("skills")}>
                 <strong>{t("app.mode.skills")}</strong>
                 <span>{t("app.today.shortcuts.skills")}</span>
-              </button>
-              <button type="button" className="today-shortcut" onClick={() => openView("weather")}>
+              </ButtonBase>
+              <ButtonBase component="button" type="button" className="today-shortcut" onClick={() => openView("weather")}>
                 <strong>{t("app.mode.weather")}</strong>
                 <span>{t("app.today.shortcuts.weather")}</span>
-              </button>
-              <button type="button" className="today-shortcut" onClick={() => openView("settings")}>
+              </ButtonBase>
+              <ButtonBase component="button" type="button" className="today-shortcut" onClick={() => openView("settings")}>
                 <strong>{t("app.mode.settings")}</strong>
                 <span>{t("app.today.shortcuts.settings")}</span>
-              </button>
+              </ButtonBase>
             </div>
           </section>
         </aside>
