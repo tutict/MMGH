@@ -9,6 +9,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { ButtonBase } from "@mui/material";
 import "./CSS/App.css";
 import {
   PREVIEW_WORKSPACE_STORAGE_KEY,
@@ -4408,7 +4409,7 @@ function App() {
             <span className="eyebrow">{t("app.nav.sessions.eyebrow")}</span>
             <strong>{t("app.nav.sessions.title")}</strong>
           </div>
-          <button
+          <ButtonBase component="button"
             type="button"
             className="rail-section__toggle"
             onClick={handleToggleSessionLibrary}
@@ -4423,7 +4424,7 @@ function App() {
               className={`rail-section__chevron ${isSessionLibraryCollapsed ? "is-collapsed" : ""}`}
               aria-hidden="true"
             />
-          </button>
+          </ButtonBase>
         </div>
 
         {isSessionLibraryCollapsed ? (
@@ -4441,14 +4442,14 @@ function App() {
                 className="field-input"
                 aria-label={t("app.session.newPlaceholder")}
               />
-              <button
+              <ButtonBase component="button"
                 type="button"
                 className="solid-button"
                 onClick={handleCreateSession}
                 disabled={busy !== "" || loading}
               >
                 {t("app.session.create")}
-              </button>
+              </ButtonBase>
             </div>
 
             <input
@@ -4471,7 +4472,7 @@ function App() {
                     const isGroupCollapsed = Boolean(collapsedSessionGroups[group.id]);
                     return (
                       <div key={group.id} className="session-group">
-                        <button
+                        <ButtonBase component="button"
                           type="button"
                           className="session-group__head session-group__toggle"
                           onClick={() => handleToggleSessionGroup(group.id)}
@@ -4485,7 +4486,7 @@ function App() {
                             {group.label}
                           </span>
                           <strong>{group.items.length}</strong>
-                        </button>
+                        </ButtonBase>
                         {!isGroupCollapsed ? (
                           <div className="session-group__list">
                             {group.items.map((session) => {
@@ -4498,7 +4499,7 @@ function App() {
                                     session.id === activeSessionId ? "is-active" : ""
                                   }`}
                                 >
-                                  <button
+                                  <ButtonBase component="button"
                                     type="button"
                                     className="session-card__main"
                                     onClick={() => handleOpenSession(session.id)}
@@ -4523,8 +4524,8 @@ function App() {
                                       <span>{t("app.session.messageCount", { count: session.messageCount })}</span>
                                       <span>{formatTime(session.updatedAt, lang)}</span>
                                     </div>
-                                  </button>
-                                  <button
+                                  </ButtonBase>
+                                  <ButtonBase component="button"
                                     type="button"
                                     className="session-card__toggle"
                                     onClick={() => handleToggleSessionPreview(session.id)}
@@ -4544,7 +4545,7 @@ function App() {
                                         ? t("app.session.preview.expand")
                                         : t("app.session.preview.collapse")}
                                     </span>
-                                  </button>
+                                  </ButtonBase>
                                 </div>
                               );
                             })}
@@ -4557,14 +4558,14 @@ function App() {
               </div>
             </div>
 
-            <button
+            <ButtonBase component="button"
               type="button"
               className="ghost-button danger-button session-stack__danger"
               onClick={() => handleDeleteSession(activeSessionId)}
               disabled={!activeSessionId || busy !== "" || loading}
             >
               {t("app.session.delete")}
-            </button>
+            </ButtonBase>
           </div>
         )}
       </section>
@@ -4619,7 +4620,7 @@ function App() {
               </div>
               <div className="rail-nav-list">
                 {group.items.map((item) => (
-                  <button
+                  <ButtonBase component="button"
                     key={item.id}
                     type="button"
                     className={`rail-nav-item ${currentView === item.id ? "is-active" : ""}`}
@@ -4636,7 +4637,7 @@ function App() {
                       <span className="rail-nav-item__badge">{item.badge}</span>
                     </div>
                     <span className="rail-nav-item__meta">{item.meta}</span>
-                  </button>
+                  </ButtonBase>
                 ))}
               </div>
             </section>
@@ -4913,7 +4914,7 @@ function App() {
                   <strong>{desktopRuntimeMeta.value}</strong>
                 </span>
               ) : null}
-              <button
+              <ButtonBase component="button"
                 type="button"
                 className="shell-menu-button"
                 onClick={handleToggleMobileNav}
@@ -4924,7 +4925,7 @@ function App() {
                 <span className="shell-menu-button__icon" aria-hidden="true">
                   <PanelIcon type="desktop" />
                 </span>
-              </button>
+              </ButtonBase>
             </div>
           </div>
           <div className="workspace-hero__headline">
@@ -4935,18 +4936,18 @@ function App() {
             <div className="workspace-hero__toolbar-shell">
               <div className="workspace-hero__toolbar">
                 <div className="hero-control-card hero-control-card--theme hero-control-card--compact">
-                  <button
+                  <ButtonBase component="button"
                     type="button"
                     className="ghost-button hero-theme-button"
                     onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
                     aria-label={theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
                   >
                     {theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
-                  </button>
+                  </ButtonBase>
                 </div>
                 <div className="hero-control-card hero-control-card--locale hero-control-card--compact">
                   <div className="mode-switch mode-switch--inline" aria-label={t("app.language.label")}>
-                    <button
+                    <ButtonBase component="button"
                       type="button"
                       className={`mode-switch__button ${lang === "zh-CN" ? "is-active" : ""}`}
                       onClick={() => setLang("zh-CN")}
@@ -4954,8 +4955,8 @@ function App() {
                       aria-pressed={lang === "zh-CN"}
                     >
                       {"\u4E2D\u6587"}
-                    </button>
-                    <button
+                    </ButtonBase>
+                    <ButtonBase component="button"
                       type="button"
                       className={`mode-switch__button ${lang === "en-US" ? "is-active" : ""}`}
                       onClick={() => setLang("en-US")}
@@ -4963,10 +4964,10 @@ function App() {
                       aria-pressed={lang === "en-US"}
                     >
                       EN
-                    </button>
+                    </ButtonBase>
                   </div>
                 </div>
-                <button
+                <ButtonBase component="button"
                   type="button"
                   className={`hero-inspector-toggle ${isInspectorOpen ? "is-active" : ""}`}
                   onClick={() => handleToggleInspector("runtime")}
@@ -4978,13 +4979,13 @@ function App() {
                   <span className="hero-inspector-toggle__icon" aria-hidden="true">
                     <PanelIcon type="runtime" />
                   </span>
-                </button>
+                </ButtonBase>
               </div>
             </div>
           </div>
           <div className="workspace-hero__switcher" aria-label={t("app.nav.title")}>
             {allNavigationItems.map((item) => (
-              <button
+              <ButtonBase component="button"
                 key={`hero-${item.id}`}
                 type="button"
                 className={`workspace-switcher-button ${currentView === item.id ? "is-active" : ""}`}
@@ -4997,7 +4998,7 @@ function App() {
                 <span className="workspace-switcher-button__copy">
                   <strong>{item.label}</strong>
                 </span>
-              </button>
+              </ButtonBase>
             ))}
           </div>
         </section>
@@ -5274,17 +5275,17 @@ function App() {
                 <h3 id="inspector-drawer-title">{activeInspectorMeta.label}</h3>
                 <p>{viewMeta[currentView].title}</p>
               </div>
-              <button
+              <ButtonBase component="button"
                 type="button"
                 className="ghost-button inspector-drawer__close"
                 onClick={() => setIsInspectorOpen(false)}
               >
                 {t("app.common.close")}
-              </button>
+              </ButtonBase>
             </div>
             <div className="inspector-tab-strip" role="tablist" aria-labelledby="inspector-drawer-title">
               {inspectorTabs.map((tab, index) => (
-                <button
+                <ButtonBase component="button"
                   key={tab.id}
                   id={`inspector-tab-${tab.id}`}
                   type="button"
@@ -5300,7 +5301,7 @@ function App() {
                     <PanelIcon type={tab.icon} />
                   </span>
                   <span>{tab.label}</span>
-                </button>
+                </ButtonBase>
               ))}
             </div>
             <div className="inspector-column inspector-column--tabs">
@@ -5348,29 +5349,29 @@ function App() {
                     <span className="eyebrow">{t("app.sound.eyebrow")}</span>
                     <h3>{t("app.sound.title")}</h3>
                   </div>
-                  <button
+                  <ButtonBase component="button"
                     type="button"
                     className="ghost-button"
                     onClick={() => uploadInputRef.current?.click()}
                   >
                     {t("app.sound.addTracks")}
-                  </button>
+                  </ButtonBase>
                 </div>
 
                 <label className="toggle-row">
                   <span>{t("app.sound.autoPlay")}</span>
-                  <button
+                  <ButtonBase component="button"
                     type="button"
                     className={`toggle-pill ${autoPlayOnReply ? "is-on" : ""}`}
                     onClick={() => setAutoPlayOnReply((prev) => !prev)}
                   >
                     <span />
-                  </button>
+                  </ButtonBase>
                 </label>
 
                 <div className="sound-track-list">
                   {localizedTracks.map((track) => (
-                    <button
+                    <ButtonBase component="button"
                       key={track.id}
                       type="button"
                       className={`sound-track-card ${
@@ -5383,7 +5384,7 @@ function App() {
                         <strong>{track.title}</strong>
                         <p>{track.artist}</p>
                       </div>
-                    </button>
+                    </ButtonBase>
                   ))}
                 </div>
 
@@ -5475,7 +5476,7 @@ function App() {
                   <div className="quick-setting-card">
                     <span className="hero-control-card__label">{t("app.language.label")}</span>
                     <div className="mode-switch mode-switch--inline" aria-label={t("app.language.label")}>
-                      <button
+                      <ButtonBase component="button"
                         type="button"
                         className={`mode-switch__button ${lang === "zh-CN" ? "is-active" : ""}`}
                         onClick={() => setLang("zh-CN")}
@@ -5483,8 +5484,8 @@ function App() {
                         aria-pressed={lang === "zh-CN"}
                       >
                         {"\u4E2D\u6587"}
-                      </button>
-                      <button
+                      </ButtonBase>
+                      <ButtonBase component="button"
                         type="button"
                         className={`mode-switch__button ${lang === "en-US" ? "is-active" : ""}`}
                         onClick={() => setLang("en-US")}
@@ -5492,20 +5493,20 @@ function App() {
                         aria-pressed={lang === "en-US"}
                       >
                         EN
-                      </button>
+                      </ButtonBase>
                     </div>
                   </div>
 
                   <div className="quick-setting-card">
                     <span className="hero-control-card__label">{t("app.hero.appearance")}</span>
-                    <button
+                    <ButtonBase component="button"
                       type="button"
                       className="ghost-button hero-theme-button"
                       onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
                       aria-label={theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
                     >
                       {theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
-                    </button>
+                    </ButtonBase>
                   </div>
                 </div>
 
@@ -5515,7 +5516,7 @@ function App() {
                     <span>{settingsForm.baseUrl || t("app.common.empty")}</span>
                   </div>
                   <p className="section-note">{t("app.settings.page.railDescription")}</p>
-                  <button
+                  <ButtonBase component="button"
                     type="button"
                     className="solid-button"
                     onClick={() => {
@@ -5524,7 +5525,7 @@ function App() {
                     }}
                   >
                     {t("app.settings.page.open")}
-                  </button>
+                  </ButtonBase>
                 </div>
               </section>
             ) : null}
@@ -5535,7 +5536,7 @@ function App() {
 
       <nav className="mobile-dock" aria-label={t("app.nav.title")} {...modalBackgroundProps}>
         {mobileDockItems.map((item) => (
-          <button
+          <ButtonBase component="button"
             key={`dock-${item.id}`}
             type="button"
             className={`mobile-dock__item ${currentView === item.id ? "is-active" : ""}`}
@@ -5546,9 +5547,9 @@ function App() {
               <PanelIcon type={getNavIconType(item.id)} />
             </span>
             <span className="mobile-dock__label">{item.label}</span>
-          </button>
+          </ButtonBase>
         ))}
-        <button
+        <ButtonBase component="button"
           type="button"
           className={`mobile-dock__item ${isMobileNavOpen ? "is-active" : ""}`}
           onClick={handleToggleMobileNav}
@@ -5560,7 +5561,7 @@ function App() {
             <PanelIcon type="desktop" />
           </span>
           <span className="mobile-dock__label">{t("app.nav.title")}</span>
-        </button>
+        </ButtonBase>
       </nav>
 
       <div {...modalBackgroundProps}>
