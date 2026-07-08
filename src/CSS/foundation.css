@@ -1986,3 +1986,37 @@ textarea::placeholder {
 .mui-checkbox.MuiCheckbox-root.Mui-checked {
   color: var(--accent);
 }
+
+.MuiPaper-root.MuiMenu-paper {
+  border: 1px solid var(--surface-border);
+  border-radius: var(--control-radius-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)),
+    var(--surface-elevated);
+  color: var(--app-text);
+  box-shadow: var(--panel-shadow);
+}
+
+.MuiMenu-list {
+  padding: 6px;
+}
+
+.MuiMenuItem-root {
+  min-height: var(--control-height-md);
+  border-radius: var(--control-radius-md);
+  color: var(--app-text);
+  font: inherit;
+  letter-spacing: 0;
+}
+
+.MuiMenuItem-root:hover,
+.MuiMenuItem-root.Mui-focusVisible {
+  background: var(--surface-hover);
+}
+
+.MuiMenuItem-root.Mui-selected,
+.MuiMenuItem-root.Mui-selected:hover {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--app-text);
+}
+
