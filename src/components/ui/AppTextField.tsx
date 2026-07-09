@@ -5,10 +5,12 @@ function joinClassNames(...classNames: Array<string | undefined>) {
   return classNames.filter(Boolean).join(" ");
 }
 
-type AppTextFieldProps = React.ComponentProps<typeof TextField>;
+type AppTextFieldProps = React.ComponentProps<typeof TextField> & {
+  fieldClassName?: string;
+};
 
-function AppTextField({ className, ...props }: AppTextFieldProps) {
-  return <TextField className={joinClassNames("mui-field", className)} {...props} />;
+function AppTextField({ className, fieldClassName = "mui-field", ...props }: AppTextFieldProps) {
+  return <TextField className={joinClassNames(fieldClassName, className)} {...props} />;
 }
 
 export default AppTextField;

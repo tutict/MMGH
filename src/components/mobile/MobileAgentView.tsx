@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Button, Chip, TextField } from "@mui/material";
+import { Button, Chip } from "@mui/material";
+import AppTextField from "../ui/AppTextField";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
 
@@ -96,7 +97,7 @@ function MobileAgentView({
       </section>
 
       <form className="mobile-agent-composer" onSubmit={handleRunAgent}>
-        <TextField
+        <AppTextField fieldClassName="mobile-field"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder={mobileText(lang, "send")}
@@ -104,7 +105,7 @@ function MobileAgentView({
           multiline
           maxRows={4}
           size="small"
-          className="mobile-field mobile-agent-composer__field"
+          className="mobile-agent-composer__field"
           slotProps={{ htmlInput: { "aria-label": mobileText(lang, "send") } }}
         />
         <Button

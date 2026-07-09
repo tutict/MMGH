@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Button, TextField } from "@mui/material";
+import { Button } from "@mui/material";
+import AppTextField from "../ui/AppTextField";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
 
@@ -43,14 +44,13 @@ function MobileKnowledgeView({
     <div className="mobile-page mobile-page--knowledge">
       <section className="mobile-section mobile-section--flush">
         <div className="mobile-search-row">
-          <TextField
+          <AppTextField fieldClassName="mobile-field"
             value={noteSearch}
             onChange={(event) => setNoteSearch(event.target.value)}
             placeholder={mobileText(lang, "search")}
             aria-label={mobileText(lang, "search")}
             fullWidth
             size="small"
-            className="mobile-field"
           />
           <Button
             type="button"
@@ -125,23 +125,21 @@ function MobileKnowledgeView({
         }
       >
         <div className="mobile-form">
-          <TextField
+          <AppTextField fieldClassName="mobile-field"
             label="Title"
             value={noteDraft.title}
             onChange={(event) => setNoteDraft((prev) => ({ ...prev, title: event.target.value }))}
             fullWidth
             size="small"
-            className="mobile-field"
           />
-          <TextField
+          <AppTextField fieldClassName="mobile-field"
             label={mobileText(lang, "tags")}
             value={noteDraft.tagsText}
             onChange={(event) => setNoteDraft((prev) => ({ ...prev, tagsText: event.target.value }))}
             fullWidth
             size="small"
-            className="mobile-field"
           />
-          <TextField
+          <AppTextField fieldClassName="mobile-field"
             label={mobileText(lang, "body")}
             value={noteDraft.body}
             onChange={(event) => setNoteDraft((prev) => ({ ...prev, body: event.target.value }))}
@@ -149,7 +147,6 @@ function MobileKnowledgeView({
             multiline
             minRows={10}
             size="small"
-            className="mobile-field"
           />
         </div>
       </MobileSheet>

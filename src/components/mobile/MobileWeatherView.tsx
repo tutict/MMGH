@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Button, Chip, TextField } from "@mui/material";
+import { Button, Chip } from "@mui/material";
+import AppTextField from "../ui/AppTextField";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
 import {
@@ -136,14 +137,13 @@ function MobileWeatherView({
         title={mobileText(lang, "citySheet")}
       >
         <div className="mobile-form mobile-form--compact">
-          <TextField
+          <AppTextField fieldClassName="mobile-field"
             label={mobileText(lang, "search")}
             value={cityQuery}
             onChange={(event) => setCityQuery(event.target.value)}
             placeholder={t("app.weather.search.placeholder")}
             fullWidth
             size="small"
-            className="mobile-field"
           />
         </div>
         <div className="mobile-list">

@@ -1,5 +1,6 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { Button, IconButton, MenuItem, TextField } from "@mui/material";
+import { Button, IconButton, MenuItem } from "@mui/material";
+import AppTextField from "../ui/AppTextField";
 import {
   countOpenReminders,
   filterReminders,
@@ -135,14 +136,13 @@ function MobileRemindersView({
         </div>
 
         <div className="mobile-search-row">
-          <TextField
+          <AppTextField fieldClassName="mobile-field"
             value={reminderSearch}
             onChange={(event) => setReminderSearch(event.target.value)}
             placeholder={t("app.reminders.search")}
             aria-label={t("app.reminders.search")}
             fullWidth
             size="small"
-            className="mobile-field"
           />
         </div>
       </section>
@@ -211,7 +211,7 @@ function MobileRemindersView({
       >
         {reminderDraft.id ? (
           <div className="mobile-form mobile-reminder-form">
-            <TextField
+            <AppTextField fieldClassName="mobile-field"
               label={t("app.reminders.form.title")}
               value={reminderDraft.title || ""}
               onChange={(event) =>
@@ -223,11 +223,10 @@ function MobileRemindersView({
               placeholder={t("app.reminders.form.titlePlaceholder")}
               fullWidth
               size="small"
-              className="mobile-field"
             />
 
             <div className="mobile-form-grid">
-              <TextField
+              <AppTextField fieldClassName="mobile-field"
                 label={t("app.reminders.form.dueTime")}
                 type="datetime-local"
                 value={reminderDraft.dueAt || ""}
@@ -239,11 +238,10 @@ function MobileRemindersView({
                 }
                 fullWidth
                 size="small"
-                className="mobile-field"
                 slotProps={{ inputLabel: { shrink: true } }}
               />
 
-              <TextField
+              <AppTextField fieldClassName="mobile-field"
                 label={t("app.reminders.form.severity")}
                 select
                 value={reminderDraft.severity || "medium"}
@@ -255,15 +253,14 @@ function MobileRemindersView({
                 }
                 fullWidth
                 size="small"
-                className="mobile-field"
               >
                 <MenuItem value="low">{t("app.reminders.severity.low")}</MenuItem>
                 <MenuItem value="medium">{t("app.reminders.severity.medium")}</MenuItem>
                 <MenuItem value="high">{t("app.reminders.severity.high")}</MenuItem>
                 <MenuItem value="critical">{t("app.reminders.severity.critical")}</MenuItem>
-              </TextField>
+              </AppTextField>
 
-              <TextField
+              <AppTextField fieldClassName="mobile-field"
                 label={t("app.reminders.form.status")}
                 select
                 value={reminderDraft.status || "scheduled"}
@@ -275,13 +272,12 @@ function MobileRemindersView({
                 }
                 fullWidth
                 size="small"
-                className="mobile-field"
               >
                 <MenuItem value="scheduled">{t("app.reminders.status.scheduled")}</MenuItem>
                 <MenuItem value="done">{t("app.reminders.status.done")}</MenuItem>
-              </TextField>
+              </AppTextField>
 
-              <TextField
+              <AppTextField fieldClassName="mobile-field"
                 label={t("app.reminders.form.linkedNote")}
                 select
                 value={String(reminderDraft.linkedNoteId || "")}
@@ -293,7 +289,6 @@ function MobileRemindersView({
                 }
                 fullWidth
                 size="small"
-                className="mobile-field"
               >
                 <MenuItem value="">{t("app.reminders.form.noLinkedNote")}</MenuItem>
                 {noteList.map((note) => (
@@ -301,10 +296,10 @@ function MobileRemindersView({
                     {note.title}
                   </MenuItem>
                 ))}
-              </TextField>
+              </AppTextField>
             </div>
 
-            <TextField
+            <AppTextField fieldClassName="mobile-field"
               label={t("app.reminders.form.note")}
               value={reminderDraft.detail || ""}
               onChange={(event) =>
@@ -318,7 +313,6 @@ function MobileRemindersView({
               multiline
               minRows={4}
               size="small"
-              className="mobile-field"
             />
 
             {reminderDraft.linkedNoteId ? (

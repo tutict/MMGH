@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Button, TextField } from "@mui/material";
+import { Button } from "@mui/material";
+import AppTextField from "../ui/AppTextField";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
 
@@ -169,7 +170,7 @@ function MobileSettingsView({
           className="mobile-form mobile-settings-form"
           onSubmit={handleSaveSettings}
         >
-          <TextField
+          <AppTextField fieldClassName="mobile-field"
             label={t("app.settings.providerName")}
             value={settingsForm.providerName || ""}
             onChange={updateField("providerName")}
@@ -177,7 +178,7 @@ function MobileSettingsView({
             size="small"
             fullWidth
           />
-          <TextField
+          <AppTextField fieldClassName="mobile-field"
             label={t("app.settings.model")}
             value={settingsForm.model || ""}
             onChange={updateField("model")}
@@ -185,7 +186,7 @@ function MobileSettingsView({
             size="small"
             fullWidth
           />
-          <TextField
+          <AppTextField fieldClassName="mobile-field"
             label={t("app.settings.baseUrl")}
             value={settingsForm.baseUrl || ""}
             onChange={updateField("baseUrl")}
@@ -202,7 +203,7 @@ function MobileSettingsView({
               {providerSecurityMessage}
             </p>
           ) : null}
-          <TextField
+          <AppTextField fieldClassName="mobile-field"
             type="password"
             label={t("app.settings.apiKey")}
             value={settingsForm.apiKey || ""}
@@ -241,7 +242,7 @@ function MobileSettingsView({
               </Button>
             ) : null}
           </div>
-          <TextField
+          <AppTextField fieldClassName="mobile-field"
             label={t("app.settings.systemPrompt")}
             value={settingsForm.systemPrompt || ""}
             onChange={updateField("systemPrompt")}
