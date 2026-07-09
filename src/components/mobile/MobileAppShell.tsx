@@ -8,7 +8,7 @@ import MobileTodayView from "./MobileTodayView";
 import MobileWeatherView from "./MobileWeatherView";
 import { getMobileMoreItems } from "./mobileViewRegistry";
 import { getMobileNavIconType, mobileText } from "./mobileText";
-import { AppIconButton, MobileButton, MobileList, MobileRowBody, joinClassNames } from "../ui";
+import { AppIconButton, MobileButton, MobileList, MobileRow, MobileRowBody, joinClassNames } from "../ui";
 
 function MobileAppShell({
   agent = {},
@@ -233,7 +233,7 @@ function MobileAppShell({
       >
         <MobileList>
           {capabilities.map((item) => (
-            <div key={item.id} className="mobile-row">
+            <MobileRow key={item.id}>
               <span className="mobile-row__icon" aria-hidden="true">
                 <PanelIcon type={item.id} />
               </span>
@@ -242,14 +242,14 @@ function MobileAppShell({
                 <span>{t(`app.capability.${item.id}.description`)}</span>
               </MobileRowBody>
               <small>{t(`app.status.${item.status}`)}</small>
-            </div>
+            </MobileRow>
           ))}
-          <div className="mobile-row">
+          <MobileRow>
             <MobileRowBody>
               <strong>{mobileText(lang, "provider")}</strong>
               <span>{providerConfigured ? t("app.provider.configured") : t("app.provider.pending")}</span>
             </MobileRowBody>
-          </div>
+          </MobileRow>
         </MobileList>
       </MobileSheet>
       {mediaSlot}

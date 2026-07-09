@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileList, MobileSectionHead, MobileStatusDot, MobileRowBody, MobileEmpty, joinClassNames } from "../ui";
+import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileList, MobileSectionHead, MobileStatusDot, MobileRow, MobileRowBody, MobileEmpty, joinClassNames } from "../ui";
 
 function normalizeTimelineItem(item, index, type, lang, formatTime) {
   const time = item.createdAt || item.updatedAt || item.timestamp || item.time || 0;
@@ -156,7 +156,7 @@ function MobileAgentView({
           {[...activeSessionSkills, ...recommendedSkills].map((skill) => {
             const isMounted = activeSessionSkillIds.includes(skill.id);
             return (
-              <div key={skill.id} className="mobile-row">
+              <MobileRow key={skill.id}>
                 <MobileRowBody>
                   <strong>{skill.name}</strong>
                   <span>{skill.summary || skill.description || skill.triggerHint}</span>
@@ -170,7 +170,7 @@ function MobileAgentView({
                   onClick={() => handleToggleSkillMounted(skill.id)}
                   disabled={busy !== ""}
                 />
-              </div>
+              </MobileRow>
             );
           })}
           {activeSessionSkills.length === 0 && recommendedSkills.length === 0 ? (
@@ -187,18 +187,18 @@ function MobileAgentView({
         title={mobileText(lang, "details")}
       >
         <MobileList>
-          <div className="mobile-row">
+          <MobileRow>
             <MobileRowBody>
               <strong>{mobileText(lang, "provider")}</strong>
               <span>{providerConfigured ? "Configured" : "Pending"}</span>
             </MobileRowBody>
-          </div>
-          <div className="mobile-row">
+          </MobileRow>
+          <MobileRow>
             <MobileRowBody>
               <strong>{mobileText(lang, "activity")}</strong>
               <span>{timeline.length}</span>
             </MobileRowBody>
-          </div>
+          </MobileRow>
         </MobileList>
       </MobileSheet>
     </div>

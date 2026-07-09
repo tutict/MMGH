@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
-import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileForm, MobileList, MobileRowBody, MobileEmpty, MobileMuted, joinClassNames, MobileSectionHead } from "../ui";
+import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileForm, MobileList, MobileRow, MobileRowBody, MobileEmpty, MobileMuted, joinClassNames, MobileSectionHead } from "../ui";
 import {
   formatMobileWeatherDate,
   formatMobileWeatherTime,
@@ -83,10 +83,10 @@ function MobileWeatherView({
       <section className="mobile-section">
         <MobileList variant="metrics">
           {metrics.map((metric) => (
-            <div key={metric.label} className="mobile-row">
+            <MobileRow key={metric.label}>
               <span>{metric.label}</span>
               <strong>{metric.value}</strong>
-            </div>
+            </MobileRow>
           ))}
         </MobileList>
       </section>
@@ -116,13 +116,13 @@ function MobileWeatherView({
         </MobileSectionHead>
         <MobileList>
           {(activeWeatherCity?.daily || []).slice(0, 7).map((item) => (
-            <div key={item.time} className="mobile-row">
+            <MobileRow key={item.time}>
               <MobileRowBody>
                 <strong>{formatMobileWeatherDate(item.time, lang)}</strong>
                 <span>{item.conditionKey ? t(item.conditionKey) : "--"}</span>
               </MobileRowBody>
               <span>{valueWithDegree(item.high, t)} / {valueWithDegree(item.low, t)}</span>
-            </div>
+            </MobileRow>
           ))}
         </MobileList>
       </section>
@@ -173,7 +173,7 @@ function MobileWeatherView({
           {citySuggestions.map((city) => {
             const isSaved = savedLocationIds.has(city.id);
             return (
-              <div key={city.id} className="mobile-row">
+              <MobileRow key={city.id}>
                 <MobileRowBody>
                   <strong>{resolveWeatherCityName(city, t)}</strong>
                   <span>{resolveWeatherRegion(city, t)}</span>
@@ -191,7 +191,7 @@ function MobileWeatherView({
                     setSelectedWeatherCityId(city.id);
                   }}
                 />
-              </div>
+              </MobileRow>
             );
           })}
         </MobileList>

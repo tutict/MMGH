@@ -1,6 +1,6 @@
 import React from "react";
 import { getMobileDaypart, mobileText } from "./mobileText";
-import { MobileActionRow, MobileButton, MobileCheckButton, MobileEmpty, MobileList, MobileRowBody, MobileSectionHead, MobileSummaryCell, MobileSummaryGrid } from "../ui";
+import { MobileActionRow, MobileButton, MobileCheckButton, MobileEmpty, MobileList, MobileRow, MobileRowBody, MobileSectionHead, MobileSummaryCell, MobileSummaryGrid } from "../ui";
 
 function MobileTodayView({
   activeSession,
@@ -69,7 +69,7 @@ function MobileTodayView({
             <MobileEmpty>{mobileText(lang, "emptyList")}</MobileEmpty>
           ) : (
             todayReminderItems.map((item) => (
-              <div key={item.id} className="mobile-row mobile-row--interactive">
+              <MobileRow key={item.id} interactive>
                 <MobileCheckButton
                   type="button"
                   checked={item.status === "done"}
@@ -92,7 +92,7 @@ function MobileTodayView({
                   <span>{item.preview || item.detail || formatTime(item.dueAt, lang)}</span>
                 </MobileButton>
                 <time>{item.dueAt ? formatTime(item.dueAt, lang) : ""}</time>
-              </div>
+              </MobileRow>
             ))
           )}
         </MobileList>
@@ -123,12 +123,12 @@ function MobileTodayView({
         </MobileSectionHead>
         <MobileList>
           {[...signals, ...ruleActionRecommendations].slice(0, 5).map((signal, index) => (
-            <div key={`${signal.id || signal.title || index}`} className="mobile-row">
+            <MobileRow key={`${signal.id || signal.title || index}`}>
               <MobileRowBody>
                 <strong>{signal.title || signal.label || signal.name}</strong>
                 <span>{signal.description || signal.summary || signal.detail || signal.reason}</span>
               </MobileRowBody>
-            </div>
+            </MobileRow>
           ))}
           {signals.length === 0 && ruleActionRecommendations.length === 0 ? (
             <MobileEmpty>{mobileText(lang, "emptyList")}</MobileEmpty>
@@ -143,12 +143,12 @@ function MobileTodayView({
           </MobileSectionHead>
           <MobileList>
             {[...completedTodayItems.slice(0, 3), ...captures].slice(0, 5).map((item, index) => (
-              <div key={`${item.id || item.title || index}`} className="mobile-row">
+              <MobileRow key={`${item.id || item.title || index}`}>
                 <MobileRowBody>
                   <strong>{item.title || item.label}</strong>
                   <span>{item.preview || item.summary || item.detail || ""}</span>
                 </MobileRowBody>
-              </div>
+              </MobileRow>
             ))}
           </MobileList>
         </section>

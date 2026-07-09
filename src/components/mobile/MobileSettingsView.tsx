@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileForm, MobileInlineWarning, MobileList, MobileMuted, MobileRowBody, MobileSectionHead, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
+import { AppTextField, MobileButton, MobileForm, MobileInlineWarning, MobileList, MobileMuted, MobileRow, MobileRowBody, MobileSectionHead, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
 
 function MobileSettingsView({
   busy,
@@ -284,12 +284,12 @@ function MobileSettingsView({
 
 function SummaryRow({ label, value }) {
   return (
-    <div className="mobile-row mobile-summary-row">
+    <MobileRow variant="summary">
       <MobileRowBody>
         <strong>{label}</strong>
         <span>{value || "--"}</span>
       </MobileRowBody>
-    </div>
+    </MobileRow>
   );
 }
 
