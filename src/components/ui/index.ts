@@ -21,6 +21,7 @@ export { default as MobileMuted } from "./MobileMuted";
 export { default as MobilePage } from "./MobilePage";
 export { default as MobileRow } from "./MobileRow";
 export { default as MobileRowBody } from "./MobileRowBody";
+export { default as MobileRowButton } from "./MobileRowButton";
 export { default as MobileSearchRow } from "./MobileSearchRow";
 export { default as MobileSection } from "./MobileSection";
 export { default as MobileSectionHead } from "./MobileSectionHead";

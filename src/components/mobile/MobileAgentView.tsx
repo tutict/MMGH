@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileList, MobilePage, MobileSection, MobileSectionHead, MobileStatusDot, MobileRow, MobileRowBody, MobileEmpty, joinClassNames } from "../ui";
+import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileList, MobilePage, MobileSection, MobileSectionHead, MobileStatusDot, MobileRow, MobileRowBody, MobileRowButton, MobileEmpty, joinClassNames } from "../ui";
 
 function normalizeTimelineItem(item, index, type, lang, formatTime) {
   const time = item.createdAt || item.updatedAt || item.timestamp || item.time || 0;
@@ -126,10 +126,8 @@ function MobileAgentView({
       >
         <MobileList>
           {sessionList.map((session) => (
-            <MobileButton
+            <MobileRowButton
               key={session.id}
-              variant="text"
-              className="mobile-row"
               onClick={() => {
                 void handleOpenSession?.(session.id);
                 setSheet("");
@@ -140,7 +138,7 @@ function MobileAgentView({
                 <span>{session.lastMessagePreview}</span>
               </MobileRowBody>
               <time>{session.updatedAt ? formatTime(session.updatedAt, lang) : ""}</time>
-            </MobileButton>
+            </MobileRowButton>
           ))}
         </MobileList>
       </MobileSheet>

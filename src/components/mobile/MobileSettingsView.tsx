@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileForm, MobileInlineWarning, MobileList, MobileMuted, MobilePage, MobileRow, MobileRowBody, MobileSection, MobileSectionHead, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
+import { AppTextField, MobileButton, MobileForm, MobileInlineWarning, MobileList, MobileMuted, MobilePage, MobileRow, MobileRowBody, MobileRowButton, MobileSection, MobileSectionHead, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid } from "../ui";
 
 function MobileSettingsView({
   busy,
@@ -112,18 +112,18 @@ function MobileSettingsView({
         <MobileMuted>{t("app.settings.cache.description")}</MobileMuted>
         <MobileList>
           {cacheCards.map((card) => (
-            <MobileButton
+            <MobileRowButton
               key={card.id}
-              variant="text"
-              className={joinClassNames("mobile-row", "mobile-cache-row", card.danger ? "is-danger" : null)}
               onClick={() => setCacheTarget(card)}
+              rowVariant="cache"
+              className={card.danger ? "is-danger" : undefined}
             >
               <MobileRowBody>
                 <strong>{card.title}</strong>
                 <span>{card.summary}</span>
               </MobileRowBody>
               <small>{card.countLabel}</small>
-            </MobileButton>
+            </MobileRowButton>
           ))}
         </MobileList>
         <MobileMuted>{t("app.settings.cache.safeNote")}</MobileMuted>

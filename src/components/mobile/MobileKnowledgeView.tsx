@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileList, MobilePage, MobileRowBody, MobileEmpty, MobileForm, MobileSearchRow, MobileSection, joinClassNames, MobileSectionHead } from "../ui";
+import { AppTextField, MobileButton, MobileList, MobilePage, MobileRowBody, MobileRowButton, MobileEmpty, MobileForm, MobileSearchRow, MobileSection, MobileSectionHead } from "../ui";
 
 function MobileKnowledgeView({
   activeNote,
@@ -72,12 +72,11 @@ function MobileKnowledgeView({
             <MobileEmpty>{mobileText(lang, "emptyNotes")}</MobileEmpty>
           ) : (
             filteredNotes.map((note) => (
-              <MobileButton
-                key={note.id}
-                variant="text"
-                className={joinClassNames("mobile-row", note.id === activeNoteId ? "is-active" : null)}
-                onClick={() => void openNote(note)}
-              >
+              <MobileRowButton
+              key={note.id}
+              onClick={() => void openNote(note)}
+              active={note.id === activeNoteId}
+            >
                 <span className="mobile-note-icon">{note.icon || "*"}</span>
                 <MobileRowBody>
                   <strong>{note.title}</strong>
@@ -85,7 +84,7 @@ function MobileKnowledgeView({
                   {note.tags?.length ? <small>{note.tags.join(" / ")}</small> : null}
                 </MobileRowBody>
                 <time>{note.updatedAt ? formatTime(note.updatedAt, lang) : ""}</time>
-              </MobileButton>
+              </MobileRowButton>
             ))
           )}
         </MobileList>

@@ -8,7 +8,7 @@ import MobileTodayView from "./MobileTodayView";
 import MobileWeatherView from "./MobileWeatherView";
 import { getMobileMoreItems } from "./mobileViewRegistry";
 import { getMobileNavIconType, mobileText } from "./mobileText";
-import { AppIconButton, MobileButton, MobileList, MobileRow, MobileRowBody, joinClassNames } from "../ui";
+import { AppIconButton, MobileButton, MobileList, MobileRow, MobileRowBody, MobileRowButton, joinClassNames } from "../ui";
 
 function MobileAppShell({
   agent = {},
@@ -174,14 +174,12 @@ function MobileAppShell({
       >
         <MobileList>
           {moreItems.map((item) => (
-            <MobileButton
+            <MobileRowButton
               key={item.id}
-              className="mobile-row"
               onClick={() => {
                 openView(item.id);
                 setMoreOpen(false);
               }}
-              variant="text"
             >
               <span className="mobile-row__icon" aria-hidden="true">
                 {renderIcon(item.id)}
@@ -191,7 +189,7 @@ function MobileAppShell({
                 <span>{item.meta}</span>
               </MobileRowBody>
               <small>{item.badge}</small>
-            </MobileButton>
+            </MobileRowButton>
           ))}
         </MobileList>
         <div className="mobile-quick-settings">
