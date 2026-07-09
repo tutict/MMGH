@@ -60,7 +60,7 @@ function MobileSettingsView({
             <h1>{t("app.settings.page.title")}</h1>
           </div>
           <MobileButton
-            className="mobile-secondary-action"
+            mobileAction="secondary"
             onClick={() => setProviderOpen(true)}
             variant="outlined"
             size="small"
@@ -143,7 +143,7 @@ function MobileSettingsView({
         actions={
           <>
             <MobileButton
-              className="mobile-secondary-action"
+              mobileAction="secondary"
               onClick={() => setProviderOpen(false)}
               variant="outlined"
             >
@@ -152,7 +152,7 @@ function MobileSettingsView({
             <MobileButton
               type="submit"
               form="mobile-settings-provider-form"
-              className="mobile-primary-action"
+              mobileAction="primary"
               disabled={busy !== "" || !hasUnsavedSettings}
               variant="contained"
             >
@@ -225,7 +225,8 @@ function MobileSettingsView({
             </span>
             {settingsForm.hasApiKey || settingsForm.clearApiKey ? (
               <MobileButton
-                className={`mobile-secondary-action ${settingsForm.clearApiKey ? "is-danger" : ""}`}
+                mobileAction="secondary"
+                className={settingsForm.clearApiKey ? "is-danger" : undefined}
                 onClick={handleClearApiKey}
                 variant="outlined"
                 color={settingsForm.clearApiKey ? "error" : "primary"}
@@ -260,14 +261,14 @@ function MobileSettingsView({
         actions={
           <>
             <MobileButton
-              className="mobile-secondary-action"
+              mobileAction="secondary"
               onClick={() => setCacheTarget(null)}
               variant="outlined"
             >
               {t("app.common.cancel")}
             </MobileButton>
             <MobileButton
-              className={cacheTarget?.danger ? "mobile-danger-action" : "mobile-primary-action"}
+              mobileAction={cacheTarget?.danger ? "danger" : "primary"}
               onClick={() => void clearCacheTarget()}
               disabled={busy !== ""}
               variant={cacheTarget?.danger ? "outlined" : "contained"}

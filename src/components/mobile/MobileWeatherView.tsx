@@ -60,12 +60,12 @@ function MobileWeatherView({
           <strong>{valueWithDegree(activeWeatherCity?.temperature, t)}</strong>
         </div>
         <div className="mobile-action-row">
-          <MobileButton variant="contained" className="mobile-primary-action" onClick={onRefresh}>
+          <MobileButton variant="contained" mobileAction="primary" onClick={onRefresh}>
             {mobileText(lang, "refresh")}
           </MobileButton>
           <MobileButton
             variant="outlined"
-            className="mobile-secondary-action"
+            mobileAction="secondary"
             onClick={() => setCitySheetOpen(true)}
           >
             {mobileText(lang, "city")}

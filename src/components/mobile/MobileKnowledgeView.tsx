@@ -53,7 +53,7 @@ function MobileKnowledgeView({
           />
           <MobileButton
             variant="contained"
-            className="mobile-primary-action"
+            mobileAction="primary"
             onClick={createNote}
             disabled={busy !== ""}
           >
@@ -102,7 +102,7 @@ function MobileKnowledgeView({
             <MobileButton
               color="error"
               variant="text"
-              className="mobile-danger-action"
+              mobileAction="danger"
               onClick={handleDeleteNote}
               disabled={busy !== "" || !activeNote}
             >
@@ -110,7 +110,7 @@ function MobileKnowledgeView({
             </MobileButton>
             <MobileButton
               variant="contained"
-              className="mobile-primary-action"
+              mobileAction="primary"
               onClick={handleSaveNote}
               disabled={busy !== "" || !noteDraft?.id}
             >

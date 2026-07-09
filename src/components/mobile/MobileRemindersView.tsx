@@ -110,7 +110,7 @@ function MobileRemindersView({
           </div>
           <MobileButton
             variant="contained"
-            className="mobile-primary-action"
+            mobileAction="primary"
             onClick={() => void createReminderAndOpen()}
             disabled={busy !== "" || loading}
           >
@@ -188,7 +188,7 @@ function MobileRemindersView({
             <MobileButton
               color="error"
               variant="text"
-              className="mobile-danger-action"
+              mobileAction="danger"
               onClick={() => void handleDeleteReminder()}
               disabled={!reminderDraft.id || busy !== "" || loading}
             >
@@ -196,7 +196,7 @@ function MobileRemindersView({
             </MobileButton>
             <MobileButton
               variant="contained"
-              className="mobile-primary-action"
+              mobileAction="primary"
               onClick={handleSaveReminder}
               disabled={!reminderDraft.id || !hasUnsavedReminder || busy !== "" || loading}
             >
@@ -319,7 +319,7 @@ function MobileRemindersView({
                 </span>
                 <MobileButton
                   variant="outlined"
-                  className="mobile-secondary-action"
+                  mobileAction="secondary"
                   onClick={openLinkedNote}
                 >
                   {t("app.reminders.openNote")}

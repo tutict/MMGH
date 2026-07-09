@@ -64,13 +64,13 @@ function MobileAgentView({
           <MobileStatusDot tone={providerConfigured ? "ready" : "pending"} />
         </div>
         <div className="mobile-action-row mobile-action-row--three">
-          <MobileButton variant="outlined" className="mobile-secondary-action" onClick={() => setSheet("sessions")}>
+          <MobileButton variant="outlined" mobileAction="secondary" onClick={() => setSheet("sessions")}>
             {mobileText(lang, "sessionLibrary")}
           </MobileButton>
-          <MobileButton variant="outlined" className="mobile-secondary-action" onClick={() => setSheet("skills")}>
+          <MobileButton variant="outlined" mobileAction="secondary" onClick={() => setSheet("skills")}>
             {mobileText(lang, "skills")}
           </MobileButton>
-          <MobileButton variant="outlined" className="mobile-secondary-action" onClick={() => setSheet("details")}>
+          <MobileButton variant="outlined" mobileAction="secondary" onClick={() => setSheet("details")}>
             {mobileText(lang, "details")}
           </MobileButton>
         </div>
@@ -110,7 +110,7 @@ function MobileAgentView({
         <MobileButton
           type="submit"
           variant="contained"
-          className="mobile-primary-action"
+          mobileAction="primary"
           disabled={loading || isRunning || !draft.trim()}
         >
           {mobileText(lang, "send")}

@@ -215,7 +215,7 @@ function MobileAppShell({
           </div>
           <MobileButton
             variant="outlined"
-            className="mobile-secondary-action"
+            mobileAction="secondary"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           >
             {theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}

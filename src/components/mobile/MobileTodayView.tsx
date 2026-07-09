@@ -50,10 +50,10 @@ function MobileTodayView({
           ))}
         </div>
         <div className="mobile-action-row">
-          <MobileButton variant="contained" className="mobile-primary-action" onClick={() => openView("agent")}>
+          <MobileButton variant="contained" mobileAction="primary" onClick={() => openView("agent")}>
             {mobileText(lang, "continueAgent")}
           </MobileButton>
-          <MobileButton variant="outlined" className="mobile-secondary-action" onClick={() => openView("reminders")}>
+          <MobileButton variant="outlined" mobileAction="secondary" onClick={() => openView("reminders")}>
             {mobileText(lang, "openReminders")}
           </MobileButton>
         </div>
