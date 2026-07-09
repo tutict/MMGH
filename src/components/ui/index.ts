@@ -9,4 +9,5 @@ export { default as AppStatusChip } from "./AppStatusChip";
 export { default as AppTextField } from "./AppTextField";
 export { default as MobileButton } from "./MobileButton";
 export { default as MobileChip } from "./MobileChip";
+export { default as MobileInlineWarning } from "./MobileInlineWarning";
 export { default as MobileStatusDot } from "./MobileStatusDot";

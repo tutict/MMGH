@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileStatusDot } from "../ui";
+import { AppTextField, MobileButton, MobileInlineWarning, MobileStatusDot } from "../ui";
 
 function MobileSettingsView({
   busy,
@@ -96,13 +96,9 @@ function MobileSettingsView({
           <SummaryRow label={t("app.settings.baseUrl")} value={settingsForm.baseUrl} />
         </div>
         {providerSecurityMessage ? (
-          <p
-            className={`mobile-inline-warning ${
-              providerSecurityStatus === "blocked" ? "is-danger" : ""
-            }`}
-          >
+          <MobileInlineWarning danger={providerSecurityStatus === "blocked"}>
             {providerSecurityMessage}
-          </p>
+          </MobileInlineWarning>
         ) : null}
       </section>
 
@@ -191,13 +187,9 @@ function MobileSettingsView({
             fullWidth
           />
           {providerSecurityMessage ? (
-            <p
-              className={`mobile-inline-warning ${
-                providerSecurityStatus === "blocked" ? "is-danger" : ""
-              }`}
-            >
+            <MobileInlineWarning danger={providerSecurityStatus === "blocked"}>
               {providerSecurityMessage}
-            </p>
+            </MobileInlineWarning>
           ) : null}
           <AppTextField fieldClassName="mobile-field"
             type="password"
