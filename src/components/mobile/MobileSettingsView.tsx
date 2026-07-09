@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileInlineWarning, MobileStatusDot, MobileRowBody } from "../ui";
+import { AppTextField, MobileButton, MobileInlineWarning, MobileMuted, MobileStatusDot, MobileRowBody } from "../ui";
 
 function MobileSettingsView({
   busy,
@@ -109,7 +109,7 @@ function MobileSettingsView({
             <h2>{t("app.settings.cache.title")}</h2>
           </div>
         </div>
-        <p className="mobile-muted">{t("app.settings.cache.description")}</p>
+        <MobileMuted>{t("app.settings.cache.description")}</MobileMuted>
         <div className="mobile-list">
           {cacheCards.map((card) => (
             <MobileButton
@@ -126,7 +126,7 @@ function MobileSettingsView({
             </MobileButton>
           ))}
         </div>
-        <p className="mobile-muted">{t("app.settings.cache.safeNote")}</p>
+        <MobileMuted>{t("app.settings.cache.safeNote")}</MobileMuted>
       </section>
 
       <MobileSheet
@@ -274,7 +274,7 @@ function MobileSettingsView({
         <div className="mobile-cache-confirm">
           <strong>{cacheTarget?.summary}</strong>
           <p>{cacheTarget?.description}</p>
-          <p className="mobile-muted">{t("app.settings.cache.safeNote")}</p>
+          <MobileMuted>{t("app.settings.cache.safeNote")}</MobileMuted>
         </div>
       </MobileSheet>
     </section>

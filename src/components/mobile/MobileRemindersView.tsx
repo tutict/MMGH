@@ -6,7 +6,7 @@ import {
 } from "../reminderWorkspaceModel";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty } from "../ui";
+import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileMuted } from "../ui";
 
 function MobileRemindersView({
   busy,
@@ -150,7 +150,7 @@ function MobileRemindersView({
           <section key={group.key} className="mobile-section mobile-reminder-group">
             <div className="mobile-section__head mobile-section__head--line">
               <h2>{group.title}</h2>
-              <span className="mobile-muted">{group.items.length}</span>
+              <MobileMuted as="span">{group.items.length}</MobileMuted>
             </div>
             <div className="mobile-list">
               {group.items.length > 0 ? (

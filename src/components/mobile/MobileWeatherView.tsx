@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
-import { AppTextField, MobileButton, MobileChip, MobileRowBody, MobileEmpty } from "../ui";
+import { AppTextField, MobileButton, MobileChip, MobileRowBody, MobileEmpty, MobileMuted } from "../ui";
 import {
   formatMobileWeatherDate,
   formatMobileWeatherTime,
@@ -71,13 +71,13 @@ function MobileWeatherView({
             {mobileText(lang, "city")}
           </MobileButton>
         </div>
-        <p className="mobile-muted">
+        <MobileMuted>
           {weatherStatus === "error"
             ? weatherError
             : weatherUpdatedAt
               ? t("app.weather.updatedAt", { date: formatMobileWeatherTime(weatherUpdatedAt, lang) })
               : t("app.weather.updatedAtPending")}
-        </p>
+        </MobileMuted>
       </section>
 
       <section className="mobile-section">
