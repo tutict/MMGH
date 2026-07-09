@@ -1,5 +1,5 @@
 import CloseIcon from "@mui/icons-material/Close";
-import { Box, Modal, Typography } from "@mui/material";
+import { Modal } from "@mui/material";
 import AppIconButton from "../ui/AppIconButton";
 
 function MobileSheet({
@@ -24,22 +24,21 @@ function MobileSheet({
         },
       }}
     >
-      <Box className="mobile-sheet-host">
-        <Box
-          component="section"
+      <div className="mobile-sheet-host">
+        <section
           id={id}
           className="mobile-sheet"
           role="dialog"
           aria-modal="true"
           aria-labelledby={id ? `${id}-title` : undefined}
         >
-          <Box component="header" className="mobile-sheet__head">
-            <Box>
+          <header className="mobile-sheet__head">
+            <div>
               {eyebrow ? <span className="mobile-eyebrow">{eyebrow}</span> : null}
-              <Typography component="h2" id={id ? `${id}-title` : undefined}>
+              <h2 id={id ? `${id}-title` : undefined}>
                 {title}
-              </Typography>
-            </Box>
+              </h2>
+            </div>
             <AppIconButton
               type="button"
               className="mobile-icon-button"
@@ -49,11 +48,11 @@ function MobileSheet({
             >
               <CloseIcon fontSize="small" aria-hidden="true" />
             </AppIconButton>
-          </Box>
-          <Box className="mobile-sheet__body">{children}</Box>
-          {actions ? <Box component="footer" className="mobile-sheet__actions">{actions}</Box> : null}
-        </Box>
-      </Box>
+          </header>
+          <div className="mobile-sheet__body">{children}</div>
+          {actions ? <footer className="mobile-sheet__actions">{actions}</footer> : null}
+        </section>
+      </div>
     </Modal>
   );
 }
