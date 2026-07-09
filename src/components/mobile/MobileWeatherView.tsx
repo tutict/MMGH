@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
-import { AppTextField, MobileButton, MobileChip, MobileRowBody } from "../ui";
+import { AppTextField, MobileButton, MobileChip, MobileRowBody, MobileEmpty } from "../ui";
 import {
   formatMobileWeatherDate,
   formatMobileWeatherTime,
@@ -97,7 +97,7 @@ function MobileWeatherView({
         </div>
         <div className="mobile-weather-strip">
           {(activeWeatherCity?.hourly || []).length === 0 ? (
-            <p className="mobile-empty">{t("app.weather.emptyForecast")}</p>
+            <MobileEmpty>{t("app.weather.emptyForecast")}</MobileEmpty>
           ) : (
             activeWeatherCity.hourly.map((item) => (
               <div key={item.time} className="mobile-weather-chip">

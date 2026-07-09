@@ -1,6 +1,6 @@
 import React from "react";
 import { getMobileDaypart, mobileText } from "./mobileText";
-import { MobileButton, MobileCheckButton, MobileRowBody } from "../ui";
+import { MobileButton, MobileCheckButton, MobileRowBody, MobileEmpty } from "../ui";
 
 function MobileTodayView({
   activeSession,
@@ -66,7 +66,7 @@ function MobileTodayView({
         </div>
         <div className="mobile-list">
           {todayReminderItems.length === 0 ? (
-            <p className="mobile-empty">{mobileText(lang, "emptyList")}</p>
+            <MobileEmpty>{mobileText(lang, "emptyList")}</MobileEmpty>
           ) : (
             todayReminderItems.map((item) => (
               <div key={item.id} className="mobile-row mobile-row--interactive">
@@ -131,7 +131,7 @@ function MobileTodayView({
             </div>
           ))}
           {signals.length === 0 && ruleActionRecommendations.length === 0 ? (
-            <p className="mobile-empty">{mobileText(lang, "emptyList")}</p>
+            <MobileEmpty>{mobileText(lang, "emptyList")}</MobileEmpty>
           ) : null}
         </div>
       </section>

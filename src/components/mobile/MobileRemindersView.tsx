@@ -6,7 +6,7 @@ import {
 } from "../reminderWorkspaceModel";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton } from "../ui";
+import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty } from "../ui";
 
 function MobileRemindersView({
   busy,
@@ -169,7 +169,7 @@ function MobileRemindersView({
                   />
                 ))
               ) : (
-                <div className="mobile-empty">{t("app.reminders.emptyBucket")}</div>
+                <MobileEmpty as="div">{t("app.reminders.emptyBucket")}</MobileEmpty>
               )}
             </div>
           </section>
@@ -328,7 +328,7 @@ function MobileRemindersView({
             ) : null}
           </div>
         ) : (
-          <div className="mobile-empty">{t("app.reminders.emptyState.description")}</div>
+          <MobileEmpty as="div">{t("app.reminders.emptyState.description")}</MobileEmpty>
         )}
       </MobileSheet>
     </section>
