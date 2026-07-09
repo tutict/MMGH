@@ -1,5 +1,6 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { IconButton, MenuItem } from "@mui/material";
+import { MenuItem } from "@mui/material";
+import AppIconButton from "../ui/AppIconButton";
 import MobileButton from "../ui/MobileButton";
 import AppTextField from "../ui/AppTextField";
 import {
@@ -354,7 +355,7 @@ function ReminderRow({
 
   return (
     <div className={`mobile-row mobile-reminder-row ${selected ? "is-active" : ""}`}>
-      <IconButton
+      <AppIconButton
         type="button"
         className={`mobile-check ${item.status === "done" ? "is-done" : ""}`}
         onClick={() => void handleToggleTodayReminderStatus(item)}
@@ -363,7 +364,7 @@ function ReminderRow({
         size="small"
       >
         <span aria-hidden="true">{item.status === "done" ? "↩" : "✓"}</span>
-      </IconButton>
+      </AppIconButton>
       <MobileButton
         variant="text"
         className="mobile-row__body"

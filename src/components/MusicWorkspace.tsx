@@ -1,4 +1,5 @@
-import { IconButton, Slider } from "@mui/material";
+import { Slider } from "@mui/material";
+import AppIconButton from "./ui/AppIconButton";
 import AppButton from "./ui/AppButton";
 import React from "react";
 import { useI18n } from "../i18n";
@@ -421,34 +422,34 @@ function MusicWorkspace({
 
             <div className="music-room__controls">
               <div className="music-room__player-actions">
-                <IconButton
+                <AppIconButton
                   className="music-room__icon-button"
                   aria-label={t("app.music.previous")}
                   onClick={handlePlayPreviousTrack}
                   size="small"
                 >
                   <PreviousIcon />
-                </IconButton>
-                <IconButton
+                </AppIconButton>
+                <AppIconButton
                   className="music-room__icon-button is-primary"
                   aria-label={isPlaying ? t("app.music.pause") : t("app.music.play")}
                   onClick={handleTogglePlayback}
                   size="small"
                 >
                   {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                </IconButton>
-                <IconButton
+                </AppIconButton>
+                <AppIconButton
                   className="music-room__icon-button"
                   aria-label={t("app.music.next")}
                   onClick={handlePlayNextTrack}
                   size="small"
                 >
                   <NextIcon />
-                </IconButton>
+                </AppIconButton>
               </div>
 
               <div className="music-room__secondary-actions">
-                <IconButton
+                <AppIconButton
                   className="music-room__mode-button"
                   aria-label={`${t("app.music.playMode")} ${t(playModeMeta.labelKey)}`}
                   onClick={handleCyclePlayMode}
@@ -456,15 +457,15 @@ function MusicWorkspace({
                 >
                   <ModeIcon mode={playMode} />
                   <span>{playModeMeta.shortLabel}</span>
-                </IconButton>
-                <IconButton
+                </AppIconButton>
+                <AppIconButton
                   className="music-room__icon-button"
                   aria-label={t("app.music.restart")}
                   onClick={handleRestartTrack}
                   size="small"
                 >
                   <ReplayIcon />
-                </IconButton>
+                </AppIconButton>
               </div>
 
               <label className="music-room__volume">
@@ -490,14 +491,14 @@ function MusicWorkspace({
               <span className="eyebrow">{t("app.music.queueEyebrow")}</span>
               <h3>{t("app.music.queueTitle")}</h3>
             </div>
-            <IconButton
+            <AppIconButton
               className="music-room__library-close"
               onClick={() => setIsLibraryOpen(false)}
               aria-label={t("app.music.queueCollapse")}
               size="small"
             >
               <ChevronRightIcon />
-            </IconButton>
+            </AppIconButton>
           </div>
 
           <div className="music-room__library-hint">

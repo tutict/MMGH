@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { IconButton, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { ToggleButton, ToggleButtonGroup } from "@mui/material";
+import AppIconButton from "../ui/AppIconButton";
 import MobileButton from "../ui/MobileButton";
 import MobileAgentView from "./MobileAgentView";
 import MobileKnowledgeView from "./MobileKnowledgeView";
@@ -59,7 +60,7 @@ function MobileAppShell({
           <strong>归流 · {currentMeta.title || currentView}</strong>
         </div>
         <time>{formatShortClock(clockNow, lang)}</time>
-        <IconButton
+        <AppIconButton
           type="button"
           className="mobile-icon-button"
           onClick={() => setMoreOpen(true)}
@@ -67,8 +68,8 @@ function MobileAppShell({
           size="small"
         >
           <span aria-hidden="true">{renderIcon("more")}</span>
-        </IconButton>
-        <IconButton
+        </AppIconButton>
+        <AppIconButton
           type="button"
           className="mobile-icon-button"
           onClick={() => setInspectorOpen(true)}
@@ -78,7 +79,7 @@ function MobileAppShell({
           <span aria-hidden="true">
             <PanelIcon type="trace" />
           </span>
-        </IconButton>
+        </AppIconButton>
       </header>
 
       <main className="mobile-main">

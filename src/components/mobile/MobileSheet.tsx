@@ -1,5 +1,6 @@
 import CloseIcon from "@mui/icons-material/Close";
-import { Box, IconButton, Modal, Typography } from "@mui/material";
+import { Box, Modal, Typography } from "@mui/material";
+import AppIconButton from "../ui/AppIconButton";
 
 function MobileSheet({
   actions = null,
@@ -39,7 +40,7 @@ function MobileSheet({
                 {title}
               </Typography>
             </Box>
-            <IconButton
+            <AppIconButton
               type="button"
               className="mobile-icon-button"
               onClick={onClose}
@@ -47,7 +48,7 @@ function MobileSheet({
               size="small"
             >
               <CloseIcon fontSize="small" aria-hidden="true" />
-            </IconButton>
+            </AppIconButton>
           </Box>
           <Box className="mobile-sheet__body">{children}</Box>
           {actions ? <Box component="footer" className="mobile-sheet__actions">{actions}</Box> : null}

@@ -1,7 +1,8 @@
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
-import { Box, IconButton, Slider } from "@mui/material";
+import { Box, Slider } from "@mui/material";
+import AppIconButton from "./ui/AppIconButton";
 import AppButton from "./ui/AppButton";
 import { useRef } from "react";
 import { useI18n } from "../i18n";
@@ -103,22 +104,22 @@ function MiniPlayerBar({
       </AppButton>
 
       <div className="mini-player-bar__controls">
-        <IconButton
+        <AppIconButton
           className="mini-player-bar__button"
           onClick={handleRestartTrack}
           aria-label={t("app.music.restart")}
           size="small"
         >
           <ReplayRoundedIcon fontSize="small" />
-        </IconButton>
-        <IconButton
+        </AppIconButton>
+        <AppIconButton
           className="mini-player-bar__button mini-player-bar__button--primary"
           onClick={handleTogglePlayback}
           aria-label={isPlaying ? t("app.music.pause") : t("app.music.play")}
           size="small"
         >
           {isPlaying ? <PauseRoundedIcon fontSize="small" /> : <PlayArrowRoundedIcon fontSize="small" />}
-        </IconButton>
+        </AppIconButton>
       </div>
 
       <div className="mini-player-bar__timeline">

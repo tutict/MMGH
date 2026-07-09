@@ -1,5 +1,5 @@
 import React from "react";
-import { IconButton } from "@mui/material";
+import AppIconButton from "../ui/AppIconButton";
 import MobileButton from "../ui/MobileButton";
 import { getMobileDaypart, mobileText } from "./mobileText";
 
@@ -71,7 +71,7 @@ function MobileTodayView({
           ) : (
             todayReminderItems.map((item) => (
               <div key={item.id} className="mobile-row mobile-row--interactive">
-                <IconButton
+                <AppIconButton
                   type="button"
                   className={`mobile-check ${item.status === "done" ? "is-done" : ""}`}
                   onClick={() => handleToggleTodayReminderStatus(item)}
@@ -80,7 +80,7 @@ function MobileTodayView({
                   size="small"
                 >
                   <span aria-hidden="true">{item.status === "done" ? "✓" : ""}</span>
-                </IconButton>
+                </AppIconButton>
                 <MobileButton
                   variant="text"
                   className="mobile-row__body"
