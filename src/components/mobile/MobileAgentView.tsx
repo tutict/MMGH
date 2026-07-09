@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Button, Chip } from "@mui/material";
+import { Chip } from "@mui/material";
+import MobileButton from "../ui/MobileButton";
 import AppTextField from "../ui/AppTextField";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
@@ -65,15 +66,15 @@ function MobileAgentView({
           <span className={`mobile-status-dot ${providerConfigured ? "is-ready" : "is-pending"}`} />
         </div>
         <div className="mobile-action-row mobile-action-row--three">
-          <Button type="button" variant="outlined" className="mobile-secondary-action" onClick={() => setSheet("sessions")}>
+          <MobileButton variant="outlined" className="mobile-secondary-action" onClick={() => setSheet("sessions")}>
             {mobileText(lang, "sessionLibrary")}
-          </Button>
-          <Button type="button" variant="outlined" className="mobile-secondary-action" onClick={() => setSheet("skills")}>
+          </MobileButton>
+          <MobileButton variant="outlined" className="mobile-secondary-action" onClick={() => setSheet("skills")}>
             {mobileText(lang, "skills")}
-          </Button>
-          <Button type="button" variant="outlined" className="mobile-secondary-action" onClick={() => setSheet("details")}>
+          </MobileButton>
+          <MobileButton variant="outlined" className="mobile-secondary-action" onClick={() => setSheet("details")}>
             {mobileText(lang, "details")}
-          </Button>
+          </MobileButton>
         </div>
       </section>
 
@@ -108,14 +109,14 @@ function MobileAgentView({
           className="mobile-agent-composer__field"
           slotProps={{ htmlInput: { "aria-label": mobileText(lang, "send") } }}
         />
-        <Button
+        <MobileButton
           type="submit"
           variant="contained"
           className="mobile-primary-action"
           disabled={loading || isRunning || !draft.trim()}
         >
           {mobileText(lang, "send")}
-        </Button>
+        </MobileButton>
       </form>
 
       <MobileSheet
@@ -127,9 +128,8 @@ function MobileAgentView({
       >
         <div className="mobile-list">
           {sessionList.map((session) => (
-            <Button
+            <MobileButton
               key={session.id}
-              type="button"
               variant="text"
               className="mobile-row"
               onClick={() => {
@@ -142,7 +142,7 @@ function MobileAgentView({
                 <span>{session.lastMessagePreview}</span>
               </span>
               <time>{session.updatedAt ? formatTime(session.updatedAt, lang) : ""}</time>
-            </Button>
+            </MobileButton>
           ))}
         </div>
       </MobileSheet>

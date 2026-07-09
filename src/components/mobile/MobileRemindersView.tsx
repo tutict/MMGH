@@ -1,5 +1,6 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { Button, IconButton, MenuItem } from "@mui/material";
+import { IconButton, MenuItem } from "@mui/material";
+import MobileButton from "../ui/MobileButton";
 import AppTextField from "../ui/AppTextField";
 import {
   countOpenReminders,
@@ -109,15 +110,14 @@ function MobileRemindersView({
             <span className="mobile-eyebrow">{t("app.reminders.eyebrow")}</span>
             <h1>{t("app.reminders.title")}</h1>
           </div>
-          <Button
-            type="button"
+          <MobileButton
             variant="contained"
             className="mobile-primary-action"
             onClick={() => void createReminderAndOpen()}
             disabled={busy !== "" || loading}
           >
             {t("app.reminders.newReminder")}
-          </Button>
+          </MobileButton>
         </div>
 
         <div className="mobile-summary-grid" aria-label={t("app.reminders.title")}>
@@ -187,8 +187,7 @@ function MobileRemindersView({
         eyebrow={t("app.reminders.editor.eyebrow")}
         actions={
           <>
-            <Button
-              type="button"
+            <MobileButton
               color="error"
               variant="text"
               className="mobile-danger-action"
@@ -196,16 +195,15 @@ function MobileRemindersView({
               disabled={!reminderDraft.id || busy !== "" || loading}
             >
               {t("app.common.delete")}
-            </Button>
-            <Button
-              type="button"
+            </MobileButton>
+            <MobileButton
               variant="contained"
               className="mobile-primary-action"
               onClick={handleSaveReminder}
               disabled={!reminderDraft.id || !hasUnsavedReminder || busy !== "" || loading}
             >
               {busy === "save-reminder" ? t("app.common.saving") : t("app.reminders.save")}
-            </Button>
+            </MobileButton>
           </>
         }
       >
@@ -321,14 +319,13 @@ function MobileRemindersView({
                   {t("app.reminders.linkedTo")} {" "}
                   {selectedLinkedNote?.title || t("app.reminders.note")}
                 </span>
-                <Button
-                  type="button"
+                <MobileButton
                   variant="outlined"
                   className="mobile-secondary-action"
                   onClick={openLinkedNote}
                 >
                   {t("app.reminders.openNote")}
-                </Button>
+                </MobileButton>
               </div>
             ) : null}
           </div>
@@ -367,8 +364,7 @@ function ReminderRow({
       >
         <span aria-hidden="true">{item.status === "done" ? "↩" : "✓"}</span>
       </IconButton>
-      <Button
-        type="button"
+      <MobileButton
         variant="text"
         className="mobile-row__body"
         onClick={onOpen}
@@ -382,7 +378,7 @@ function ReminderRow({
           <span>{t(`app.reminders.status.${statusKey}`)}</span>
         </span>
         {linkedNote ? <small>{t("app.reminders.linked", { title: linkedNote.title })}</small> : null}
-      </Button>
+      </MobileButton>
     </div>
   );
 }

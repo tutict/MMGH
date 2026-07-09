@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Button } from "@mui/material";
+import MobileButton from "../ui/MobileButton";
 import AppTextField from "../ui/AppTextField";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
@@ -60,15 +60,14 @@ function MobileSettingsView({
             <span className="mobile-eyebrow">{t("app.settings.page.eyebrow")}</span>
             <h1>{t("app.settings.page.title")}</h1>
           </div>
-          <Button
-            type="button"
+          <MobileButton
             className="mobile-secondary-action"
             onClick={() => setProviderOpen(true)}
             variant="outlined"
             size="small"
           >
             {t("app.settings.title")}
-          </Button>
+          </MobileButton>
         </div>
 
         <div className="mobile-summary-grid" aria-label={t("app.settings.page.title")}>
@@ -118,9 +117,8 @@ function MobileSettingsView({
         <p className="mobile-muted">{t("app.settings.cache.description")}</p>
         <div className="mobile-list">
           {cacheCards.map((card) => (
-            <Button
+            <MobileButton
               key={card.id}
-              type="button"
               variant="text"
               className={`mobile-row mobile-cache-row ${card.danger ? "is-danger" : ""}`}
               onClick={() => setCacheTarget(card)}
@@ -130,7 +128,7 @@ function MobileSettingsView({
                 <span>{card.summary}</span>
               </span>
               <small>{card.countLabel}</small>
-            </Button>
+            </MobileButton>
           ))}
         </div>
         <p className="mobile-muted">{t("app.settings.cache.safeNote")}</p>
@@ -145,15 +143,14 @@ function MobileSettingsView({
         eyebrow={t("app.settings.eyebrow")}
         actions={
           <>
-            <Button
-              type="button"
+            <MobileButton
               className="mobile-secondary-action"
               onClick={() => setProviderOpen(false)}
               variant="outlined"
             >
               {t("app.common.cancel")}
-            </Button>
-            <Button
+            </MobileButton>
+            <MobileButton
               type="submit"
               form="mobile-settings-provider-form"
               className="mobile-primary-action"
@@ -161,7 +158,7 @@ function MobileSettingsView({
               variant="contained"
             >
               {busy === "save-settings" ? t("app.common.saving") : t("app.settings.save")}
-            </Button>
+            </MobileButton>
           </>
         }
       >
@@ -228,8 +225,7 @@ function MobileSettingsView({
                   : t("app.settings.apiKeyHint.missing")}
             </span>
             {settingsForm.hasApiKey || settingsForm.clearApiKey ? (
-              <Button
-                type="button"
+              <MobileButton
                 className={`mobile-secondary-action ${settingsForm.clearApiKey ? "is-danger" : ""}`}
                 onClick={handleClearApiKey}
                 variant="outlined"
@@ -239,7 +235,7 @@ function MobileSettingsView({
                 {settingsForm.clearApiKey
                   ? t("app.settings.apiKeyAction.undoClear")
                   : t("app.settings.apiKeyAction.clear")}
-              </Button>
+              </MobileButton>
             ) : null}
           </div>
           <AppTextField fieldClassName="mobile-field"
@@ -264,16 +260,14 @@ function MobileSettingsView({
         eyebrow={t("app.settings.cache.eyebrow")}
         actions={
           <>
-            <Button
-              type="button"
+            <MobileButton
               className="mobile-secondary-action"
               onClick={() => setCacheTarget(null)}
               variant="outlined"
             >
               {t("app.common.cancel")}
-            </Button>
-            <Button
-              type="button"
+            </MobileButton>
+            <MobileButton
               className={cacheTarget?.danger ? "mobile-danger-action" : "mobile-primary-action"}
               onClick={() => void clearCacheTarget()}
               disabled={busy !== ""}
@@ -281,7 +275,7 @@ function MobileSettingsView({
               color={cacheTarget?.danger ? "error" : "primary"}
             >
               {cacheTarget?.buttonLabel || t("app.settings.cache.clear")}
-            </Button>
+            </MobileButton>
           </>
         }
       >

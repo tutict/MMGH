@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Button, IconButton, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { IconButton, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import MobileButton from "../ui/MobileButton";
 import MobileAgentView from "./MobileAgentView";
 import MobileKnowledgeView from "./MobileKnowledgeView";
 import MobileRemindersView from "./MobileRemindersView";
@@ -138,9 +139,8 @@ function MobileAppShell({
 
       <nav className="mobile-dock" data-testid="mobile-dock" aria-label="Mobile primary navigation">
         {dockItems.map((item) => (
-          <Button
+          <MobileButton
             key={item.id}
-            type="button"
             className={`mobile-dock__item ${currentView === item.id ? "is-active" : ""}`}
             onClick={() => openView(item.id)}
             aria-current={currentView === item.id ? "page" : undefined}
@@ -150,10 +150,9 @@ function MobileAppShell({
               {renderIcon(item.id)}
             </span>
             <span>{item.label}</span>
-          </Button>
+          </MobileButton>
         ))}
-        <Button
-          type="button"
+        <MobileButton
           className={`mobile-dock__item ${moreOpen ? "is-active" : ""}`}
           onClick={() => setMoreOpen(true)}
           aria-expanded={moreOpen}
@@ -163,7 +162,7 @@ function MobileAppShell({
             {renderIcon("more")}
           </span>
           <span>{mobileText(lang, "more")}</span>
-        </Button>
+        </MobileButton>
       </nav>
 
       <MobileSheet
@@ -176,9 +175,8 @@ function MobileAppShell({
       >
         <div className="mobile-list">
           {moreItems.map((item) => (
-            <Button
+            <MobileButton
               key={item.id}
-              type="button"
               className="mobile-row"
               onClick={() => {
                 openView(item.id);
@@ -194,7 +192,7 @@ function MobileAppShell({
                 <span>{item.meta}</span>
               </span>
               <small>{item.badge}</small>
-            </Button>
+            </MobileButton>
           ))}
         </div>
         <div className="mobile-quick-settings">
@@ -213,14 +211,13 @@ function MobileAppShell({
             <ToggleButton value="zh-CN">中文</ToggleButton>
             <ToggleButton value="en-US">EN</ToggleButton>
           </ToggleButtonGroup>
-          <Button
-            type="button"
+          <MobileButton
             variant="outlined"
             className="mobile-secondary-action"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           >
             {theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
-          </Button>
+          </MobileButton>
         </div>
       </MobileSheet>
 

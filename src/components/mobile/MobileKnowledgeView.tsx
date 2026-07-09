@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button } from "@mui/material";
+import MobileButton from "../ui/MobileButton";
 import AppTextField from "../ui/AppTextField";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
@@ -52,15 +52,14 @@ function MobileKnowledgeView({
             fullWidth
             size="small"
           />
-          <Button
-            type="button"
+          <MobileButton
             variant="contained"
             className="mobile-primary-action"
             onClick={createNote}
             disabled={busy !== ""}
           >
             {mobileText(lang, "newNote")}
-          </Button>
+          </MobileButton>
         </div>
       </section>
 
@@ -74,9 +73,8 @@ function MobileKnowledgeView({
             <p className="mobile-empty">{mobileText(lang, "emptyNotes")}</p>
           ) : (
             filteredNotes.map((note) => (
-              <Button
+              <MobileButton
                 key={note.id}
-                type="button"
                 variant="text"
                 className={`mobile-row ${note.id === activeNoteId ? "is-active" : ""}`}
                 onClick={() => void openNote(note)}
@@ -88,7 +86,7 @@ function MobileKnowledgeView({
                   {note.tags?.length ? <small>{note.tags.join(" / ")}</small> : null}
                 </span>
                 <time>{note.updatedAt ? formatTime(note.updatedAt, lang) : ""}</time>
-              </Button>
+              </MobileButton>
             ))
           )}
         </div>
@@ -102,8 +100,7 @@ function MobileKnowledgeView({
         title={activeNote?.title || mobileText(lang, "knowledge")}
         actions={
           <>
-            <Button
-              type="button"
+            <MobileButton
               color="error"
               variant="text"
               className="mobile-danger-action"
@@ -111,16 +108,15 @@ function MobileKnowledgeView({
               disabled={busy !== "" || !activeNote}
             >
               Delete
-            </Button>
-            <Button
-              type="button"
+            </MobileButton>
+            <MobileButton
               variant="contained"
               className="mobile-primary-action"
               onClick={handleSaveNote}
               disabled={busy !== "" || !noteDraft?.id}
             >
               {mobileText(lang, "save")}
-            </Button>
+            </MobileButton>
           </>
         }
       >

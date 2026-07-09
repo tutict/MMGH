@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { Button, Chip } from "@mui/material";
+import { Chip } from "@mui/material";
+import MobileButton from "../ui/MobileButton";
 import AppTextField from "../ui/AppTextField";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
@@ -61,17 +62,16 @@ function MobileWeatherView({
           <strong>{valueWithDegree(activeWeatherCity?.temperature, t)}</strong>
         </div>
         <div className="mobile-action-row">
-          <Button type="button" variant="contained" className="mobile-primary-action" onClick={onRefresh}>
+          <MobileButton variant="contained" className="mobile-primary-action" onClick={onRefresh}>
             {mobileText(lang, "refresh")}
-          </Button>
-          <Button
-            type="button"
+          </MobileButton>
+          <MobileButton
             variant="outlined"
             className="mobile-secondary-action"
             onClick={() => setCitySheetOpen(true)}
           >
             {mobileText(lang, "city")}
-          </Button>
+          </MobileButton>
         </div>
         <p className="mobile-muted">
           {weatherStatus === "error"
@@ -149,8 +149,7 @@ function MobileWeatherView({
         <div className="mobile-list">
           {weatherCities.map((city) => (
             <div key={city.id} className={`mobile-row ${city.id === selectedWeatherCityId ? "is-active" : ""}`}>
-              <Button
-                type="button"
+              <MobileButton
                 variant="text"
                 className="mobile-row__body"
                 onClick={() => {
@@ -160,7 +159,7 @@ function MobileWeatherView({
               >
                 <strong>{resolveWeatherCityName(city, t)}</strong>
                 <span>{resolveWeatherCondition(city, t)}</span>
-              </Button>
+              </MobileButton>
               <Chip
                 component="button"
                 clickable

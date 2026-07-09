@@ -1,5 +1,6 @@
 import React from "react";
-import { Button, IconButton } from "@mui/material";
+import { IconButton } from "@mui/material";
+import MobileButton from "../ui/MobileButton";
 import { getMobileDaypart, mobileText } from "./mobileText";
 
 function MobileTodayView({
@@ -50,12 +51,12 @@ function MobileTodayView({
           ))}
         </div>
         <div className="mobile-action-row">
-          <Button type="button" variant="contained" className="mobile-primary-action" onClick={() => openView("agent")}>
+          <MobileButton variant="contained" className="mobile-primary-action" onClick={() => openView("agent")}>
             {mobileText(lang, "continueAgent")}
-          </Button>
-          <Button type="button" variant="outlined" className="mobile-secondary-action" onClick={() => openView("reminders")}>
+          </MobileButton>
+          <MobileButton variant="outlined" className="mobile-secondary-action" onClick={() => openView("reminders")}>
             {mobileText(lang, "openReminders")}
-          </Button>
+          </MobileButton>
         </div>
       </section>
 
@@ -80,8 +81,7 @@ function MobileTodayView({
                 >
                   <span aria-hidden="true">{item.status === "done" ? "✓" : ""}</span>
                 </IconButton>
-                <Button
-                  type="button"
+                <MobileButton
                   variant="text"
                   className="mobile-row__body"
                   onClick={() => {
@@ -91,7 +91,7 @@ function MobileTodayView({
                 >
                   <strong>{item.title}</strong>
                   <span>{item.preview || item.detail || formatTime(item.dueAt, lang)}</span>
-                </Button>
+                </MobileButton>
                 <time>{item.dueAt ? formatTime(item.dueAt, lang) : ""}</time>
               </div>
             ))
@@ -106,13 +106,13 @@ function MobileTodayView({
           </div>
           <div className="mobile-list">
             {sessions.map((session) => (
-              <Button key={session.id} type="button" variant="text" className="mobile-row" onClick={() => openView("agent")}>
+              <MobileButton key={session.id} variant="text" className="mobile-row" onClick={() => openView("agent")}>
                 <span className="mobile-row__body">
                   <strong>{session.title}</strong>
                   <span>{session.lastMessagePreview}</span>
                 </span>
                 <time>{session.updatedAt ? formatTime(session.updatedAt, lang) : ""}</time>
-              </Button>
+              </MobileButton>
             ))}
           </div>
         </section>
