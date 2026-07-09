@@ -1,6 +1,6 @@
 import React from "react";
 import { getMobileDaypart, mobileText } from "./mobileText";
-import { AppIconButton, MobileButton, MobileRowBody } from "../ui";
+import { MobileButton, MobileCheckButton, MobileRowBody } from "../ui";
 
 function MobileTodayView({
   activeSession,
@@ -70,16 +70,16 @@ function MobileTodayView({
           ) : (
             todayReminderItems.map((item) => (
               <div key={item.id} className="mobile-row mobile-row--interactive">
-                <AppIconButton
+                <MobileCheckButton
                   type="button"
-                  className={`mobile-check ${item.status === "done" ? "is-done" : ""}`}
+                  checked={item.status === "done"}
                   onClick={() => handleToggleTodayReminderStatus(item)}
                   disabled={busy !== "" || loading}
                   aria-label={item.status === "done" ? mobileText(lang, "completed") : mobileText(lang, "due")}
                   size="small"
                 >
                   <span aria-hidden="true">{item.status === "done" ? "✓" : ""}</span>
-                </AppIconButton>
+                </MobileCheckButton>
                 <MobileButton
                   variant="text"
                   className="mobile-row__body"

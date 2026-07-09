@@ -6,7 +6,7 @@ import {
 } from "../reminderWorkspaceModel";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppIconButton, AppMenuItem, AppTextField, MobileButton } from "../ui";
+import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton } from "../ui";
 
 function MobileRemindersView({
   busy,
@@ -352,16 +352,16 @@ function ReminderRow({
 
   return (
     <div className={`mobile-row mobile-reminder-row ${selected ? "is-active" : ""}`}>
-      <AppIconButton
+      <MobileCheckButton
         type="button"
-        className={`mobile-check ${item.status === "done" ? "is-done" : ""}`}
+        checked={item.status === "done"}
         onClick={() => void handleToggleTodayReminderStatus(item)}
         disabled={busy !== "" || loading}
         aria-label={`${t(`app.reminders.status.${statusKey}`)} ${item.title}`}
         size="small"
       >
         <span aria-hidden="true">{item.status === "done" ? "↩" : "✓"}</span>
-      </AppIconButton>
+      </MobileCheckButton>
       <MobileButton
         variant="text"
         className="mobile-row__body"
