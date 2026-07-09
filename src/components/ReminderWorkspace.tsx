@@ -1,5 +1,5 @@
 import React, { useDeferredValue, useMemo } from "react";
-import { MenuItem } from "@mui/material";
+import AppMenuItem from "./ui/AppMenuItem";
 import AppTextField from "./ui/AppTextField";
 import AppButton from "./ui/AppButton";
 import { useI18n } from "../i18n";
@@ -237,10 +237,10 @@ function ReminderWorkspace({
                   size="small"
                   fullWidth
                 >
-                  <MenuItem value="low">{t("app.reminders.severity.low")}</MenuItem>
-                  <MenuItem value="medium">{t("app.reminders.severity.medium")}</MenuItem>
-                  <MenuItem value="high">{t("app.reminders.severity.high")}</MenuItem>
-                  <MenuItem value="critical">{t("app.reminders.severity.critical")}</MenuItem>
+                  <AppMenuItem value="low">{t("app.reminders.severity.low")}</AppMenuItem>
+                  <AppMenuItem value="medium">{t("app.reminders.severity.medium")}</AppMenuItem>
+                  <AppMenuItem value="high">{t("app.reminders.severity.high")}</AppMenuItem>
+                  <AppMenuItem value="critical">{t("app.reminders.severity.critical")}</AppMenuItem>
                 </AppTextField>
               </label>
 
@@ -258,8 +258,8 @@ function ReminderWorkspace({
                   size="small"
                   fullWidth
                 >
-                  <MenuItem value="scheduled">{t("app.reminders.status.scheduled")}</MenuItem>
-                  <MenuItem value="done">{t("app.reminders.status.done")}</MenuItem>
+                  <AppMenuItem value="scheduled">{t("app.reminders.status.scheduled")}</AppMenuItem>
+                  <AppMenuItem value="done">{t("app.reminders.status.done")}</AppMenuItem>
                 </AppTextField>
               </label>
 
@@ -277,11 +277,11 @@ function ReminderWorkspace({
                   size="small"
                   fullWidth
                 >
-                  <MenuItem value="">{t("app.reminders.form.noLinkedNote")}</MenuItem>
+                  <AppMenuItem value="">{t("app.reminders.form.noLinkedNote")}</AppMenuItem>
                   {noteList.map((note) => (
-                    <MenuItem key={note.id} value={note.id}>
+                    <AppMenuItem key={note.id} value={note.id}>
                       {note.title}
-                    </MenuItem>
+                    </AppMenuItem>
                   ))}
                 </AppTextField>
               </label>

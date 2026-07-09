@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Chip } from "@mui/material";
+import MobileChip from "../ui/MobileChip";
 import MobileButton from "../ui/MobileButton";
 import AppTextField from "../ui/AppTextField";
 import { WEATHER_LOCATIONS } from "../weatherData";
@@ -160,8 +160,7 @@ function MobileWeatherView({
                 <strong>{resolveWeatherCityName(city, t)}</strong>
                 <span>{resolveWeatherCondition(city, t)}</span>
               </MobileButton>
-              <Chip
-                component="button"
+              <MobileChip
                 clickable
                 color="default"
                 variant="outlined"
@@ -182,8 +181,7 @@ function MobileWeatherView({
                   <strong>{resolveWeatherCityName(city, t)}</strong>
                   <span>{resolveWeatherRegion(city, t)}</span>
                 </span>
-                <Chip
-                  component="button"
+                <MobileChip
                   clickable
                   color={isSaved ? "primary" : "default"}
                   variant={isSaved ? "filled" : "outlined"}

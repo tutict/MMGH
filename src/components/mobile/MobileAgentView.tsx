@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Chip } from "@mui/material";
+import MobileChip from "../ui/MobileChip";
 import MobileButton from "../ui/MobileButton";
 import AppTextField from "../ui/AppTextField";
 import MobileSheet from "./MobileSheet";
@@ -163,8 +163,7 @@ function MobileAgentView({
                   <strong>{skill.name}</strong>
                   <span>{skill.summary || skill.description || skill.triggerHint}</span>
                 </span>
-                <Chip
-                  component="button"
+                <MobileChip
                   clickable
                   color={isMounted ? "primary" : "default"}
                   variant={isMounted ? "filled" : "outlined"}
