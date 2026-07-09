@@ -1,6 +1,6 @@
 import React from "react";
 import { useI18n } from "../i18n";
-import { AppButton, AppCheckbox, AppTextField } from "./ui";
+import { AppButton, AppCheckbox, AppStatusChip, AppTextField } from "./ui";
 
 function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, panelRef, setDraft }) {
   const { t } = useI18n();
@@ -37,11 +37,11 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
                 ? t("app.today.review.linkedNote", { title: linkedNoteTitle })
                 : t("app.today.review.newNote")}
             </span>
-            <span className={`status-chip status-${draft.createFollowUp ? "running" : "completed"}`}>
+            <AppStatusChip tone={draft.createFollowUp ? "running" : "completed"}>
               {draft.createFollowUp
                 ? t("app.today.review.followUp")
                 : t("app.today.review.noteMarker")}
-            </span>
+            </AppStatusChip>
           </div>
         </div>
 

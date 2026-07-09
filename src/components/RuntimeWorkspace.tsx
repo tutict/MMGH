@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { useI18n } from "../i18n";
-import { AppButton, AppTextField } from "./ui";
+import { AppButton, AppStatusChip, AppTextField } from "./ui";
 
 function RuntimeWorkspace({
   activeSession,
@@ -55,9 +55,9 @@ function RuntimeWorkspace({
 
         <div className="runtime-status-panel__metrics" aria-label={t("app.agent.conversation.title")}>
           <div className="runtime-status-panel__metric runtime-status-panel__metric--state">
-            <span className={`status-chip status-${activeStatus}`}>
+            <AppStatusChip tone={activeStatus}>
               {t(`app.status.${activeStatus}`)}
-            </span>
+            </AppStatusChip>
           </div>
           <div className="runtime-status-panel__metric">
             <span>{t("app.agent.conversation.title")}</span>
@@ -83,9 +83,9 @@ function RuntimeWorkspace({
                 <h3>{t("app.agent.conversation.title")}</h3>
               </div>
               <div className="runtime-stage-card__meta">
-                <span className={`status-chip status-${activeStatus}`}>
+                <AppStatusChip tone={activeStatus}>
                   {t(`app.status.${activeStatus}`)}
-                </span>
+                </AppStatusChip>
                 <span className="section-note">
                   {updatedAt ? formatTime(updatedAt, lang) : t("app.common.loading")}
                 </span>
@@ -143,13 +143,9 @@ function RuntimeWorkspace({
                 <span className="eyebrow">{t("app.agent.message.operator")}</span>
                 <h4>{t("app.common.send")}</h4>
               </div>
-              <span
-                className={`status-chip ${
-                  providerConfigured ? "status-completed" : "status-warning"
-                }`}
-              >
+              <AppStatusChip tone={providerConfigured ? "completed" : "warning"}>
                 {t(`app.provider.${providerConfigured ? "configured" : "pending"}`)}
-              </span>
+              </AppStatusChip>
             </div>
             <AppTextField
               className="runtime-composer__input"
@@ -362,9 +358,9 @@ function RuntimeWorkspace({
                                 <span>{t(`app.activity.kind.${normalizedKind}`)}</span>
                               </div>
                             </div>
-                            <span className={`status-chip status-${item.status}`}>
+                            <AppStatusChip tone={item.status}>
                               {t(`app.status.${item.status}`)}
-                            </span>
+                            </AppStatusChip>
                           </div>
                           <p>{item.detail}</p>
                           <span className="section-note">{formatTime(item.createdAt, lang)}</span>
@@ -395,9 +391,9 @@ function RuntimeWorkspace({
                     >
                       <div className="runtime-session-card__head">
                         <strong>{session.title}</strong>
-                        <span className={`status-chip status-${session.status}`}>
+                        <AppStatusChip tone={session.status}>
                           {t(`app.status.${session.status}`)}
-                        </span>
+                        </AppStatusChip>
                       </div>
                       <p>{session.lastMessagePreview || t("app.session.emptyMessages")}</p>
                       <span className="section-note">{formatTime(session.updatedAt, lang)}</span>

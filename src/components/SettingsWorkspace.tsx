@@ -1,6 +1,6 @@
 import React from "react";
 import { useI18n } from "../i18n";
-import { AppButton, AppTextField } from "./ui";
+import { AppButton, AppStatusChip, AppTextField } from "./ui";
 
 function SettingsWorkspace({
   busy,
@@ -25,20 +25,12 @@ function SettingsWorkspace({
             <h3>{t("app.settings.page.title")}</h3>
           </div>
           <div className="settings-summary__chips">
-            <span
-              className={`status-chip ${
-                providerConfigured ? "status-completed" : "status-warning"
-              }`}
-            >
+            <AppStatusChip tone={providerConfigured ? "completed" : "warning"}>
               {t(`app.provider.${providerConfigured ? "configured" : "pending"}`)}
-            </span>
-            <span
-              className={`status-chip ${
-                hasUnsavedSettings ? "status-running" : "status-idle"
-              }`}
-            >
+            </AppStatusChip>
+            <AppStatusChip tone={hasUnsavedSettings ? "running" : "idle"}>
               {t(`app.common.${hasUnsavedSettings ? "dirty" : "saved"}`)}
-            </span>
+            </AppStatusChip>
           </div>
         </div>
         <p className="section-note settings-workspace__note">
@@ -200,7 +192,7 @@ function SettingsWorkspace({
                     <strong>{card.title}</strong>
                     <span className="section-note">{card.summary}</span>
                   </div>
-                  <span className="status-chip status-idle">{card.countLabel}</span>
+                  <AppStatusChip tone="idle">{card.countLabel}</AppStatusChip>
                 </div>
                 <p>{card.description}</p>
                 <AppButton

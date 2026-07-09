@@ -1,6 +1,6 @@
 import React from "react";
 import { useI18n } from "../i18n";
-import { AppButton, AppTextField } from "./ui";
+import { AppButton, AppStatusChip, AppTextField } from "./ui";
 
 function KnowledgeVault({
   activeNote,
@@ -130,9 +130,9 @@ function KnowledgeVault({
             <div className="knowledge-editor__hero-copy">
               <div className="knowledge-editor__hero-meta">
                 <span className="eyebrow">{t("app.knowledge.editor.eyebrow")}</span>
-                <span className={`status-chip status-${hasUnsavedNote ? "warning" : "completed"}`}>
+                <AppStatusChip tone={hasUnsavedNote ? "warning" : "completed"}>
                   {t(hasUnsavedNote ? "app.common.dirty" : "app.common.saved")}
-                </span>
+                </AppStatusChip>
               </div>
               <strong>{noteDraft.title || t("app.knowledge.defaultTitle")}</strong>
               <p>

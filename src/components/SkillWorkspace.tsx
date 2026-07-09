@@ -1,6 +1,6 @@
 import React, { useDeferredValue, useMemo, useState } from "react";
 import { useI18n } from "../i18n";
-import { AppButton, AppFileInput, AppTextField } from "./ui";
+import { AppButton, AppFileInput, AppStatusChip, AppTextField } from "./ui";
 import {
   buildDraftDisplay,
   buildSkillDisplay,
@@ -217,11 +217,11 @@ function SkillWorkspace({
                   <div className="skill-card__head">
                     <strong>{display.name}</strong>
                     <div className="skill-card__status-group">
-                      <span className={`status-chip ${skill.enabled ? "status-completed" : "status-idle"}`}>
+                      <AppStatusChip tone={skill.enabled ? "completed" : "idle"}>
                         {skill.enabled ? t("app.skills.enabled") : t("app.skills.disabled")}
-                      </span>
+                      </AppStatusChip>
                       {meta.mounted ? (
-                        <span className="status-chip status-running">{t("app.skills.mounted")}</span>
+                        <AppStatusChip tone="running">{t("app.skills.mounted")}</AppStatusChip>
                       ) : null}
                     </div>
                   </div>
@@ -528,9 +528,9 @@ function SkillWorkspace({
                 <span className="eyebrow">{t("app.skills.forge.eyebrow")}</span>
                 <h3>{t("app.skills.forge.title")}</h3>
               </div>
-              <span className={`status-chip ${providerConfigured ? "status-running" : "status-idle"}`}>
+              <AppStatusChip tone={providerConfigured ? "running" : "idle"}>
                 {providerConfigured ? t("app.skills.forge.status.ai") : t("app.skills.forge.status.local")}
-              </span>
+              </AppStatusChip>
             </div>
             <p className="section-note skill-catalog__summary">
               {providerConfigured

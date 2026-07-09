@@ -147,7 +147,7 @@ import {
 import MobileAppShell from "./components/mobile/MobileAppShell";
 import { isDedicatedMobileView } from "./components/mobile/mobileViewRegistry";
 import useMobileViewport from "./components/mobile/useMobileViewport";
-import { AppButton, AppFileInput, AppTextField } from "./components/ui";
+import { AppButton, AppFileInput, AppTextField, AppStatusChip } from "./components/ui";
 
 const GalleryWorkspace = lazy(() => import("./components/GalleryWorkspace"));
 const KnowledgeVault = lazy(() => import("./components/KnowledgeVault"));
@@ -5413,9 +5413,9 @@ function App() {
                                 </span>
                               </div>
                             </div>
-                            <span className={`status-chip status-${item.status}`}>
+                            <AppStatusChip tone={item.status}>
                               {t(`app.status.${item.status}`)}
-                            </span>
+                            </AppStatusChip>
                           </div>
                           <p>{item.detail}</p>
                           <span className="section-note">{formatTime(item.createdAt, lang)}</span>
@@ -5445,12 +5445,12 @@ function App() {
                     <h3>{t("app.settings.quick.title")}</h3>
                   </div>
                   <div className="settings-summary__chips">
-                    <span className={`status-chip ${providerConfigured ? "status-completed" : "status-warning"}`}>
+                    <AppStatusChip tone={providerConfigured ? "completed" : "warning"}>
                       {t(`app.provider.${providerConfigured ? "configured" : "pending"}`)}
-                    </span>
-                    <span className={`status-chip ${hasUnsavedSettings ? "status-running" : "status-idle"}`}>
+                    </AppStatusChip>
+                    <AppStatusChip tone={hasUnsavedSettings ? "running" : "idle"}>
                       {t(`app.common.${hasUnsavedSettings ? "dirty" : "saved"}`)}
-                    </span>
+                    </AppStatusChip>
                   </div>
                 </div>
 

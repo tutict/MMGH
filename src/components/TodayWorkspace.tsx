@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { useI18n } from "../i18n";
-import { AppButton } from "./ui";
+import { AppButton, AppStatusChip } from "./ui";
 
 function TodayWorkspace({
   activeSession,
@@ -75,9 +75,9 @@ function TodayWorkspace({
             <div className="today-hero__session">
               <span className="section-note">{t("app.today.sessions.active")}</span>
               <strong>{activeSessionTitle}</strong>
-              <span className={`status-chip status-${activeSessionStatus}`}>
+              <AppStatusChip tone={activeSessionStatus}>
                 {t(`app.status.${activeSessionStatus}`)}
-              </span>
+              </AppStatusChip>
             </div>
           </div>
           <div className="today-hero__stats">
@@ -146,9 +146,9 @@ function TodayWorkspace({
                       >
                         <div className="today-focus-item__head">
                           <strong>{reminder.title}</strong>
-                          <span className={`status-chip status-${reminder.status}`}>
+                          <AppStatusChip tone={reminder.status}>
                             {t(`app.reminders.status.${reminder.status}`)}
-                          </span>
+                          </AppStatusChip>
                         </div>
                         <p>{reminder.preview || t("app.reminders.emptyBucket")}</p>
                         <div className="today-focus-item__meta">
@@ -226,9 +226,9 @@ function TodayWorkspace({
                     >
                       <div className="today-session-item__head">
                         <strong>{session.title}</strong>
-                        <span className={`status-chip status-${session.status}`}>
+                        <AppStatusChip tone={session.status}>
                           {t(`app.status.${session.status}`)}
-                        </span>
+                        </AppStatusChip>
                       </div>
                       <p>{session.lastMessagePreview || t("app.session.emptyMessages")}</p>
                       <span className="section-note">{formatTime(session.updatedAt, lang)}</span>
@@ -280,9 +280,9 @@ function TodayWorkspace({
                         <div className="today-pattern-item__copy">
                           <div className="today-pattern-item__head">
                             <strong>{item.actionTitle}</strong>
-                            <span className={`status-chip status-${resolveRuleActionTone(item.actionType)}`}>
+                            <AppStatusChip tone={resolveRuleActionTone(item.actionType)}>
                               {t(`app.today.review.rule.action.${item.actionType}.badge`)}
-                            </span>
+                            </AppStatusChip>
                           </div>
                           <span>{item.matchedSkillName}</span>
                           <span>{t("app.today.review.rule.loop", { title: item.title })}</span>
@@ -354,11 +354,9 @@ function TodayWorkspace({
                         <div className="today-pattern-item__copy">
                           <div className="today-pattern-item__head">
                             <strong>{item.matchedSkillName}</strong>
-                            <span
-                              className={`status-chip status-${resolveRuleEffectivenessTone(item.effectivenessState)}`}
-                            >
+                            <AppStatusChip tone={resolveRuleEffectivenessTone(item.effectivenessState)}>
                               {t(`app.today.review.rule.state.${item.effectivenessState}`)}
-                            </span>
+                            </AppStatusChip>
                           </div>
                           <span>{t("app.today.review.rule.loop", { title: item.title })}</span>
                           <div className="today-rule-item__metrics">
@@ -428,9 +426,9 @@ function TodayWorkspace({
                       <div className="today-pattern-item__copy">
                         <div className="today-pattern-item__head">
                           <strong>{item.title}</strong>
-                          <span className={`status-chip status-${resolvePatternStatusTone(item.status)}`}>
+                          <AppStatusChip tone={resolvePatternStatusTone(item.status)}>
                             {t(`app.today.review.pattern.${item.status}`)}
-                          </span>
+                          </AppStatusChip>
                         </div>
                         <span>{t("app.today.review.recurringCount", { count: item.count })}</span>
                         <span>

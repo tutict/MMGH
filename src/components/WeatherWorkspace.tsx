@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 import { WEATHER_LOCATIONS, createInitialWeatherCity } from "./weatherData";
-import { AppButton, AppTextField } from "./ui";
+import { AppButton, AppStatusChip, AppTextField } from "./ui";
 
 const OPEN_METEO_GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const WEATHER_RECENT_SEARCHES_STORAGE_KEY = "mmgh-weather-recent-searches-v1";
@@ -332,9 +332,9 @@ function WeatherWorkspace({
         </div>
         <div className="weather-stage__toolbar">
           <div className="weather-stage__status">
-            <span className={`status-chip ${resolveWeatherStatusClass(weatherStatus)}`}>
+            <AppStatusChip tone={resolveWeatherStatusTone(weatherStatus)}>
               {t(`app.weather.status.${weatherStatus}`)}
-            </span>
+            </AppStatusChip>
             <span className="section-note">
               {weatherUpdatedAt
                 ? t("app.weather.updatedAt", {
@@ -833,20 +833,20 @@ function parseClockToMinutes(value) {
   return hour * 60 + minute;
 }
 
-function resolveWeatherStatusClass(status) {
+function resolveWeatherStatusTone(status) {
   if (status === "idle") {
-    return "status-idle";
+    return "idle";
   }
   if (status === "ready") {
-    return "status-completed";
+    return "completed";
   }
   if (status === "partial") {
-    return "status-warning";
+    return "warning";
   }
   if (status === "error") {
-    return "status-failed";
+    return "failed";
   }
-  return "status-running";
+  return "running";
 }
 
 function formatMetricValue(value, suffix = "") {
