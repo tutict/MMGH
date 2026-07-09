@@ -6,7 +6,7 @@ import {
 } from "../reminderWorkspaceModel";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileMuted, joinClassNames } from "../ui";
+import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileMuted, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
 
 function MobileRemindersView({
   busy,
@@ -118,20 +118,20 @@ function MobileRemindersView({
           </MobileButton>
         </div>
 
-        <div className="mobile-summary-grid" aria-label={t("app.reminders.title")}>
-          <article className="mobile-summary-cell">
+        <MobileSummaryGrid aria-label={t("app.reminders.title")}>
+          <MobileSummaryCell>
             <span>{t("app.view.reminders.badge.open")}</span>
             <strong>{openCount}</strong>
-          </article>
-          <article className="mobile-summary-cell">
+          </MobileSummaryCell>
+          <MobileSummaryCell>
             <span>{t("app.view.reminders.badge.due")}</span>
             <strong>{todayCount}</strong>
-          </article>
-          <article className="mobile-summary-cell">
+          </MobileSummaryCell>
+          <MobileSummaryCell>
             <span>{t("app.reminders.status.done")}</span>
             <strong>{doneCount}</strong>
-          </article>
-        </div>
+          </MobileSummaryCell>
+        </MobileSummaryGrid>
 
         <div className="mobile-search-row">
           <AppTextField fieldClassName="mobile-field"

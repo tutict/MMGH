@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileInlineWarning, MobileMuted, MobileStatusDot, MobileRowBody, joinClassNames } from "../ui";
+import { AppTextField, MobileButton, MobileInlineWarning, MobileMuted, MobileRowBody, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
 
 function MobileSettingsView({
   busy,
@@ -69,20 +69,20 @@ function MobileSettingsView({
           </MobileButton>
         </div>
 
-        <div className="mobile-summary-grid" aria-label={t("app.settings.page.title")}>
-          <article className="mobile-summary-cell">
+        <MobileSummaryGrid aria-label={t("app.settings.page.title")}>
+          <MobileSummaryCell>
             <span>{t("app.view.settings.badge.gateway")}</span>
             <strong>{t(`app.provider.${providerStateKey}`)}</strong>
-          </article>
-          <article className="mobile-summary-cell">
+          </MobileSummaryCell>
+          <MobileSummaryCell>
             <span>{t("app.view.settings.badge.state")}</span>
             <strong>{t(`app.common.${settingsStateKey}`)}</strong>
-          </article>
-          <article className="mobile-summary-cell">
+          </MobileSummaryCell>
+          <MobileSummaryCell>
             <span>{t("app.settings.cache.title")}</span>
             <strong>{t("app.settings.cache.groupCount", { count: cacheCount })}</strong>
-          </article>
-        </div>
+          </MobileSummaryCell>
+        </MobileSummaryGrid>
       </section>
 
       <section className="mobile-section">

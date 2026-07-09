@@ -1,6 +1,6 @@
 import React from "react";
 import { getMobileDaypart, mobileText } from "./mobileText";
-import { MobileButton, MobileCheckButton, MobileRowBody, MobileEmpty } from "../ui";
+import { MobileButton, MobileCheckButton, MobileEmpty, MobileRowBody, MobileSummaryCell, MobileSummaryGrid } from "../ui";
 
 function MobileTodayView({
   activeSession,
@@ -41,14 +41,14 @@ function MobileTodayView({
             <h1>{activeSession?.session?.title || mobileText(lang, "today")}</h1>
           </div>
         </div>
-        <div className="mobile-summary-grid">
+        <MobileSummaryGrid>
           {summaryItems.map((item) => (
-            <div key={item.label} className="mobile-summary-cell">
+            <MobileSummaryCell key={item.label}>
               <span>{item.label}</span>
               <strong>{item.value}</strong>
-            </div>
+            </MobileSummaryCell>
           ))}
-        </div>
+        </MobileSummaryGrid>
         <div className="mobile-action-row">
           <MobileButton variant="contained" mobileAction="primary" onClick={() => openView("agent")}>
             {mobileText(lang, "continueAgent")}
