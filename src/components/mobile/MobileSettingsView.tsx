@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton } from "../ui";
+import { AppTextField, MobileButton, MobileStatusDot } from "../ui";
 
 function MobileSettingsView({
   busy,
@@ -88,7 +88,7 @@ function MobileSettingsView({
       <section className="mobile-section">
         <div className="mobile-section__head mobile-section__head--line">
           <h2>{t("app.settings.title")}</h2>
-          <span className={`mobile-status-dot is-${providerSecurityStatus || "ready"}`} />
+          <MobileStatusDot tone={providerSecurityStatus || "ready"} />
         </div>
         <div className="mobile-list mobile-list--inset">
           <SummaryRow label={t("app.settings.providerName")} value={settingsForm.providerName} />

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileChip } from "../ui";
+import { AppTextField, MobileButton, MobileChip, MobileStatusDot } from "../ui";
 
 function normalizeTimelineItem(item, index, type, lang, formatTime) {
   const time = item.createdAt || item.updatedAt || item.timestamp || item.time || 0;
@@ -61,7 +61,7 @@ function MobileAgentView({
             <span className="mobile-eyebrow">{mobileText(lang, "currentSession")}</span>
             <h1>{activeSession?.session?.title || mobileText(lang, "agent")}</h1>
           </div>
-          <span className={`mobile-status-dot ${providerConfigured ? "is-ready" : "is-pending"}`} />
+          <MobileStatusDot tone={providerConfigured ? "ready" : "pending"} />
         </div>
         <div className="mobile-action-row mobile-action-row--three">
           <MobileButton variant="outlined" className="mobile-secondary-action" onClick={() => setSheet("sessions")}>
