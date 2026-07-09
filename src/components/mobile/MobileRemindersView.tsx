@@ -6,7 +6,7 @@ import {
 } from "../reminderWorkspaceModel";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileForm, MobileFormGrid, MobileList, MobileMuted, MobileRow, MobileSearchRow, MobileSectionHead, MobileSummaryCell, MobileSummaryGrid } from "../ui";
+import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileForm, MobileFormGrid, MobileList, MobileMuted, MobilePage, MobileRow, MobileSearchRow, MobileSection, MobileSectionHead, MobileSummaryCell, MobileSummaryGrid } from "../ui";
 
 function MobileRemindersView({
   busy,
@@ -101,8 +101,8 @@ function MobileRemindersView({
   };
 
   return (
-    <section className="mobile-page mobile-page--reminders">
-      <section className="mobile-section mobile-section--flush">
+    <MobilePage view="reminders">
+      <MobileSection flush>
         <MobileSectionHead>
           <div>
             <span className="mobile-eyebrow">{t("app.reminders.eyebrow")}</span>
@@ -143,11 +143,11 @@ function MobileRemindersView({
             size="small"
           />
         </MobileSearchRow>
-      </section>
+      </MobileSection>
 
       <section className="mobile-reminder-groups">
         {groups.map((group) => (
-          <section key={group.key} className="mobile-section mobile-reminder-group">
+          <MobileSection key={group.key} className="mobile-reminder-group">
             <MobileSectionHead line>
               <h2>{group.title}</h2>
               <MobileMuted as="span">{group.items.length}</MobileMuted>
@@ -172,7 +172,7 @@ function MobileRemindersView({
                 <MobileEmpty as="div">{t("app.reminders.emptyBucket")}</MobileEmpty>
               )}
             </MobileList>
-          </section>
+          </MobileSection>
         ))}
       </section>
 
@@ -331,7 +331,7 @@ function MobileRemindersView({
           <MobileEmpty as="div">{t("app.reminders.emptyState.description")}</MobileEmpty>
         )}
       </MobileSheet>
-    </section>
+    </MobilePage>
   );
 }
 

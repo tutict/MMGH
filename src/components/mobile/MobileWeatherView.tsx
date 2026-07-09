@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
-import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileForm, MobileList, MobileRow, MobileRowBody, MobileEmpty, MobileMuted, MobileSectionHead } from "../ui";
+import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileForm, MobileList, MobilePage, MobileRow, MobileRowBody, MobileEmpty, MobileMuted, MobileSection, MobileSectionHead } from "../ui";
 import {
   formatMobileWeatherDate,
   formatMobileWeatherTime,
@@ -49,8 +49,8 @@ function MobileWeatherView({
   ];
 
   return (
-    <div className="mobile-page mobile-page--weather">
-      <section className="mobile-section mobile-section--flush">
+    <MobilePage view="weather">
+      <MobileSection flush>
         <div className="mobile-weather-current">
           <div>
             <span className="mobile-eyebrow">{resolveWeatherRegion(activeWeatherCity, t)}</span>
@@ -78,9 +78,9 @@ function MobileWeatherView({
               ? t("app.weather.updatedAt", { date: formatMobileWeatherTime(weatherUpdatedAt, lang) })
               : t("app.weather.updatedAtPending")}
         </MobileMuted>
-      </section>
+      </MobileSection>
 
-      <section className="mobile-section">
+      <MobileSection>
         <MobileList variant="metrics">
           {metrics.map((metric) => (
             <MobileRow key={metric.label}>
@@ -89,9 +89,9 @@ function MobileWeatherView({
             </MobileRow>
           ))}
         </MobileList>
-      </section>
+      </MobileSection>
 
-      <section className="mobile-section">
+      <MobileSection>
         <MobileSectionHead line>
           <h2>{mobileText(lang, "hourly")}</h2>
         </MobileSectionHead>
@@ -108,9 +108,9 @@ function MobileWeatherView({
             ))
           )}
         </div>
-      </section>
+      </MobileSection>
 
-      <section className="mobile-section">
+      <MobileSection>
         <MobileSectionHead line>
           <h2>{mobileText(lang, "weekly")}</h2>
         </MobileSectionHead>
@@ -125,7 +125,7 @@ function MobileWeatherView({
             </MobileRow>
           ))}
         </MobileList>
-      </section>
+      </MobileSection>
 
       <MobileSheet
         id="mobile-weather-cities"
@@ -196,7 +196,7 @@ function MobileWeatherView({
           })}
         </MobileList>
       </MobileSheet>
-    </div>
+    </MobilePage>
   );
 }
 

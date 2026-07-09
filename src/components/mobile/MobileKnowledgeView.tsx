@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileList, MobileRowBody, MobileEmpty, MobileForm, MobileSearchRow, joinClassNames, MobileSectionHead } from "../ui";
+import { AppTextField, MobileButton, MobileList, MobilePage, MobileRowBody, MobileEmpty, MobileForm, MobileSearchRow, MobileSection, joinClassNames, MobileSectionHead } from "../ui";
 
 function MobileKnowledgeView({
   activeNote,
@@ -40,8 +40,8 @@ function MobileKnowledgeView({
   }
 
   return (
-    <div className="mobile-page mobile-page--knowledge">
-      <section className="mobile-section mobile-section--flush">
+    <MobilePage view="knowledge">
+      <MobileSection flush>
         <MobileSearchRow>
           <AppTextField fieldClassName="mobile-field"
             value={noteSearch}
@@ -60,9 +60,9 @@ function MobileKnowledgeView({
             {mobileText(lang, "newNote")}
           </MobileButton>
         </MobileSearchRow>
-      </section>
+      </MobileSection>
 
-      <section className="mobile-section">
+      <MobileSection>
         <MobileSectionHead line>
           <h1>{mobileText(lang, "allNotes")}</h1>
           <span>{filteredNotes.length}</span>
@@ -89,7 +89,7 @@ function MobileKnowledgeView({
             ))
           )}
         </MobileList>
-      </section>
+      </MobileSection>
 
       <MobileSheet
         id="mobile-note-editor"
@@ -145,7 +145,7 @@ function MobileKnowledgeView({
           />
         </MobileForm>
       </MobileSheet>
-    </div>
+    </MobilePage>
   );
 }
 

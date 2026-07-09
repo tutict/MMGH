@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileList, MobileSectionHead, MobileStatusDot, MobileRow, MobileRowBody, MobileEmpty, joinClassNames } from "../ui";
+import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileList, MobilePage, MobileSection, MobileSectionHead, MobileStatusDot, MobileRow, MobileRowBody, MobileEmpty, joinClassNames } from "../ui";
 
 function normalizeTimelineItem(item, index, type, lang, formatTime) {
   const time = item.createdAt || item.updatedAt || item.timestamp || item.time || 0;
@@ -54,8 +54,8 @@ function MobileAgentView({
   );
 
   return (
-    <div className="mobile-page mobile-page--agent">
-      <section className="mobile-section mobile-section--flush">
+    <MobilePage view="agent">
+      <MobileSection flush>
         <MobileSectionHead>
           <div>
             <span className="mobile-eyebrow">{mobileText(lang, "currentSession")}</span>
@@ -74,7 +74,7 @@ function MobileAgentView({
             {mobileText(lang, "details")}
           </MobileButton>
         </MobileActionRow>
-      </section>
+      </MobileSection>
 
       <section className="mobile-agent-timeline" aria-label={mobileText(lang, "activity")}>
         {timeline.length === 0 ? (
@@ -201,7 +201,7 @@ function MobileAgentView({
           </MobileRow>
         </MobileList>
       </MobileSheet>
-    </div>
+    </MobilePage>
   );
 }
 

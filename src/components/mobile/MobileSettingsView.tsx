@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileForm, MobileInlineWarning, MobileList, MobileMuted, MobileRow, MobileRowBody, MobileSectionHead, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
+import { AppTextField, MobileButton, MobileForm, MobileInlineWarning, MobileList, MobileMuted, MobilePage, MobileRow, MobileRowBody, MobileSection, MobileSectionHead, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
 
 function MobileSettingsView({
   busy,
@@ -52,8 +52,8 @@ function MobileSettingsView({
   };
 
   return (
-    <section className="mobile-page mobile-page--settings">
-      <section className="mobile-section mobile-section--flush">
+    <MobilePage view="settings">
+      <MobileSection flush>
         <MobileSectionHead>
           <div>
             <span className="mobile-eyebrow">{t("app.settings.page.eyebrow")}</span>
@@ -83,9 +83,9 @@ function MobileSettingsView({
             <strong>{t("app.settings.cache.groupCount", { count: cacheCount })}</strong>
           </MobileSummaryCell>
         </MobileSummaryGrid>
-      </section>
+      </MobileSection>
 
-      <section className="mobile-section">
+      <MobileSection>
         <MobileSectionHead line>
           <h2>{t("app.settings.title")}</h2>
           <MobileStatusDot tone={providerSecurityStatus || "ready"} />
@@ -100,9 +100,9 @@ function MobileSettingsView({
             {providerSecurityMessage}
           </MobileInlineWarning>
         ) : null}
-      </section>
+      </MobileSection>
 
-      <section className="mobile-section">
+      <MobileSection>
         <MobileSectionHead line>
           <div>
             <span className="mobile-eyebrow">{t("app.settings.cache.eyebrow")}</span>
@@ -127,7 +127,7 @@ function MobileSettingsView({
           ))}
         </MobileList>
         <MobileMuted>{t("app.settings.cache.safeNote")}</MobileMuted>
-      </section>
+      </MobileSection>
 
       <MobileSheet
         id="mobile-settings-provider-sheet"
@@ -278,7 +278,7 @@ function MobileSettingsView({
           <MobileMuted>{t("app.settings.cache.safeNote")}</MobileMuted>
         </div>
       </MobileSheet>
-    </section>
+    </MobilePage>
   );
 }
 

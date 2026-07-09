@@ -1,6 +1,6 @@
 import React from "react";
 import { getMobileDaypart, mobileText } from "./mobileText";
-import { MobileActionRow, MobileButton, MobileCheckButton, MobileEmpty, MobileList, MobileRow, MobileRowBody, MobileSectionHead, MobileSummaryCell, MobileSummaryGrid } from "../ui";
+import { MobileActionRow, MobileButton, MobileCheckButton, MobileEmpty, MobileList, MobilePage, MobileRow, MobileRowBody, MobileSection, MobileSectionHead, MobileSummaryCell, MobileSummaryGrid } from "../ui";
 
 function MobileTodayView({
   activeSession,
@@ -33,8 +33,8 @@ function MobileTodayView({
   const sessions = continueSessionItems.slice(0, 3);
 
   return (
-    <div className="mobile-page mobile-page--today">
-      <section className="mobile-section mobile-section--flush">
+    <MobilePage view="today">
+      <MobileSection flush>
         <MobileSectionHead>
           <div>
             <span className="mobile-eyebrow">{getMobileDaypart(clockNow, lang)}</span>
@@ -57,9 +57,9 @@ function MobileTodayView({
             {mobileText(lang, "openReminders")}
           </MobileButton>
         </MobileActionRow>
-      </section>
+      </MobileSection>
 
-      <section className="mobile-section">
+      <MobileSection>
         <MobileSectionHead line>
           <h2>{mobileText(lang, "today")}</h2>
           <span>{todayReminderItems.length}</span>
@@ -96,10 +96,10 @@ function MobileTodayView({
             ))
           )}
         </MobileList>
-      </section>
+      </MobileSection>
 
       {sessions.length > 0 ? (
-        <section className="mobile-section">
+        <MobileSection>
           <MobileSectionHead line>
             <h2>{mobileText(lang, "sessionLibrary")}</h2>
           </MobileSectionHead>
@@ -114,10 +114,10 @@ function MobileTodayView({
               </MobileButton>
             ))}
           </MobileList>
-        </section>
+        </MobileSection>
       ) : null}
 
-      <section className="mobile-section">
+      <MobileSection>
         <MobileSectionHead line>
           <h2>{mobileText(lang, "flowSignals")}</h2>
         </MobileSectionHead>
@@ -134,10 +134,10 @@ function MobileTodayView({
             <MobileEmpty>{mobileText(lang, "emptyList")}</MobileEmpty>
           ) : null}
         </MobileList>
-      </section>
+      </MobileSection>
 
       {completedTodayItems.length > 0 || captures.length > 0 ? (
-        <section className="mobile-section">
+        <MobileSection>
           <MobileSectionHead line>
             <h2>{mobileText(lang, "doneToday")}</h2>
           </MobileSectionHead>
@@ -151,9 +151,9 @@ function MobileTodayView({
               </MobileRow>
             ))}
           </MobileList>
-        </section>
+        </MobileSection>
       ) : null}
-    </div>
+    </MobilePage>
   );
 }
 
