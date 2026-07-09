@@ -10,6 +10,7 @@ import React, {
   useState,
 } from "react";
 import AppTextField from "./components/ui/AppTextField";
+import AppFileInput from "./components/ui/AppFileInput";
 import AppButton from "./components/ui/AppButton";
 import "./CSS/App.css";
 import {
@@ -5374,10 +5375,7 @@ function App() {
                   ))}
                 </div>
 
-                <input
-                  ref={uploadInputRef}
-                  className="upload-input"
-                  type="file"
+                <AppFileInput ref={uploadInputRef}
                   accept="audio/*"
                   multiple
                   onChange={handleUploadTracks}

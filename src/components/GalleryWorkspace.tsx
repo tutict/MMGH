@@ -1,4 +1,5 @@
 import AppTextField from "./ui/AppTextField";
+import AppFileInput from "./ui/AppFileInput";
 import AppButton from "./ui/AppButton";
 import React, { useDeferredValue, useEffect, useMemo, useRef } from "react";
 import { useI18n } from "../i18n";
@@ -253,10 +254,7 @@ function GalleryWorkspace({
           )}
         </div>
 
-        <input
-          ref={galleryUploadInputRef}
-          className="upload-input"
-          type="file"
+        <AppFileInput ref={galleryUploadInputRef}
           accept="image/*"
           multiple
           onChange={handleGalleryUpload}

@@ -1,5 +1,6 @@
 import React, { useDeferredValue, useMemo, useState } from "react";
 import AppTextField from "./ui/AppTextField";
+import AppFileInput from "./ui/AppFileInput";
 import AppButton from "./ui/AppButton";
 import { useI18n } from "../i18n";
 import {
@@ -723,10 +724,7 @@ function SkillWorkspace({
         ) : null}
       </aside>
 
-      <input
-        ref={skillImportInputRef}
-        className="upload-input"
-        type="file"
+      <AppFileInput ref={skillImportInputRef}
         accept="application/json,.json,.skill"
         onChange={handleImportSkills}
       />

@@ -1,6 +1,7 @@
 import AppSlider from "./ui/AppSlider";
 import AppIconButton from "./ui/AppIconButton";
 import AppButton from "./ui/AppButton";
+import AppFileInput from "./ui/AppFileInput";
 import React from "react";
 import { useI18n } from "../i18n";
 import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
@@ -369,10 +370,7 @@ function MusicWorkspace({
                       <UploadIcon />
                       <span>{t("app.music.lyrics.upload")}</span>
                     </AppButton>
-                    <input
-                      ref={lyricsUploadInputRef}
-                      className="upload-input"
-                      type="file"
+                    <AppFileInput ref={lyricsUploadInputRef}
                       accept=".lrc,.txt,text/plain"
                       onChange={(event) => {
                         const file = event.target.files?.[0];
