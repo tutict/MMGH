@@ -1,7 +1,6 @@
 import React from "react";
-import AppIconButton from "../ui/AppIconButton";
-import MobileButton from "../ui/MobileButton";
 import { getMobileDaypart, mobileText } from "./mobileText";
+import { AppIconButton, MobileButton } from "../ui";
 
 function MobileTodayView({
   activeSession,

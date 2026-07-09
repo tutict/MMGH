@@ -1,8 +1,6 @@
 import React, { useDeferredValue, useMemo } from "react";
-import AppMenuItem from "./ui/AppMenuItem";
-import AppTextField from "./ui/AppTextField";
-import AppButton from "./ui/AppButton";
 import { useI18n } from "../i18n";
+import { AppButton, AppMenuItem, AppTextField } from "./ui";
 import {
   countOpenReminders,
   filterReminders,

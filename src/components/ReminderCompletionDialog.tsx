@@ -1,8 +1,6 @@
 import React from "react";
-import AppCheckbox from "./ui/AppCheckbox";
-import AppTextField from "./ui/AppTextField";
-import AppButton from "./ui/AppButton";
 import { useI18n } from "../i18n";
+import { AppButton, AppCheckbox, AppTextField } from "./ui";
 
 function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, panelRef, setDraft }) {
   const { t } = useI18n();

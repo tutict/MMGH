@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
-import AppButton from "./ui/AppButton";
 import { useI18n } from "../i18n";
+import { AppButton } from "./ui";
 
 function TodayWorkspace({
   activeSession,

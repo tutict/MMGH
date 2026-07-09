@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import MobileButton from "../ui/MobileButton";
-import AppTextField from "../ui/AppTextField";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
+import { AppTextField, MobileButton } from "../ui";
 
 function MobileKnowledgeView({
   activeNote,

@@ -1,8 +1,6 @@
-import AppTextField from "./ui/AppTextField";
-import AppFileInput from "./ui/AppFileInput";
-import AppButton from "./ui/AppButton";
 import React, { useDeferredValue, useEffect, useMemo, useRef } from "react";
 import { useI18n } from "../i18n";
+import { AppButton, AppFileInput, AppTextField } from "./ui";
 
 function GalleryWorkspace({
   galleryFilter,

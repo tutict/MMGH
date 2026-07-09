@@ -1,9 +1,7 @@
 import React, { useMemo, useState } from "react";
-import MobileChip from "../ui/MobileChip";
-import MobileButton from "../ui/MobileButton";
-import AppTextField from "../ui/AppTextField";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
+import { AppTextField, MobileButton, MobileChip } from "../ui";
 
 function normalizeTimelineItem(item, index, type, lang, formatTime) {
   const time = item.createdAt || item.updatedAt || item.timestamp || item.time || 0;

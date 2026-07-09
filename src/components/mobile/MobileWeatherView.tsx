@@ -1,9 +1,7 @@
 import React, { useMemo, useState } from "react";
-import MobileChip from "../ui/MobileChip";
-import MobileButton from "../ui/MobileButton";
-import AppTextField from "../ui/AppTextField";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
+import { AppTextField, MobileButton, MobileChip } from "../ui";
 import {
   formatMobileWeatherDate,
   formatMobileWeatherTime,

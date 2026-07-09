@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
-import AppTextField from "./ui/AppTextField";
-import AppButton from "./ui/AppButton";
 import { useI18n } from "../i18n";
+import { AppButton, AppTextField } from "./ui";
 
 function RuntimeWorkspace({
   activeSession,

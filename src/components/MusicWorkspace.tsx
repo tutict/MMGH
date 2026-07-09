@@ -1,10 +1,7 @@
-import AppSlider from "./ui/AppSlider";
-import AppIconButton from "./ui/AppIconButton";
-import AppButton from "./ui/AppButton";
-import AppFileInput from "./ui/AppFileInput";
 import React from "react";
 import { useI18n } from "../i18n";
 import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
+import { AppButton, AppFileInput, AppIconButton, AppSlider } from "./ui";
 
 const LYRIC_LINE_HEIGHT = 72;
 const MOBILE_LIBRARY_BREAKPOINT = 1120;

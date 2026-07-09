@@ -1,12 +1,10 @@
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
-import AppSlider from "./ui/AppSlider";
-import AppIconButton from "./ui/AppIconButton";
-import AppButton from "./ui/AppButton";
 import { useRef } from "react";
 import { useI18n } from "../i18n";
 import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
+import { AppButton, AppIconButton, AppSlider } from "./ui";
 
 type MiniPlayerTrack = {
   cover?: string;

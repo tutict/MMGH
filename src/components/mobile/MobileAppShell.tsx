@@ -1,6 +1,4 @@
 import React, { useMemo, useState } from "react";
-import AppIconButton from "../ui/AppIconButton";
-import MobileButton from "../ui/MobileButton";
 import MobileAgentView from "./MobileAgentView";
 import MobileKnowledgeView from "./MobileKnowledgeView";
 import MobileRemindersView from "./MobileRemindersView";
@@ -10,6 +8,7 @@ import MobileTodayView from "./MobileTodayView";
 import MobileWeatherView from "./MobileWeatherView";
 import { getMobileMoreItems } from "./mobileViewRegistry";
 import { getMobileNavIconType, mobileText } from "./mobileText";
+import { AppIconButton, MobileButton } from "../ui";
 
 function MobileAppShell({
   agent = {},

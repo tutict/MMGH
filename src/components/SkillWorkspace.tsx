@@ -1,8 +1,6 @@
 import React, { useDeferredValue, useMemo, useState } from "react";
-import AppTextField from "./ui/AppTextField";
-import AppFileInput from "./ui/AppFileInput";
-import AppButton from "./ui/AppButton";
 import { useI18n } from "../i18n";
+import { AppButton, AppFileInput, AppTextField } from "./ui";
 import {
   buildDraftDisplay,
   buildSkillDisplay,

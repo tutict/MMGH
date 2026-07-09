@@ -9,9 +9,6 @@ import React, {
   useRef,
   useState,
 } from "react";
-import AppTextField from "./components/ui/AppTextField";
-import AppFileInput from "./components/ui/AppFileInput";
-import AppButton from "./components/ui/AppButton";
 import "./CSS/App.css";
 import {
   PREVIEW_WORKSPACE_STORAGE_KEY,
@@ -150,6 +147,7 @@ import {
 import MobileAppShell from "./components/mobile/MobileAppShell";
 import { isDedicatedMobileView } from "./components/mobile/mobileViewRegistry";
 import useMobileViewport from "./components/mobile/useMobileViewport";
+import { AppButton, AppFileInput, AppTextField } from "./components/ui";
 
 const GalleryWorkspace = lazy(() => import("./components/GalleryWorkspace"));
 const KnowledgeVault = lazy(() => import("./components/KnowledgeVault"));

@@ -1,7 +1,6 @@
-import AppTextField from "./ui/AppTextField";
-import AppButton from "./ui/AppButton";
 import React from "react";
 import { useI18n } from "../i18n";
+import { AppButton, AppTextField } from "./ui";
 
 function SettingsWorkspace({
   busy,

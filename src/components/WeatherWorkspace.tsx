@@ -1,8 +1,7 @@
-import AppTextField from "./ui/AppTextField";
-import AppButton from "./ui/AppButton";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "../i18n";
 import { WEATHER_LOCATIONS, createInitialWeatherCity } from "./weatherData";
+import { AppButton, AppTextField } from "./ui";
 
 const OPEN_METEO_GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const WEATHER_RECENT_SEARCHES_STORAGE_KEY = "mmgh-weather-recent-searches-v1";
