@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
-import { joinClassNames } from "../ui/classNames";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileInlineWarning, MobileMuted, MobileStatusDot, MobileRowBody } from "../ui";
+import { AppTextField, MobileButton, MobileInlineWarning, MobileMuted, MobileStatusDot, MobileRowBody, joinClassNames } from "../ui";
 
 function MobileSettingsView({
   busy,

@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { joinClassNames } from "../ui/classNames";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
-import { AppTextField, MobileButton, MobileChip, MobileRowBody, MobileEmpty, MobileMuted } from "../ui";
+import { AppTextField, MobileButton, MobileChip, MobileRowBody, MobileEmpty, MobileMuted, joinClassNames } from "../ui";
 import {
   formatMobileWeatherDate,
   formatMobileWeatherTime,

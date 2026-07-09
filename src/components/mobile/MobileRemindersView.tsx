@@ -1,5 +1,4 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { joinClassNames } from "../ui/classNames";
 import {
   countOpenReminders,
   filterReminders,
@@ -7,7 +6,7 @@ import {
 } from "../reminderWorkspaceModel";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileMuted } from "../ui";
+import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileMuted, joinClassNames } from "../ui";
 
 function MobileRemindersView({
   busy,

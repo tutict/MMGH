@@ -6,10 +6,9 @@ import MobileSettingsView from "./MobileSettingsView";
 import MobileSheet from "./MobileSheet";
 import MobileTodayView from "./MobileTodayView";
 import MobileWeatherView from "./MobileWeatherView";
-import { joinClassNames } from "../ui/classNames";
 import { getMobileMoreItems } from "./mobileViewRegistry";
 import { getMobileNavIconType, mobileText } from "./mobileText";
-import { AppIconButton, MobileButton, MobileRowBody } from "../ui";
+import { AppIconButton, MobileButton, MobileRowBody, joinClassNames } from "../ui";
 
 function MobileAppShell({
   agent = {},
