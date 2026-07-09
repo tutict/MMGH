@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
-import { AppTextField, MobileButton, MobileChip, MobileRowBody, MobileEmpty, MobileMuted, joinClassNames } from "../ui";
+import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileRowBody, MobileEmpty, MobileMuted, joinClassNames } from "../ui";
 import {
   formatMobileWeatherDate,
   formatMobileWeatherTime,
@@ -59,7 +59,7 @@ function MobileWeatherView({
           </div>
           <strong>{valueWithDegree(activeWeatherCity?.temperature, t)}</strong>
         </div>
-        <div className="mobile-action-row">
+        <MobileActionRow>
           <MobileButton variant="contained" mobileAction="primary" onClick={onRefresh}>
             {mobileText(lang, "refresh")}
           </MobileButton>
@@ -70,7 +70,7 @@ function MobileWeatherView({
           >
             {mobileText(lang, "city")}
           </MobileButton>
-        </div>
+        </MobileActionRow>
         <MobileMuted>
           {weatherStatus === "error"
             ? weatherError

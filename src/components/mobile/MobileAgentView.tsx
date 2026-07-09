@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileChip, MobileStatusDot, MobileRowBody, MobileEmpty, joinClassNames } from "../ui";
+import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileStatusDot, MobileRowBody, MobileEmpty, joinClassNames } from "../ui";
 
 function normalizeTimelineItem(item, index, type, lang, formatTime) {
   const time = item.createdAt || item.updatedAt || item.timestamp || item.time || 0;
@@ -63,7 +63,7 @@ function MobileAgentView({
           </div>
           <MobileStatusDot tone={providerConfigured ? "ready" : "pending"} />
         </div>
-        <div className="mobile-action-row mobile-action-row--three">
+        <MobileActionRow columns="three">
           <MobileButton variant="outlined" mobileAction="secondary" onClick={() => setSheet("sessions")}>
             {mobileText(lang, "sessionLibrary")}
           </MobileButton>
@@ -73,7 +73,7 @@ function MobileAgentView({
           <MobileButton variant="outlined" mobileAction="secondary" onClick={() => setSheet("details")}>
             {mobileText(lang, "details")}
           </MobileButton>
-        </div>
+        </MobileActionRow>
       </section>
 
       <section className="mobile-agent-timeline" aria-label={mobileText(lang, "activity")}>

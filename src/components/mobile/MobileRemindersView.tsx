@@ -6,7 +6,7 @@ import {
 } from "../reminderWorkspaceModel";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileMuted, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
+import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileMuted, MobileSearchRow, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
 
 function MobileRemindersView({
   busy,
@@ -133,7 +133,7 @@ function MobileRemindersView({
           </MobileSummaryCell>
         </MobileSummaryGrid>
 
-        <div className="mobile-search-row">
+        <MobileSearchRow>
           <AppTextField fieldClassName="mobile-field"
             value={reminderSearch}
             onChange={(event) => setReminderSearch(event.target.value)}
@@ -142,7 +142,7 @@ function MobileRemindersView({
             fullWidth
             size="small"
           />
-        </div>
+        </MobileSearchRow>
       </section>
 
       <section className="mobile-reminder-groups">
