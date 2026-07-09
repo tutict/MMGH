@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from "react";
-import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import AppIconButton from "../ui/AppIconButton";
 import MobileButton from "../ui/MobileButton";
 import MobileAgentView from "./MobileAgentView";
@@ -197,21 +196,24 @@ function MobileAppShell({
           ))}
         </div>
         <div className="mobile-quick-settings">
-          <ToggleButtonGroup
-            exclusive
-            size="small"
-            className="mobile-segmented"
-            aria-label={mobileText(lang, "language")}
-            value={lang}
-            onChange={(_, nextLang) => {
-              if (nextLang) {
-                setLang(nextLang);
-              }
-            }}
-          >
-            <ToggleButton value="zh-CN">中文</ToggleButton>
-            <ToggleButton value="en-US">EN</ToggleButton>
-          </ToggleButtonGroup>
+          <div className="mobile-segmented" role="group" aria-label={mobileText(lang, "language")}>
+            <MobileButton
+              className={lang === "zh-CN" ? "is-active" : ""}
+              variant="text"
+              aria-pressed={lang === "zh-CN"}
+              onClick={() => setLang("zh-CN")}
+            >
+              中文
+            </MobileButton>
+            <MobileButton
+              className={lang === "en-US" ? "is-active" : ""}
+              variant="text"
+              aria-pressed={lang === "en-US"}
+              onClick={() => setLang("en-US")}
+            >
+              EN
+            </MobileButton>
+          </div>
           <MobileButton
             variant="outlined"
             className="mobile-secondary-action"
