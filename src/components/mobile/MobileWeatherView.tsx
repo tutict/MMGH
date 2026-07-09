@@ -162,7 +162,6 @@ function MobileWeatherView({
                 clickable
                 color="default"
                 variant="outlined"
-                className="mobile-pill-button"
                 label={mobileText(lang, "remove")}
                 onClick={() => onRemoveWeatherCity(city.id)}
                 disabled={weatherCities.length <= 1}
@@ -183,7 +182,7 @@ function MobileWeatherView({
                   clickable
                   color={isSaved ? "primary" : "default"}
                   variant={isSaved ? "filled" : "outlined"}
-                  className={`mobile-pill-button ${isSaved ? "is-active" : ""}`}
+                  active={isSaved}
                   label={isSaved ? t("app.weather.search.open") : t("app.weather.search.add")}
                   onClick={() => {
                     if (!isSaved) {

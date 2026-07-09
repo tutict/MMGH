@@ -165,7 +165,7 @@ function MobileAgentView({
                   clickable
                   color={isMounted ? "primary" : "default"}
                   variant={isMounted ? "filled" : "outlined"}
-                  className={`mobile-pill-button ${isMounted ? "is-active" : ""}`}
+                  active={isMounted}
                   label={isMounted ? "On" : "Add"}
                   onClick={() => handleToggleSkillMounted(skill.id)}
                   disabled={busy !== ""}
