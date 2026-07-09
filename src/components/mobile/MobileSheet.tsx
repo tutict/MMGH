@@ -1,5 +1,5 @@
 import CloseIcon from "@mui/icons-material/Close";
-import { Modal } from "@mui/material";
+import AppModal from "../ui/AppModal";
 import AppIconButton from "../ui/AppIconButton";
 
 function MobileSheet({
@@ -13,7 +13,7 @@ function MobileSheet({
   title,
 }: Record<string, any>) {
   return (
-    <Modal
+    <AppModal
       open={Boolean(open)}
       onClose={onClose}
       aria-labelledby={id ? `${id}-title` : undefined}
@@ -53,7 +53,7 @@ function MobileSheet({
           {actions ? <footer className="mobile-sheet__actions">{actions}</footer> : null}
         </section>
       </div>
-    </Modal>
+    </AppModal>
   );
 }
 
