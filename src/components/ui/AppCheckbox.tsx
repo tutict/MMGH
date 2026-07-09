@@ -1,9 +1,7 @@
 import React from "react";
+import { joinClassNames } from "./classNames";
 import { Checkbox } from "@mui/material";
 
-function joinClassNames(...classNames: Array<string | undefined>) {
-  return classNames.filter(Boolean).join(" ");
-}
 
 type AppCheckboxProps = React.ComponentProps<typeof Checkbox>;
 

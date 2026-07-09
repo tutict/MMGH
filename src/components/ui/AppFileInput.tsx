@@ -1,8 +1,6 @@
 import React from "react";
+import { joinClassNames } from "./classNames";
 
-function joinClassNames(...classNames: Array<string | undefined>) {
-  return classNames.filter(Boolean).join(" ");
-}
 
 type AppFileInputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
