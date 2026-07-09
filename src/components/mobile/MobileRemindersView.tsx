@@ -6,7 +6,7 @@ import {
 } from "../reminderWorkspaceModel";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileMuted, MobileSearchRow, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
+import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileForm, MobileFormGrid, MobileMuted, MobileSearchRow, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
 
 function MobileRemindersView({
   busy,
@@ -206,7 +206,7 @@ function MobileRemindersView({
         }
       >
         {reminderDraft.id ? (
-          <div className="mobile-form mobile-reminder-form">
+          <MobileForm className="mobile-reminder-form">
             <AppTextField fieldClassName="mobile-field"
               label={t("app.reminders.form.title")}
               value={reminderDraft.title || ""}
@@ -221,7 +221,7 @@ function MobileRemindersView({
               size="small"
             />
 
-            <div className="mobile-form-grid">
+            <MobileFormGrid>
               <AppTextField fieldClassName="mobile-field"
                 label={t("app.reminders.form.dueTime")}
                 type="datetime-local"
@@ -293,7 +293,7 @@ function MobileRemindersView({
                   </AppMenuItem>
                 ))}
               </AppTextField>
-            </div>
+            </MobileFormGrid>
 
             <AppTextField fieldClassName="mobile-field"
               label={t("app.reminders.form.note")}
@@ -326,7 +326,7 @@ function MobileRemindersView({
                 </MobileButton>
               </div>
             ) : null}
-          </div>
+          </MobileForm>
         ) : (
           <MobileEmpty as="div">{t("app.reminders.emptyState.description")}</MobileEmpty>
         )}

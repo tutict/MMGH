@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileRowBody, MobileEmpty, MobileSearchRow, joinClassNames } from "../ui";
+import { AppTextField, MobileButton, MobileRowBody, MobileEmpty, MobileForm, MobileSearchRow, joinClassNames } from "../ui";
 
 function MobileKnowledgeView({
   activeNote,
@@ -119,7 +119,7 @@ function MobileKnowledgeView({
           </>
         }
       >
-        <div className="mobile-form">
+        <MobileForm>
           <AppTextField fieldClassName="mobile-field"
             label="Title"
             value={noteDraft.title}
@@ -143,7 +143,7 @@ function MobileKnowledgeView({
             minRows={10}
             size="small"
           />
-        </div>
+        </MobileForm>
       </MobileSheet>
     </div>
   );

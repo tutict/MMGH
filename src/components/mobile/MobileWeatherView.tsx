@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
-import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileRowBody, MobileEmpty, MobileMuted, joinClassNames } from "../ui";
+import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileForm, MobileRowBody, MobileEmpty, MobileMuted, joinClassNames } from "../ui";
 import {
   formatMobileWeatherDate,
   formatMobileWeatherTime,
@@ -134,7 +134,7 @@ function MobileWeatherView({
         closeLabel={mobileText(lang, "close")}
         title={mobileText(lang, "citySheet")}
       >
-        <div className="mobile-form mobile-form--compact">
+        <MobileForm compact>
           <AppTextField fieldClassName="mobile-field"
             label={mobileText(lang, "search")}
             value={cityQuery}
@@ -143,7 +143,7 @@ function MobileWeatherView({
             fullWidth
             size="small"
           />
-        </div>
+        </MobileForm>
         <div className="mobile-list">
           {weatherCities.map((city) => (
             <div key={city.id} className={joinClassNames("mobile-row", city.id === selectedWeatherCityId ? "is-active" : null)}>

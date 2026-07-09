@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileInlineWarning, MobileMuted, MobileRowBody, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
+import { AppTextField, MobileButton, MobileForm, MobileInlineWarning, MobileMuted, MobileRowBody, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
 
 function MobileSettingsView({
   busy,
@@ -157,9 +157,10 @@ function MobileSettingsView({
           </>
         }
       >
-        <form
+        <MobileForm
+          as="form"
           id="mobile-settings-provider-form"
-          className="mobile-form mobile-settings-form"
+          className="mobile-settings-form"
           onSubmit={handleSaveSettings}
         >
           <AppTextField fieldClassName="mobile-field"
@@ -240,7 +241,7 @@ function MobileSettingsView({
             multiline
             minRows={4}
           />
-        </form>
+        </MobileForm>
       </MobileSheet>
 
       <MobileSheet
