@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
+import { joinClassNames } from "../ui/classNames";
 import { mobileText } from "./mobileText";
 import { AppTextField, MobileButton, MobileInlineWarning, MobileMuted, MobileStatusDot, MobileRowBody } from "../ui";
 
@@ -115,7 +116,7 @@ function MobileSettingsView({
             <MobileButton
               key={card.id}
               variant="text"
-              className={`mobile-row mobile-cache-row ${card.danger ? "is-danger" : ""}`}
+              className={joinClassNames("mobile-row", "mobile-cache-row", card.danger ? "is-danger" : null)}
               onClick={() => setCacheTarget(card)}
             >
               <MobileRowBody>

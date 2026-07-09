@@ -6,6 +6,7 @@ import MobileSettingsView from "./MobileSettingsView";
 import MobileSheet from "./MobileSheet";
 import MobileTodayView from "./MobileTodayView";
 import MobileWeatherView from "./MobileWeatherView";
+import { joinClassNames } from "../ui/classNames";
 import { getMobileMoreItems } from "./mobileViewRegistry";
 import { getMobileNavIconType, mobileText } from "./mobileText";
 import { AppIconButton, MobileButton, MobileRowBody } from "../ui";
@@ -140,7 +141,7 @@ function MobileAppShell({
         {dockItems.map((item) => (
           <MobileButton
             key={item.id}
-            className={`mobile-dock__item ${currentView === item.id ? "is-active" : ""}`}
+            className={joinClassNames("mobile-dock__item", currentView === item.id ? "is-active" : null)}
             onClick={() => openView(item.id)}
             aria-current={currentView === item.id ? "page" : undefined}
             variant="text"
@@ -152,7 +153,7 @@ function MobileAppShell({
           </MobileButton>
         ))}
         <MobileButton
-          className={`mobile-dock__item ${moreOpen ? "is-active" : ""}`}
+          className={joinClassNames("mobile-dock__item", moreOpen ? "is-active" : null)}
           onClick={() => setMoreOpen(true)}
           aria-expanded={moreOpen}
           variant="text"

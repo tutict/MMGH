@@ -1,4 +1,5 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { joinClassNames } from "../ui/classNames";
 import {
   countOpenReminders,
   filterReminders,
@@ -351,7 +352,7 @@ function ReminderRow({
   const statusKey = item.status === "done" ? "done" : "open";
 
   return (
-    <div className={`mobile-row mobile-reminder-row ${selected ? "is-active" : ""}`}>
+    <div className={joinClassNames("mobile-row", "mobile-reminder-row", selected ? "is-active" : null)}>
       <MobileCheckButton
         type="button"
         checked={item.status === "done"}

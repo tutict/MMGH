@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
+import { joinClassNames } from "../ui/classNames";
 import { mobileText } from "./mobileText";
 import { AppTextField, MobileButton, MobileChip, MobileStatusDot, MobileRowBody, MobileEmpty } from "../ui";
 
@@ -83,7 +84,7 @@ function MobileAgentView({
           timeline.map((item) => (
             <article
               key={item.id}
-              className={`mobile-agent-event mobile-agent-event--${item.role || item.type}`}
+              className={joinClassNames("mobile-agent-event", `mobile-agent-event--${item.role || item.type}`)}
             >
               <div className="mobile-agent-event__head">
                 <strong>{item.title}</strong>

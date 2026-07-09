@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import MobileSheet from "./MobileSheet";
+import { joinClassNames } from "../ui/classNames";
 import { mobileText } from "./mobileText";
 import { AppTextField, MobileButton, MobileRowBody, MobileEmpty } from "../ui";
 
@@ -75,7 +76,7 @@ function MobileKnowledgeView({
               <MobileButton
                 key={note.id}
                 variant="text"
-                className={`mobile-row ${note.id === activeNoteId ? "is-active" : ""}`}
+                className={joinClassNames("mobile-row", note.id === activeNoteId ? "is-active" : null)}
                 onClick={() => void openNote(note)}
               >
                 <span className="mobile-note-icon">{note.icon || "*"}</span>
