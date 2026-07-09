@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileForm, MobileInlineWarning, MobileList, MobileMuted, MobileRowBody, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
+import { AppTextField, MobileButton, MobileForm, MobileInlineWarning, MobileList, MobileMuted, MobileRowBody, MobileSectionHead, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
 
 function MobileSettingsView({
   busy,
@@ -54,7 +54,7 @@ function MobileSettingsView({
   return (
     <section className="mobile-page mobile-page--settings">
       <section className="mobile-section mobile-section--flush">
-        <div className="mobile-section__head">
+        <MobileSectionHead>
           <div>
             <span className="mobile-eyebrow">{t("app.settings.page.eyebrow")}</span>
             <h1>{t("app.settings.page.title")}</h1>
@@ -67,7 +67,7 @@ function MobileSettingsView({
           >
             {t("app.settings.title")}
           </MobileButton>
-        </div>
+        </MobileSectionHead>
 
         <MobileSummaryGrid aria-label={t("app.settings.page.title")}>
           <MobileSummaryCell>
@@ -86,10 +86,10 @@ function MobileSettingsView({
       </section>
 
       <section className="mobile-section">
-        <div className="mobile-section__head mobile-section__head--line">
+        <MobileSectionHead line>
           <h2>{t("app.settings.title")}</h2>
           <MobileStatusDot tone={providerSecurityStatus || "ready"} />
-        </div>
+        </MobileSectionHead>
         <MobileList variant="inset">
           <SummaryRow label={t("app.settings.providerName")} value={settingsForm.providerName} />
           <SummaryRow label={t("app.settings.model")} value={settingsForm.model} />
@@ -103,12 +103,12 @@ function MobileSettingsView({
       </section>
 
       <section className="mobile-section">
-        <div className="mobile-section__head mobile-section__head--line">
+        <MobileSectionHead line>
           <div>
             <span className="mobile-eyebrow">{t("app.settings.cache.eyebrow")}</span>
             <h2>{t("app.settings.cache.title")}</h2>
           </div>
-        </div>
+        </MobileSectionHead>
         <MobileMuted>{t("app.settings.cache.description")}</MobileMuted>
         <MobileList>
           {cacheCards.map((card) => (

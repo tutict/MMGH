@@ -6,7 +6,7 @@ import {
 } from "../reminderWorkspaceModel";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileForm, MobileFormGrid, MobileList, MobileMuted, MobileSearchRow, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
+import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileForm, MobileFormGrid, MobileList, MobileMuted, MobileSearchRow, MobileSectionHead, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
 
 function MobileRemindersView({
   busy,
@@ -103,7 +103,7 @@ function MobileRemindersView({
   return (
     <section className="mobile-page mobile-page--reminders">
       <section className="mobile-section mobile-section--flush">
-        <div className="mobile-section__head">
+        <MobileSectionHead>
           <div>
             <span className="mobile-eyebrow">{t("app.reminders.eyebrow")}</span>
             <h1>{t("app.reminders.title")}</h1>
@@ -116,7 +116,7 @@ function MobileRemindersView({
           >
             {t("app.reminders.newReminder")}
           </MobileButton>
-        </div>
+        </MobileSectionHead>
 
         <MobileSummaryGrid aria-label={t("app.reminders.title")}>
           <MobileSummaryCell>
@@ -148,10 +148,10 @@ function MobileRemindersView({
       <section className="mobile-reminder-groups">
         {groups.map((group) => (
           <section key={group.key} className="mobile-section mobile-reminder-group">
-            <div className="mobile-section__head mobile-section__head--line">
+            <MobileSectionHead line>
               <h2>{group.title}</h2>
               <MobileMuted as="span">{group.items.length}</MobileMuted>
-            </div>
+            </MobileSectionHead>
             <MobileList>
               {group.items.length > 0 ? (
                 group.items.map((item) => (

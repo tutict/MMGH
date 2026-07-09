@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
-import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileForm, MobileList, MobileRowBody, MobileEmpty, MobileMuted, joinClassNames } from "../ui";
+import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileForm, MobileList, MobileRowBody, MobileEmpty, MobileMuted, joinClassNames, MobileSectionHead } from "../ui";
 import {
   formatMobileWeatherDate,
   formatMobileWeatherTime,
@@ -92,9 +92,9 @@ function MobileWeatherView({
       </section>
 
       <section className="mobile-section">
-        <div className="mobile-section__head mobile-section__head--line">
+        <MobileSectionHead line>
           <h2>{mobileText(lang, "hourly")}</h2>
-        </div>
+        </MobileSectionHead>
         <div className="mobile-weather-strip">
           {(activeWeatherCity?.hourly || []).length === 0 ? (
             <MobileEmpty>{t("app.weather.emptyForecast")}</MobileEmpty>
@@ -111,9 +111,9 @@ function MobileWeatherView({
       </section>
 
       <section className="mobile-section">
-        <div className="mobile-section__head mobile-section__head--line">
+        <MobileSectionHead line>
           <h2>{mobileText(lang, "weekly")}</h2>
-        </div>
+        </MobileSectionHead>
         <MobileList>
           {(activeWeatherCity?.daily || []).slice(0, 7).map((item) => (
             <div key={item.time} className="mobile-row">

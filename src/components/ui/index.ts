@@ -20,6 +20,7 @@ export { default as MobileList } from "./MobileList";
 export { default as MobileMuted } from "./MobileMuted";
 export { default as MobileRowBody } from "./MobileRowBody";
 export { default as MobileSearchRow } from "./MobileSearchRow";
+export { default as MobileSectionHead } from "./MobileSectionHead";
 export { default as MobileStatusDot } from "./MobileStatusDot";
 export { default as MobileSummaryCell } from "./MobileSummaryCell";
 export { default as MobileSummaryGrid } from "./MobileSummaryGrid";

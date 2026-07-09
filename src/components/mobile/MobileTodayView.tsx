@@ -1,6 +1,6 @@
 import React from "react";
 import { getMobileDaypart, mobileText } from "./mobileText";
-import { MobileActionRow, MobileButton, MobileCheckButton, MobileEmpty, MobileList, MobileRowBody, MobileSummaryCell, MobileSummaryGrid } from "../ui";
+import { MobileActionRow, MobileButton, MobileCheckButton, MobileEmpty, MobileList, MobileRowBody, MobileSectionHead, MobileSummaryCell, MobileSummaryGrid } from "../ui";
 
 function MobileTodayView({
   activeSession,
@@ -35,12 +35,12 @@ function MobileTodayView({
   return (
     <div className="mobile-page mobile-page--today">
       <section className="mobile-section mobile-section--flush">
-        <div className="mobile-section__head">
+        <MobileSectionHead>
           <div>
             <span className="mobile-eyebrow">{getMobileDaypart(clockNow, lang)}</span>
             <h1>{activeSession?.session?.title || mobileText(lang, "today")}</h1>
           </div>
-        </div>
+        </MobileSectionHead>
         <MobileSummaryGrid>
           {summaryItems.map((item) => (
             <MobileSummaryCell key={item.label}>
@@ -60,10 +60,10 @@ function MobileTodayView({
       </section>
 
       <section className="mobile-section">
-        <div className="mobile-section__head mobile-section__head--line">
+        <MobileSectionHead line>
           <h2>{mobileText(lang, "today")}</h2>
           <span>{todayReminderItems.length}</span>
-        </div>
+        </MobileSectionHead>
         <MobileList>
           {todayReminderItems.length === 0 ? (
             <MobileEmpty>{mobileText(lang, "emptyList")}</MobileEmpty>
@@ -100,9 +100,9 @@ function MobileTodayView({
 
       {sessions.length > 0 ? (
         <section className="mobile-section">
-          <div className="mobile-section__head mobile-section__head--line">
+          <MobileSectionHead line>
             <h2>{mobileText(lang, "sessionLibrary")}</h2>
-          </div>
+          </MobileSectionHead>
           <MobileList>
             {sessions.map((session) => (
               <MobileButton key={session.id} variant="text" className="mobile-row" onClick={() => openView("agent")}>
@@ -118,9 +118,9 @@ function MobileTodayView({
       ) : null}
 
       <section className="mobile-section">
-        <div className="mobile-section__head mobile-section__head--line">
+        <MobileSectionHead line>
           <h2>{mobileText(lang, "flowSignals")}</h2>
-        </div>
+        </MobileSectionHead>
         <MobileList>
           {[...signals, ...ruleActionRecommendations].slice(0, 5).map((signal, index) => (
             <div key={`${signal.id || signal.title || index}`} className="mobile-row">
@@ -138,9 +138,9 @@ function MobileTodayView({
 
       {completedTodayItems.length > 0 || captures.length > 0 ? (
         <section className="mobile-section">
-          <div className="mobile-section__head mobile-section__head--line">
+          <MobileSectionHead line>
             <h2>{mobileText(lang, "doneToday")}</h2>
-          </div>
+          </MobileSectionHead>
           <MobileList>
             {[...completedTodayItems.slice(0, 3), ...captures].slice(0, 5).map((item, index) => (
               <div key={`${item.id || item.title || index}`} className="mobile-row">
