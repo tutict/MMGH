@@ -8,7 +8,7 @@ import MobileTodayView from "./MobileTodayView";
 import MobileWeatherView from "./MobileWeatherView";
 import { getMobileMoreItems } from "./mobileViewRegistry";
 import { getMobileNavIconType, mobileText } from "./mobileText";
-import { AppIconButton, MobileButton } from "../ui";
+import { AppIconButton, MobileButton, MobileRowBody } from "../ui";
 
 function MobileAppShell({
   agent = {},
@@ -186,10 +186,10 @@ function MobileAppShell({
               <span className="mobile-row__icon" aria-hidden="true">
                 {renderIcon(item.id)}
               </span>
-              <span className="mobile-row__body">
+              <MobileRowBody>
                 <strong>{item.label}</strong>
                 <span>{item.meta}</span>
-              </span>
+              </MobileRowBody>
               <small>{item.badge}</small>
             </MobileButton>
           ))}
@@ -237,18 +237,18 @@ function MobileAppShell({
               <span className="mobile-row__icon" aria-hidden="true">
                 <PanelIcon type={item.id} />
               </span>
-              <span className="mobile-row__body">
+              <MobileRowBody>
                 <strong>{t(`app.capability.${item.id}.title`)}</strong>
                 <span>{t(`app.capability.${item.id}.description`)}</span>
-              </span>
+              </MobileRowBody>
               <small>{t(`app.status.${item.status}`)}</small>
             </div>
           ))}
           <div className="mobile-row">
-            <span className="mobile-row__body">
+            <MobileRowBody>
               <strong>{mobileText(lang, "provider")}</strong>
               <span>{providerConfigured ? t("app.provider.configured") : t("app.provider.pending")}</span>
-            </span>
+            </MobileRowBody>
           </div>
         </div>
       </MobileSheet>

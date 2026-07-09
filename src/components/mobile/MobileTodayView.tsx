@@ -1,6 +1,6 @@
 import React from "react";
 import { getMobileDaypart, mobileText } from "./mobileText";
-import { AppIconButton, MobileButton } from "../ui";
+import { AppIconButton, MobileButton, MobileRowBody } from "../ui";
 
 function MobileTodayView({
   activeSession,
@@ -106,10 +106,10 @@ function MobileTodayView({
           <div className="mobile-list">
             {sessions.map((session) => (
               <MobileButton key={session.id} variant="text" className="mobile-row" onClick={() => openView("agent")}>
-                <span className="mobile-row__body">
+                <MobileRowBody>
                   <strong>{session.title}</strong>
                   <span>{session.lastMessagePreview}</span>
-                </span>
+                </MobileRowBody>
                 <time>{session.updatedAt ? formatTime(session.updatedAt, lang) : ""}</time>
               </MobileButton>
             ))}
@@ -124,10 +124,10 @@ function MobileTodayView({
         <div className="mobile-list">
           {[...signals, ...ruleActionRecommendations].slice(0, 5).map((signal, index) => (
             <div key={`${signal.id || signal.title || index}`} className="mobile-row">
-              <span className="mobile-row__body">
+              <MobileRowBody>
                 <strong>{signal.title || signal.label || signal.name}</strong>
                 <span>{signal.description || signal.summary || signal.detail || signal.reason}</span>
-              </span>
+              </MobileRowBody>
             </div>
           ))}
           {signals.length === 0 && ruleActionRecommendations.length === 0 ? (
@@ -144,10 +144,10 @@ function MobileTodayView({
           <div className="mobile-list">
             {[...completedTodayItems.slice(0, 3), ...captures].slice(0, 5).map((item, index) => (
               <div key={`${item.id || item.title || index}`} className="mobile-row">
-                <span className="mobile-row__body">
+                <MobileRowBody>
                   <strong>{item.title || item.label}</strong>
                   <span>{item.preview || item.summary || item.detail || ""}</span>
-                </span>
+                </MobileRowBody>
               </div>
             ))}
           </div>

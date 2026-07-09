@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileInlineWarning, MobileStatusDot } from "../ui";
+import { AppTextField, MobileButton, MobileInlineWarning, MobileStatusDot, MobileRowBody } from "../ui";
 
 function MobileSettingsView({
   busy,
@@ -118,10 +118,10 @@ function MobileSettingsView({
               className={`mobile-row mobile-cache-row ${card.danger ? "is-danger" : ""}`}
               onClick={() => setCacheTarget(card)}
             >
-              <span className="mobile-row__body">
+              <MobileRowBody>
                 <strong>{card.title}</strong>
                 <span>{card.summary}</span>
-              </span>
+              </MobileRowBody>
               <small>{card.countLabel}</small>
             </MobileButton>
           ))}
@@ -284,10 +284,10 @@ function MobileSettingsView({
 function SummaryRow({ label, value }) {
   return (
     <div className="mobile-row mobile-summary-row">
-      <span className="mobile-row__body">
+      <MobileRowBody>
         <strong>{label}</strong>
         <span>{value || "--"}</span>
-      </span>
+      </MobileRowBody>
     </div>
   );
 }

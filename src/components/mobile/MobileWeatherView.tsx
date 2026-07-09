@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
-import { AppTextField, MobileButton, MobileChip } from "../ui";
+import { AppTextField, MobileButton, MobileChip, MobileRowBody } from "../ui";
 import {
   formatMobileWeatherDate,
   formatMobileWeatherTime,
@@ -117,10 +117,10 @@ function MobileWeatherView({
         <div className="mobile-list">
           {(activeWeatherCity?.daily || []).slice(0, 7).map((item) => (
             <div key={item.time} className="mobile-row">
-              <span className="mobile-row__body">
+              <MobileRowBody>
                 <strong>{formatMobileWeatherDate(item.time, lang)}</strong>
                 <span>{item.conditionKey ? t(item.conditionKey) : "--"}</span>
-              </span>
+              </MobileRowBody>
               <span>{valueWithDegree(item.high, t)} / {valueWithDegree(item.low, t)}</span>
             </div>
           ))}
@@ -174,10 +174,10 @@ function MobileWeatherView({
             const isSaved = savedLocationIds.has(city.id);
             return (
               <div key={city.id} className="mobile-row">
-                <span className="mobile-row__body">
+                <MobileRowBody>
                   <strong>{resolveWeatherCityName(city, t)}</strong>
                   <span>{resolveWeatherRegion(city, t)}</span>
-                </span>
+                </MobileRowBody>
                 <MobileChip
                   clickable
                   color={isSaved ? "primary" : "default"}

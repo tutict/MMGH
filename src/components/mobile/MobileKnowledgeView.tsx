@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton } from "../ui";
+import { AppTextField, MobileButton, MobileRowBody } from "../ui";
 
 function MobileKnowledgeView({
   activeNote,
@@ -79,11 +79,11 @@ function MobileKnowledgeView({
                 onClick={() => void openNote(note)}
               >
                 <span className="mobile-note-icon">{note.icon || "*"}</span>
-                <span className="mobile-row__body">
+                <MobileRowBody>
                   <strong>{note.title}</strong>
                   <span>{note.summary || note.body}</span>
                   {note.tags?.length ? <small>{note.tags.join(" / ")}</small> : null}
-                </span>
+                </MobileRowBody>
                 <time>{note.updatedAt ? formatTime(note.updatedAt, lang) : ""}</time>
               </MobileButton>
             ))

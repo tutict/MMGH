@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileChip, MobileStatusDot } from "../ui";
+import { AppTextField, MobileButton, MobileChip, MobileStatusDot, MobileRowBody } from "../ui";
 
 function normalizeTimelineItem(item, index, type, lang, formatTime) {
   const time = item.createdAt || item.updatedAt || item.timestamp || item.time || 0;
@@ -135,10 +135,10 @@ function MobileAgentView({
                 setSheet("");
               }}
             >
-              <span className="mobile-row__body">
+              <MobileRowBody>
                 <strong>{session.title}</strong>
                 <span>{session.lastMessagePreview}</span>
-              </span>
+              </MobileRowBody>
               <time>{session.updatedAt ? formatTime(session.updatedAt, lang) : ""}</time>
             </MobileButton>
           ))}
@@ -157,10 +157,10 @@ function MobileAgentView({
             const isMounted = activeSessionSkillIds.includes(skill.id);
             return (
               <div key={skill.id} className="mobile-row">
-                <span className="mobile-row__body">
+                <MobileRowBody>
                   <strong>{skill.name}</strong>
                   <span>{skill.summary || skill.description || skill.triggerHint}</span>
-                </span>
+                </MobileRowBody>
                 <MobileChip
                   clickable
                   color={isMounted ? "primary" : "default"}
@@ -188,16 +188,16 @@ function MobileAgentView({
       >
         <div className="mobile-list">
           <div className="mobile-row">
-            <span className="mobile-row__body">
+            <MobileRowBody>
               <strong>{mobileText(lang, "provider")}</strong>
               <span>{providerConfigured ? "Configured" : "Pending"}</span>
-            </span>
+            </MobileRowBody>
           </div>
           <div className="mobile-row">
-            <span className="mobile-row__body">
+            <MobileRowBody>
               <strong>{mobileText(lang, "activity")}</strong>
               <span>{timeline.length}</span>
-            </span>
+            </MobileRowBody>
           </div>
         </div>
       </MobileSheet>
