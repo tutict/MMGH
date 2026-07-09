@@ -1,4 +1,4 @@
-import { Slider } from "@mui/material";
+import AppSlider from "./ui/AppSlider";
 import AppIconButton from "./ui/AppIconButton";
 import AppButton from "./ui/AppButton";
 import React from "react";
@@ -407,7 +407,7 @@ function MusicWorkspace({
           <footer className="music-room__footer">
             <div className="music-room__progress">
               <span>{formatDuration(currentTime)}</span>
-              <Slider
+              <AppSlider
                 className="music-room__range"
                 min={0}
                 max={Math.max(duration, 1)}
@@ -470,7 +470,7 @@ function MusicWorkspace({
 
               <label className="music-room__volume">
                 <VolumeIcon />
-                <Slider
+                <AppSlider
                   className="music-room__range"
                   min={0}
                   max={100}

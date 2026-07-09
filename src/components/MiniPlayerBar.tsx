@@ -1,7 +1,7 @@
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
-import { Box, Slider } from "@mui/material";
+import AppSlider from "./ui/AppSlider";
 import AppIconButton from "./ui/AppIconButton";
 import AppButton from "./ui/AppButton";
 import { useRef } from "react";
@@ -127,8 +127,8 @@ function MiniPlayerBar({
           <span>{formatDuration(currentTime)}</span>
           <span>{formatDuration(duration)}</span>
         </div>
-        <Box className="mini-player-bar__rail">
-          <Slider
+        <div className="mini-player-bar__rail">
+          <AppSlider
             className="mini-player-bar__slider"
             min={0}
             max={Math.max(duration, 1)}
@@ -138,7 +138,7 @@ function MiniPlayerBar({
             aria-label={t("app.music.miniPlayer.progress")}
             size="small"
           />
-        </Box>
+        </div>
       </div>
     </section>
   );
