@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileForm, MobileInlineWarning, MobileList, MobileMuted, MobilePage, MobileRow, MobileRowBody, MobileRowButton, MobileSection, MobileSectionHead, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid } from "../ui";
+import { MobileTextField, MobileButton, MobileForm, MobileInlineWarning, MobileList, MobileMuted, MobilePage, MobileRow, MobileRowBody, MobileRowButton, MobileSection, MobileSectionHead, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid } from "../ui";
 
 function MobileSettingsView({
   busy,
@@ -163,7 +163,7 @@ function MobileSettingsView({
           className="mobile-settings-form"
           onSubmit={handleSaveSettings}
         >
-          <AppTextField fieldClassName="mobile-field"
+          <MobileTextField
             label={t("app.settings.providerName")}
             value={settingsForm.providerName || ""}
             onChange={updateField("providerName")}
@@ -171,7 +171,7 @@ function MobileSettingsView({
             size="small"
             fullWidth
           />
-          <AppTextField fieldClassName="mobile-field"
+          <MobileTextField
             label={t("app.settings.model")}
             value={settingsForm.model || ""}
             onChange={updateField("model")}
@@ -179,7 +179,7 @@ function MobileSettingsView({
             size="small"
             fullWidth
           />
-          <AppTextField fieldClassName="mobile-field"
+          <MobileTextField
             label={t("app.settings.baseUrl")}
             value={settingsForm.baseUrl || ""}
             onChange={updateField("baseUrl")}
@@ -192,7 +192,7 @@ function MobileSettingsView({
               {providerSecurityMessage}
             </MobileInlineWarning>
           ) : null}
-          <AppTextField fieldClassName="mobile-field"
+          <MobileTextField
             type="password"
             label={t("app.settings.apiKey")}
             value={settingsForm.apiKey || ""}
@@ -231,7 +231,7 @@ function MobileSettingsView({
               </MobileButton>
             ) : null}
           </div>
-          <AppTextField fieldClassName="mobile-field"
+          <MobileTextField
             label={t("app.settings.systemPrompt")}
             value={settingsForm.systemPrompt || ""}
             onChange={updateField("systemPrompt")}

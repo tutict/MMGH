@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileList, MobilePage, MobileRowBody, MobileRowButton, MobileEmpty, MobileForm, MobileSearchRow, MobileSection, MobileSectionHead } from "../ui";
+import { MobileTextField, MobileButton, MobileList, MobilePage, MobileRowBody, MobileRowButton, MobileEmpty, MobileForm, MobileSearchRow, MobileSection, MobileSectionHead } from "../ui";
 
 function MobileKnowledgeView({
   activeNote,
@@ -43,7 +43,7 @@ function MobileKnowledgeView({
     <MobilePage view="knowledge">
       <MobileSection flush>
         <MobileSearchRow>
-          <AppTextField fieldClassName="mobile-field"
+          <MobileTextField
             value={noteSearch}
             onChange={(event) => setNoteSearch(event.target.value)}
             placeholder={mobileText(lang, "search")}
@@ -119,21 +119,21 @@ function MobileKnowledgeView({
         }
       >
         <MobileForm>
-          <AppTextField fieldClassName="mobile-field"
+          <MobileTextField
             label="Title"
             value={noteDraft.title}
             onChange={(event) => setNoteDraft((prev) => ({ ...prev, title: event.target.value }))}
             fullWidth
             size="small"
           />
-          <AppTextField fieldClassName="mobile-field"
+          <MobileTextField
             label={mobileText(lang, "tags")}
             value={noteDraft.tagsText}
             onChange={(event) => setNoteDraft((prev) => ({ ...prev, tagsText: event.target.value }))}
             fullWidth
             size="small"
           />
-          <AppTextField fieldClassName="mobile-field"
+          <MobileTextField
             label={mobileText(lang, "body")}
             value={noteDraft.body}
             onChange={(event) => setNoteDraft((prev) => ({ ...prev, body: event.target.value }))}

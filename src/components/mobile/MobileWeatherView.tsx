@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
-import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileForm, MobileList, MobilePage, MobileRow, MobileRowBody, MobileEmpty, MobileMuted, MobileSection, MobileSectionHead } from "../ui";
+import { MobileTextField, MobileActionRow, MobileButton, MobileChip, MobileForm, MobileList, MobilePage, MobileRow, MobileRowBody, MobileEmpty, MobileMuted, MobileSection, MobileSectionHead } from "../ui";
 import {
   formatMobileWeatherDate,
   formatMobileWeatherTime,
@@ -135,7 +135,7 @@ function MobileWeatherView({
         title={mobileText(lang, "citySheet")}
       >
         <MobileForm compact>
-          <AppTextField fieldClassName="mobile-field"
+          <MobileTextField
             label={mobileText(lang, "search")}
             value={cityQuery}
             onChange={(event) => setCityQuery(event.target.value)}

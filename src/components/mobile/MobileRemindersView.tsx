@@ -6,7 +6,7 @@ import {
 } from "../reminderWorkspaceModel";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileForm, MobileFormGrid, MobileList, MobileMuted, MobilePage, MobileRow, MobileSearchRow, MobileSection, MobileSectionHead, MobileSummaryCell, MobileSummaryGrid } from "../ui";
+import { AppMenuItem, MobileTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileForm, MobileFormGrid, MobileList, MobileMuted, MobilePage, MobileRow, MobileSearchRow, MobileSection, MobileSectionHead, MobileSummaryCell, MobileSummaryGrid } from "../ui";
 
 function MobileRemindersView({
   busy,
@@ -134,7 +134,7 @@ function MobileRemindersView({
         </MobileSummaryGrid>
 
         <MobileSearchRow>
-          <AppTextField fieldClassName="mobile-field"
+          <MobileTextField
             value={reminderSearch}
             onChange={(event) => setReminderSearch(event.target.value)}
             placeholder={t("app.reminders.search")}
@@ -207,7 +207,7 @@ function MobileRemindersView({
       >
         {reminderDraft.id ? (
           <MobileForm className="mobile-reminder-form">
-            <AppTextField fieldClassName="mobile-field"
+            <MobileTextField
               label={t("app.reminders.form.title")}
               value={reminderDraft.title || ""}
               onChange={(event) =>
@@ -222,7 +222,7 @@ function MobileRemindersView({
             />
 
             <MobileFormGrid>
-              <AppTextField fieldClassName="mobile-field"
+              <MobileTextField
                 label={t("app.reminders.form.dueTime")}
                 type="datetime-local"
                 value={reminderDraft.dueAt || ""}
@@ -237,7 +237,7 @@ function MobileRemindersView({
                 slotProps={{ inputLabel: { shrink: true } }}
               />
 
-              <AppTextField fieldClassName="mobile-field"
+              <MobileTextField
                 label={t("app.reminders.form.severity")}
                 select
                 value={reminderDraft.severity || "medium"}
@@ -254,9 +254,9 @@ function MobileRemindersView({
                 <AppMenuItem value="medium">{t("app.reminders.severity.medium")}</AppMenuItem>
                 <AppMenuItem value="high">{t("app.reminders.severity.high")}</AppMenuItem>
                 <AppMenuItem value="critical">{t("app.reminders.severity.critical")}</AppMenuItem>
-              </AppTextField>
+              </MobileTextField>
 
-              <AppTextField fieldClassName="mobile-field"
+              <MobileTextField
                 label={t("app.reminders.form.status")}
                 select
                 value={reminderDraft.status || "scheduled"}
@@ -271,9 +271,9 @@ function MobileRemindersView({
               >
                 <AppMenuItem value="scheduled">{t("app.reminders.status.scheduled")}</AppMenuItem>
                 <AppMenuItem value="done">{t("app.reminders.status.done")}</AppMenuItem>
-              </AppTextField>
+              </MobileTextField>
 
-              <AppTextField fieldClassName="mobile-field"
+              <MobileTextField
                 label={t("app.reminders.form.linkedNote")}
                 select
                 value={String(reminderDraft.linkedNoteId || "")}
@@ -292,10 +292,10 @@ function MobileRemindersView({
                     {note.title}
                   </AppMenuItem>
                 ))}
-              </AppTextField>
+              </MobileTextField>
             </MobileFormGrid>
 
-            <AppTextField fieldClassName="mobile-field"
+            <MobileTextField
               label={t("app.reminders.form.note")}
               value={reminderDraft.detail || ""}
               onChange={(event) =>

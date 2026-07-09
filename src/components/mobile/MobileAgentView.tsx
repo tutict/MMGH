@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileList, MobilePage, MobileSection, MobileSectionHead, MobileStatusDot, MobileRow, MobileRowBody, MobileRowButton, MobileEmpty, joinClassNames } from "../ui";
+import { MobileTextField, MobileActionRow, MobileButton, MobileChip, MobileList, MobilePage, MobileSection, MobileSectionHead, MobileStatusDot, MobileRow, MobileRowBody, MobileRowButton, MobileEmpty, joinClassNames } from "../ui";
 
 function normalizeTimelineItem(item, index, type, lang, formatTime) {
   const time = item.createdAt || item.updatedAt || item.timestamp || item.time || 0;
@@ -96,7 +96,7 @@ function MobileAgentView({
       </section>
 
       <form className="mobile-agent-composer" onSubmit={handleRunAgent}>
-        <AppTextField fieldClassName="mobile-field"
+        <MobileTextField
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder={mobileText(lang, "send")}
