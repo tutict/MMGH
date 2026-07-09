@@ -1,5 +1,17 @@
 import CloseIcon from "@mui/icons-material/Close";
+import type { ReactNode } from "react";
 import { AppIconButton, AppModal } from "../ui";
+
+type MobileSheetProps = {
+  actions?: ReactNode;
+  children: ReactNode;
+  closeLabel?: string;
+  eyebrow?: ReactNode;
+  id?: string;
+  onClose: () => void;
+  open: boolean;
+  title: ReactNode;
+};
 
 function MobileSheet({
   actions = null,
@@ -10,7 +22,7 @@ function MobileSheet({
   onClose,
   open,
   title,
-}: Record<string, any>) {
+}: MobileSheetProps) {
   return (
     <AppModal
       open={Boolean(open)}
