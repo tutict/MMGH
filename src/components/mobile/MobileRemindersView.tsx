@@ -6,7 +6,7 @@ import {
 } from "../reminderWorkspaceModel";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileForm, MobileFormGrid, MobileMuted, MobileSearchRow, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
+import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileForm, MobileFormGrid, MobileList, MobileMuted, MobileSearchRow, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
 
 function MobileRemindersView({
   busy,
@@ -152,7 +152,7 @@ function MobileRemindersView({
               <h2>{group.title}</h2>
               <MobileMuted as="span">{group.items.length}</MobileMuted>
             </div>
-            <div className="mobile-list">
+            <MobileList>
               {group.items.length > 0 ? (
                 group.items.map((item) => (
                   <ReminderRow
@@ -171,7 +171,7 @@ function MobileRemindersView({
               ) : (
                 <MobileEmpty as="div">{t("app.reminders.emptyBucket")}</MobileEmpty>
               )}
-            </div>
+            </MobileList>
           </section>
         ))}
       </section>

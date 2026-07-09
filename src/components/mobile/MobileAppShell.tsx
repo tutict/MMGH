@@ -8,7 +8,7 @@ import MobileTodayView from "./MobileTodayView";
 import MobileWeatherView from "./MobileWeatherView";
 import { getMobileMoreItems } from "./mobileViewRegistry";
 import { getMobileNavIconType, mobileText } from "./mobileText";
-import { AppIconButton, MobileButton, MobileRowBody, joinClassNames } from "../ui";
+import { AppIconButton, MobileButton, MobileList, MobileRowBody, joinClassNames } from "../ui";
 
 function MobileAppShell({
   agent = {},
@@ -172,7 +172,7 @@ function MobileAppShell({
         title={mobileText(lang, "more")}
         eyebrow={mobileText(lang, "quickSettings")}
       >
-        <div className="mobile-list">
+        <MobileList>
           {moreItems.map((item) => (
             <MobileButton
               key={item.id}
@@ -193,7 +193,7 @@ function MobileAppShell({
               <small>{item.badge}</small>
             </MobileButton>
           ))}
-        </div>
+        </MobileList>
         <div className="mobile-quick-settings">
           <div className="mobile-segmented" role="group" aria-label={mobileText(lang, "language")}>
             <MobileButton
@@ -231,7 +231,7 @@ function MobileAppShell({
         title={mobileText(lang, "inspector")}
         eyebrow={currentMeta.title}
       >
-        <div className="mobile-list">
+        <MobileList>
           {capabilities.map((item) => (
             <div key={item.id} className="mobile-row">
               <span className="mobile-row__icon" aria-hidden="true">
@@ -250,7 +250,7 @@ function MobileAppShell({
               <span>{providerConfigured ? t("app.provider.configured") : t("app.provider.pending")}</span>
             </MobileRowBody>
           </div>
-        </div>
+        </MobileList>
       </MobileSheet>
       {mediaSlot}
     </div>

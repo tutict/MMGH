@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileButton, MobileForm, MobileInlineWarning, MobileMuted, MobileRowBody, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
+import { AppTextField, MobileButton, MobileForm, MobileInlineWarning, MobileList, MobileMuted, MobileRowBody, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
 
 function MobileSettingsView({
   busy,
@@ -90,11 +90,11 @@ function MobileSettingsView({
           <h2>{t("app.settings.title")}</h2>
           <MobileStatusDot tone={providerSecurityStatus || "ready"} />
         </div>
-        <div className="mobile-list mobile-list--inset">
+        <MobileList variant="inset">
           <SummaryRow label={t("app.settings.providerName")} value={settingsForm.providerName} />
           <SummaryRow label={t("app.settings.model")} value={settingsForm.model} />
           <SummaryRow label={t("app.settings.baseUrl")} value={settingsForm.baseUrl} />
-        </div>
+        </MobileList>
         {providerSecurityMessage ? (
           <MobileInlineWarning danger={providerSecurityStatus === "blocked"}>
             {providerSecurityMessage}
@@ -110,7 +110,7 @@ function MobileSettingsView({
           </div>
         </div>
         <MobileMuted>{t("app.settings.cache.description")}</MobileMuted>
-        <div className="mobile-list">
+        <MobileList>
           {cacheCards.map((card) => (
             <MobileButton
               key={card.id}
@@ -125,7 +125,7 @@ function MobileSettingsView({
               <small>{card.countLabel}</small>
             </MobileButton>
           ))}
-        </div>
+        </MobileList>
         <MobileMuted>{t("app.settings.cache.safeNote")}</MobileMuted>
       </section>
 

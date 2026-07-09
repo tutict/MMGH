@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
-import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileForm, MobileRowBody, MobileEmpty, MobileMuted, joinClassNames } from "../ui";
+import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileForm, MobileList, MobileRowBody, MobileEmpty, MobileMuted, joinClassNames } from "../ui";
 import {
   formatMobileWeatherDate,
   formatMobileWeatherTime,
@@ -81,14 +81,14 @@ function MobileWeatherView({
       </section>
 
       <section className="mobile-section">
-        <div className="mobile-list mobile-list--metrics">
+        <MobileList variant="metrics">
           {metrics.map((metric) => (
             <div key={metric.label} className="mobile-row">
               <span>{metric.label}</span>
               <strong>{metric.value}</strong>
             </div>
           ))}
-        </div>
+        </MobileList>
       </section>
 
       <section className="mobile-section">
@@ -114,7 +114,7 @@ function MobileWeatherView({
         <div className="mobile-section__head mobile-section__head--line">
           <h2>{mobileText(lang, "weekly")}</h2>
         </div>
-        <div className="mobile-list">
+        <MobileList>
           {(activeWeatherCity?.daily || []).slice(0, 7).map((item) => (
             <div key={item.time} className="mobile-row">
               <MobileRowBody>
@@ -124,7 +124,7 @@ function MobileWeatherView({
               <span>{valueWithDegree(item.high, t)} / {valueWithDegree(item.low, t)}</span>
             </div>
           ))}
-        </div>
+        </MobileList>
       </section>
 
       <MobileSheet
@@ -144,7 +144,7 @@ function MobileWeatherView({
             size="small"
           />
         </MobileForm>
-        <div className="mobile-list">
+        <MobileList>
           {weatherCities.map((city) => (
             <div key={city.id} className={joinClassNames("mobile-row", city.id === selectedWeatherCityId ? "is-active" : null)}>
               <MobileButton
@@ -168,8 +168,8 @@ function MobileWeatherView({
               />
             </div>
           ))}
-        </div>
-        <div className="mobile-list mobile-list--suggestions">
+        </MobileList>
+        <MobileList variant="suggestions">
           {citySuggestions.map((city) => {
             const isSaved = savedLocationIds.has(city.id);
             return (
@@ -194,7 +194,7 @@ function MobileWeatherView({
               </div>
             );
           })}
-        </div>
+        </MobileList>
       </MobileSheet>
     </div>
   );

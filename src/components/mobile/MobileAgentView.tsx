@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileStatusDot, MobileRowBody, MobileEmpty, joinClassNames } from "../ui";
+import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileList, MobileStatusDot, MobileRowBody, MobileEmpty, joinClassNames } from "../ui";
 
 function normalizeTimelineItem(item, index, type, lang, formatTime) {
   const time = item.createdAt || item.updatedAt || item.timestamp || item.time || 0;
@@ -124,7 +124,7 @@ function MobileAgentView({
         closeLabel={mobileText(lang, "close")}
         title={mobileText(lang, "sessionLibrary")}
       >
-        <div className="mobile-list">
+        <MobileList>
           {sessionList.map((session) => (
             <MobileButton
               key={session.id}
@@ -142,7 +142,7 @@ function MobileAgentView({
               <time>{session.updatedAt ? formatTime(session.updatedAt, lang) : ""}</time>
             </MobileButton>
           ))}
-        </div>
+        </MobileList>
       </MobileSheet>
 
       <MobileSheet
@@ -152,7 +152,7 @@ function MobileAgentView({
         closeLabel={mobileText(lang, "close")}
         title={mobileText(lang, "skills")}
       >
-        <div className="mobile-list">
+        <MobileList>
           {[...activeSessionSkills, ...recommendedSkills].map((skill) => {
             const isMounted = activeSessionSkillIds.includes(skill.id);
             return (
@@ -176,7 +176,7 @@ function MobileAgentView({
           {activeSessionSkills.length === 0 && recommendedSkills.length === 0 ? (
             <MobileEmpty>{mobileText(lang, "emptyList")}</MobileEmpty>
           ) : null}
-        </div>
+        </MobileList>
       </MobileSheet>
 
       <MobileSheet
@@ -186,7 +186,7 @@ function MobileAgentView({
         closeLabel={mobileText(lang, "close")}
         title={mobileText(lang, "details")}
       >
-        <div className="mobile-list">
+        <MobileList>
           <div className="mobile-row">
             <MobileRowBody>
               <strong>{mobileText(lang, "provider")}</strong>
@@ -199,7 +199,7 @@ function MobileAgentView({
               <span>{timeline.length}</span>
             </MobileRowBody>
           </div>
-        </div>
+        </MobileList>
       </MobileSheet>
     </div>
   );
