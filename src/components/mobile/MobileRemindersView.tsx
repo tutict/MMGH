@@ -6,7 +6,7 @@ import {
 } from "../reminderWorkspaceModel";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileForm, MobileFormGrid, MobileList, MobileMuted, MobileSearchRow, MobileSectionHead, MobileSummaryCell, MobileSummaryGrid, joinClassNames } from "../ui";
+import { AppMenuItem, AppTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileForm, MobileFormGrid, MobileList, MobileMuted, MobileRow, MobileSearchRow, MobileSectionHead, MobileSummaryCell, MobileSummaryGrid } from "../ui";
 
 function MobileRemindersView({
   busy,
@@ -351,7 +351,7 @@ function ReminderRow({
   const statusKey = item.status === "done" ? "done" : "open";
 
   return (
-    <div className={joinClassNames("mobile-row", "mobile-reminder-row", selected ? "is-active" : null)}>
+    <MobileRow variant="reminder" active={selected}>
       <MobileCheckButton
         type="button"
         checked={item.status === "done"}
@@ -377,7 +377,7 @@ function ReminderRow({
         </span>
         {linkedNote ? <small>{t("app.reminders.linked", { title: linkedNote.title })}</small> : null}
       </MobileButton>
-    </div>
+    </MobileRow>
   );
 }
 

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
-import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileForm, MobileList, MobileRow, MobileRowBody, MobileEmpty, MobileMuted, joinClassNames, MobileSectionHead } from "../ui";
+import { AppTextField, MobileActionRow, MobileButton, MobileChip, MobileForm, MobileList, MobileRow, MobileRowBody, MobileEmpty, MobileMuted, MobileSectionHead } from "../ui";
 import {
   formatMobileWeatherDate,
   formatMobileWeatherTime,
@@ -146,7 +146,7 @@ function MobileWeatherView({
         </MobileForm>
         <MobileList>
           {weatherCities.map((city) => (
-            <div key={city.id} className={joinClassNames("mobile-row", city.id === selectedWeatherCityId ? "is-active" : null)}>
+            <MobileRow key={city.id} active={city.id === selectedWeatherCityId}>
               <MobileButton
                 variant="text"
                 className="mobile-row__body"
@@ -166,7 +166,7 @@ function MobileWeatherView({
                 onClick={() => onRemoveWeatherCity(city.id)}
                 disabled={weatherCities.length <= 1}
               />
-            </div>
+            </MobileRow>
           ))}
         </MobileList>
         <MobileList variant="suggestions">
