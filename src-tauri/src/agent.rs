@@ -1,19 +1,12 @@
 use anyhow::{anyhow, Context, Result};
-use once_cell::sync::Lazy;
-use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::contracts::{AgentSettingsInput, SkillInput};
 use crate::db;
 
-static HTTP_CLIENT: Lazy<Client> = Lazy::new(|| {
-  Client::builder()
-    .timeout(std::time::Duration::from_secs(90))
-    .build()
-    .expect("failed to build shared HTTP client")
-});
+mod provider;
+
+use provider::{CompletionMessage, CompletionPurpose, ProviderConfig};
 
 const MAX_AGENT_PROMPT_CHARS: usize = 20_000;
 const MAX_AGENT_REPLY_CHARS: usize = 12_000;
@@ -65,7 +58,11 @@ struct AgentContractError {
 
 impl std::fmt::Display for AgentContractError {
   fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(formatter, "runtime contract rejected provider reply: {}", self.reason)
+    write!(
+      formatter,
+      "runtime contract rejected provider reply: {}",
+      self.reason
+    )
   }
 }
 
@@ -89,34 +86,6 @@ struct GeneratedSkillDraftPayload {
   description: Option<String>,
   trigger_hint: Option<String>,
   instructions: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
-struct ChatCompletionRequest {
-  model: String,
-  messages: Vec<CompletionMessage>,
-  temperature: f32,
-}
-
-#[derive(Debug, Serialize)]
-struct CompletionMessage {
-  role: String,
-  content: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct ChatCompletionResponse {
-  choices: Vec<ChatChoice>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ChatChoice {
-  message: ChatResponseMessage,
-}
-
-#[derive(Debug, Deserialize)]
-struct ChatResponseMessage {
-  content: Value,
 }
 
 pub async fn forge_skill(
@@ -194,7 +163,10 @@ impl AgentRuntimeContract {
     let mut system_sections = Vec::new();
 
     if !settings.system_prompt.trim().is_empty() {
-      system_sections.push(shorten(settings.system_prompt.trim(), MAX_SYSTEM_PROMPT_CHARS));
+      system_sections.push(shorten(
+        settings.system_prompt.trim(),
+        MAX_SYSTEM_PROMPT_CHARS,
+      ));
     }
     if !runtime_block.is_empty() {
       system_sections.push(runtime_block);
@@ -235,20 +207,24 @@ impl AgentRuntimeContract {
   fn validate_reply(&self, reply: &str) -> Result<String> {
     let trimmed = reply.trim();
     if trimmed.is_empty() {
-      return Err(AgentContractError {
-        reason: "assistant reply is empty".to_string(),
-      }
-      .into());
+      return Err(
+        AgentContractError {
+          reason: "assistant reply is empty".to_string(),
+        }
+        .into(),
+      );
     }
 
     if trimmed.chars().count() > MAX_AGENT_REPLY_CHARS {
-      return Err(AgentContractError {
-        reason: format!(
-          "assistant reply exceeds {} characters",
-          MAX_AGENT_REPLY_CHARS
-        ),
-      }
-      .into());
+      return Err(
+        AgentContractError {
+          reason: format!(
+            "assistant reply exceeds {} characters",
+            MAX_AGENT_REPLY_CHARS
+          ),
+        }
+        .into(),
+      );
     }
 
     if let Some(reason) = detect_forbidden_reply_claim(trimmed) {
@@ -319,47 +295,20 @@ async fn request_completion(
   let history = db::recent_messages(session_id, MAX_AGENT_HISTORY_MESSAGES)?;
   let enabled_skills = db::session_enabled_skills(session_id)?;
 
-  let request = ChatCompletionRequest {
-    model: settings.model.clone(),
-    messages: contract.compose_messages(settings, history, &enabled_skills),
-    temperature: 0.4,
-  };
-
-  let endpoint = completion_endpoint(&settings.base_url);
-  let response = HTTP_CLIENT
-    .post(endpoint)
-    .header(CONTENT_TYPE, "application/json")
-    .header(AUTHORIZATION, format!("Bearer {}", settings.api_key))
-    .json(&request)
-    .send()
-    .await
-    .context("failed to send completion request")?;
-
-  let status = response.status();
-  let body = response
-    .text()
-    .await
-    .context("failed to read completion response")?;
-  if !status.is_success() {
-    return Err(anyhow!(
-      "provider returned {}: {}",
-      status,
-      shorten(&body, 240)
-    ));
-  }
-
-  let parsed: ChatCompletionResponse =
-    serde_json::from_str(&body).context("failed to parse completion response")?;
-  let content = parsed
-    .choices
-    .into_iter()
-    .next()
-    .and_then(|choice| extract_text(choice.message.content))
-    .unwrap_or_default();
+  let content = provider::complete(
+    ProviderConfig {
+      base_url: &settings.base_url,
+      api_key: &settings.api_key,
+      model: &settings.model,
+    },
+    contract.compose_messages(settings, history, &enabled_skills),
+    0.4,
+    CompletionPurpose::AgentReply,
+  )
+  .await?;
 
   contract.validate_reply(&content)
 }
-
 async fn request_skill_draft_from_model(
   settings: &db::AgentSettings,
   prompt: &str,
@@ -400,9 +349,13 @@ async fn request_skill_draft_from_model(
     format!("User request: {}\nThis is for a brand new skill.", prompt)
   };
 
-  let request = ChatCompletionRequest {
-    model: settings.model.clone(),
-    messages: vec![
+  let content = provider::complete(
+    ProviderConfig {
+      base_url: &settings.base_url,
+      api_key: &settings.api_key,
+      model: &settings.model,
+    },
+    vec![
       CompletionMessage {
         role: "system".to_string(),
         content: system_prompt,
@@ -412,44 +365,15 @@ async fn request_skill_draft_from_model(
         content: user_prompt,
       },
     ],
-    temperature: 0.4,
-  };
-
-  let endpoint = completion_endpoint(&settings.base_url);
-  let response = HTTP_CLIENT
-    .post(endpoint)
-    .header(CONTENT_TYPE, "application/json")
-    .header(AUTHORIZATION, format!("Bearer {}", settings.api_key))
-    .json(&request)
-    .send()
-    .await
-    .context("failed to send skill generation request")?;
-
-  let status = response.status();
-  let body = response
-    .text()
-    .await
-    .context("failed to read skill generation response")?;
-  if !status.is_success() {
-    return Err(anyhow!(
-      "provider returned {} while generating skill: {}",
-      status,
-      shorten(&body, 240)
-    ));
+    0.4,
+    CompletionPurpose::SkillDraft,
+  )
+  .await?;
+  let content = content.trim();
+  if content.is_empty() {
+    return Err(anyhow!("provider returned an empty skill draft"));
   }
-
-  let parsed: ChatCompletionResponse =
-    serde_json::from_str(&body).context("failed to parse skill generation response")?;
-  let content = parsed
-    .choices
-    .into_iter()
-    .next()
-    .and_then(|choice| extract_text(choice.message.content))
-    .map(|value| value.trim().to_string())
-    .filter(|value| !value.is_empty())
-    .context("provider returned an empty skill draft")?;
-
-  parse_generated_skill(&content, existing_skill)
+  parse_generated_skill(content, existing_skill)
 }
 
 fn render_skill_block(skills: &[db::SkillDetail]) -> String {
@@ -565,11 +489,21 @@ fn detect_forbidden_reply_claim(reply: &str) -> Option<String> {
     ),
     (
       "modified settings",
-      &["updated settings", "changed settings", "modified settings", "saved settings"],
+      &[
+        "updated settings",
+        "changed settings",
+        "modified settings",
+        "saved settings",
+      ],
     ),
     (
       "cleared cache",
-      &["cleared cache", "cleared the cache", "cleaned cache", "reset cache"],
+      &[
+        "cleared cache",
+        "cleared the cache",
+        "cleaned cache",
+        "reset cache",
+      ],
     ),
     (
       "weather access",
@@ -583,11 +517,21 @@ fn detect_forbidden_reply_claim(reply: &str) -> Option<String> {
     ),
     (
       "music access",
-      &["played music", "started playback", "changed track", "opened music"],
+      &[
+        "played music",
+        "started playback",
+        "changed track",
+        "opened music",
+      ],
     ),
     (
       "gallery access",
-      &["opened gallery", "updated gallery", "tagged the image", "tagged image"],
+      &[
+        "opened gallery",
+        "updated gallery",
+        "tagged the image",
+        "tagged image",
+      ],
     ),
   ];
 
@@ -638,19 +582,47 @@ fn detect_forbidden_reply_claim(reply: &str) -> Option<String> {
     ),
     (
       "cache cleanup",
-      &["已清理缓存", "已经清理缓存", "已清缓存", "已经清缓存", "已重置缓存", "已经重置缓存"],
+      &[
+        "已清理缓存",
+        "已经清理缓存",
+        "已清缓存",
+        "已经清缓存",
+        "已重置缓存",
+        "已经重置缓存",
+      ],
     ),
     (
       "weather access",
-      &["已查询天气", "已经查询天气", "已获取天气", "已经获取天气", "已打开天气", "已经打开天气"],
+      &[
+        "已查询天气",
+        "已经查询天气",
+        "已获取天气",
+        "已经获取天气",
+        "已打开天气",
+        "已经打开天气",
+      ],
     ),
     (
       "music access",
-      &["已播放音乐", "已经播放音乐", "已切换音乐", "已经切换音乐", "已打开音乐", "已经打开音乐"],
+      &[
+        "已播放音乐",
+        "已经播放音乐",
+        "已切换音乐",
+        "已经切换音乐",
+        "已打开音乐",
+        "已经打开音乐",
+      ],
     ),
     (
       "gallery access",
-      &["已打开图库", "已经打开图库", "已更新图库", "已经更新图库", "已标记图片", "已经标记图片"],
+      &[
+        "已打开图库",
+        "已经打开图库",
+        "已更新图库",
+        "已经更新图库",
+        "已标记图片",
+        "已经标记图片",
+      ],
     ),
   ];
 
@@ -1118,34 +1090,6 @@ fn current_time_millis() -> i64 {
     .as_millis() as i64
 }
 
-fn completion_endpoint(base_url: &str) -> String {
-  let trimmed = base_url.trim().trim_end_matches('/');
-  if trimmed.ends_with("/chat/completions") {
-    trimmed.to_string()
-  } else {
-    format!("{}/chat/completions", trimmed)
-  }
-}
-
-fn extract_text(content: Value) -> Option<String> {
-  match content {
-    Value::String(text) => Some(text),
-    Value::Array(items) => {
-      let joined = items
-        .into_iter()
-        .filter_map(|item| item.get("text").and_then(Value::as_str).map(str::to_string))
-        .collect::<Vec<_>>()
-        .join("\n");
-      if joined.trim().is_empty() {
-        None
-      } else {
-        Some(joined)
-      }
-    }
-    _ => None,
-  }
-}
-
 fn draft_plan(prompt: &str, context: &AgentRuntimeContext) -> String {
   format!(
     "1. Clarify the operator objective: {}.\n2. Load runtime context: {} relevant notes, {} open reminders, and {} mounted skills.\n3. Produce the next actionable answer without inventing tool access beyond the current runtime.\n4. Persist the trace and next-step guidance.",
@@ -1348,13 +1292,17 @@ mod tests {
       .content
       .contains("Non-negotiable Agent runtime contract"));
     assert!(messages[0].content.contains("additional mounted skills"));
-    assert_eq!(messages.iter().filter(|item| item.role == "system").count(), 1);
+    assert_eq!(
+      messages.iter().filter(|item| item.role == "system").count(),
+      1
+    );
     assert!(messages
       .iter()
       .all(|item| item.role == "system" || item.role == "user" || item.role == "assistant"));
-    assert!(
-      messages[1].content.chars().count() <= MAX_AGENT_HISTORY_MESSAGE_CHARS + 3
+    assert!(messages[1].content.chars().count() <= MAX_AGENT_HISTORY_MESSAGE_CHARS + 3);
+    assert_eq!(
+      messages.last().map(|item| item.content.as_str()),
+      Some(contract.prompt.as_str())
     );
-    assert_eq!(messages.last().map(|item| item.content.as_str()), Some(contract.prompt.as_str()));
   }
 }
