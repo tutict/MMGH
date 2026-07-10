@@ -5,7 +5,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::cmd;
+use crate::contracts::{AgentSettingsInput, SkillInput};
 use crate::db;
 
 static HTTP_CLIENT: Lazy<Client> = Lazy::new(|| {
@@ -122,8 +122,8 @@ struct ChatResponseMessage {
 pub async fn forge_skill(
   prompt: String,
   lang: Option<String>,
-  existing_skill: Option<cmd::SkillInput>,
-  settings_override: Option<cmd::AgentSettingsInput>,
+  existing_skill: Option<SkillInput>,
+  settings_override: Option<AgentSettingsInput>,
 ) -> Result<GeneratedSkillDraft> {
   let trimmed_prompt = normalize_agent_prompt(prompt)?;
 
@@ -364,7 +364,7 @@ async fn request_skill_draft_from_model(
   settings: &db::AgentSettings,
   prompt: &str,
   lang: &str,
-  existing_skill: Option<&cmd::SkillInput>,
+  existing_skill: Option<&SkillInput>,
 ) -> Result<GeneratedSkillDraft> {
   let system_prompt = if lang == "zh-CN" {
     [
@@ -665,7 +665,7 @@ fn detect_forbidden_reply_claim(reply: &str) -> Option<String> {
 
 fn parse_generated_skill(
   content: &str,
-  existing_skill: Option<&cmd::SkillInput>,
+  existing_skill: Option<&SkillInput>,
 ) -> Result<GeneratedSkillDraft> {
   let trimmed = content.trim();
   let candidate = if let Some(fenced) = trimmed
@@ -692,7 +692,7 @@ fn parse_generated_skill(
 }
 
 fn build_local_skill_draft(
-  existing_skill: Option<&cmd::SkillInput>,
+  existing_skill: Option<&SkillInput>,
   prompt: &str,
   lang: &str,
 ) -> GeneratedSkillDraft {
@@ -744,7 +744,7 @@ fn build_local_skill_draft(
 
 fn sanitize_generated_skill(
   skill: GeneratedSkillDraftPayload,
-  existing_skill: Option<&cmd::SkillInput>,
+  existing_skill: Option<&SkillInput>,
   fallback_name: Option<&str>,
 ) -> GeneratedSkillDraft {
   GeneratedSkillDraft {

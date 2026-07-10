@@ -17,6 +17,7 @@ use tauri::{
 
 mod agent;
 mod cmd;
+mod contracts;
 mod db;
 mod desktop;
 

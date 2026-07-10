@@ -10,7 +10,7 @@ use reqwest::Url;
 use rusqlite::{params, Connection, OptionalExtension, Row, Transaction, TransactionBehavior};
 use serde::{Deserialize, Serialize};
 
-use crate::cmd::{AgentSettingsInput, KnowledgeNoteInput, ReminderInput, SkillInput};
+use crate::contracts::{AgentSettingsInput, KnowledgeNoteInput, ReminderInput, SkillInput};
 
 #[path = "db/schema.rs"]
 mod schema;
@@ -378,67 +378,118 @@ impl SnapshotReusePolicy {
   }
 }
 
-pub fn bootstrap() -> Result<WorkspaceSnapshot> {
-  workspace_snapshot(None)
+#[derive(Debug, Clone, Copy, Default)]
+struct SnapshotSelection {
+  session_id: Option<i64>,
+  note_id: Option<i64>,
+  reminder_id: Option<i64>,
+  skill_id: Option<i64>,
 }
 
-pub fn open_session(session_id: i64) -> Result<WorkspaceSnapshot> {
-  with_connection(|conn| {
-    ensure_session_exists_in(conn, session_id)?;
-    build_workspace_snapshot_with_policy_in(
-      conn,
-      Some(session_id),
-      None,
-      None,
-      None,
-      SnapshotReusePolicy::read_only(),
-    )
-  })
+impl SnapshotSelection {
+  fn new(session_id: Option<i64>) -> Self {
+    Self {
+      session_id,
+      ..Self::default()
+    }
+  }
+
+  fn note(mut self, note_id: Option<i64>) -> Self {
+    self.note_id = note_id;
+    self
+  }
+
+  fn reminder(mut self, reminder_id: Option<i64>) -> Self {
+    self.reminder_id = reminder_id;
+    self
+  }
+
+  fn skill(mut self, skill_id: Option<i64>) -> Self {
+    self.skill_id = skill_id;
+    self
+  }
 }
 
-pub fn create_session(title: Option<String>) -> Result<WorkspaceSnapshot> {
-  with_transaction(|conn| {
-    let cached_snapshot = read_snapshot_cache()?;
-    let session = create_session_detail_in(conn, title)?;
-    let seeded_snapshot = seed_snapshot_for_session_create(cached_snapshot, session.clone());
-    build_workspace_snapshot_with_seed_snapshot_in(
-      conn,
-      Some(session.session.id),
-      None,
-      None,
-      None,
-      SnapshotReusePolicy::read_only(),
-      seeded_snapshot,
-    )
-  })
+#[derive(Debug, Clone, Copy)]
+enum SnapshotChange {
+  SessionCreated,
+  SessionDeleted,
+  NoteUpserted,
+  NoteDeleted,
+  ReminderUpserted,
+  ReminderDeleted,
+  SkillUpserted,
+  SkillDeleted,
+  SessionSkillsSaved,
+  AgentRunPersisted,
 }
 
-pub fn delete_session(session_id: i64) -> Result<WorkspaceSnapshot> {
-  with_transaction(|conn| {
-    let cached_snapshot = read_snapshot_cache()?;
-    delete_session_in(conn, session_id)?;
-    let seeded_snapshot = seed_snapshot_for_session_delete(cached_snapshot, session_id);
-    let can_reuse_session_list = seeded_snapshot
-      .as_ref()
-      .map(|snapshot| !snapshot.sessions.is_empty())
-      .unwrap_or(false);
-    let can_reuse_active_session_timeline = seeded_snapshot
-      .as_ref()
-      .map(|snapshot| {
-        can_reuse_session_list
-          && snapshot.active_session_id > 0
-          && snapshot.active_session.session.id == snapshot.active_session_id
-      })
-      .unwrap_or(false);
-    build_workspace_snapshot_with_seed_snapshot_in(
-      conn,
-      None,
-      None,
-      None,
-      None,
-      SnapshotReusePolicy {
-        reuse_session_list: can_reuse_session_list,
-        reuse_active_session_timeline: can_reuse_active_session_timeline,
+impl SnapshotChange {
+  fn reuse_policy(self, seeded_snapshot: Option<&WorkspaceSnapshot>) -> SnapshotReusePolicy {
+    match self {
+      Self::SessionCreated
+      | Self::NoteUpserted
+      | Self::ReminderUpserted
+      | Self::SessionSkillsSaved
+      | Self::AgentRunPersisted => SnapshotReusePolicy::read_only(),
+      Self::SessionDeleted => {
+        let reuse_session_list = seeded_snapshot
+          .map(|snapshot| !snapshot.sessions.is_empty())
+          .unwrap_or(false);
+        let reuse_active_session_timeline = seeded_snapshot
+          .map(|snapshot| {
+            reuse_session_list
+              && snapshot.active_session_id > 0
+              && snapshot.active_session.session.id == snapshot.active_session_id
+          })
+          .unwrap_or(false);
+        SnapshotReusePolicy {
+          reuse_session_list,
+          reuse_active_session_timeline,
+          reuse_note_list: true,
+          reuse_active_note_detail: true,
+          reuse_reminder_list: true,
+          reuse_active_reminder_detail: true,
+          reuse_skill_list: true,
+          reuse_active_skill_detail: true,
+        }
+      }
+      Self::NoteDeleted => {
+        let reuse_note_list = seeded_snapshot
+          .map(|snapshot| !snapshot.notes.is_empty())
+          .unwrap_or(false);
+        let reuse_active_note_detail = seeded_snapshot
+          .map(|snapshot| reuse_note_list && snapshot.active_note.id == snapshot.active_note_id)
+          .unwrap_or(false);
+        SnapshotReusePolicy {
+          reuse_session_list: true,
+          reuse_active_session_timeline: true,
+          reuse_note_list,
+          reuse_active_note_detail,
+          reuse_reminder_list: true,
+          reuse_active_reminder_detail: true,
+          reuse_skill_list: true,
+          reuse_active_skill_detail: true,
+        }
+      }
+      Self::ReminderDeleted => {
+        let reuse_active_reminder_detail = seeded_snapshot
+          .map(|snapshot| snapshot.active_reminder.id == snapshot.active_reminder_id)
+          .unwrap_or(false);
+        SnapshotReusePolicy {
+          reuse_session_list: true,
+          reuse_active_session_timeline: true,
+          reuse_note_list: true,
+          reuse_active_note_detail: true,
+          reuse_reminder_list: true,
+          reuse_active_reminder_detail,
+          reuse_skill_list: true,
+          reuse_active_skill_detail: true,
+        }
+      }
+      Self::SkillUpserted => SnapshotReusePolicy {
+        reuse_session_list: false,
+        reuse_active_session_timeline: true,
         reuse_note_list: true,
         reuse_active_note_detail: true,
         reuse_reminder_list: true,
@@ -446,6 +497,110 @@ pub fn delete_session(session_id: i64) -> Result<WorkspaceSnapshot> {
         reuse_skill_list: true,
         reuse_active_skill_detail: true,
       },
+      Self::SkillDeleted => {
+        let reuse_skill_list = seeded_snapshot
+          .map(|snapshot| !snapshot.skills.is_empty())
+          .unwrap_or(false);
+        let reuse_active_skill_detail = seeded_snapshot
+          .map(|snapshot| reuse_skill_list && snapshot.active_skill.id == snapshot.active_skill_id)
+          .unwrap_or(false);
+        SnapshotReusePolicy {
+          reuse_active_session_timeline: true,
+          reuse_note_list: true,
+          reuse_active_note_detail: true,
+          reuse_reminder_list: true,
+          reuse_active_reminder_detail: true,
+          reuse_skill_list,
+          reuse_active_skill_detail,
+          ..SnapshotReusePolicy::default()
+        }
+      }
+    }
+  }
+}
+
+struct SnapshotProjection;
+
+impl SnapshotProjection {
+  fn read(conn: &Connection, selection: SnapshotSelection) -> Result<WorkspaceSnapshot> {
+    let snapshot = build_workspace_snapshot_with_seed_snapshot_in(
+      conn,
+      selection.session_id,
+      selection.note_id,
+      selection.reminder_id,
+      selection.skill_id,
+      SnapshotReusePolicy::read_only(),
+      None,
+    )?;
+    store_snapshot_cache(&snapshot)?;
+    Ok(snapshot)
+  }
+
+  fn after_change(
+    conn: &Connection,
+    selection: SnapshotSelection,
+    change: SnapshotChange,
+    seeded_snapshot: Option<WorkspaceSnapshot>,
+  ) -> Result<WorkspaceSnapshot> {
+    let reuse_policy = change.reuse_policy(seeded_snapshot.as_ref());
+    build_workspace_snapshot_with_seed_snapshot_in(
+      conn,
+      selection.session_id,
+      selection.note_id,
+      selection.reminder_id,
+      selection.skill_id,
+      reuse_policy,
+      seeded_snapshot,
+    )
+  }
+}
+
+pub fn bootstrap() -> Result<WorkspaceSnapshot> {
+  workspace_snapshot(None)
+}
+
+pub fn open_session(session_id: i64) -> Result<WorkspaceSnapshot> {
+  with_connection(|conn| {
+    ensure_session_exists_in(conn, session_id)?;
+    SnapshotProjection::read(
+      conn,
+      SnapshotSelection::new(Some(session_id))
+        .note(None)
+        .reminder(None)
+        .skill(None),
+    )
+  })
+}
+
+pub fn create_session(title: Option<String>) -> Result<WorkspaceSnapshot> {
+  with_workspace_transaction(|conn| {
+    let cached_snapshot = read_snapshot_cache()?;
+    let session = create_session_detail_in(conn, title)?;
+    let seeded_snapshot = seed_snapshot_for_session_create(cached_snapshot, session.clone());
+    SnapshotProjection::after_change(
+      conn,
+      SnapshotSelection::new(Some(session.session.id))
+        .note(None)
+        .reminder(None)
+        .skill(None),
+      SnapshotChange::SessionCreated,
+      seeded_snapshot,
+    )
+  })
+}
+
+pub fn delete_session(session_id: i64) -> Result<WorkspaceSnapshot> {
+  with_workspace_transaction(|conn| {
+    let cached_snapshot = read_snapshot_cache()?;
+    delete_session_in(conn, session_id)?;
+    let seeded_snapshot = seed_snapshot_for_session_delete(cached_snapshot, session_id);
+    SnapshotProjection::after_change(
+      conn,
+      SnapshotSelection::new(None)
+        .note(None)
+        .reminder(None)
+        .skill(None),
+      SnapshotChange::SessionDeleted,
       seeded_snapshot,
     )
   })
@@ -461,13 +616,12 @@ pub fn save_settings(
     validate_settings_size(&settings)?;
     validate_provider_base_url(&settings.base_url)?;
     store_settings_in(conn, &settings)?;
-    build_workspace_snapshot_with_policy_in(
+    SnapshotProjection::read(
       conn,
-      active_session_id,
-      None,
-      None,
-      None,
-      SnapshotReusePolicy::read_only(),
+      SnapshotSelection::new(active_session_id)
+        .note(None)
+        .reminder(None)
+        .skill(None),
     )
   })
 }
@@ -476,13 +630,12 @@ pub fn open_note(note_id: i64, active_session_id: Option<i64>) -> Result<Workspa
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     ensure_note_exists_in(conn, note_id)?;
-    build_workspace_snapshot_with_policy_in(
+    SnapshotProjection::read(
       conn,
-      active_session_id,
-      Some(note_id),
-      None,
-      None,
-      SnapshotReusePolicy::read_only(),
+      SnapshotSelection::new(active_session_id)
+        .note(Some(note_id))
+        .reminder(None)
+        .skill(None),
     )
   })
 }
@@ -491,7 +644,7 @@ pub fn create_note(
   title: Option<String>,
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
-  with_transaction(|conn| {
+  with_workspace_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let note = create_note_detail_in(conn, title)?;
@@ -517,13 +670,13 @@ pub fn create_note(
     } else {
       seed_snapshot_for_note_upsert(cached_snapshot, note.clone())
     };
-    build_workspace_snapshot_with_seed_snapshot_in(
+    SnapshotProjection::after_change(
       conn,
-      active_session_id,
-      Some(note.id),
-      None,
-      None,
-      SnapshotReusePolicy::read_only(),
+      SnapshotSelection::new(active_session_id)
+        .note(Some(note.id))
+        .reminder(None)
+        .skill(None),
+      SnapshotChange::NoteUpserted,
       seeded_snapshot,
     )
   })
@@ -533,7 +686,7 @@ pub fn save_note(
   input: KnowledgeNoteInput,
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
-  with_transaction(|conn| {
+  with_workspace_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let note = save_note_detail_in(conn, input)?;
@@ -560,20 +713,20 @@ pub fn save_note(
     } else {
       seed_snapshot_for_note_upsert(cached_snapshot, note.clone())
     };
-    build_workspace_snapshot_with_seed_snapshot_in(
+    SnapshotProjection::after_change(
       conn,
-      active_session_id,
-      Some(note.id),
-      None,
-      None,
-      SnapshotReusePolicy::read_only(),
+      SnapshotSelection::new(active_session_id)
+        .note(Some(note.id))
+        .reminder(None)
+        .skill(None),
+      SnapshotChange::NoteUpserted,
       seeded_snapshot,
     )
   })
 }
 
 pub fn delete_note(note_id: i64, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
-  with_transaction(|conn| {
+  with_workspace_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let deleted_note = build_note_detail_in(conn, note_id)?;
@@ -600,30 +753,13 @@ pub fn delete_note(note_id: i64, active_session_id: Option<i64>) -> Result<Works
     } else {
       seed_snapshot_for_note_delete(cached_snapshot, note_id)
     };
-    let can_reuse_note_list = seeded_snapshot
-      .as_ref()
-      .map(|snapshot| !snapshot.notes.is_empty())
-      .unwrap_or(false);
-    let can_reuse_active_note_detail = seeded_snapshot
-      .as_ref()
-      .map(|snapshot| can_reuse_note_list && snapshot.active_note.id == snapshot.active_note_id)
-      .unwrap_or(false);
-    build_workspace_snapshot_with_seed_snapshot_in(
+    SnapshotProjection::after_change(
       conn,
-      active_session_id,
-      None,
-      None,
-      None,
-      SnapshotReusePolicy {
-        reuse_session_list: true,
-        reuse_active_session_timeline: true,
-        reuse_note_list: can_reuse_note_list,
-        reuse_active_note_detail: can_reuse_active_note_detail,
-        reuse_reminder_list: true,
-        reuse_active_reminder_detail: true,
-        reuse_skill_list: true,
-        reuse_active_skill_detail: true,
-      },
+      SnapshotSelection::new(active_session_id)
+        .note(None)
+        .reminder(None)
+        .skill(None),
+      SnapshotChange::NoteDeleted,
       seeded_snapshot,
     )
   })
@@ -636,13 +772,12 @@ pub fn open_reminder(
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     ensure_reminder_exists_in(conn, reminder_id)?;
-    build_workspace_snapshot_with_policy_in(
+    SnapshotProjection::read(
       conn,
-      active_session_id,
-      None,
-      Some(reminder_id),
-      None,
-      SnapshotReusePolicy::read_only(),
+      SnapshotSelection::new(active_session_id)
+        .note(None)
+        .reminder(Some(reminder_id))
+        .skill(None),
     )
   })
 }
@@ -651,7 +786,7 @@ pub fn create_reminder(
   title: Option<String>,
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
-  with_transaction(|conn| {
+  with_workspace_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let reminder = create_reminder_detail_in(conn, title)?;
@@ -674,13 +809,13 @@ pub fn create_reminder(
     } else {
       seed_snapshot_for_reminder_upsert(cached_snapshot, reminder.clone())
     };
-    build_workspace_snapshot_with_seed_snapshot_in(
+    SnapshotProjection::after_change(
       conn,
-      active_session_id,
-      None,
-      Some(reminder.id),
-      None,
-      SnapshotReusePolicy::read_only(),
+      SnapshotSelection::new(active_session_id)
+        .note(None)
+        .reminder(Some(reminder.id))
+        .skill(None),
+      SnapshotChange::ReminderUpserted,
       seeded_snapshot,
     )
   })
@@ -690,7 +825,7 @@ pub fn save_reminder(
   input: ReminderInput,
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
-  with_transaction(|conn| {
+  with_workspace_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let reminder = save_reminder_detail_in(conn, input)?;
@@ -717,13 +852,13 @@ pub fn save_reminder(
     } else {
       seed_snapshot_for_reminder_upsert(cached_snapshot, reminder.clone())
     };
-    build_workspace_snapshot_with_seed_snapshot_in(
+    SnapshotProjection::after_change(
       conn,
-      active_session_id,
-      None,
-      Some(reminder.id),
-      None,
-      SnapshotReusePolicy::read_only(),
+      SnapshotSelection::new(active_session_id)
+        .note(None)
+        .reminder(Some(reminder.id))
+        .skill(None),
+      SnapshotChange::ReminderUpserted,
       seeded_snapshot,
     )
   })
@@ -733,7 +868,7 @@ pub fn delete_reminder(
   reminder_id: i64,
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
-  with_transaction(|conn| {
+  with_workspace_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let deleted_reminder = build_reminder_detail_in(conn, reminder_id)?;
@@ -760,26 +895,13 @@ pub fn delete_reminder(
     } else {
       seed_snapshot_for_reminder_delete(cached_snapshot, reminder_id)
     };
-    let can_reuse_active_reminder_detail = seeded_snapshot
-      .as_ref()
-      .map(|snapshot| snapshot.active_reminder.id == snapshot.active_reminder_id)
-      .unwrap_or(false);
-    build_workspace_snapshot_with_seed_snapshot_in(
+    SnapshotProjection::after_change(
       conn,
-      active_session_id,
-      None,
-      None,
-      None,
-      SnapshotReusePolicy {
-        reuse_session_list: true,
-        reuse_active_session_timeline: true,
-        reuse_note_list: true,
-        reuse_active_note_detail: true,
-        reuse_reminder_list: true,
-        reuse_active_reminder_detail: can_reuse_active_reminder_detail,
-        reuse_skill_list: true,
-        reuse_active_skill_detail: true,
-      },
+      SnapshotSelection::new(active_session_id)
+        .note(None)
+        .reminder(None)
+        .skill(None),
+      SnapshotChange::ReminderDeleted,
       seeded_snapshot,
     )
   })
@@ -789,13 +911,12 @@ pub fn open_skill(skill_id: i64, active_session_id: Option<i64>) -> Result<Works
   with_connection(|conn| {
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     ensure_skill_exists_in(conn, skill_id)?;
-    build_workspace_snapshot_with_policy_in(
+    SnapshotProjection::read(
       conn,
-      active_session_id,
-      None,
-      None,
-      Some(skill_id),
-      SnapshotReusePolicy::read_only(),
+      SnapshotSelection::new(active_session_id)
+        .note(None)
+        .reminder(None)
+        .skill(Some(skill_id)),
     )
   })
 }
@@ -804,89 +925,54 @@ pub fn create_skill(
   name: Option<String>,
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
-  with_transaction(|conn| {
+  with_workspace_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let skill = create_skill_detail_for_active_session_in(conn, name, active_session_id)?;
     let seeded_snapshot = seed_snapshot_for_skill_upsert(cached_snapshot, skill.clone());
-    build_workspace_snapshot_with_seed_snapshot_in(
+    SnapshotProjection::after_change(
       conn,
-      active_session_id,
-      None,
-      None,
-      Some(skill.id),
-      SnapshotReusePolicy {
-        reuse_session_list: false,
-        reuse_active_session_timeline: true,
-        reuse_note_list: true,
-        reuse_active_note_detail: true,
-        reuse_reminder_list: true,
-        reuse_active_reminder_detail: true,
-        reuse_skill_list: true,
-        reuse_active_skill_detail: true,
-      },
+      SnapshotSelection::new(active_session_id)
+        .note(None)
+        .reminder(None)
+        .skill(Some(skill.id)),
+      SnapshotChange::SkillUpserted,
       seeded_snapshot,
     )
   })
 }
 
 pub fn save_skill(input: SkillInput, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
-  with_transaction(|conn| {
+  with_workspace_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let skill = save_skill_detail_in(conn, input)?;
     let seeded_snapshot = seed_snapshot_for_skill_upsert(cached_snapshot, skill.clone());
-    build_workspace_snapshot_with_seed_snapshot_in(
+    SnapshotProjection::after_change(
       conn,
-      active_session_id,
-      None,
-      None,
-      Some(skill.id),
-      SnapshotReusePolicy {
-        reuse_session_list: false,
-        reuse_active_session_timeline: true,
-        reuse_note_list: true,
-        reuse_active_note_detail: true,
-        reuse_reminder_list: true,
-        reuse_active_reminder_detail: true,
-        reuse_skill_list: true,
-        reuse_active_skill_detail: true,
-      },
+      SnapshotSelection::new(active_session_id)
+        .note(None)
+        .reminder(None)
+        .skill(Some(skill.id)),
+      SnapshotChange::SkillUpserted,
       seeded_snapshot,
     )
   })
 }
 
 pub fn delete_skill(skill_id: i64, active_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
-  with_transaction(|conn| {
+  with_workspace_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     delete_skill_in(conn, skill_id)?;
     let seeded_snapshot = seed_snapshot_for_skill_delete(cached_snapshot, skill_id);
-    let can_reuse_skill_list = seeded_snapshot
-      .as_ref()
-      .map(|snapshot| !snapshot.skills.is_empty())
-      .unwrap_or(false);
-    let can_reuse_active_skill_detail = seeded_snapshot
-      .as_ref()
-      .map(|snapshot| can_reuse_skill_list && snapshot.active_skill.id == snapshot.active_skill_id)
-      .unwrap_or(false);
-    build_workspace_snapshot_with_seed_snapshot_in(
+    SnapshotProjection::after_change(
       conn,
-      active_session_id,
-      None,
-      None,
-      None,
-      SnapshotReusePolicy {
-        reuse_active_session_timeline: true,
-        reuse_note_list: true,
-        reuse_active_note_detail: true,
-        reuse_reminder_list: true,
-        reuse_active_reminder_detail: true,
-        reuse_skill_list: can_reuse_skill_list,
-        reuse_active_skill_detail: can_reuse_active_skill_detail,
-        ..SnapshotReusePolicy::default()
-      },
+      SnapshotSelection::new(active_session_id)
+        .note(None)
+        .reminder(None)
+        .skill(None),
+      SnapshotChange::SkillDeleted,
       seeded_snapshot,
     )
   })
@@ -897,27 +983,27 @@ pub fn save_session_skills(
   skill_ids: Vec<i64>,
   active_session_id: Option<i64>,
 ) -> Result<WorkspaceSnapshot> {
-  with_transaction(|conn| {
+  with_workspace_transaction(|conn| {
     let cached_snapshot = read_snapshot_cache()?;
     let active_session_id = resolve_active_session_id_in(conn, active_session_id)?;
     let mounted_skill_ids = save_session_skills_in(conn, session_id, skill_ids)?;
     let session = load_session_summary_in(conn, session_id)?;
     let seeded_snapshot =
       seed_snapshot_for_session_skills_save(cached_snapshot, session.clone(), mounted_skill_ids);
-    build_workspace_snapshot_with_seed_snapshot_in(
+    SnapshotProjection::after_change(
       conn,
-      active_session_id.or(Some(session_id)),
-      None,
-      None,
-      None,
-      SnapshotReusePolicy::read_only(),
+      SnapshotSelection::new(active_session_id.or(Some(session_id)))
+        .note(None)
+        .reminder(None)
+        .skill(None),
+      SnapshotChange::SessionSkillsSaved,
       seeded_snapshot,
     )
   })
 }
 
 pub fn persist_agent_run(run: AgentRunPersistence<'_>) -> Result<WorkspaceSnapshot> {
-  with_transaction(|tx| {
+  with_workspace_transaction(|tx| {
     let cached_snapshot = read_snapshot_cache()?;
     ensure_session_exists_in(tx, run.session_id)?;
     touch_session_in(tx, run.session_id, "running")?;
@@ -979,13 +1065,13 @@ pub fn persist_agent_run(run: AgentRunPersistence<'_>) -> Result<WorkspaceSnapsh
         output_activity,
       ],
     );
-    build_workspace_snapshot_with_seed_snapshot_in(
+    SnapshotProjection::after_change(
       tx,
-      Some(run.session_id),
-      None,
-      None,
-      None,
-      SnapshotReusePolicy::read_only(),
+      SnapshotSelection::new(Some(run.session_id))
+        .note(None)
+        .reminder(None)
+        .skill(None),
+      SnapshotChange::AgentRunPersisted,
       seeded_snapshot,
     )
   })
@@ -1035,13 +1121,12 @@ pub fn capability_titles() -> Vec<String> {
 
 pub fn workspace_snapshot(preferred_session_id: Option<i64>) -> Result<WorkspaceSnapshot> {
   with_connection(|conn| {
-    build_workspace_snapshot_with_policy_in(
+    SnapshotProjection::read(
       conn,
-      preferred_session_id,
-      None,
-      None,
-      None,
-      SnapshotReusePolicy::read_only(),
+      SnapshotSelection::new(preferred_session_id)
+        .note(None)
+        .reminder(None)
+        .skill(None),
     )
   })
 }
@@ -1290,9 +1375,13 @@ fn migrate_v1_to_v2_in(conn: &Connection) -> Result<()> {
     assert_v2_migration_counts_in(conn)?;
 
     let foreign_key_errors: i64 =
-      conn.query_row("SELECT COUNT(*) FROM pragma_foreign_key_check", [], |row| row.get(0))?;
+      conn.query_row("SELECT COUNT(*) FROM pragma_foreign_key_check", [], |row| {
+        row.get(0)
+      })?;
     if foreign_key_errors != 0 {
-      return Err(anyhow!("v2 migration produced {foreign_key_errors} foreign key errors"));
+      return Err(anyhow!(
+        "v2 migration produced {foreign_key_errors} foreign key errors"
+      ));
     }
 
     conn.execute_batch(
@@ -1332,7 +1421,8 @@ fn migrate_v1_provider_settings_in(conn: &Connection) -> Result<()> {
     return Ok(());
   };
 
-  let settings = serde_json::from_str::<AgentSettings>(&value).unwrap_or_else(|_| default_settings());
+  let settings =
+    serde_json::from_str::<AgentSettings>(&value).unwrap_or_else(|_| default_settings());
   let sanitized = sanitize_settings_for_persistence(&settings);
   if !settings.api_key.trim().is_empty() {
     store_api_key_in_keyring(&settings.api_key)?;
@@ -1419,9 +1509,13 @@ fn assert_v2_migration_counts_in(conn: &Connection) -> Result<()> {
 
   for (old_table, new_table) in table_pairs {
     let old_count: i64 =
-      conn.query_row(&format!("SELECT COUNT(*) FROM {old_table}"), [], |row| row.get(0))?;
+      conn.query_row(&format!("SELECT COUNT(*) FROM {old_table}"), [], |row| {
+        row.get(0)
+      })?;
     let new_count: i64 =
-      conn.query_row(&format!("SELECT COUNT(*) FROM {new_table}"), [], |row| row.get(0))?;
+      conn.query_row(&format!("SELECT COUNT(*) FROM {new_table}"), [], |row| {
+        row.get(0)
+      })?;
     if old_count != new_count {
       return Err(anyhow!(
         "v2 migration count mismatch for {old_table} -> {new_table}: {old_count} != {new_count}"
@@ -1432,18 +1526,29 @@ fn assert_v2_migration_counts_in(conn: &Connection) -> Result<()> {
   Ok(())
 }
 
-fn with_transaction<T, F>(action: F) -> Result<T>
+fn execute_workspace_transaction_in<F>(
+  conn: &mut Connection,
+  action: F,
+) -> Result<WorkspaceSnapshot>
 where
-  F: FnOnce(&Transaction<'_>) -> Result<T>,
+  F: FnOnce(&Transaction<'_>) -> Result<WorkspaceSnapshot>,
+{
+  let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
+  let snapshot = action(&tx)?;
+  tx.commit()?;
+  store_snapshot_cache(&snapshot)?;
+  Ok(snapshot)
+}
+
+fn with_workspace_transaction<F>(action: F) -> Result<WorkspaceSnapshot>
+where
+  F: FnOnce(&Transaction<'_>) -> Result<WorkspaceSnapshot>,
 {
   let _write_guard = DB_WRITE_LOCK
     .lock()
     .map_err(|_| anyhow!("database write mutex poisoned"))?;
   let mut conn = open_database_connection()?;
-  let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
-  let result = action(&tx)?;
-  tx.commit()?;
-  Ok(result)
+  execute_workspace_transaction_in(&mut conn, action)
 }
 
 pub fn set_app_data_dir(path: PathBuf) -> Result<()> {
@@ -2440,7 +2545,10 @@ fn delete_session_in(conn: &Connection, session_id: i64) -> Result<()> {
     "DELETE FROM session_messages WHERE session_id = ?1",
     params![session_id],
   )?;
-  let changed = conn.execute("DELETE FROM agent_sessions WHERE id = ?1", params![session_id])?;
+  let changed = conn.execute(
+    "DELETE FROM agent_sessions WHERE id = ?1",
+    params![session_id],
+  )?;
   if changed == 0 {
     return Err(anyhow!("session not found"));
   }
@@ -2448,7 +2556,10 @@ fn delete_session_in(conn: &Connection, session_id: i64) -> Result<()> {
 }
 
 fn delete_note_in(conn: &Connection, note_id: i64) -> Result<()> {
-  let changed = conn.execute("DELETE FROM knowledge_notes WHERE id = ?1", params![note_id])?;
+  let changed = conn.execute(
+    "DELETE FROM knowledge_notes WHERE id = ?1",
+    params![note_id],
+  )?;
   if changed == 0 {
     return Err(anyhow!("note not found"));
   }
@@ -2865,6 +2976,7 @@ fn save_session_skills_in(
   Ok(next_skill_ids)
 }
 
+#[cfg(test)]
 fn build_workspace_snapshot_with_policy_in(
   conn: &Connection,
   preferred_session_id: Option<i64>,
@@ -2873,7 +2985,7 @@ fn build_workspace_snapshot_with_policy_in(
   preferred_skill_id: Option<i64>,
   reuse_policy: SnapshotReusePolicy,
 ) -> Result<WorkspaceSnapshot> {
-  build_workspace_snapshot_with_seed_snapshot_in(
+  let snapshot = build_workspace_snapshot_with_seed_snapshot_in(
     conn,
     preferred_session_id,
     preferred_note_id,
@@ -2881,7 +2993,9 @@ fn build_workspace_snapshot_with_policy_in(
     preferred_skill_id,
     reuse_policy,
     None,
-  )
+  )?;
+  store_snapshot_cache(&snapshot)?;
+  Ok(snapshot)
 }
 
 fn build_workspace_snapshot_with_seed_snapshot_in(
@@ -3066,7 +3180,6 @@ fn build_workspace_snapshot_with_seed_snapshot_in(
     active_skill,
     capabilities: capability_catalog(),
   };
-  store_snapshot_cache(&snapshot)?;
   Ok(snapshot)
 }
 
@@ -4822,7 +4935,10 @@ mod tests {
     create_v1_schema_in(&conn)?;
     conn.execute(
       "INSERT INTO settings (key, value) VALUES (?1, ?2)",
-      params![SETTINGS_KEY, serde_json::to_string(&sample_settings("legacy-key"))?],
+      params![
+        SETTINGS_KEY,
+        serde_json::to_string(&sample_settings("legacy-key"))?
+      ],
     )?;
     conn.execute(
       "INSERT INTO sessions (id, title, status, created_at, updated_at)
@@ -4832,7 +4948,10 @@ mod tests {
     conn.execute(
       "INSERT INTO notes (id, icon, title, body, tags, created_at, updated_at)
        VALUES (20, '*', 'Legacy note', 'Body', ?1, 1, 2)",
-      params![serde_json::to_string(&vec!["ops".to_string(), "deploy".to_string()])?],
+      params![serde_json::to_string(&vec![
+        "ops".to_string(),
+        "deploy".to_string()
+      ])?],
     )?;
     conn.execute(
       "INSERT INTO reminders (id, title, detail, due_at, severity, status, linked_note_id, created_at, updated_at)
@@ -4865,8 +4984,9 @@ mod tests {
       [],
       |row| row.get(0),
     )?;
-    let origin: String =
-      conn.query_row("SELECT origin FROM skills WHERE id = 40", [], |row| row.get(0))?;
+    let origin: String = conn.query_row("SELECT origin FROM skills WHERE id = 40", [], |row| {
+      row.get(0)
+    })?;
 
     assert_eq!(loaded.api_key, "legacy-key");
     assert!(loaded.has_api_key);
@@ -6068,6 +6188,39 @@ mod tests {
 
     assert!(error.to_string().contains("session not found"));
     assert_eq!(list_skills_in(&conn)?.len(), initial_count);
+    Ok(())
+  }
+
+  #[test]
+  fn failed_transaction_does_not_publish_snapshot_cache() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let mut conn = test_connection()?;
+    let baseline = SnapshotProjection::read(&conn, SnapshotSelection::default())?;
+    conn.execute_batch(
+      "CREATE TABLE cache_commit_parent (id INTEGER PRIMARY KEY);
+       CREATE TABLE cache_commit_child (
+         id INTEGER PRIMARY KEY,
+         parent_id INTEGER NOT NULL,
+         FOREIGN KEY(parent_id) REFERENCES cache_commit_parent(id)
+           DEFERRABLE INITIALLY DEFERRED
+       );",
+    )?;
+
+    let mut uncommitted = baseline.clone();
+    uncommitted.active_session_id = -1;
+    let result = execute_workspace_transaction_in(&mut conn, |tx| {
+      tx.execute(
+        "INSERT INTO cache_commit_child (id, parent_id) VALUES (1, 999)",
+        [],
+      )?;
+      Ok(uncommitted)
+    });
+
+    assert!(result.is_err());
+    let cached = read_snapshot_cache()?.context("expected baseline snapshot cache")?;
+    assert_eq!(cached.active_session_id, baseline.active_session_id);
     Ok(())
   }
 

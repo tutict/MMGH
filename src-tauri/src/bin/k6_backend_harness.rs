@@ -11,54 +11,8 @@ use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-mod cmd {
-  use serde::{Deserialize, Serialize};
-
-  #[derive(Debug, Clone, Deserialize)]
-  #[serde(rename_all = "camelCase")]
-  pub struct AgentSettingsInput {
-    pub provider_name: String,
-    pub base_url: String,
-    #[serde(default)]
-    pub clear_api_key: bool,
-    pub api_key: String,
-    pub model: String,
-    pub system_prompt: String,
-  }
-
-  #[derive(Debug, Clone, Deserialize)]
-  #[serde(rename_all = "camelCase")]
-  pub struct KnowledgeNoteInput {
-    pub id: i64,
-    pub icon: String,
-    pub title: String,
-    pub body: String,
-    pub tags: Vec<String>,
-  }
-
-  #[derive(Debug, Clone, Deserialize)]
-  #[serde(rename_all = "camelCase")]
-  pub struct ReminderInput {
-    pub id: i64,
-    pub title: String,
-    pub detail: String,
-    pub due_at: Option<i64>,
-    pub severity: String,
-    pub status: String,
-    pub linked_note_id: Option<i64>,
-  }
-
-  #[derive(Debug, Clone, Deserialize, Serialize)]
-  #[serde(rename_all = "camelCase")]
-  pub struct SkillInput {
-    pub id: i64,
-    pub name: String,
-    pub description: String,
-    pub instructions: String,
-    pub trigger_hint: String,
-    pub enabled: bool,
-  }
-}
+#[path = "../contracts.rs"]
+mod contracts;
 
 #[path = "../db.rs"]
 mod db;
@@ -188,7 +142,7 @@ fn route_request(request: &HttpRequest) -> Result<Value> {
     ("POST", "/notes") => {
       let payload: NotePayload = read_json_body(request)?;
       let created = db::create_note(payload.title.clone(), payload.active_session_id)?;
-      let input = cmd::KnowledgeNoteInput {
+      let input = contracts::KnowledgeNoteInput {
         id: created.active_note_id,
         icon: "*".to_string(),
         title: payload
@@ -207,7 +161,7 @@ fn route_request(request: &HttpRequest) -> Result<Value> {
     ("POST", "/reminders") => {
       let payload: ReminderPayload = read_json_body(request)?;
       let created = db::create_reminder(payload.title.clone(), payload.active_session_id)?;
-      let input = cmd::ReminderInput {
+      let input = contracts::ReminderInput {
         id: created.active_reminder_id,
         title: payload
           .title
