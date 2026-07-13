@@ -362,6 +362,20 @@ test("mobile shell renders four primary dock tabs plus More and keeps language/t
   expect(screen.getByRole("heading", { name: "Reminder Center" })).toBeInTheDocument();
 });
 
+test("mobile More sheet stays inside the app shell so mobile theme tokens apply", async () => {
+  const user = userEvent.setup();
+  const { container } = render(<ShellHarness />);
+
+  await user.click(
+    within(screen.getByTestId("mobile-dock")).getByRole("button", { name: "More" })
+  );
+
+  const appShell = container.querySelector(".mobile-app");
+  const moreDialog = screen.getByRole("dialog", { name: "More" });
+
+  expect(appShell).toContainElement(moreDialog);
+});
+
 test("mobile Agent composer submits through handleRunAgent", async () => {
   const user = userEvent.setup();
   const handleRunAgent = vi.fn((event) => event.preventDefault());

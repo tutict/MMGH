@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { I18nProvider } from "../i18n";
@@ -78,18 +78,32 @@ test("skill workspace localizes starter skill display without rewriting saved da
   expect(screen.queryByText("Note Recall")).toBeNull();
 });
 
+test("skill workspace isolates its layout from legacy skill styles", () => {
+  const { container } = render(<SkillWorkspaceHarness />);
+
+  expect(container.querySelector(".skills-workbench")).toBeTruthy();
+  expect(container.querySelector('[class*="skill-"]')).toBeNull();
+  expect(container.querySelectorAll(".skills-switch")).toHaveLength(2);
+  expect(
+    [...container.querySelectorAll(".skills-toolbox__tab")].every((control) =>
+      control.tagName === "BUTTON" && control.hasAttribute("aria-pressed")
+    )
+  ).toBe(true);
+});
+
 test("skill workspace keeps secondary tools behind tabs", async () => {
   const user = userEvent.setup();
   render(<SkillWorkspaceHarness />);
+  const tools = within(screen.getByRole("group", { name: "技能工具" }));
 
-  expect(screen.getByRole("tab", { name: "会话" })).toHaveAttribute("aria-selected", "true");
-  expect(screen.getByRole("tab", { name: "历史" })).toBeTruthy();
-  expect(screen.getByRole("tab", { name: "模板" })).toBeTruthy();
+  expect(tools.getByRole("button", { name: "会话" })).toHaveAttribute("aria-pressed", "true");
+  expect(tools.getByRole("button", { name: "历史" })).toBeTruthy();
+  expect(tools.getByRole("button", { name: "模板" })).toBeTruthy();
   expect(screen.queryByText("生成技能草稿")).toBeNull();
   expect(screen.queryByPlaceholderText("搜索模板")).toBeNull();
 
-  await user.click(screen.getByRole("tab", { name: "生成" }));
+  await user.click(tools.getByRole("button", { name: "生成" }));
 
-  expect(screen.getByRole("tab", { name: "生成" })).toHaveAttribute("aria-selected", "true");
+  expect(tools.getByRole("button", { name: "生成" })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByText("生成技能草稿")).toBeTruthy();
 });

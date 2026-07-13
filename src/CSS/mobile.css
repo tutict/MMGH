@@ -755,6 +755,7 @@
     z-index: 120;
     display: grid;
     align-items: end;
+    justify-items: center;
   }
 
   .mobile-sheet__backdrop {
@@ -767,6 +768,7 @@
   .mobile-sheet {
     position: relative;
     display: grid;
+    width: min(100%, 520px);
     min-height: min(78dvh, 720px);
     max-height: min(88dvh, 720px);
     grid-template-rows: auto minmax(0, 1fr) auto;

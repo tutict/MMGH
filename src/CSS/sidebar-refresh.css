@@ -1,0 +1,545 @@
+/* Desktop sidebar refresh: a compact, continuous workbench directory. */
+@media (min-width: 761px) {
+  .session-rail--desktop {
+    --rail-accent: #69c5ca;
+    --rail-accent-strong: #9bdde0;
+    --rail-accent-soft: rgba(105, 197, 202, 0.11);
+    --rail-accent-border: rgba(105, 197, 202, 0.22);
+    --rail-ink: #edf5f2;
+    --rail-muted: #93a7a0;
+    --rail-soft: #71847e;
+    --rail-divider: rgba(205, 224, 216, 0.11);
+    --rail-surface: #0d1514;
+    --rail-surface-raised: #121d1b;
+    padding: 0;
+    border-color: var(--rail-divider);
+    background: var(--rail-surface);
+    color: var(--rail-ink);
+    overflow: hidden;
+  }
+
+  html[data-theme="light"] .session-rail--desktop {
+    --rail-accent: #247d82;
+    --rail-accent-strong: #155f64;
+    --rail-accent-soft: rgba(36, 125, 130, 0.1);
+    --rail-accent-border: rgba(36, 125, 130, 0.2);
+    --rail-ink: #192522;
+    --rail-muted: #586963;
+    --rail-soft: #788882;
+    --rail-divider: rgba(25, 51, 44, 0.11);
+    --rail-surface: #f5f8f7;
+    --rail-surface-raised: #edf3f1;
+  }
+
+  .session-rail--desktop .session-rail__body {
+    min-height: calc(100svh - 20px);
+    height: calc(100svh - 20px);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  .session-rail--desktop .rail-brand {
+    padding: 16px 14px 13px;
+    border: 0;
+    border-bottom: 1px solid var(--rail-divider);
+    background: transparent;
+  }
+
+  .session-rail--desktop .rail-brand__head {
+    align-items: center;
+    gap: 10px;
+  }
+
+  .session-rail--desktop .rail-brand__identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .session-rail--desktop .rail-brand__mark {
+    display: inline-grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid var(--rail-accent-border);
+    border-radius: 9px;
+    background: var(--rail-accent-soft);
+    color: var(--rail-accent-strong);
+  }
+
+  .session-rail--desktop .rail-brand__mark .panel-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .session-rail--desktop .rail-brand__copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .session-rail--desktop .rail-brand h1 {
+    overflow: hidden;
+    color: var(--rail-ink);
+    font-family: "Segoe UI Variable", "Microsoft YaHei", "PingFang SC", sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .session-rail--desktop .rail-brand__context {
+    overflow: hidden;
+    color: var(--rail-muted);
+    font-size: 0.69rem;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .session-rail--desktop .rail-brand__presence {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex: 0 0 auto;
+    color: var(--rail-muted);
+    font-size: 0.65rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .session-rail--desktop .rail-brand__presence-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--rail-accent);
+    box-shadow: 0 0 0 3px var(--rail-accent-soft);
+  }
+
+  .session-rail--desktop .rail-summary-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 13px;
+    padding-top: 12px;
+    border-top: 1px solid var(--rail-divider);
+  }
+
+  .session-rail--desktop .rail-summary-pill,
+  .session-rail--desktop .rail-summary-pill:first-child {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .session-rail--desktop .rail-summary-pill span {
+    overflow: hidden;
+    color: var(--rail-soft);
+    font-size: 0.64rem;
+    letter-spacing: 0;
+    text-overflow: ellipsis;
+    text-transform: none;
+    white-space: nowrap;
+  }
+
+  .session-rail--desktop .rail-summary-pill strong {
+    color: var(--rail-ink);
+    font-size: 0.72rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+  }
+
+  .session-rail--desktop .rail-section--navigation {
+    min-height: 0;
+    padding: 13px 10px 12px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rail-divider) transparent;
+  }
+
+  .session-rail--desktop .rail-nav,
+  .session-rail--desktop .rail-nav--compact {
+    display: grid;
+    align-content: start;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  .session-rail--desktop .rail-nav-group,
+  .session-rail--desktop .rail-nav-group:first-child {
+    display: grid;
+    align-content: start;
+    gap: 4px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .session-rail--desktop .rail-nav-group__label {
+    min-height: 20px;
+    padding: 0 9px 3px;
+    color: var(--rail-soft);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1.3;
+    text-transform: none;
+  }
+
+  .session-rail--desktop .rail-nav-group.is-active .rail-nav-group__label {
+    color: var(--rail-muted);
+  }
+
+  .session-rail--desktop .rail-nav-list {
+    display: grid;
+    align-content: start;
+    gap: 2px;
+  }
+
+  .session-rail--desktop .rail-nav-item,
+  .agent-app:not(.view-music) .session-rail--desktop .rail-nav-item {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-height: 38px;
+    padding: 0 10px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--rail-muted);
+    box-shadow: none;
+    overflow: hidden;
+  }
+
+  .session-rail--desktop .rail-nav-item::before {
+    display: none;
+  }
+
+  .session-rail--desktop .rail-nav-item:hover {
+    border-color: transparent;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--rail-ink);
+    transform: none;
+  }
+
+  html[data-theme="light"] .session-rail--desktop .rail-nav-item:hover {
+    background: rgba(25, 51, 44, 0.05);
+  }
+
+  .session-rail--desktop .rail-nav-item.is-active,
+  .agent-app:not(.view-music) .session-rail--desktop .rail-nav-item.is-active {
+    border-color: transparent;
+    background: var(--rail-accent-soft);
+    color: var(--rail-ink);
+  }
+
+  .session-rail--desktop .rail-nav-item:focus-visible {
+    outline: 2px solid var(--rail-accent);
+    outline-offset: -2px;
+    box-shadow: none;
+  }
+
+  .session-rail--desktop .rail-nav-item__head {
+    height: 36px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .session-rail--desktop .rail-nav-item__title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .session-rail--desktop .rail-nav-item__icon {
+    width: 17px;
+    height: 17px;
+    color: currentColor;
+    opacity: 0.82;
+  }
+
+  .session-rail--desktop .rail-nav-item.is-active .rail-nav-item__icon {
+    color: var(--rail-accent-strong);
+    opacity: 1;
+  }
+
+  .session-rail--desktop .rail-nav-item__title strong,
+  .agent-app:not(.view-music) .session-rail--desktop .rail-nav-item__title strong {
+    color: currentColor;
+    font-size: 0.79rem;
+    font-weight: 620;
+    line-height: 1.2;
+  }
+
+  .session-rail--desktop .rail-nav-item__badge {
+    min-width: 18px;
+    min-height: 18px;
+    padding: 0 5px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--rail-soft);
+    font-size: 0.64rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .session-rail--desktop .rail-nav-item.is-active .rail-nav-item__badge {
+    background: rgba(105, 197, 202, 0.12);
+    color: var(--rail-accent-strong);
+  }
+
+  .session-rail--desktop .rail-nav-item__meta {
+    display: none;
+  }
+
+  .session-rail--desktop .rail-nav-item__signal {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    display: block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--rail-accent);
+    opacity: 0;
+    transform: translateY(-50%) scale(0.6);
+    transition: opacity 180ms ease, transform 180ms ease;
+  }
+
+  .session-rail--desktop .rail-nav-item.is-active .rail-nav-item__signal {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+
+  .session-rail--desktop .rail-nav-item.is-active .rail-nav-item__badge {
+    margin-right: 8px;
+  }
+
+  .session-rail--desktop .rail-dock {
+    padding: 9px;
+    border-top: 1px solid var(--rail-divider);
+    background: var(--rail-surface-raised);
+  }
+
+  .agent-app .session-rail--desktop .mini-player-bar--rail {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "meta controls";
+    grid-template-rows: auto;
+    width: 100%;
+    min-height: 48px;
+    height: auto;
+    padding: 6px;
+    gap: 6px;
+    align-items: center;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--rail-ink);
+    box-shadow: none;
+    backdrop-filter: none;
+    transform: none;
+    overflow: hidden;
+  }
+
+  .agent-app .session-rail--desktop .mini-player-bar--rail::before,
+  .agent-app .session-rail--desktop .mini-player-bar--rail::after,
+  .agent-app .session-rail--desktop .mini-player-bar--rail .mini-player-bar__timeline,
+  .agent-app .session-rail--desktop .mini-player-bar--rail .mini-player-bar__status-row {
+    display: none;
+  }
+
+  .agent-app .session-rail--desktop .mini-player-bar--rail .mini-player-bar__meta {
+    display: flex;
+    min-width: 0;
+    height: auto;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 9px;
+    border-radius: 6px;
+  }
+
+  .agent-app .session-rail--desktop .mini-player-bar--rail .mini-player-bar__meta:focus-visible {
+    outline: 2px solid var(--rail-accent);
+    outline-offset: 2px;
+  }
+
+  .agent-app .session-rail--desktop .mini-player-bar--rail .mini-player-bar__cover {
+    display: block;
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
+    box-shadow: none;
+  }
+
+  .agent-app .session-rail--desktop .mini-player-bar--rail .mini-player-bar__copy {
+    display: grid;
+    gap: 2px;
+  }
+
+  .agent-app .session-rail--desktop .mini-player-bar--rail .mini-player-bar__copy strong {
+    color: var(--rail-ink);
+    font-size: 0.73rem;
+    font-weight: 650;
+  }
+
+  .agent-app .session-rail--desktop .mini-player-bar--rail .mini-player-bar__copy p {
+    color: var(--rail-muted);
+    font-size: 0.64rem;
+  }
+
+  .agent-app .session-rail--desktop .mini-player-bar--rail .mini-player-bar__controls {
+    display: grid;
+    grid-template-columns: repeat(2, 29px);
+    gap: 4px;
+    justify-self: end;
+  }
+
+  .agent-app .session-rail--desktop .mini-player-bar--rail .mini-player-bar__button {
+    width: 29px;
+    min-width: 29px;
+    height: 29px;
+    padding: 0;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--rail-muted);
+    box-shadow: none;
+  }
+
+  .agent-app .session-rail--desktop .mini-player-bar--rail .mini-player-bar__button:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--rail-ink);
+    transform: none;
+  }
+
+  .agent-app .session-rail--desktop .mini-player-bar--rail .mini-player-bar__button:focus-visible {
+    outline: 2px solid var(--rail-accent);
+    outline-offset: 1px;
+  }
+
+  .agent-app .session-rail--desktop .mini-player-bar--rail .mini-player-bar__button--primary {
+    background: var(--rail-accent);
+    color: #07100f;
+  }
+
+  .agent-app .session-rail--desktop .mini-player-bar--rail .mini-player-bar__button--primary:hover {
+    background: var(--rail-accent-strong);
+    color: #07100f;
+  }
+
+  /* Bridge older high-specificity density rules into the refreshed rail. */
+  .agent-app:not(.mobile-app) .session-rail--desktop {
+    padding: 0;
+    gap: 0;
+  }
+
+  .agent-app:not(.mobile-app) .session-rail--desktop .session-rail__body {
+    min-height: calc(100svh - 20px);
+    height: calc(100svh - 20px);
+    gap: 0;
+  }
+
+  .agent-app:not(.mobile-app) .session-rail--desktop .rail-brand {
+    padding: 16px 14px 13px;
+  }
+
+  .agent-app:not(.mobile-app) .session-rail--desktop .rail-brand__head {
+    gap: 10px;
+  }
+
+  .agent-app:not(.mobile-app) .session-rail--desktop .rail-brand__presence {
+    font-size: 0;
+  }
+
+  .agent-app:not(.mobile-app) .session-rail--desktop .rail-summary-strip {
+    margin-top: 13px;
+    padding-top: 12px;
+  }
+
+  .agent-app:not(.mobile-app) .session-rail--desktop .rail-nav,
+  .agent-app:not(.mobile-app) .session-rail--desktop .rail-nav--compact {
+    align-content: start;
+    gap: 16px;
+  }
+
+  .agent-app:not(.mobile-app) .session-rail--desktop .rail-nav-group,
+  .agent-app:not(.mobile-app) .session-rail--desktop .rail-nav-group:first-child {
+    align-content: start;
+    gap: 4px;
+    padding: 0;
+    border: 0;
+  }
+
+  .agent-app:not(.mobile-app) .session-rail--desktop .rail-nav-item {
+    display: flex;
+    width: 100%;
+    min-height: 38px;
+    height: 38px;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 10px;
+    border-radius: 7px;
+  }
+
+  .agent-app:not(.mobile-app) .session-rail--desktop .rail-nav-item__head {
+    display: grid;
+    width: 100%;
+    height: 36px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .agent-app:not(.mobile-app) .session-rail--desktop .rail-nav-item__badge {
+    padding: 0 5px;
+  }
+
+  .agent-app:not(.mobile-app) .session-rail--desktop .mini-player-bar--rail .mini-player-bar__meta {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 9px;
+    overflow: hidden;
+  }
+
+  .agent-app:not(.mobile-app) .session-rail--desktop .mini-player-bar--rail .mini-player-bar__cover {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+  }
+
+  .agent-app:not(.mobile-app) .session-rail--desktop .mini-player-bar--rail .mini-player-bar__copy {
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-rail--desktop .rail-nav-item,
+  .session-rail--desktop .rail-nav-item__signal,
+  .session-rail--desktop .mini-player-bar--rail,
+  .session-rail--desktop .mini-player-bar--rail * {
+    animation: none !important;
+    scroll-behavior: auto;
+    transition-duration: 0.01ms !important;
+  }
+}

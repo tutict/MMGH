@@ -4482,19 +4482,28 @@ function App() {
       </section>
   );
 
+  const railPresenceStatus = loading || busy ? "running" : providerConfigured ? "ready" : "idle";
+
   const railContent = (
     <div className="session-rail__body">
       <div className="rail-brand rail-brand--compact">
         <div className="rail-brand__head">
-          <div>
-            <span className="rail-brand__tag">{t("app.brand.tag")}</span>
-            <h1>MMGH Agent</h1>
-            <p>{t("app.brand.description")}</p>
+          <div className="rail-brand__identity">
+            <span className="rail-brand__mark" aria-hidden="true">
+              <PanelIcon type="desktop" />
+            </span>
+            <div className="rail-brand__copy">
+              <h1>MMGH Agent</h1>
+              <span className="rail-brand__context">{viewMeta[currentView].eyebrow}</span>
+            </div>
           </div>
-          <span className="rail-brand__view-tag">{viewMeta[currentView].eyebrow}</span>
+          <span className="rail-brand__presence" data-status={railPresenceStatus}>
+            <span className="rail-brand__presence-dot" aria-hidden="true" />
+            {t(`app.status.${railPresenceStatus}`)}
+          </span>
         </div>
 
-        <div className="rail-summary-strip">
+        <div className="rail-summary-strip" aria-label={t("app.nav.title")}>
           <article className="rail-summary-pill">
             <span>{t("app.stats.sessions")}</span>
             <strong>{String(sessionList.length).padStart(2, "0")}</strong>
@@ -4522,11 +4531,9 @@ function App() {
               className={`rail-nav-group ${
                 group.items.some((item) => item.id === currentView) ? "is-active" : ""
               }`}
+              aria-label={group.label}
             >
               <div className="rail-nav-group__label">
-                <span className="rail-nav-group__icon" aria-hidden="true">
-                  <PanelIcon type={getNavGroupIconType(group.id)} />
-                </span>
                 <span>{group.label}</span>
               </div>
               <div className="rail-nav-list">
@@ -4547,6 +4554,7 @@ function App() {
                       <span className="rail-nav-item__badge">{item.badge}</span>
                     </div>
                     <span className="rail-nav-item__meta">{item.meta}</span>
+                    <span className="rail-nav-item__signal" aria-hidden="true" />
                   </AppButton>
                 ))}
               </div>
@@ -4555,7 +4563,7 @@ function App() {
         </div>
       </section>
 
-      {renderMiniPlayer("rail")}
+      <div className="rail-dock">{renderMiniPlayer("rail")}</div>
     </div>
   );
 
@@ -5536,18 +5544,6 @@ function trapFocusWithinPanel(event: KeyboardEvent, panel: HTMLElement) {
 
 function normalizeActivityKind(kind) {
   return ["system", "output", "plan", "skill"].includes(kind) ? kind : "system";
-}
-
-function getNavGroupIconType(groupId) {
-  switch (groupId) {
-    case "workspace":
-      return "desktop";
-    case "operations":
-      return "trace";
-    case "control":
-    default:
-      return "system";
-  }
 }
 
 function getNavIconType(viewId) {

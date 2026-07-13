@@ -23,28 +23,29 @@ function KnowledgeVault({
   const activeNoteUpdatedAt = activeNote?.updatedAt || 0;
 
   return (
-    <section className="knowledge-panel panel-surface">
-      <div className="knowledge-sidebar">
-        <div className="knowledge-sidebar__intro">
-          <div className="section-head knowledge-head">
+    <section className="notes-workbench">
+      <div className="notes-workbench__layout">
+      <aside className="notes-index">
+        <div className="notes-index__header">
+          <div className="notes-index__heading">
             <div>
-              <span className="eyebrow">{t("app.knowledge.eyebrow")}</span>
+              <span className="notes-eyebrow">{t("app.knowledge.eyebrow")}</span>
               <h3>{t("app.knowledge.title")}</h3>
             </div>
             <AppButton
-              className="solid-button"
+              className="notes-button notes-button--primary"
               onClick={handleCreateNote}
               disabled={busy !== "" || loading}
             >
               {t("app.knowledge.newPage")}
             </AppButton>
           </div>
-          <div className="knowledge-sidebar__summary">
-            <article className="knowledge-summary-card">
+          <div className="notes-index__stats">
+            <article className="notes-stat">
               <span>{t("app.stats.notes")}</span>
               <strong>{filteredNotes.length}</strong>
             </article>
-            <article className="knowledge-summary-card knowledge-summary-card--wide">
+            <article className="notes-stat notes-stat--wide">
               <span>{t("app.knowledge.editor.eyebrow")}</span>
               <strong>{activeNote?.title || t("app.knowledge.defaultTitle")}</strong>
               <p>
@@ -56,11 +57,11 @@ function KnowledgeVault({
           </div>
         </div>
 
-        <div className="knowledge-search-shell">
-          <span className="section-note">
+        <div className="notes-search">
+          <span className="notes-note">
             {t("app.stats.notes")}: {filteredNotes.length}
           </span>
-          <AppTextField
+          <AppTextField fieldClassName="notes-input"
             value={noteSearch}
             onChange={(event) => setNoteSearch(event.target.value)}
             placeholder={t("app.knowledge.search")}
@@ -69,53 +70,54 @@ function KnowledgeVault({
           />
         </div>
 
-        <div className="knowledge-note-list">
+        <div className="notes-list">
           {filteredNotes.length > 0 ? (
             filteredNotes.map((note) => (
               <AppButton
                 key={note.id}
-                className={`knowledge-note-card ${note.id === activeNoteId ? "is-active" : ""}`}
+                className={`notes-entry ${note.id === activeNoteId ? "notes-is-selected" : ""}`}
+                aria-current={note.id === activeNoteId ? "true" : undefined}
                 onClick={() => handleOpenNote(note.id)}
               >
-                <div className="knowledge-note-card__head">
-                  <span className="knowledge-note-icon">{note.icon || "*"}</span>
-                  <div className="knowledge-note-card__title-block">
+                <div className="notes-entry__head">
+                  <span className="notes-entry__icon">{note.icon || "*"}</span>
+                  <div className="notes-entry__title-block">
                     <strong>{note.title}</strong>
                     <span>{formatTime(note.updatedAt, lang)}</span>
                   </div>
                 </div>
                 <p>{note.summary}</p>
-                <div className="knowledge-note-card__meta">
+                <div className="notes-entry__meta">
                   <span>{(note.tags || []).slice(0, 2).join(" | ") || t("app.knowledge.noTags")}</span>
                   <span>{t("app.knowledge.editor.eyebrow")}</span>
                 </div>
               </AppButton>
             ))
           ) : (
-            <div className="knowledge-empty-state">
+            <div className="notes-empty">
               <strong>{t("app.common.empty")}</strong>
               <p>{t("app.knowledge.editor.description")}</p>
             </div>
           )}
         </div>
-      </div>
+      </aside>
 
-      <div className="knowledge-editor">
-        <div className="knowledge-editor__toolbar">
-          <div className="knowledge-editor__stamp">
-            <span className="eyebrow">{t("app.knowledge.editor.eyebrow")}</span>
+      <div className="notes-editor">
+        <div className="notes-editor__toolbar">
+          <div className="notes-editor__stamp">
+            <span className="notes-eyebrow">{t("app.knowledge.editor.eyebrow")}</span>
             <p>{t("app.knowledge.editor.description")}</p>
           </div>
-          <div className="knowledge-editor__actions">
+          <div className="notes-editor__actions">
             <AppButton
-              className="ghost-button"
+              className="notes-button notes-button--secondary"
               onClick={handleDeleteNote}
               disabled={!activeNote || busy !== "" || loading}
             >
               {t("app.common.delete")}
             </AppButton>
             <AppButton
-              className="solid-button"
+              className="notes-button notes-button--primary"
               onClick={handleSaveNote}
               disabled={!hasUnsavedNote || busy !== "" || loading}
             >
@@ -124,13 +126,13 @@ function KnowledgeVault({
           </div>
         </div>
 
-        <div className="knowledge-editor__form">
-          <div className="knowledge-editor__hero">
-            <div className="knowledge-editor__hero-icon">{noteDraft.icon || "*"}</div>
-            <div className="knowledge-editor__hero-copy">
-              <div className="knowledge-editor__hero-meta">
-                <span className="eyebrow">{t("app.knowledge.editor.eyebrow")}</span>
-                <AppStatusChip tone={hasUnsavedNote ? "warning" : "completed"}>
+        <div className="notes-editor__form">
+          <div className="notes-editor__hero">
+            <div className="notes-editor__hero-icon">{noteDraft.icon || "*"}</div>
+            <div className="notes-editor__hero-copy">
+              <div className="notes-editor__hero-meta">
+                <span className="notes-eyebrow">{t("app.knowledge.editor.eyebrow")}</span>
+                <AppStatusChip className="notes-badge" tone={hasUnsavedNote ? "warning" : "completed"}>
                   {t(hasUnsavedNote ? "app.common.dirty" : "app.common.saved")}
                 </AppStatusChip>
               </div>
@@ -142,9 +144,9 @@ function KnowledgeVault({
               </p>
             </div>
           </div>
-          <div className="knowledge-editor__title-row">
-            <AppTextField
-              className="knowledge-icon-input"
+          <div className="notes-editor__title-row">
+            <AppTextField fieldClassName="notes-input"
+              className="notes-input--icon"
               value={noteDraft.icon}
               slotProps={{ htmlInput: { maxLength: 2 } }}
               onChange={(event) =>
@@ -155,8 +157,8 @@ function KnowledgeVault({
               }
               size="small"
             />
-            <AppTextField
-              className="knowledge-title-input"
+            <AppTextField fieldClassName="notes-input"
+              className="notes-input--title"
               value={noteDraft.title}
               onChange={(event) =>
                 setNoteDraft((prev) => ({
@@ -170,7 +172,7 @@ function KnowledgeVault({
             />
           </div>
 
-          <AppTextField
+          <AppTextField fieldClassName="notes-input"
             value={noteDraft.tagsText}
             onChange={(event) =>
               setNoteDraft((prev) => ({
@@ -183,8 +185,8 @@ function KnowledgeVault({
             fullWidth
           />
 
-          <AppTextField
-            className="knowledge-body-input"
+          <AppTextField fieldClassName="notes-input"
+            className="notes-input--body"
             value={noteDraft.body}
             onChange={(event) =>
               setNoteDraft((prev) => ({
@@ -198,6 +200,7 @@ function KnowledgeVault({
             fullWidth
           />
         </div>
+      </div>
       </div>
     </section>
   );

@@ -31,5 +31,17 @@
 /* 8. Desktop density pass: quieter shell, fewer widget-like surfaces. */
 @import "./layout-breathing-room.css";
 
-/* 9. Independent mobile shell and views, scoped away from legacy responsive layers. */
+/* 9. Desktop navigation rail rebuilt as a compact workbench directory. */
+@import "./sidebar-refresh.css";
+
+/* 10. Isolated audio console: turntable, lyrics, controls, and library. */
+@import "./audio-console-v2.css";
+
+/* 11. Isolated skill workbench: registry, editor, and contextual tools. */
+@import "./skills-workbench-v2.css";
+
+/* 12. Isolated knowledge workbench: note index and writing canvas. */
+@import "./notes-workbench-v2.css";
+
+/* 13. Independent mobile shell and views, scoped away from legacy responsive layers. */
 @import "./mobile.css";

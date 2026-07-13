@@ -4,7 +4,6 @@ import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
 import { AppButton, AppFileInput, AppIconButton, AppSlider } from "./ui";
 
 const LYRIC_LINE_HEIGHT = 72;
-const MOBILE_LIBRARY_BREAKPOINT = 1120;
 const COSMIC_DUST_PARTICLES = Array.from({ length: 24 }, (_, index) => {
   const seed = pseudoRandom(index + 1);
   const secondary = pseudoRandom(index + 101);
@@ -108,12 +107,10 @@ function MusicWorkspace({
 }: Record<string, any>) {
   const { t } = useI18n();
   const { currentTime, duration } = usePlaybackSnapshot();
-  const [isLibraryOpen, setIsLibraryOpen] = React.useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.innerWidth > MOBILE_LIBRARY_BREAKPOINT &&
-      localizedTracks.length > 0
-  );
+  const consoleRef = React.useRef<HTMLElement | null>(null);
+  const compactLayoutRef = React.useRef(true);
+  const [isLibraryOpen, setIsLibraryOpen] = React.useState(false);
+  const [isCompactLayout, setIsCompactLayout] = React.useState(true);
   const [particleCount, setParticleCount] = React.useState(() =>
     typeof window === "undefined" ? 18 : resolveParticleBudget(window)
   );
@@ -125,14 +122,37 @@ function MusicWorkspace({
     }
 
     const handleResize = () => {
-      if (window.innerWidth > MOBILE_LIBRARY_BREAKPOINT && localizedTracks.length > 0) {
-        setIsLibraryOpen(true);
-      }
       setParticleCount(resolveParticleBudget(window));
     };
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  React.useEffect(() => {
+    const node = consoleRef.current;
+    if (!node || typeof ResizeObserver === "undefined") {
+      return undefined;
+    }
+
+    const observer = new ResizeObserver(([entry]) => {
+      const compact = entry.contentRect.width < 1180;
+      const wasCompact = compactLayoutRef.current;
+      compactLayoutRef.current = compact;
+      setIsCompactLayout(compact);
+      setIsLibraryOpen((previous) => {
+        if (localizedTracks.length === 0) {
+          return false;
+        }
+        if (!compact) {
+          return true;
+        }
+        return wasCompact ? previous : false;
+      });
+    });
+
+    observer.observe(node);
+    return () => observer.disconnect();
   }, [localizedTracks.length]);
 
   const coverSrc = selectedTrack?.cover || localizedTracks[0]?.cover || "/reply-pulse-cover.jpg";
@@ -176,87 +196,92 @@ function MusicWorkspace({
     });
     return index;
   }, [currentTime, lyricsLines]);
-  const lyricsTransform = `translateY(calc(50% - ${
+  const lyricsTransform = `translateY(-${
     activeLyricIndex * LYRIC_LINE_HEIGHT + LYRIC_LINE_HEIGHT / 2
-  }px))`;
+  }px)`;
   const lyricsStatusLabel = resolveLyricsStatusLabel({ lyricsError, lyricsSource, lyricsStatus, t });
 
   function handleTrackPick(trackId) {
     handleSelectTrack(trackId);
-    if (typeof window !== "undefined" && window.innerWidth <= MOBILE_LIBRARY_BREAKPOINT) {
+    if (isCompactLayout) {
       setIsLibraryOpen(false);
     }
   }
 
   return (
     <section
-      className={`music-room theme-${selectedTrack?.theme || "ember"} ${
-        isPlaying ? "is-playing" : "is-paused"
+      ref={consoleRef}
+      className={`audio-console audio-theme-${selectedTrack?.theme || "ember"} ${
+        isPlaying ? "audio-is-playing" : "audio-is-paused"
       }`}
     >
       <div
-        className="music-room__backdrop"
+        className="audio-console__backdrop"
         style={{ backgroundImage: `url(${coverSrc})` }}
         aria-hidden="true"
       />
-      <div className="music-room__scrim" aria-hidden="true" />
+      <div className="audio-console__scrim" aria-hidden="true" />
 
-      <div className={`music-room__surface ${isLibraryOpen ? "is-library-open" : "is-library-collapsed"}`}>
+      <div className={`audio-console__surface ${isLibraryOpen ? "audio-library-open" : "audio-library-collapsed"}`}>
         <AppButton
-          className={`music-room__library-toggle ${isLibraryOpen ? "is-open" : ""}`}
+          className={`audio-console__library-toggle ${isLibraryOpen ? "audio-is-open" : ""}`}
           onClick={() => setIsLibraryOpen((prev) => !prev)}
           aria-label={t("app.music.libraryToggle")}
+          aria-expanded={isLibraryOpen}
+          aria-controls="audio-console-library"
         >
           <LibraryIcon />
           <span>{t("app.music.libraryToggle")}</span>
         </AppButton>
 
-        <div className="music-room__main">
-          <header className="music-room__header">
-            <div className="music-room__header-shell">
-              <div className="music-room__headline">
-                <span className="eyebrow">{t("app.music.eyebrow")}</span>
+        <div className="audio-console__main">
+          <header className="audio-console__header">
+            <div className="audio-console__header-shell">
+              <div className="audio-console__headline">
+                <span className="audio-eyebrow">{t("app.music.eyebrow")}</span>
                 <h2>{t("app.music.panelTitle")}</h2>
                 <p>{t("app.music.panelDescription")}</p>
               </div>
 
-              <div className="music-room__status-strip">
-                <div className="music-room__status-item">
+              <div className="audio-console__status-strip">
+                <div className="audio-console__status-item">
                   <span>{t("app.music.statsLibrary")}</span>
                   <strong>{t("app.music.trackCount", { count: localizedTracks.length })}</strong>
                 </div>
-                <div className="music-room__status-item">
+                <div className="audio-console__status-item">
                   <span>{t("app.music.statsSource")}</span>
                   <strong>{sourceLabel}</strong>
                 </div>
-                <div className="music-room__status-item">
+                <div className="audio-console__status-item">
                   <span>{t("app.music.playMode")}</span>
                   <strong>{t(playModeMeta.labelKey)}</strong>
                 </div>
-                <div className="music-room__status-item">
+                <div className="audio-console__status-item">
                   <span>{t("app.sound.autoPlay")}</span>
                   <strong>{syncStateLabel}</strong>
                 </div>
               </div>
             </div>
 
-            <div className="music-room__meta">
-              <span className="music-room__chip">{sourceLabel}</span>
-              <span className={`music-room__chip ${isPlaying ? "is-live" : ""}`}>
+            <div className="audio-console__meta">
+              <span className="audio-console__chip">{sourceLabel}</span>
+              <span className={`audio-console__chip ${isPlaying ? "audio-is-live" : ""}`}>
                 {isPlaying ? t("app.music.playing") : t("app.music.paused")}
               </span>
-              <span className="music-room__chip">{t(playModeMeta.labelKey)}</span>
-              <label className="music-room__sync">
+              <span className="audio-console__chip">{t(playModeMeta.labelKey)}</span>
+              <label className="audio-console__sync">
                 <span>{t("app.sound.autoPlay")}</span>
                 <AppButton
-                  className={`toggle-pill ${autoPlayOnReply ? "is-on" : ""}`}
+                  className={`audio-switch ${autoPlayOnReply ? "audio-is-on" : ""}`}
+                  aria-pressed={autoPlayOnReply}
+                  disableRipple
                   onClick={() => setAutoPlayOnReply((prev) => !prev)}
                 >
                   <span />
                 </AppButton>
               </label>
               <AppButton
-                className="music-room__utility"
+                className="audio-console__utility"
                 onClick={() => uploadInputRef.current?.click()}
               >
                 <UploadIcon />
@@ -265,22 +290,22 @@ function MusicWorkspace({
             </div>
           </header>
 
-          <div className="music-room__stage">
-            <div className="music-room__turntable" style={{ "--music-pulse-level": pulseLevel } as React.CSSProperties}>
-              <div className="music-room__plinth" aria-hidden="true">
-                <span className="music-room__plinth-mark music-room__plinth-mark--left" />
-                <span className="music-room__plinth-mark music-room__plinth-mark--right" />
+          <div className="audio-console__stage">
+            <div className="audio-console__turntable" style={{ "--audio-pulse-level": pulseLevel } as React.CSSProperties}>
+              <div className="audio-console__plinth" aria-hidden="true">
+                <span className="audio-console__plinth-mark audio-console__plinth-mark--left" />
+                <span className="audio-console__plinth-mark audio-console__plinth-mark--right" />
               </div>
-              <span className="music-room__arm-base" aria-hidden="true" />
-              <span className={`music-room__needle ${isPlaying ? "is-playing" : ""}`} aria-hidden="true" />
-              <div className="music-room__disc-stage">
+              <span className="audio-console__arm-base" aria-hidden="true" />
+              <span className={`audio-console__needle ${isPlaying ? "audio-is-playing" : ""}`} aria-hidden="true" />
+              <div className="audio-console__disc-stage">
                 <svg
-                  className="music-room__particle-ring"
+                  className="audio-console__particle-ring"
                   viewBox="0 0 400 400"
                   aria-hidden="true"
                 >
                   <defs>
-                    <radialGradient id="music-room-dust-gradient" cx="50%" cy="50%" r="50%">
+                    <radialGradient id="audio-console-dust-gradient" cx="50%" cy="50%" r="50%">
                       <stop offset="0%" stopColor="rgba(255,255,255,0.95)" />
                       <stop offset="45%" stopColor="rgba(255,255,255,0.72)" />
                       <stop offset="72%" stopColor="rgba(255,255,255,0.28)" />
@@ -294,37 +319,37 @@ function MusicWorkspace({
                   />
                 </svg>
 
-                <div className={`music-room__vinyl ${isPlaying ? "is-spinning" : ""}`}>
-                  <span className="music-room__vinyl-ring" aria-hidden="true" />
-                  <span className="music-room__vinyl-ring is-inner" aria-hidden="true" />
+                <div className={`audio-console__vinyl ${isPlaying ? "audio-is-spinning" : ""}`}>
+                  <span className="audio-console__vinyl-ring" aria-hidden="true" />
+                  <span className="audio-console__vinyl-ring audio-is-inner" aria-hidden="true" />
                   <img src={coverSrc} alt={currentTrackLabel || t("app.music.trackCover")} />
-                  <span className="music-room__vinyl-shine" aria-hidden="true" />
-                  <span className="music-room__vinyl-core" aria-hidden="true" />
+                  <span className="audio-console__vinyl-shine" aria-hidden="true" />
+                  <span className="audio-console__vinyl-core" aria-hidden="true" />
                 </div>
               </div>
 
-              <div className="music-room__turntable-copy">
+              <div className="audio-console__turntable-copy">
                 <strong>{currentTrackLabel}</strong>
                 <p>{currentArtistLabel}</p>
               </div>
             </div>
 
-            <div className="music-room__content">
-              <div className="music-room__trackline">
-                <div className="music-room__track-copy">
-                  <span className="eyebrow">{t("app.music.nowPlaying")}</span>
+            <div className="audio-console__content">
+              <div className="audio-console__trackline">
+                <div className="audio-console__track-copy">
+                  <span className="audio-eyebrow">{t("app.music.nowPlaying")}</span>
                   <h3>{currentTrackLabel}</h3>
                   <p>{currentArtistLabel}</p>
                 </div>
 
-                <div className="music-room__facts">
+                <div className="audio-console__facts">
                   <span>{t("app.music.currentLabel")} {formatDuration(currentTime)}</span>
                   <span>{t("app.music.durationLabel")} {formatDuration(duration)}</span>
                   <span>{t("app.music.volume")} {volume}%</span>
                 </div>
 
                 <div
-                  className={`music-room__waveform ${isPlaying ? "is-playing" : ""}`}
+                  className={`audio-console__waveform ${isPlaying ? "audio-is-playing" : ""}`}
                   aria-hidden="true"
                 >
                   {waveformBars.map((bar) => (
@@ -339,9 +364,9 @@ function MusicWorkspace({
                 </div>
               </div>
 
-              <div className="music-room__lyrics">
-                <div className="music-room__lyrics-header">
-                  <div className="music-room__lyrics-title">
+              <div className="audio-console__lyrics">
+                <div className="audio-console__lyrics-header">
+                  <div className="audio-console__lyrics-title">
                     <span>{t("app.music.lyricsTitle")}</span>
                     <strong>{currentTrackLabel}</strong>
                     <p>
@@ -350,10 +375,10 @@ function MusicWorkspace({
                         : t("app.music.lyricsHint")}
                     </p>
                   </div>
-                  <div className="music-room__lyrics-tools">
-                    <span className={`music-room__lyrics-source is-${lyricsStatus}`}>{lyricsStatusLabel}</span>
+                  <div className="audio-console__lyrics-tools">
+                    <span className={`audio-console__lyrics-source audio-status-${lyricsStatus}`}>{lyricsStatusLabel}</span>
                     <AppButton
-                      className="music-room__lyrics-action"
+                      className="audio-console__lyrics-action"
                       disabled={lyricsStatus === "loading"}
                       onClick={onRefreshLyrics}
                     >
@@ -361,7 +386,7 @@ function MusicWorkspace({
                       <span>{t("app.music.lyrics.search")}</span>
                     </AppButton>
                     <AppButton
-                      className="music-room__lyrics-action"
+                      className="audio-console__lyrics-action"
                       onClick={() => lyricsUploadInputRef.current?.click()}
                     >
                       <UploadIcon />
@@ -380,30 +405,41 @@ function MusicWorkspace({
                   </div>
                 </div>
 
-                <div className="music-room__lyrics-viewport">
-                  <div className="music-room__lyrics-track" style={{ transform: lyricsTransform }}>
-                    {lyricsLines.map((line, index) => (
-                      <article
-                        key={`${selectedTrackId || "track"}-lyric-${line.time}-${index}`}
-                        className={`music-room__lyric-line ${
-                          index === activeLyricIndex ? "is-active" : ""
-                        } ${index < activeLyricIndex ? "is-past" : ""}`}
-                      >
-                        <strong>{line.text}</strong>
-                        {line.subtext ? <span>{line.subtext}</span> : null}
-                      </article>
-                    ))}
-                  </div>
+                <div
+                  className={`audio-console__lyrics-viewport ${
+                    lyricsLines.length === 0 ? "audio-is-empty" : ""
+                  }`}
+                >
+                  {lyricsLines.length === 0 ? (
+                    <div className="audio-console__lyrics-empty" role="status">
+                      <strong>{t("app.music.lyrics.fallback.line1")}</strong>
+                      <span>{t("app.music.lyrics.fallback.line2")}</span>
+                    </div>
+                  ) : (
+                    <div className="audio-console__lyrics-track" style={{ transform: lyricsTransform }}>
+                      {lyricsLines.map((line, index) => (
+                        <article
+                          key={`${selectedTrackId || "track"}-lyric-${line.time}-${index}`}
+                          className={`audio-console__lyric-line ${
+                            index === activeLyricIndex ? "audio-is-active" : ""
+                          } ${index < activeLyricIndex ? "audio-is-past" : ""}`}
+                        >
+                          <strong>{line.text}</strong>
+                          {line.subtext ? <span>{line.subtext}</span> : null}
+                        </article>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          <footer className="music-room__footer">
-            <div className="music-room__progress">
+          <footer className="audio-console__footer">
+            <div className="audio-console__progress">
               <span>{formatDuration(currentTime)}</span>
               <AppSlider
-                className="music-room__range"
+                className="audio-console__range"
                 min={0}
                 max={Math.max(duration, 1)}
                 step={0.1}
@@ -415,10 +451,10 @@ function MusicWorkspace({
               <span>{formatDuration(duration)}</span>
             </div>
 
-            <div className="music-room__controls">
-              <div className="music-room__player-actions">
+            <div className="audio-console__controls">
+              <div className="audio-console__player-actions">
                 <AppIconButton
-                  className="music-room__icon-button"
+                  className="audio-console__icon-button"
                   aria-label={t("app.music.previous")}
                   onClick={handlePlayPreviousTrack}
                   size="small"
@@ -426,7 +462,7 @@ function MusicWorkspace({
                   <PreviousIcon />
                 </AppIconButton>
                 <AppIconButton
-                  className="music-room__icon-button is-primary"
+                  className="audio-console__icon-button audio-is-primary"
                   aria-label={isPlaying ? t("app.music.pause") : t("app.music.play")}
                   onClick={handleTogglePlayback}
                   size="small"
@@ -434,7 +470,7 @@ function MusicWorkspace({
                   {isPlaying ? <PauseIcon /> : <PlayIcon />}
                 </AppIconButton>
                 <AppIconButton
-                  className="music-room__icon-button"
+                  className="audio-console__icon-button"
                   aria-label={t("app.music.next")}
                   onClick={handlePlayNextTrack}
                   size="small"
@@ -443,9 +479,9 @@ function MusicWorkspace({
                 </AppIconButton>
               </div>
 
-              <div className="music-room__secondary-actions">
+              <div className="audio-console__secondary-actions">
                 <AppIconButton
-                  className="music-room__mode-button"
+                  className="audio-console__mode-button"
                   aria-label={`${t("app.music.playMode")} ${t(playModeMeta.labelKey)}`}
                   onClick={handleCyclePlayMode}
                   size="small"
@@ -454,7 +490,7 @@ function MusicWorkspace({
                   <span>{playModeMeta.shortLabel}</span>
                 </AppIconButton>
                 <AppIconButton
-                  className="music-room__icon-button"
+                  className="audio-console__icon-button"
                   aria-label={t("app.music.restart")}
                   onClick={handleRestartTrack}
                   size="small"
@@ -463,10 +499,10 @@ function MusicWorkspace({
                 </AppIconButton>
               </div>
 
-              <label className="music-room__volume">
+              <label className="audio-console__volume">
                 <VolumeIcon />
                 <AppSlider
-                  className="music-room__range"
+                  className="audio-console__range"
                   min={0}
                   max={100}
                   value={volume}
@@ -480,14 +516,17 @@ function MusicWorkspace({
           </footer>
         </div>
 
-        <aside className={`music-room__library ${isLibraryOpen ? "is-open" : "is-collapsed"}`}>
-          <div className="music-room__library-head">
+        <aside
+          id="audio-console-library"
+          className={`audio-console__library ${isLibraryOpen ? "audio-is-open" : "audio-is-collapsed"}`}
+        >
+          <div className="audio-console__library-head">
             <div>
-              <span className="eyebrow">{t("app.music.queueEyebrow")}</span>
+              <span className="audio-eyebrow">{t("app.music.queueEyebrow")}</span>
               <h3>{t("app.music.queueTitle")}</h3>
             </div>
             <AppIconButton
-              className="music-room__library-close"
+              className="audio-console__library-close"
               onClick={() => setIsLibraryOpen(false)}
               aria-label={t("app.music.queueCollapse")}
               size="small"
@@ -496,32 +535,32 @@ function MusicWorkspace({
             </AppIconButton>
           </div>
 
-          <div className="music-room__library-hint">
+          <div className="audio-console__library-hint">
             <span>{t("app.music.trackCount", { count: localizedTracks.length })}</span>
             <p>{t("app.music.queueHint")}</p>
           </div>
 
-          <div className="music-room__library-list">
+          <div className="audio-console__library-list">
             {localizedTracks.length === 0 ? (
-              <div className="music-room__library-empty">{t("app.music.queueEmpty")}</div>
+              <div className="audio-console__library-empty">{t("app.music.queueEmpty")}</div>
             ) : (
               localizedTracks.map((track, index) => (
                 <AppButton
                   key={track.id}
-                  className={`music-room__track ${track.id === selectedTrackId ? "is-active" : ""}`}
+                  className={`audio-console__track ${track.id === selectedTrackId ? "audio-is-active" : ""}`}
                   onClick={() => handleTrackPick(track.id)}
                 >
-                  <span className="music-room__track-index">{String(index + 1).padStart(2, "0")}</span>
+                  <span className="audio-console__track-index">{String(index + 1).padStart(2, "0")}</span>
                   <img src={track.cover || coverSrc} alt={track.title} />
-                  <div className="music-room__track-copy">
-                    <span className="music-room__track-title">{track.title}</span>
+                  <div className="audio-console__track-copy">
+                    <span className="audio-console__track-title">{track.title}</span>
                     <strong>{track.title}</strong>
                     <p>{track.artist}</p>
                   </div>
-                  <div className="music-room__track-meta">
+                  <div className="audio-console__track-meta">
                     <span
-                      className={`music-room__track-pulse ${
-                        track.id === selectedTrackId && isPlaying ? "is-playing" : ""
+                      className={`audio-console__track-pulse ${
+                        track.id === selectedTrackId && isPlaying ? "audio-is-playing" : ""
                       }`}
                     />
                     <span>{getTrackDurationLabel(track, index, selectedTrackId, duration)}</span>
@@ -626,7 +665,7 @@ const CosmicDustRing = React.memo(function CosmicDustRing({
   return cosmicDust.map((particle) => (
     <circle
       key={particle.id}
-      className="music-room__particle-dot"
+      className="audio-console__particle-dot"
       cx={particle.x}
       cy={particle.y}
       r={particle.r}
