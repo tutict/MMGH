@@ -374,7 +374,7 @@ test("app defers weather sync until the weather view is opened", async () => {
       </I18nProvider>
     );
 
-    await screen.findByRole("heading", { name: "MMGH Agent", level: 1 });
+    await screen.findByRole("heading", { name: "归流", level: 1 });
     expect(weatherDataMock.fetchWeatherSnapshots).not.toHaveBeenCalled();
 
     const weatherButton = screen.getAllByRole("button", { name: /Weather/i })[0];

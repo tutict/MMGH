@@ -1,47 +1,5 @@
-/* 1. Base tokens and global defaults. */
-@import "./base-layer.css";
-
-/* 2. Desktop workspace surfaces and feature domains. */
-@import "./workspace-layer.css";
-
-/* 3. Desktop responsive rules that current domain files rely on. */
-@import "./responsive-core-layer.css";
-
-/* Feature themes and shell-level presentation */
-@import "./experience-layer.css";
-
-/* Late responsive overrides for specialized panels */
-@import "./responsive-context-layer.css";
-
-/* 4. Desktop visual polish and ambient scene details. */
-@import "./polish-layer.css";
-
-/* 5. Desktop corrective overrides. */
-@import "./refinement-layer.css";
-
-/* Tauri shell state polish */
-@import "./tauri-shell.css";
-
-/* 6. Minimal desktop workspace system. */
-@import "./muji-refresh.css";
-
-/* 7. Desktop UI/UX refactor pass. */
-@import "./ui-ux-pro-max-refactor.css";
-
-/* 8. Desktop density pass: quieter shell, fewer widget-like surfaces. */
-@import "./layout-breathing-room.css";
-
-/* 9. Desktop navigation rail rebuilt as a compact workbench directory. */
-@import "./sidebar-refresh.css";
-
-/* 10. Isolated audio console: turntable, lyrics, controls, and library. */
-@import "./audio-console-v2.css";
-
-/* 11. Isolated skill workbench: registry, editor, and contextual tools. */
-@import "./skills-workbench-v2.css";
-
-/* 12. Isolated knowledge workbench: note index and writing canvas. */
-@import "./notes-workbench-v2.css";
-
-/* 13. Independent mobile shell and views, scoped away from legacy responsive layers. */
-@import "./mobile.css";
+/*
+ * Quiet Task Desk visual entry.
+ * The legacy cascade is intentionally not imported here.
+ */
+@import "../ui-next/styles/index.css";

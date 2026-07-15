@@ -4483,6 +4483,46 @@ function App() {
   );
 
   const railPresenceStatus = loading || busy ? "running" : providerConfigured ? "ready" : "idle";
+  const hasUnsavedWorkspace =
+    (currentView === "knowledge" && hasUnsavedNote) ||
+    (currentView === "skills" && hasUnsavedSkill) ||
+    (currentView === "settings" && hasUnsavedSettings) ||
+    (currentView === "reminders" && hasUnsavedReminder);
+
+  const desktopCommandBar = (
+    <div className="desk-bar__body">
+      <div className="desk-bar__identity">
+        <span className="desk-bar__monogram" aria-hidden="true">归</span>
+        <div className="desk-bar__brand-copy">
+          <h1>归流</h1>
+          <span>本地智能工作台</span>
+        </div>
+      </div>
+
+      <nav className="desk-bar__nav" aria-label={t("app.nav.title")}>
+        {allNavigationItems.map((item) => (
+          <AppButton
+            key={item.id}
+            className={`desk-nav-item ${currentView === item.id ? "is-active" : ""}`}
+            onClick={() => handleSelectView(item.id)}
+            aria-current={currentView === item.id ? "page" : undefined}
+            title={item.label}
+          >
+            <span className="desk-nav-item__icon" aria-hidden="true">
+              <PanelIcon type={getNavIconType(item.id)} />
+            </span>
+            <span className="desk-nav-item__label">{item.label}</span>
+            <span className="desk-nav-item__badge">{item.badge}</span>
+          </AppButton>
+        ))}
+      </nav>
+
+      <div className="desk-bar__status" data-status={railPresenceStatus}>
+        <span className="desk-bar__status-dot" aria-hidden="true" />
+        <span>{t(`app.status.${railPresenceStatus}`)}</span>
+      </div>
+    </div>
+  );
 
   const railContent = (
     <div className="session-rail__body">
@@ -4777,17 +4817,21 @@ function App() {
 
   return (
     <div
-      className={`agent-app theme-${theme} view-${currentView} ${
+      className={`quiet-desk agent-app theme-${theme} view-${currentView} ${
+        isInspectorOpen ? "quiet-desk--inspector-open " : ""
+      }${
         showMiniPlayer ? "agent-app--with-mini-player" : ""
       }`}
+      data-theme={theme}
+      data-layout-version="a2"
     >
-      <div className="agent-app__glow agent-app__glow--one" />
-      <div className="agent-app__glow agent-app__glow--two" />
-      <div className="agent-app__mesh" aria-hidden="true" />
+      <a className="quiet-skip-link" href="#main-content">
+        {t("app.nav.title")}
+      </a>
 
-      <aside className="session-rail session-rail--desktop panel-surface" {...modalBackgroundProps}>
-        {railContent}
-      </aside>
+      <header className="quiet-desk__bar desk-bar" {...modalBackgroundProps}>
+        {desktopCommandBar}
+      </header>
 
       {isMobileNavOpen ? (
         <div className="mobile-shell-drawer is-open">
@@ -4811,14 +4855,16 @@ function App() {
         </div>
       ) : null}
 
-      <main className="workspace-column" {...modalBackgroundProps}>
-        <section className="workspace-hero panel-surface">
+      <main id="main-content" className="quiet-desk__main workspace-column" {...modalBackgroundProps}>
+        <section className="quiet-desk__header workspace-hero">
           <div className="workspace-hero__masthead">
             <div className="workspace-hero__brandline">
-              <span className="workspace-hero__brand-mark">MMGH</span>
+              <span className="workspace-hero__brand-mark" aria-hidden="true">
+                <PanelIcon type={getNavIconType(currentView)} />
+              </span>
               <div className="workspace-hero__brand-copy">
-                <span className="eyebrow">{t("app.brand.tag")}</span>
-                <strong>MMGH {"\u00b7"} {viewMeta[currentView].title}</strong>
+                <span className="eyebrow">{viewMeta[currentView].eyebrow}</span>
+                <strong>{viewMeta[currentView].title}</strong>
               </div>
             </div>
             <div className="workspace-hero__meta-bar">
@@ -4896,22 +4942,23 @@ function App() {
               </div>
             </div>
           </div>
-          <div className="workspace-hero__switcher" aria-label={t("app.nav.title")}>
-            {allNavigationItems.map((item) => (
-              <AppButton
-                key={`hero-${item.id}`}
-                className={`workspace-switcher-button ${currentView === item.id ? "is-active" : ""}`}
-                onClick={() => handleSelectView(item.id)}
-                aria-current={currentView === item.id ? "page" : undefined}
-              >
-                <span className="workspace-switcher-button__icon" aria-hidden="true">
-                  <PanelIcon type={getNavIconType(item.id)} />
-                </span>
-                <span className="workspace-switcher-button__copy">
-                  <strong>{item.label}</strong>
-                </span>
-              </AppButton>
-            ))}
+          <div className="workflow-spine" aria-label={viewMeta[currentView].title}>
+            <span className="workflow-spine__node is-current">
+              <span className="workflow-spine__icon" aria-hidden="true">
+                <PanelIcon type={getNavIconType(currentView)} />
+              </span>
+              <span>{viewMeta[currentView].title}</span>
+            </span>
+            <span className="workflow-spine__line" aria-hidden="true" />
+            <span className={`workflow-spine__node ${loading || busy ? "is-running" : "is-ready"}`}>
+              <span className="workflow-spine__status" aria-hidden="true" />
+              <span>{loading || busy ? t("app.status.running") : t("app.status.ready")}</span>
+            </span>
+            <span className="workflow-spine__line" aria-hidden="true" />
+            <span className={`workflow-spine__node ${hasUnsavedWorkspace ? "is-dirty" : "is-saved"}`}>
+              <span className="workflow-spine__status" aria-hidden="true" />
+              <span>{t(`app.common.${hasUnsavedWorkspace ? "dirty" : "saved"}`)}</span>
+            </span>
           </div>
         </section>
 
@@ -5148,6 +5195,9 @@ function App() {
             />
           </Suspense>
         )}
+        <div className="quiet-desk__transport" aria-label={t("app.mode.music")}>
+          {renderMiniPlayer("rail")}
+        </div>
       </main>
 
       {isReminderCompletionOpen ? (
@@ -5175,7 +5225,7 @@ function App() {
           <aside
             id="inspector-drawer-panel"
             ref={inspectorDrawerPanelRef}
-            className="inspector-drawer__panel panel-surface"
+            className="quiet-desk__inspector inspector-drawer__panel"
             role="dialog"
             aria-modal="true"
             aria-labelledby="inspector-drawer-title"

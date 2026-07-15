@@ -6,18 +6,18 @@ const appTheme = createTheme({
   },
   typography: {
     fontFamily:
-      'Inter, "SF Pro Text", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif',
+      '"Segoe UI Variable", "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif',
   },
   palette: {
     mode: "light",
     primary: {
-      main: "#0f766e",
+      main: "#3fa49b",
     },
     secondary: {
-      main: "#2563eb",
+      main: "#607d8b",
     },
     background: {
-      default: "#f7faf9",
+      default: "#f4f7f6",
       paper: "#ffffff",
     },
   },

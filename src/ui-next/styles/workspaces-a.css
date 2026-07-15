@@ -1,0 +1,717 @@
+/* Scheme A: the workspace reads as one continuous desk, not a stack of dashboard cards. */
+.quiet-desk :where(
+  .today-workspace,
+  .runtime-workspace,
+  .notes-workbench,
+  .gallery-panel,
+  .audio-console,
+  .weather-panel,
+  .skills-workbench,
+  .settings-workspace,
+  .reminder-panel
+) {
+  width: min(100%, 96rem);
+  margin-inline: auto;
+}
+
+.today-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+  gap: 0;
+  border-bottom: 0.0625rem solid var(--q-border-strong);
+}
+
+.today-hero.panel-surface {
+  gap: 1.5rem 3rem;
+  padding: 2rem 0;
+  border: 0;
+  border-bottom: 0.0625rem solid var(--q-border-strong);
+  border-radius: 0;
+  background: transparent;
+}
+
+.today-hero__topline {
+  gap: 1.25rem;
+}
+
+.today-hero__copy {
+  max-width: 48rem;
+}
+
+.today-hero__copy h3 {
+  margin-top: 0.375rem;
+  font-size: 1.75rem;
+  font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.today-hero__copy p {
+  max-width: 40rem;
+  margin-top: 0.625rem;
+  color: var(--q-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.today-hero__session {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  max-width: 34rem;
+  padding-top: 1rem;
+  border-top: 0.0625rem solid var(--q-border);
+}
+
+.today-hero__session strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.today-hero__stats {
+  align-self: stretch;
+  grid-template-columns: 1fr;
+  min-width: 16rem;
+  border: 0;
+  border-left: 0.0625rem solid var(--q-border-strong);
+}
+
+.today-stat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: center;
+  align-items: baseline;
+  min-height: 4rem;
+  padding: 0 0 0 2rem;
+  border: 0;
+  border-bottom: 0.0625rem solid var(--q-border);
+}
+
+.today-stat:last-child {
+  border-bottom: 0;
+}
+
+.today-stat strong {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.today-hero__meta {
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.today-meta-pill {
+  position: relative;
+  padding-left: 0.75rem;
+  font-family: var(--q-mono);
+  font-size: 0.6875rem;
+}
+
+.today-meta-pill::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 0.25rem;
+  height: 0.25rem;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--q-accent);
+  content: "";
+}
+
+.today-primary-column {
+  gap: 0;
+  padding-right: clamp(2rem, 5vw, 4rem);
+}
+
+.today-sidebar {
+  gap: 0;
+  padding-left: clamp(1.5rem, 3vw, 2.5rem);
+  border-left: 0.0625rem solid var(--q-border-strong);
+}
+
+.today-section.panel-surface {
+  gap: 1.25rem;
+  padding: 1.75rem 0;
+  border: 0;
+  border-bottom: 0.0625rem solid var(--q-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.today-section__head h4 {
+  margin-top: 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.today-focus-item,
+.today-session-item,
+.today-pattern-item,
+.today-capture-item,
+.session-card {
+  padding: 1rem 0;
+}
+
+.today-focus-item {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.today-focus-item__body {
+  padding-right: 1.5rem;
+}
+
+.quiet-desk button.today-focus-item__body,
+.quiet-desk button.today-pattern-item__body,
+.quiet-desk button.today-capture-item,
+.quiet-desk button.today-capture-item__body,
+.quiet-desk button.today-session-item,
+.quiet-desk button.session-card__main {
+  display: grid;
+  align-items: stretch;
+  justify-content: stretch;
+  justify-items: stretch;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+}
+
+.quiet-desk button.today-capture-item > :where(strong, p, .today-capture-item__head),
+.quiet-desk button.today-capture-item__body > :where(strong, p, .today-capture-item__head) {
+  width: 100%;
+  min-width: 0;
+}
+
+.quiet-desk button.today-capture-item > :where(strong, p),
+.quiet-desk button.today-capture-item__body > :where(strong, p) {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.today-review-grid,
+.today-rule-grid {
+  gap: 0;
+  border-top: 0.0625rem solid var(--q-border);
+  border-left: 0.0625rem solid var(--q-border);
+}
+
+.today-review-signal {
+  min-height: 5rem;
+  padding: 1rem;
+  border-right: 0.0625rem solid var(--q-border);
+  border-bottom: 0.0625rem solid var(--q-border);
+  background: transparent;
+}
+
+.today-review-signal strong {
+  margin-top: auto;
+  font-family: var(--q-mono);
+  font-size: 1.5rem;
+}
+
+.today-shortcut-grid {
+  grid-template-columns: 1fr;
+  gap: 0;
+  border-top: 0.0625rem solid var(--q-border);
+}
+
+.today-shortcut {
+  justify-content: space-between;
+  min-height: 3.25rem;
+  padding-inline: 0;
+  border: 0;
+  border-bottom: 0.0625rem solid var(--q-border);
+  border-radius: 0;
+}
+
+.today-shortcut span {
+  color: var(--q-text-faint);
+  font-size: var(--q-text-meta);
+}
+
+.quiet-desk :where(.runtime-status-panel, .settings-workspace__hero, .gallery-toolbar) {
+  border-radius: 0;
+  background: transparent;
+}
+
+.quiet-desk :where(.notes-workbench, .skills-workbench, .reminder-panel, .audio-console__surface) {
+  border-color: var(--q-border-strong);
+  border-radius: 1rem;
+}
+
+.quiet-desk :where(.notes-index, .skills-registry, .reminder-sidebar) {
+  background: var(--q-bg-subtle);
+}
+
+@media (max-width: 75rem) {
+  .today-layout {
+    grid-template-areas: "hero" "primary" "sidebar";
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .today-primary-column {
+    padding-right: 0;
+  }
+
+  .today-sidebar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-left: 0;
+    border-left: 0;
+    border-top: 0.0625rem solid var(--q-border-strong);
+    column-gap: 2rem;
+  }
+}
+
+@media (max-width: 63.9375rem) {
+  .today-hero__stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding-top: 1.5rem;
+    border-top: 0.0625rem solid var(--q-border-strong);
+    border-left: 0;
+  }
+
+  .today-stat {
+    display: block;
+    min-height: auto;
+    padding: 0 1rem;
+    border-right: 0.0625rem solid var(--q-border);
+    border-bottom: 0;
+  }
+
+  .today-stat:first-child {
+    padding-left: 0;
+  }
+
+  .today-stat:last-child {
+    border-right: 0;
+  }
+}
+
+@media (max-width: 52rem) {
+  .today-sidebar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .today-focus-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Shared module workbench -------------------------------------------------- */
+.quiet-desk:not(.view-today) :where(
+  .runtime-workspace,
+  .notes-workbench,
+  .gallery-panel,
+  .audio-console,
+  .weather-panel,
+  .skills-workbench,
+  .settings-workspace,
+  .reminder-panel
+) {
+  margin-top: 1rem;
+}
+
+.quiet-desk :where(.notes-workbench, .audio-console, .skills-workbench, .reminder-panel) {
+  height: clamp(32rem, calc(100dvh - 10.5rem), 48rem);
+  min-height: 0;
+}
+
+.quiet-desk :where(.notes-workbench__layout, .skills-workbench__layout) {
+  height: 100%;
+  min-height: 0;
+}
+
+.quiet-desk :where(.notes-index, .notes-editor, .reminder-sidebar, .reminder-editor) {
+  min-height: 0;
+}
+
+.quiet-desk .notes-editor {
+  overflow: hidden;
+}
+
+.quiet-desk .notes-editor__form,
+.quiet-desk .reminder-editor__form {
+  min-height: 0;
+  overflow: auto;
+}
+
+.quiet-desk .notes-input--body .MuiInputBase-root {
+  min-height: 14rem;
+}
+
+.quiet-desk .reminder-editor {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.quiet-desk .settings-form__prompt .MuiInputBase-root {
+  min-height: 9rem;
+}
+
+.quiet-desk .weather-city-widget__list,
+.quiet-desk .weather-week-list {
+  max-height: 19rem;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.quiet-desk .runtime-workspace,
+.quiet-desk .weather-stage,
+.quiet-desk .gallery-panel,
+.quiet-desk .settings-workspace {
+  gap: 1rem;
+}
+
+.quiet-desk .runtime-workspace {
+  grid-template-rows: auto minmax(0, 1fr);
+  height: clamp(32rem, calc(100dvh - 10.5rem), 48rem);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.quiet-desk .runtime-layout,
+.quiet-desk .weather-top-grid,
+.quiet-desk .weather-bottom-grid,
+.quiet-desk .settings-workspace__grid {
+  gap: 1rem;
+}
+
+.quiet-desk .runtime-layout {
+  min-height: 0;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+.quiet-desk .runtime-main-column,
+.quiet-desk .runtime-sidebar {
+  min-height: 0;
+  height: 100%;
+  align-content: start;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.quiet-desk .runtime-stage-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 26rem;
+}
+
+.quiet-desk .runtime-status-panel,
+.quiet-desk .runtime-stage-card__head,
+.quiet-desk .runtime-sidebar-card,
+.quiet-desk .weather-stage,
+.quiet-desk .weather-hero-card,
+.quiet-desk .weather-tilt,
+.quiet-desk .settings-workspace__hero,
+.quiet-desk .settings-panel,
+.quiet-desk .settings-cache-panel {
+  padding: 1rem;
+}
+
+.quiet-desk .runtime-thread__frame {
+  min-height: 0;
+  max-height: none;
+}
+
+.quiet-desk .weather-hero-card__temperature {
+  font-size: 2.25rem;
+}
+
+/* Music: a bounded player workbench, not a viewport-sized stage. */
+.quiet-desk .audio-console {
+  position: relative;
+  overflow: hidden;
+}
+
+.quiet-desk .audio-console__surface {
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: inherit;
+}
+
+.quiet-desk .audio-console__surface.audio-library-open {
+  grid-template-columns: minmax(0, 1fr) 17rem;
+}
+
+.quiet-desk .audio-console__main {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.quiet-desk button.audio-console__library-toggle {
+  position: absolute;
+  inset: 1rem 1rem auto auto;
+  z-index: 12;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 0;
+  height: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  white-space: nowrap;
+}
+
+.quiet-desk .audio-console__header {
+  padding: 1rem 7.5rem 0.875rem 1.25rem;
+}
+
+.quiet-desk .audio-console__header-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  padding-right: 0;
+}
+
+.quiet-desk .audio-console__headline h2 {
+  font-size: 1.25rem;
+}
+
+.quiet-desk .audio-console__status-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(3.75rem, 1fr));
+  gap: 0;
+}
+
+.quiet-desk .audio-console__status-item {
+  min-width: 0;
+  padding-inline: 0.75rem;
+  border-left: 0.0625rem solid var(--q-border);
+}
+
+.quiet-desk .audio-console__meta {
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+}
+
+.quiet-desk .audio-console__stage {
+  grid-template-columns: minmax(13rem, 17rem) minmax(0, 1fr);
+  gap: 1.25rem;
+  min-height: 0;
+  padding: 1.25rem;
+  overflow: hidden;
+}
+
+.quiet-desk .audio-console__turntable {
+  align-content: center;
+  gap: 0.875rem;
+  min-height: 0;
+  padding-right: 1.25rem;
+}
+
+.quiet-desk .audio-console__plinth {
+  width: min(13rem, 100%);
+}
+
+.quiet-desk .audio-console__content {
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 0.75rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.quiet-desk .audio-console__track-copy h3 {
+  font-size: 1.25rem;
+}
+
+.quiet-desk .audio-console__waveform {
+  height: 2rem;
+}
+
+.quiet-desk .audio-console__lyrics {
+  min-height: 0;
+  padding-top: 0.75rem;
+}
+
+.quiet-desk .audio-console__lyrics-viewport {
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.quiet-desk .audio-console__lyrics-track {
+  padding-top: 2.5rem;
+}
+
+.quiet-desk .audio-console__lyric-line {
+  min-height: 3.25rem;
+}
+
+.quiet-desk .audio-console__footer {
+  grid-template-columns: minmax(10rem, 1fr) auto;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+}
+
+.quiet-desk button.audio-console__icon-button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 2.5rem;
+  width: 2.5rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0;
+}
+
+.quiet-desk button.audio-console__icon-button.audio-is-primary {
+  flex-basis: 2.75rem;
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
+}
+
+.quiet-desk .audio-console__library {
+  min-height: 0;
+  padding: 1rem;
+  overflow: auto;
+}
+
+.quiet-desk button.audio-console__track {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+}
+
+/* Skills: preserve the three working contexts at desktop widths. */
+.quiet-desk .skills-workbench__layout {
+  grid-template-columns: 14rem minmax(20rem, 1fr) 16rem;
+}
+
+.quiet-desk .skills-registry,
+.quiet-desk .skills-editor-pane,
+.quiet-desk .skills-toolbox {
+  min-height: 0;
+  height: 100%;
+}
+
+.quiet-desk .skills-registry {
+  overflow: hidden;
+}
+
+.quiet-desk .skills-registry__header,
+.quiet-desk .skills-editor-pane__toolbar,
+.quiet-desk .skills-editor-pane__body,
+.quiet-desk .skills-toolbox {
+  padding: 1rem;
+}
+
+.quiet-desk .skills-list {
+  flex: 1 1 auto;
+}
+
+.quiet-desk button.skills-entry,
+.quiet-desk button.skills-mounted-entry {
+  display: grid;
+  justify-content: stretch;
+  justify-items: stretch;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+}
+
+.quiet-desk .skills-editor-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.quiet-desk .skills-editor-pane__body {
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+.quiet-desk .skills-input--instructions .MuiInputBase-root {
+  min-height: 10rem;
+}
+
+.quiet-desk .skills-toolbox {
+  grid-column: auto;
+  grid-row: auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+  overflow: hidden;
+  border-top: 0;
+  border-left: 0.0625rem solid var(--q-border);
+}
+
+.quiet-desk .skills-toolbox__tabs {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+  max-width: none;
+}
+
+.quiet-desk .skills-toolbox__panel {
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+
+@media (max-width: 70rem) {
+  .quiet-desk .audio-console__surface.audio-library-open {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .quiet-desk .audio-console__library {
+    position: absolute;
+    inset: 0 0 0 auto;
+    z-index: 10;
+    width: min(19rem, 90%);
+    height: 100%;
+    border-left: 0.0625rem solid var(--q-border-strong);
+    box-shadow: -1rem 0 3rem var(--q-overlay);
+  }
+
+  .quiet-desk .audio-console__stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .quiet-desk .audio-console__turntable {
+    display: none;
+  }
+}
+
+@media (max-width: 56rem) {
+  .quiet-desk .skills-workbench {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .quiet-desk .skills-workbench__layout {
+    grid-template-columns: 14rem minmax(0, 1fr);
+    height: auto;
+  }
+
+  .quiet-desk .skills-registry,
+  .quiet-desk .skills-editor-pane {
+    height: 36rem;
+  }
+
+  .quiet-desk .skills-toolbox {
+    grid-column: 1 / -1;
+    height: 24rem;
+    border-top: 0.0625rem solid var(--q-border);
+    border-left: 0;
+  }
+}
