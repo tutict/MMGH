@@ -156,7 +156,7 @@ The module can be implemented, integrated, reviewed, committed, and recovered in
 - [x] All required Deliveries and Integration Record are complete.
 - [x] `git diff --check`, lint, typecheck, unit, build, Rust tests, unified test, and desktop
   debug build have honest post-change results.
-- [ ] Closure, Checkpoint, compaction, scorecard, observations/results, commits, push result,
+- [x] Closure, Checkpoint, compaction, scorecard, observations/results, commits, push result,
   and residual unverified items are recorded.
 
 ## Barriers
@@ -183,7 +183,7 @@ The module can be implemented, integrated, reviewed, committed, and recovered in
 
 ### Closure Barrier
 
-- [ ] Three-layer acceptance passes; unresolved Blockers are zero; Closure and valid
+- [x] Three-layer acceptance passes; unresolved Blockers are zero; Closure and valid
   Checkpoint disclose commit/push/worktree and unverified evidence.
 
 ## Budget

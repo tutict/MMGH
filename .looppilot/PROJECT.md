@@ -1,6 +1,6 @@
 # Project Engineering Context
 
-Status: active-experiment
+Status: experiment-complete
 Updated: 2026-07-18
 Supervisor: Codex primary agent
 Integrator: Codex primary agent
@@ -137,3 +137,11 @@ Integrator: Codex primary agent
 - Current Loop: `.looppilot/loops/LOOP-001/LOOP-CONTRACT.md`
 - Scope/status authority: this file for Project; Loop Map for Loops; Task/Finding
   Ledgers for their respective states; `CHECKPOINT.md` for recovery.
+
+## EXP-001 Completion Boundary
+
+- `LOOP-001` met its three acceptance layers and Closure Barrier on 2026-07-18.
+- The verified delivery boundary `64148b0d9eab0249ae7260c4ed109fa27bf4b8f7`
+  was pushed to `origin/experiment/looppilot-mmgh-exp-001` before final state projection.
+- Project status means this observational experiment is complete. It does not accept the
+  whole MMGH refactor, any candidate Loop, release, deployment, or production migration.

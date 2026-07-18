@@ -1,6 +1,6 @@
 # Project Loop Map
 
-Status: active
+Status: experiment-complete
 Updated: 2026-07-18
 Supervisor: Codex primary agent
 Integrator: Codex primary agent
@@ -25,7 +25,7 @@ representing the wider MMGH refactor as complete.
 
 | Complete | Loop ID | Title | Status | Depends On | Contract | Closure | Commit Required | Commit Authorized | Commit Result | Checkpoint |
 |---|---|---|---|---|---|---|---|---|---|---|
-| [ ] | LOOP-001 | Workspace Snapshot Reconciliation Boundary | integrated | none | approved | pending | yes | yes | pending | pending |
+| [x] | LOOP-001 | Workspace Snapshot Reconciliation Boundary | closed | none | approved | accepted | yes | yes | `96b4a5c` implementation; `64148b0` review/Closure/results | verified at `64148b0` |
 | [ ] | LOOP-002 | App Shell Runtime and Lifecycle Orchestration | candidate | LOOP-001 evidence | not-created | not-created | undecided | no-current-decision | not-created | not-created |
 | [ ] | LOOP-003 | Domain Action Controllers for Core Workflows | candidate | LOOP-001, LOOP-002 decision | not-created | not-created | undecided | no-current-decision | not-created | not-created |
 | [ ] | LOOP-004 | Storage/Tauri Contract and Release Evidence | candidate | audit evidence | not-created | not-created | undecided | no-current-decision | not-created | not-created |

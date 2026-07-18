@@ -1,7 +1,7 @@
 # Task Ledger
 
 Loop ID: `LOOP-001`
-Status: active
+Status: closed
 Updated: 2026-07-18
 Updated by/Integrator: Codex primary agent
 
@@ -19,7 +19,7 @@ Updated by/Integrator: Codex primary agent
 | TASK-002 | Characterize snapshot reconciliation | worker-test | yes | integrated | `/root/snapshot_characterization` | TASK-001 | `deliveries/TASK-002-DELIVERY.md` | loop-reviewed | none |
 | TASK-003 | Extract and wire pure snapshot module | worker-implementation | yes | integrated | Codex primary fallback | TASK-002 | `deliveries/TASK-003-DELIVERY.md` | loop-reviewed | none |
 | TASK-004 | Integrate and verify unified boundary | integrator | yes | integrated | Integrator | TASK-003 | `integration/INTEGRATION-RECORD.md` | loop-reviewed | none |
-| TASK-005 | Review, close, and report experiment | supervisor/integrator | yes | in-progress | Supervisor/Integrator | TASK-004 | closure pending | reviews-passed | none |
+| TASK-005 | Review, close, and report experiment | supervisor/integrator | yes | integrated | Supervisor/Integrator | TASK-004 | `LOOP-CLOSURE.md`, Checkpoint, results | complete | none |
 | TASK-004-R1 | Correct authoritative Task statuses | integrator-rework | yes | integrated | Integrator | FINDING-001 | `deliveries/TASK-004-R1-DELIVERY.md` | reverified-pass | TASK-004 |
 
 ## Dependency and Conflict Notes
@@ -37,6 +37,9 @@ Updated by/Integrator: Codex primary agent
 - Contract Barrier: passed 2026-07-18.
 - Implementation Barrier: passed; TASK-002/TASK-003 Deliveries collected.
 - Integration Barrier: passed; unified record and required checks complete.
+- Review Barrier: passed after scoped Rework and original Reviewer reverification.
+- Closure Barrier: passed; three-layer acceptance, Checkpoint, commit, and authorized push
+  are recorded.
 - Blocked Tasks: none.
 - Cancelled Tasks: none.
 

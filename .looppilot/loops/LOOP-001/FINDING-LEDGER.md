@@ -1,7 +1,7 @@
 # Finding Ledger
 
 Loop ID: `LOOP-001`
-Status: active
+Status: closed
 Updated: 2026-07-18
 Updated by/Integrator: Codex primary agent
 

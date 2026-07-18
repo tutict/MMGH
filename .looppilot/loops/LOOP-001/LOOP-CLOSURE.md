@@ -5,14 +5,13 @@
 - Project/Loop: `MMGH-REFACTOR-EXP-001` / `LOOP-001`
 - Closure prepared: 2026-07-18
 - Supervisor/Integrator: Codex primary agent
-- Closure Status: ready-for-acceptance
-- Loop status authority: `.looppilot/LOOP-MAP.md` (`integrated` until final delivery)
+- Closure Status: accepted
+- Loop status authority: `.looppilot/LOOP-MAP.md` (`closed`)
 - Implementation fixed point: `96b4a5c7dc9f9ae465b0d75172ee5b432251e22d`
 - Baseline fixed point: `fe1f98e49024bdec8d2e570a99306b9050f17d53`
 
-This document records the completed technical/review boundary. Final acceptance and closure
-remain pending until this record, experiment results, Checkpoint, commit, and authorized
-branch push are observed and projected by the authoritative sources.
+This document records accepted `LOOP-001` only. The wider MMGH refactor and remaining
+candidate Loops are not accepted by this Closure.
 
 ## Delivered Scope
 
@@ -39,7 +38,7 @@ installer execution, release, deployment, or user-file change.
 | TASK-003 | integrated | pure module/App extraction Delivery; fallback role disclosed |
 | TASK-004 | integrated | `integration/INTEGRATION-RECORD.md`; Integration Barrier passed |
 | TASK-004-R1 | integrated | scoped Ledger correction and original Reviewer pass |
-| TASK-005 | in progress | final Checkpoint/commit/push projection remains |
+| TASK-005 | integrated | Closure, experiment results, Checkpoint, compaction, commit/push evidence |
 
 No mandatory Delivery is unintegrated. No mechanical conflict occurred. Two attempted
 implementation agents produced no output; the Supervisor used the unchanged scoped Worker
@@ -81,12 +80,16 @@ contract and mandatory independent reviews rather than hiding or merging nonexis
 - Package/lockfile, Rust, SQL, keyring/API-key, Base URL, capability, and release paths were
   unchanged; existing relevant tests passed.
 
-### Delivery Acceptance: pending final transport projection
+### Delivery Acceptance: passed
 
 - Required Deliveries, Integration Record, Review reports, Finding/Rework/reverification,
   experiment scorecard/observations/results, and post-rework validation are complete.
-- Closure content is complete enough for decision, but Checkpoint, compaction, final
-  closure-state commit, authorized push result, and synchronized final status remain pending.
+- `CHECKPOINT.md` and `CONTEXT-COMPACTION.md` record authoritative recovery state and one
+  exact Resume Point. A real cross-session recovery trial remains explicitly unverified.
+- Baseline, implementation, and Review/Closure/results commits exist. The verified delivery
+  boundary `64148b0d9eab0249ae7260c4ed109fa27bf4b8f7` was successfully pushed to the authorized
+  experiment branch and matched its remote-tracking ref; final projection is documentation
+  only and requires the normal final push/revalidation reported at handoff.
 
 ## Final Post-Rework Validation
 
@@ -127,8 +130,11 @@ Rust profile tests ignored; no performance claim depends on them.
 - Baseline master: `e0a4953e0dfd69b7f21e3be7c190a11c95def43f`.
 - Experiment branch: `experiment/looppilot-mmgh-exp-001`.
 - Existing commits: `fe1f98e` Contract baseline; `96b4a5c` implementation/integration.
-- Review/Closure/results commit: pending.
-- Push result and final synchronization: pending.
+- Review/Closure/results commit: `64148b0d9eab0249ae7260c4ed109fa27bf4b8f7`.
+- Push result: new remote branch created successfully; local and remote-tracking refs both
+  resolved to `64148b0d9eab0249ae7260c4ed109fa27bf4b8f7` immediately after push.
+- Checkpoint/final projection commit: created after this verified boundary; final handoff
+  must report its exact SHA and synchronization rather than self-reference it here.
 - Pre-existing untracked `.impeccable/live/config.json` and `PRODUCT.md` remain untouched and
   must stay excluded from experiment commits.
 - Commit and experiment-branch push are authorized. Master push/merge, PR, tag, release,
@@ -136,7 +142,7 @@ Rust profile tests ignored; no performance claim depends on them.
 
 ## Supervisor Decision
 
-Functional and Engineering Acceptance pass, all Findings are closed, and the technical
-Closure evidence is sufficient. The Supervisor defers the authoritative `accepted`/`closed`
-transition until Delivery Acceptance observes the final Checkpoint, compaction, commit, push,
-and branch/worktree evidence. No additional product implementation is authorized or required.
+Functional, Engineering, and Delivery Acceptance pass. There are zero open Blockers and zero
+open Findings. The Supervisor accepts LOOP-001; the Integrator records it `closed` in the Loop
+Map and records the verified Checkpoint. No additional product implementation is authorized
+or required, and this decision does not accept the wider MMGH refactor.

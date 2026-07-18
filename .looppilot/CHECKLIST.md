@@ -8,6 +8,6 @@ Projection only; authoritative status remains in the Map and Ledgers.
 - [x] TASK-004 Integration Barrier passed with complete evidence.
 - [x] Mandatory Spec and Standards axes passed.
 - [x] Findings, Rework, and reverification disposed in Finding Ledger.
-- [ ] Three-layer acceptance, Closure, Checkpoint, commits, and push recorded.
+- [x] Three-layer acceptance, Closure, Checkpoint, commits, and push recorded.
 
 Only integrated items may be checked. This Checklist cannot change Task or Loop status.
