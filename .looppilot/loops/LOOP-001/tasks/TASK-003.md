@@ -3,7 +3,7 @@ task_id: TASK-003
 parent_goal: MMGH-REFACTOR-EXP-001 / LOOP-001
 status: proposed
 assigned_role: worker
-assigned_to: snapshot-boundary-worker
+assigned_to: Codex primary agent (fallback after two no-output Worker attempts)
 objective: Make the approved characterization green by extracting and wiring the pure module.
 scope:
   allowed:
@@ -36,6 +36,6 @@ updated: 2026-07-18
 
 # Task Contract
 
-This is the only Worker allowed to edit `App.tsx`. Preserve the exact implementation policy
+The assigned implementation role is the only role allowed to edit `App.tsx`. Preserve the exact implementation policy
 unless the characterization exposes a Contract conflict; report such conflict instead of
 expanding Scope. Do not commit or claim integration/acceptance/closure.
