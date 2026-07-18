@@ -87,9 +87,14 @@ export default function useDesktopRuntime({
         synced: true,
         windowState: mergeDesktopWindowState(current.windowState, nextState),
       }));
-      onVisibilityChangeRef.current?.(
-        Boolean(nextState.visible) && Boolean(nextState.focused)
-      );
+      if (
+        typeof nextState.visible === "boolean" ||
+        typeof nextState.focused === "boolean"
+      ) {
+        onVisibilityChangeRef.current?.(
+          Boolean(nextState.visible) && Boolean(nextState.focused)
+        );
+      }
     };
 
     const connectDesktopRuntime = async () => {

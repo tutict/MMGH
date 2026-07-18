@@ -132,6 +132,28 @@ test("equivalent desktop window payloads reuse the previous projection", () => {
   expect(mergeDesktopWindowState(null, WINDOW_STATE)).toBe(WINDOW_STATE);
 });
 
+test("a malformed native payload does not replace App visibility", async () => {
+  let handleWindowState: EventHandler | undefined;
+  const onVisibilityChange = vi.fn();
+
+  tauriMock.isTauriAvailable.mockReturnValue(true);
+  tauriMock.listenToDesktopWindowState.mockImplementation(async (handler) => {
+    handleWindowState = handler;
+    return () => {};
+  });
+
+  render(<Probe onVisibilityChange={onVisibilityChange} />);
+  await waitFor(() => {
+    expect(onVisibilityChange).toHaveBeenCalledWith(true);
+  });
+  onVisibilityChange.mockClear();
+
+  act(() => {
+    handleWindowState?.({ label: "main" });
+  });
+  expect(onVisibilityChange).not.toHaveBeenCalled();
+});
+
 test("read and listener failures remain contained in an unsynced Tauri projection", async () => {
   const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
   tauriMock.isTauriAvailable.mockReturnValue(true);
