@@ -34,6 +34,7 @@ import {
   saveSettings,
 } from "./storage/agent";
 import { mergeWorkspaceSnapshot } from "./application/workspaceSnapshot";
+import useDesktopRuntime from "./application/useDesktopRuntime";
 import MiniPlayerBar from "./components/MiniPlayerBar";
 import {
   WEATHER_LOCATIONS,
@@ -82,12 +83,6 @@ import {
   patchPlaybackSnapshot,
   resetPlaybackSnapshot,
 } from "./utils/playbackSnapshot";
-import {
-  getDesktopWindowState,
-  isTauriAvailable,
-  listenToDesktopLifecycle,
-  listenToDesktopWindowState,
-} from "./storage/tauri";
 import {
   createAbortError,
   downloadJsonFile,
@@ -287,36 +282,6 @@ function readInitialAppVisibility() {
   return isVisible && isFocused;
 }
 
-function createInitialDesktopRuntime() {
-  const available = isTauriAvailable();
-  return {
-    available,
-    synced: !available,
-    lifecycle: "",
-    windowState: null,
-  };
-}
-
-function mergeDesktopWindowState(previousState, nextState) {
-  if (!previousState || !nextState) {
-    return nextState;
-  }
-
-  return previousState.label === nextState.label &&
-    previousState.visible === nextState.visible &&
-    previousState.focused === nextState.focused &&
-    previousState.minimized === nextState.minimized &&
-    previousState.maximized === nextState.maximized &&
-    previousState.fullscreen === nextState.fullscreen &&
-    previousState.resizable === nextState.resizable &&
-    previousState.decorated === nextState.decorated &&
-    previousState.width === nextState.width &&
-    previousState.height === nextState.height &&
-    previousState.scaleFactor === nextState.scaleFactor
-    ? previousState
-    : nextState;
-}
-
 function App() {
   const { lang, setLang, t } = useI18n();
   const [workspace, setWorkspace] = useState(null);
@@ -369,11 +334,20 @@ function App() {
   const [collapsedSessionPreviews, setCollapsedSessionPreviews] = useState({});
   const [clockNow, setClockNow] = useState(() => Date.now());
   const [isAppVisible, setIsAppVisible] = useState(() => readInitialAppVisibility());
-  const [desktopRuntime, setDesktopRuntime] = useState(() => createInitialDesktopRuntime());
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const handleDesktopVisibilityChange = useCallback((visible: boolean) => {
+    setIsAppVisible(visible);
+  }, []);
+  const handleDesktopRestoredFromTray = useCallback(() => {
+    setNotice(t("app.desktop.runtime.notice.restored"));
+  }, [t]);
+  const desktopRuntime = useDesktopRuntime({
+    onRestoredFromTray: handleDesktopRestoredFromTray,
+    onVisibilityChange: handleDesktopVisibilityChange,
+  });
   const [galleryItems, setGalleryItems] = useState(() => readGalleryItems());
   const [gallerySearch, setGallerySearch] = useState("");
   const [galleryFilter, setGalleryFilter] = useState("all");
@@ -672,107 +646,6 @@ function App() {
       document.removeEventListener("visibilitychange", syncAppVisibility);
     };
   }, []);
-
-  useEffect(() => {
-    if (!isTauriAvailable()) {
-      return undefined;
-    }
-
-    let disposed = false;
-    const unlistenCallbacks = [];
-
-    const applyWindowState = (nextState) => {
-      if (disposed || !nextState) {
-        return;
-      }
-
-      setDesktopRuntime((current) => ({
-        ...current,
-        available: true,
-        synced: true,
-        windowState: mergeDesktopWindowState(current.windowState, nextState),
-      }));
-
-      if (typeof nextState.visible === "boolean" || typeof nextState.focused === "boolean") {
-        setIsAppVisible(Boolean(nextState.visible) && Boolean(nextState.focused));
-      }
-    };
-
-    const connectDesktopRuntime = async () => {
-      try {
-        const nextState = await getDesktopWindowState();
-        applyWindowState(nextState);
-      } catch (err) {
-        console.error("Failed to read initial desktop window state", err);
-        if (!disposed) {
-          setDesktopRuntime((current) => ({
-            ...current,
-            available: true,
-            synced: false,
-          }));
-        }
-      }
-
-      try {
-        const unlistenWindowState = await listenToDesktopWindowState((payload) => {
-          applyWindowState(payload);
-        });
-
-        if (disposed) {
-          await unlistenWindowState?.();
-          return;
-        }
-
-        unlistenCallbacks.push(unlistenWindowState);
-      } catch (err) {
-        console.error("Failed to listen to desktop window state", err);
-      }
-
-      try {
-        const unlistenLifecycle = await listenToDesktopLifecycle((payload: Record<string, any> | null | undefined) => {
-          if (disposed) {
-            return;
-          }
-
-          const reason = String(payload?.reason || "");
-          setDesktopRuntime((current) => ({
-            ...current,
-            available: true,
-            synced: true,
-            lifecycle: reason,
-          }));
-
-          if (reason === "restored-from-tray") {
-            setNotice(t("app.desktop.runtime.notice.restored"));
-          }
-        });
-
-        if (disposed) {
-          await unlistenLifecycle?.();
-          return;
-        }
-
-        unlistenCallbacks.push(unlistenLifecycle);
-      } catch (err) {
-        console.error("Failed to listen to desktop lifecycle", err);
-      }
-    };
-
-    void connectDesktopRuntime();
-
-    return () => {
-      disposed = true;
-      Promise.all(
-        unlistenCallbacks.map(async (unlisten) => {
-          if (typeof unlisten === "function") {
-            await unlisten();
-          }
-        })
-      ).catch((err) => {
-        console.error("Failed to detach desktop listeners", err);
-      });
-    };
-  }, [t]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !isAppVisible) {
