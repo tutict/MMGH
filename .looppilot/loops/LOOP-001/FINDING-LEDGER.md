@@ -13,22 +13,27 @@ Updated by/Integrator: Codex primary agent
 
 ## Finding Summary
 
-No Findings have been submitted; independent review is pending.
+| Finding ID | Category | Severity | Status | Reviewer | Affected Task | Rework Task | Decision | Verification | Duplicate Of |
+|---|---|---|---|---|---|---|---|---|---|
+| FINDING-001 | standards/state projection | major | closed | `/root/loop001_standards_review` | TASK-002/003/004 | TASK-004-R1 | corrected; no risk accepted | `reviews/STANDARDS-REVERIFICATION-001.md` pass | none |
 
 ## Severity Summary
 
 - Blocker: 0
-- Major: 0
+- Major: 1
 - Minor: 0
 - Suggestion: 0
 
 ## Open Blockers, Accepted Risks, Deferred Findings, Duplicates
 
-- None observed or decided at Contract time.
+- Open Blocker: none.
+- Accepted Risk/Deferred/Duplicate: none.
+- Detailed evidence and unchanged severity: `reviews/STANDARDS-REVIEW.md`.
+- Original Reviewer verified the correction; no open Major remains.
 
 ## Review Barrier Status
 
-- Pending independent Spec and Standards reviews.
-- Closure ready: no.
+- Spec axis passed. Standards axis passed after FINDING-001 reverification.
+- Closure ready: yes, subject to Delivery Acceptance and Checkpoint.
 - Every submitted Finding will retain Reviewer evidence/severity and receive an explicit
   Supervisor disposition; correction requires scoped Rework and reverification.

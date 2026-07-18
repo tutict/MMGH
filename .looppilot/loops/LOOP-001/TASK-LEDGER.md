@@ -16,10 +16,11 @@ Updated by/Integrator: Codex primary agent
 | Task ID | Title | Type | Mandatory | Status | Worker | Dependencies | Delivery | Review Readiness | Rework Of |
 |---|---|---|---|---|---|---|---|---|---|
 | TASK-001 | Audit and approve Loop contract | supervisor | yes | integrated | Supervisor | none | not-applicable | ready | none |
-| TASK-002 | Characterize snapshot reconciliation | worker-test | yes | review-ready | `/root/snapshot_characterization` | TASK-001 | `deliveries/TASK-002-DELIVERY.md` | ready | none |
-| TASK-003 | Extract and wire pure snapshot module | worker-implementation | yes | review-ready | Codex primary fallback | TASK-002 | `deliveries/TASK-003-DELIVERY.md` | ready | none |
-| TASK-004 | Integrate and verify unified boundary | integrator | yes | review-ready | Integrator | TASK-003 | `integration/INTEGRATION-RECORD.md` | ready | none |
-| TASK-005 | Review, close, and report experiment | supervisor/integrator | yes | proposed | Supervisor/Integrator | TASK-004 | closure pending | pending | none |
+| TASK-002 | Characterize snapshot reconciliation | worker-test | yes | integrated | `/root/snapshot_characterization` | TASK-001 | `deliveries/TASK-002-DELIVERY.md` | loop-reviewed | none |
+| TASK-003 | Extract and wire pure snapshot module | worker-implementation | yes | integrated | Codex primary fallback | TASK-002 | `deliveries/TASK-003-DELIVERY.md` | loop-reviewed | none |
+| TASK-004 | Integrate and verify unified boundary | integrator | yes | integrated | Integrator | TASK-003 | `integration/INTEGRATION-RECORD.md` | loop-reviewed | none |
+| TASK-005 | Review, close, and report experiment | supervisor/integrator | yes | in-progress | Supervisor/Integrator | TASK-004 | closure pending | reviews-passed | none |
+| TASK-004-R1 | Correct authoritative Task statuses | integrator-rework | yes | integrated | Integrator | FINDING-001 | `deliveries/TASK-004-R1-DELIVERY.md` | reverified-pass | TASK-004 |
 
 ## Dependency and Conflict Notes
 
@@ -27,6 +28,8 @@ Updated by/Integrator: Codex primary agent
 - TASK-003 may begin only after the characterization Delivery and expected red result.
 - Initial TASK-003 assignment `/root/snapshot_boundary` was interrupted with no file output
   or submitted Delivery; the same unchanged Task Contract was reassigned once.
+- TASK-004-R1 changed only authoritative state projection and passed original Standards
+  Reviewer reverification.
 - Mandatory Spec/Standards reviews begin only after TASK-004 integration evidence.
 
 ## Barrier Status
@@ -34,7 +37,7 @@ Updated by/Integrator: Codex primary agent
 - Contract Barrier: passed 2026-07-18.
 - Implementation Barrier: passed; TASK-002/TASK-003 Deliveries collected.
 - Integration Barrier: passed; unified record and required checks complete.
-- Blocked Tasks: TASK-005 is review-gated, not impediment-blocked.
+- Blocked Tasks: none.
 - Cancelled Tasks: none.
 
 ## Ledger Notes

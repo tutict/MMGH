@@ -138,23 +138,23 @@ The module can be implemented, integrated, reviewed, committed, and recovered in
 
 ### Functional Acceptance
 
-- [ ] Initial, missing, semantically equal, partially changed, and nested-session cases pass.
-- [ ] Existing App/mobile/storage/security unit tests pass.
-- [ ] Web build, Rust contract tests, and desktop debug build remain successful.
-- [ ] Loading/error/sync and both `mergeWorkspaceSnapshot` call paths are unchanged.
+- [x] Initial, missing, semantically equal, partially changed, and nested-session cases pass.
+- [x] Existing App/mobile/storage/security unit tests pass.
+- [x] Web build, Rust contract tests, and desktop debug build remain successful.
+- [x] Loading/error/sync and both `mergeWorkspaceSnapshot` call paths are unchanged.
 
 ### Engineering Acceptance
 
-- [ ] Pure typed module contains the policy; App no longer defines it.
-- [ ] No second state source, side effect, type suppression, dependency, or meaningless layer.
-- [ ] Dependency direction matches ADR-001 and the module imports no infrastructure.
-- [ ] No storage/Rust/schema/security/permission/lockfile changes.
-- [ ] Independent Spec and Standards axes pass with Findings disposition recorded.
+- [x] Pure typed module contains the policy; App no longer defines it.
+- [x] No second state source, side effect, type suppression, dependency, or meaningless layer.
+- [x] Dependency direction matches ADR-001 and the module imports no infrastructure.
+- [x] No storage/Rust/schema/security/permission/lockfile changes.
+- [x] Independent Spec and Standards axes pass with Findings disposition recorded.
 
 ### Delivery Acceptance
 
-- [ ] All required Deliveries and Integration Record are complete.
-- [ ] `git diff --check`, lint, typecheck, unit, build, Rust tests, unified test, and desktop
+- [x] All required Deliveries and Integration Record are complete.
+- [x] `git diff --check`, lint, typecheck, unit, build, Rust tests, unified test, and desktop
   debug build have honest post-change results.
 - [ ] Closure, Checkpoint, compaction, scorecard, observations/results, commits, push result,
   and residual unverified items are recorded.
@@ -169,17 +169,17 @@ The module can be implemented, integrated, reviewed, committed, and recovered in
 
 ### Implementation Barrier
 
-- [ ] TASK-002 and TASK-003 submit scoped Deliveries with evidence.
-- [ ] No unauthorized scope/dependency/security/schema change.
+- [x] TASK-002 and TASK-003 submit scoped Deliveries with evidence.
+- [x] No unauthorized scope/dependency/security/schema change.
 
 ### Integration Barrier
 
-- [ ] Mandatory Deliveries collected; conflicts resolved; focused/full checks pass.
-- [ ] Integration Record complete and no mandatory work remains unintegrated.
+- [x] Mandatory Deliveries collected; conflicts resolved; focused/full checks pass.
+- [x] Integration Record complete and no mandatory work remains unintegrated.
 
 ### Review Barrier
 
-- [ ] Independent Spec and Standards axes pass; all Findings are authoritatively disposed.
+- [x] Independent Spec and Standards axes pass; all Findings are authoritatively disposed.
 
 ### Closure Barrier
 

@@ -4,6 +4,9 @@
 - Role: independent Reviewer; assignment occurs after Integration Barrier.
 - Allowed: read contracts, ADR, code/diff, Deliveries, Integration Record, tests; write only
   `.looppilot/loops/LOOP-001/reviews/STANDARDS-REVIEW.md`.
+- Reverification exception: after scoped Rework, the original Reviewer may additionally
+  write `.looppilot/loops/LOOP-001/reviews/STANDARDS-REVERIFICATION-001.md`; the original
+  Review Report must remain unchanged.
 - Forbidden: implementation edits, Ledgers, Scope/status/authority changes, commit/push,
   accepting risk, or announcing Loop/Project completion.
 - Required: judge module depth/interface, dependency direction, exact semantics, types, React
