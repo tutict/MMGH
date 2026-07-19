@@ -18,7 +18,7 @@ Project: `MMGH-REFACTOR-EXP-003`
 | [x] | LOOP-001 | Workspace Snapshot Reconciliation Boundary | closed | none | approved | accepted | historical EXP-001 |
 | [ ] | LOOP-002 | App Shell Runtime and Lifecycle Orchestration | planned | historical evidence | not-active | not-created | EXP-002 was Lightweight, not this Loop |
 | [ ] | LOOP-003 | Domain Action Controllers for Core Workflows | planned | later decision | not-created | not-created | not-authorized |
-| [x] | LOOP-004 | Provider Security Contract Alignment | closed | EXP-002 boundary | approved | accepted | final EXP-003 checkpoint pending commit |
+| [x] | LOOP-004 | Provider Security Contract Alignment | closed | EXP-002 boundary | approved | accepted | EXP-003 closure commit `b13343c` |
 
 ## Current Loop
 

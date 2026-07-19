@@ -99,8 +99,8 @@
     cross-runtime work; use Lightweight for a single-runtime, low-risk, independently testable
     change.
 49. **Commits (observed):** `ba5dc32` baseline artifacts; `bd3ab1c` parity fix and task evidence;
-    `86427b8` integration boundary; final documentation/state commit(s) are recorded by the
-    final Git report after staging.
+    `86427b8` integration boundary; `b13343c` final review, Closure, and experiment reports;
+    the final Checkpoint projection commit is reported by the final Git report.
 50. **Push result:** recorded as observed in the final Git report after authorized EXP-003 push;
     no master/merge/PR/tag/release/deploy action was performed.
 51. **Final HEAD:** recorded as observed in the final Git report after the final documentation
