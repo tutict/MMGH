@@ -19,7 +19,7 @@ Project: `MMGH-REFACTOR-EXP-004`
 | [ ] | LOOP-002 | App Shell Runtime and Lifecycle Orchestration | planned | historical evidence | not-active | not-created | EXP-002 was Lightweight |
 | [ ] | LOOP-003 | Domain Action Controllers for Core Workflows | planned | later decision | not-created | not-created | not-authorized |
 | [x] | LOOP-004 | Provider Security Contract Alignment | closed | EXP-002 boundary | approved | accepted | EXP-003 final `90177da` |
-| [x] | LOOP-005 | Storage Mutation Result and Cache Publication | closed | EXP-003 boundary | approved | accepted | `5a780a3` + final report / CHECKPOINT-004 |
+| [x] | LOOP-005 | Storage Mutation Result and Cache Publication | closed | EXP-003 boundary | approved | accepted | `70aa7a4` + CHECKPOINT-004 |
 
 ## Current Loop
 

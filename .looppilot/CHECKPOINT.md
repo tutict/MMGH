@@ -14,9 +14,9 @@
 
 - Repository: `C:\Users\tutic\IdeaProjects\MMGH`
 - Branch: `experiment/looppilot-mmgh-exp-004`
-- Verified source HEAD: `5a780a3c4f7cc56be3de356a7039a6066a7df90d`; final review/report/closure artifacts are uncommitted at this checkpoint projection.
-- Working tree: final LOOP-005 Reviews/Closure/EXP-004 reports and state projections, plus two preserved user-owned untracked files.
-- Integrated boundary: product implementation and Integration Record committed; Review and Closure Barriers passed.
+- Verified source HEAD: `70aa7a45da7bad2f28e7206c3c8b6d9aec71d8af`; product, Reviews, Closure, and EXP-004 reports are committed at this checkpoint projection.
+- Working tree: only the two preserved user-owned untracked files remain outside the committed EXP-004 boundary.
+- Integrated boundary: product implementation, Integration, Review, Closure, and reports committed; push verification pending.
 - Project authority: `.looppilot/PROJECT.md`; Loop authority: `.looppilot/LOOP-MAP.md`; Task/Finding authorities: LOOP-005 Ledgers; recovery authority: this file.
 
 ## Current Execution State

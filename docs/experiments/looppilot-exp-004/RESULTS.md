@@ -55,7 +55,7 @@ EXP-004 completed `LOOP-005` as `accepted-for-experiment` under Full Loop. The b
 47. Full validation: `npm.cmd test` PASS, 84 frontend passed/3 skipped, Rust 43+51 passed/2 ignored; desktop final rerun PASS.
 48. Desktop build: debug exe, two MSI locales, and NSIS bundle produced; no install/run claim.
 49. Temporary/secret scan: temporary SQLite only, no real DB/credentials; scoped credential-like scan had no matches; generated artifacts unstaged.
-50. Commit list: `62a7857 docs: establish MMGH EXP-004 storage mode decision`; `5a780a3 fix: preserve committed snapshot after cache poison`; review/report/closure commit is pending at this report boundary.
+50. Commit list: `62a7857 docs: establish MMGH EXP-004 storage mode decision`; `5a780a3 fix: preserve committed snapshot after cache poison`; `70aa7a4 test: report MMGH LoopPilot EXP-004`.
 51. Push result: pending at this report boundary; only EXP-004 push is authorized.
 52. Final HEAD: recorded in the post-push handoff because a commit cannot pre-record its own SHA.
 53. Local/remote sync: recorded after authorized push; no master/merge/PR/tag/release/deploy/force push.
