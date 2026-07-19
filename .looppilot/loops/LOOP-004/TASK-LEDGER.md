@@ -1,7 +1,7 @@
 # Task Ledger
 
 Loop ID: `LOOP-004`
-Status: executing
+Status: closed
 Updated: 2026-07-19
 Updated by/Integrator: Codex primary agent
 
@@ -18,8 +18,8 @@ Updated by/Integrator: Codex primary agent
 | TASK-002 | TypeScript Provider characterization | worker-test | yes | integrated | Frontend Contract Worker | TASK-001 | `deliveries/TASK-002-DELIVERY.md` | Spec/Standards pass |
 | TASK-003 | Rust Provider characterization | worker-test | yes | integrated | Rust Contract Worker | TASK-001 | `deliveries/TASK-003-DELIVERY.md` | Spec/Standards pass; target RED |
 | TASK-004 | Implement approved parity fix | worker-implementation | yes | integrated | Implementation Worker | TASK-002/003 | `deliveries/TASK-004-DELIVERY.md` | Spec/Standards pass |
-| TASK-005 | Integrate and review | integrator/reviewer | yes | in-progress | Integrator/Specialists | TASK-004 | `integration/INTEGRATION-RECORD.md` | Loop-level reviews pending |
-| TASK-006 | Close and report experiment | supervisor/integrator | yes | proposed | Supervisor/Integrator | TASK-005 | pending | pending |
+| TASK-005 | Integrate and review | integrator/reviewer | yes | integrated | Integrator/Specialists | TASK-004 | `integration/INTEGRATION-RECORD.md` | four Loop-level axes PASS |
+| TASK-006 | Close and report experiment | supervisor/integrator | yes | integrated | Supervisor/Integrator | TASK-005 | `LOOP-CLOSURE.md` and EXP-003 reports | parent validation PASS |
 | TASK-005-R1 | Correct active recovery boundary | integrator-rework | yes | integrated | Integrator | FINDING-002 | `tasks/TASK-005-R1.md` | original Recovery Reviewer PASS |
 
 ## Conflict and Worker Notes
@@ -34,6 +34,5 @@ Updated by/Integrator: Codex primary agent
 ## Barrier Status
 
 - Contract Barrier: passed.
-- Characterization, implementation, recovery Rework, and Integration are integrated.
-  Loop-level Review and Closure remain pending.
+- All mandatory Tasks are integrated; four Loop-level review axes and Closure passed.
 - Open Findings: none; zero Blocker.

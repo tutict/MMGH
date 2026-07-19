@@ -1,54 +1,76 @@
-# EXP-001 Context Compaction
+# EXP-003 Active Loop Context Manifest
 
-## Purpose
+## Identity
 
-Restore the closed experiment boundary and make one later LOOP-002 decision without loading
-the full prior conversation or treating historical authority as current.
+- Manifest ID: `MMGH-EXP-003-COMPACTION-001`
+- Checkpoint: `CHECKPOINT-003`
+- Project ID: `MMGH-REFACTOR-EXP-003`
+- Loop ID: `LOOP-004`
+- Created: 2026-07-19
+- Created by: Codex primary agent
+- Manifest Status: `final`
+
+## Current Objective
+
+No implementation Task is active. Revalidate the final EXP-003 branch/remote boundary if a
+new instruction resumes work. `FINDING-002` is closed after original Recovery Reviewer PASS
+and must not be reopened without new evidence.
 
 ## Must Load
 
-Load only:
+| Artifact | Source | Reason | Revalidate |
+|---|---|---|---|
+| latest user instruction | current input | scope/authority | yes |
+| Checkpoint | `.looppilot/CHECKPOINT.md` | exact active Resume Point | yes |
+| Project/Map | `.looppilot/PROJECT.md`, `LOOP-MAP.md` | scope/status | yes |
+| Contract/Ledgers | `loops/LOOP-004/LOOP-CONTRACT.md`, `TASK-LEDGER.md`, `FINDING-LEDGER.md` | authority/dependencies | yes |
+| active Task/Rework | `tasks/TASK-004*.md`, `tasks/TASK-005-R1.md` | implementation and recovery correction boundaries | yes |
+| Deliveries/review/Finding | `deliveries/TASK-002/003/004`, `reviews/CHARACTERIZATION-REVIEW.md`, `reviews/FINDING-002.md` | evidence and open recovery Finding | yes |
+| current Git/test state | repository tools | reality overrides stale docs | yes |
 
-1. the latest user instruction for the resumed task;
-2. `.looppilot/CHECKPOINT.md`;
-3. `.looppilot/PROJECT.md`;
-4. `.looppilot/LOOP-MAP.md`;
-5. `.looppilot/loops/LOOP-001/LOOP-CONTRACT.md`;
-6. `.looppilot/loops/LOOP-001/TASK-LEDGER.md` and `FINDING-LEDGER.md`;
-7. `.looppilot/loops/LOOP-001/LOOP-CLOSURE.md`;
-8. `docs/experiments/looppilot-exp-001/RESULTS.md` and
-   `EVALUATION-SCORECARD.md`.
+## Load On Demand
 
-Load the detailed Integration Record, Deliveries, or Review reports only if current Git
-revalidation contradicts Closure, a Finding is reopened by new evidence, or a new Contract
-needs an exact prior invariant. Inspect only code relevant to the new bounded decision.
+- Detailed Rust/TS source only for current diff or review conflict.
+- Integration Record, review reports, Finding Detail, Rework Task, and Closure when each
+  barrier becomes active.
+- EXP-001/EXP-002 historical artifacts only for final comparison or contradiction.
 
-## Must Not Assume or Load by Default
+## Must Not Load by Default
 
-- Do not load the complete historical chat, all repository code, all old Deliveries/Reviews,
-  or the full LoopPilot repository.
-- Do not restore a cancelled or narrowed task, reopen LOOP-001 without new observed evidence,
-  or infer permission to implement LOOP-002.
-- Do not assume MMGH is fully refactored, other candidate Loops are approved, Windows bundles
-  were installed, cross-session recovery was observed, or release/deployment is authorized.
+- Complete chat, private reasoning, large raw logs, unrelated source, generated artifacts,
+  real user content/credentials, and inactive candidate Loop templates.
 
-## Compressed State
+## Authoritative Sources
 
-- EXP-001 executed one Full Loop only. LOOP-001 extracted the pure workspace-snapshot
-  reconciliation policy from `App.tsx`, added five focused tests, passed the full quality
-  chain and Windows debug packaging, passed Spec Review, and passed Standards Review after
-  one Major state-projection Finding and scoped Rework.
-- The delivery boundary `64148b0d9eab0249ae7260c4ed109fa27bf4b8f7` was pushed to the
-  experiment remote branch. The final closing-projection commit is a documentation-only
-  descendant and must be resolved from Git on resume.
-- Two untracked user artifacts were preserved: `.impeccable/live/config.json` and
-  `PRODUCT.md`.
-- Full Loop showed useful scope/review governance but high context/document overhead. Default
-  recommendation is Lightweight for small single-owner changes; Full Loop remains suitable
-  for cross-runtime/storage/security or multi-role risks.
+| State | Authority |
+|---|---|
+| Project scope | `PROJECT.md` |
+| Loop status | `LOOP-MAP.md` |
+| Task status | `loops/LOOP-004/TASK-LEDGER.md` |
+| Finding status | `loops/LOOP-004/FINDING-LEDGER.md` |
+| Recovery | `CHECKPOINT.md` |
 
-## Single Resume Point
+## Compacted Facts
 
-Use only `LOOP-002-CONTRACT-DECISION` from `.looppilot/CHECKPOINT.md`. Revalidate Git first;
-then the Supervisor either stops or starts a new Contract Barrier. No implementation action
-is implied.
+- FACT-001: EXP-002 boundary is `afa5540...`; source: resume validation; verified: yes.
+- FACT-002: Candidate A has observed TS/Rust strict policy gaps; source: risk audit; verified: yes.
+- FACT-003: characterization Deliveries approved; source: characterization review; verified: yes.
+- FACT-004: TASK-004 is the only authorized implementation; source: Contract; verified: yes.
+- FACT-005: fresh-context recovery found `FINDING-002`; TASK-005-R1 corrected the invalid HEAD
+  and missing implementation inputs before Integration; source: Finding/Rework; verified: yes.
+- FACT-006: Integration Barrier passed at `86427b8`; Loop-level review is active; source:
+  Integration Record and Review Contract; verified: yes.
+- FACT-007: Spec, Standards, Security, and Compatibility reviews passed; final validation and
+  LOOP-004 Closure passed; source: review reports and Closure; verified: yes.
+
+## Uncertainty and Rationale
+
+- Token usage is unavailable; no estimate is made.
+- Host-native cross-session recovery and Reviewer independence beyond this observed review
+  remain unverified until actually exercised.
+- This minimal set retains Scope, invariants, authority, open work, evidence, and one Resume Point.
+
+## Authority Note
+
+This manifest routes recovery context only. `CHECKPOINT.md`, Ledgers, Map, and Project remain
+their respective authorities; this file cannot expand Scope, permissions, or status.

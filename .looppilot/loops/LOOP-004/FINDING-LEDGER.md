@@ -1,7 +1,7 @@
 # Finding Ledger
 
 Loop ID: `LOOP-004`
-Status: open
+Status: closed
 Updated: 2026-07-19
 Updated by/Integrator: Codex primary agent
 
@@ -14,7 +14,7 @@ Updated by/Integrator: Codex primary agent
 
 | Finding ID | Category | Severity | Status | Reviewer | Task/Delivery | Rework | Decision | Verification |
 |---|---|---|---|---|---|---|---|---|
-| none | none | none | none | none | none | none | none | none |
+| FINDING-002 | recovery/standards | major | closed | Fresh-context Recovery Reviewer | TASK-005 recovery rehearsal | TASK-005-R1 | corrected; no risk accepted | `RECOVERY-REVERIFICATION-001.md` PASS revision 2/2 |
 
 ## Severity Rules
 
@@ -25,5 +25,6 @@ Updated by/Integrator: Codex primary agent
 
 ## Review Barrier Status
 
-- Spec, Standards, Security, Compatibility: not started.
-- No risk accepted, deferred, duplicate, or open Finding is currently recorded.
+- Spec, Standards, Security, Compatibility: PASS.
+- Open Blocker/Major/Minor: none. `FINDING-002` retains Major severity and is closed after
+  scoped Rework plus original Reviewer reverification. No risk accepted or deferred.

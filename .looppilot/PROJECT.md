@@ -1,6 +1,6 @@
 # Project Engineering Context
 
-Status: active
+Status: accepted-for-experiment
 Updated: 2026-07-19
 Supervisor: Codex primary agent
 Integrator: Codex primary agent
