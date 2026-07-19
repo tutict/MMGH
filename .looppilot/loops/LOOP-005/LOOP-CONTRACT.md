@@ -25,7 +25,7 @@ No SQL/schema/migration, keyring or Settings journal redesign, DTO fields, comma
 
 ## Grouping Rationale
 
-Mutation result, transaction commit, cache publication, and client snapshot commit form one acceptance boundary. Separating the Rust cache fix from Web failure characterization would not prove that an error means “not durably committed” across the two adapters. The Loop is independently testable, reversible, and contains no durable format change.
+Mutation result, transaction commit, cache publication, and client snapshot commit form one acceptance boundary. Separating the Rust cache fix from Web failure characterization would not prove that an error means `not durably committed` across the two adapters. The Loop is independently testable, reversible, and contains no durable format change.
 
 ## Current Evidence and Invariants
 

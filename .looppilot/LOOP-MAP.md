@@ -19,11 +19,11 @@ Project: `MMGH-REFACTOR-EXP-004`
 | [ ] | LOOP-002 | App Shell Runtime and Lifecycle Orchestration | planned | historical evidence | not-active | not-created | EXP-002 was Lightweight |
 | [ ] | LOOP-003 | Domain Action Controllers for Core Workflows | planned | later decision | not-created | not-created | not-authorized |
 | [x] | LOOP-004 | Provider Security Contract Alignment | closed | EXP-002 boundary | approved | accepted | EXP-003 final `90177da` |
-| [ ] | LOOP-005 | Storage Mutation Result and Cache Publication | contracted | EXP-003 boundary | approved | pending | pending / CHECKPOINT-004 |
+| [ ] | LOOP-005 | Storage Mutation Result and Cache Publication | integrating | EXP-003 boundary | approved | pending | `62a7857` / CHECKPOINT-004 |
 
 ## Current Loop
 
-- `LOOP-005` is active at the Contract Barrier. TASK-001 is integrated; TASK-002 and TASK-003 characterization are assigned; product implementation is not yet authorized until RED/readiness evidence is observed.
+- `LOOP-005` is active at the Integration Barrier. TASK-001 through TASK-004 are integrated; TASK-005 review work is in progress.
 - It groups one data/result invariant: optional Snapshot cache publication cannot turn a committed SQLite mutation into a rejected Tauri mutation result.
 - `LOOP-002`/`LOOP-003` remain inactive planning entries and are not prerequisites.
 
