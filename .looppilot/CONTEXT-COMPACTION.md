@@ -5,20 +5,20 @@
 - Manifest ID: `MMGH-EXP-004-COMPACTION-001`
 - Checkpoint: `CHECKPOINT-004`
 - Project/Loop: `MMGH-REFACTOR-EXP-004` / `LOOP-005`
-- Status: active
+- Status: closed-awaiting-push-verification
 
 ## Must Load
 
 - Latest EXP-004 instruction and `.looppilot/CHECKPOINT.md`.
 - `PROJECT.md`, `LOOP-MAP.md`, LOOP-005 `LOOP-CONTRACT.md`, `TASK-LEDGER.md`, and `FINDING-LEDGER.md`.
 - `docs/experiments/looppilot-exp-004/STORAGE-ADAPTER-AUDIT.md` and `MODE-SELECTION.md`.
-- TASK-002/003 Contracts and Deliveries when submitted; current Git and focused test evidence.
+- LOOP-005 Deliveries, Integration Record, four Reviews, Closure, EXP-004 Results, and current Git state.
 
 ## Load On Demand
 
 - `src/storage/agent.ts` / `agent.test.ts` for Web persistence semantics.
 - `src-tauri/src/db.rs` / `db/snapshot.rs` / `db/settings.rs` and schema for transaction/data review.
-- Integration, Reviews, Findings/Rework, Closure, and EXP-004 reports as their barriers become active.
+- Focused product files only when rechecking the committed implementation.
 - EXP-003 Results only for experiment comparison or recovery contradiction.
 
 ## Must Not Load by Default
@@ -38,8 +38,9 @@
 ## Compacted Facts and Uncertainty
 
 - EXP-004 starts at verified EXP-003 `90177da` with only excluded user files untracked.
-- Full baseline passes except WiX MSI bundle; Web/Rust binary builds.
-- Selected RED target is a fallible cache store after SQLite commit; Settings/keyring and other parity candidates are excluded.
+- Baseline core checks passed; initial WiX bundling failed, while final desktop rerun produced exe/two MSI/NSIS artifacts without installation or staging.
+- Selected RED was a fallible cache store after SQLite commit. The bounded recovery passes full validation and four independent Reviews; zero Findings/Rework.
+- Exact resume point is final EXP-004 commit/push/local-remote verification. Settings/keyring and other parity candidates remain excluded.
 - Token usage is unavailable; no estimate is made.
 - Real disk-full, production DB/keyring/provider, cross-process crash recovery, installer install, macOS/Linux, and user acceptance remain unverified.
 

@@ -1,4 +1,4 @@
-# EXP-004 Active Loop Checkpoint
+# EXP-004 Closed Loop Checkpoint
 
 ## Identity
 
@@ -14,27 +14,30 @@
 
 - Repository: `C:\Users\tutic\IdeaProjects\MMGH`
 - Branch: `experiment/looppilot-mmgh-exp-004`
-- Verified source HEAD: `62a78578174d3c503525c325ca27fdcc8d157c71`; bounded product/tests/Delivery evidence is uncommitted at this checkpoint projection.
-- Working tree: bounded Rust cache recovery, Web/Rust tests, LOOP-005 Delivery/integration work, plus two preserved user-owned untracked files.
-- Integrated boundary: Implementation Barrier passed; Integration Barrier in progress.
+- Verified source HEAD: `5a780a3c4f7cc56be3de356a7039a6066a7df90d`; final review/report/closure artifacts are uncommitted at this checkpoint projection.
+- Working tree: final LOOP-005 Reviews/Closure/EXP-004 reports and state projections, plus two preserved user-owned untracked files.
+- Integrated boundary: product implementation and Integration Record committed; Review and Closure Barriers passed.
 - Project authority: `.looppilot/PROJECT.md`; Loop authority: `.looppilot/LOOP-MAP.md`; Task/Finding authorities: LOOP-005 Ledgers; recovery authority: this file.
 
 ## Current Execution State
 
-- Current Loop/status: LOOP-005 / `integrating`.
-- Current Barrier: Integration evidence before independent Review Barrier.
-- Tasks: TASK-001 through TASK-004 integrated; TASK-005 in progress; TASK-006 proposed.
-- Findings: none registered.
+- Current Loop/status: LOOP-005 / `closed`.
+- Current Barrier: post-closure commit/push verification.
+- Tasks: TASK-001 through TASK-006 accepted.
+- Findings: zero; no Rework.
 - Context Pressure: `normal`; Budget State: `unbounded-unknown`.
 
 ## Verified Completed Work
 
 - Resume `MMGH-EXP-004-RESUME-001`: `validated-with-corrections`; EXP-003 local/remote `0 0`.
 - Fresh baseline: lint/typecheck, 84 frontend tests/3 skips, Web 1004 modules, Rust 92/2 ignored, unified `npm test` passed.
-- Desktop debug built Web/Rust binary but WiX `light.exe` MSI bundling failed; installer artifact is unverified.
+- Baseline desktop debug built Web/Rust binary but its first WiX `light.exe` MSI bundling attempt failed. Final rerun passed and produced debug exe, two MSI locales, and NSIS; installers were not run or committed.
 - Storage audit selected the reproducible post-commit cache publication candidate at Full Loop score 21/28.
 - LOOP-005 Contract and Task/Finding Ledgers exist; no SQL/schema/keyring/DTO/user-file change.
 - Web characterization passes 18/1 skipped; Rust cache-poison RED was reproduced and the bounded recovery implementation now passes in both Rust test binaries.
+- Integration Barrier passed; independent Spec, Standards, Data, and Compatibility Reviews all PASS with zero Findings.
+- Final `npm.cmd test` passes: frontend 84/3 skipped, Vite 1004 modules, Rust 43+51/2 ignored.
+- Functional, Engineering, and Delivery Acceptance pass for the bounded experiment.
 
 ## Authority and Evidence to Revalidate
 
@@ -44,12 +47,12 @@
 
 ## Exact Resume Point
 
-- Resume item: `LOOP-005 Integration and Review Barrier`.
-- Resume action: verify the integrated diff and full suites, write the Integration Record, then obtain independent Spec/Standards/Data/Compatibility verdicts.
-- Required inputs/tools: latest instruction, LOOP-005 Contract/Ledgers/Deliveries, audit/mode files, Git, Vitest, cargo test, temporary SQLite/failure injection.
-- Expected result: one integrated cache-publication correction with full cross-runtime evidence; Web cross-tab post-write ambiguity remains explicitly excluded.
-- Stop/escalate: scope drift into Settings/schema/keyring/DTO, unexplained regression, user-file overlap, unavailable required review capability, or unresolved Major/Blocker.
+- Resume item: `EXP-004 post-closure Git verification`.
+- Resume action: inspect final review/report commit, confirm only preserved user files are untracked, push only EXP-004, then verify local/remote 0/0.
+- Required inputs/tools: latest instruction, this Checkpoint, LOOP-005 Closure/Ledgers/Reviews, EXP-004 Results, and Git.
+- Expected result: final report commit on EXP-004 and verified remote synchronization without master/PR/tag/release/deploy action.
+- Stop/escalate: user-file overlap, secret/generated artifact staging, remote conflict, non-EXP-004 branch, or local/remote divergence.
 
 ## Honesty Boundary
 
-This Checkpoint records Implementation readiness only. It does not claim Integration Barrier passage, independent Review, Closure, later commit/push, production reliability, installer success, or cross-session recovery.
+This Checkpoint records bounded experiment Closure and final validation. It does not pre-claim the pending report commit/push, installer execution, production reliability, real-data safety, multi-process/crash recovery, whole-MMGH completion, or cross-session recovery.

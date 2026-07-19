@@ -52,7 +52,7 @@
 - Neighbor Rust rollback/concurrency tests: passed in both binaries; Settings commit filter passed 4 tests in each binary.
 - `npm.cmd test`: passed lint, typecheck, 18 frontend files with 84 passed/3 skipped, Vite build with 1004 modules, and Rust with 43+51 passed/2 ignored.
 - Existing frontend stderr for injected network fallback/invalid JSON and Rust dead-code warnings are expected and unchanged in class.
-- Baseline desktop debug packaging remains limited: Web/Rust executable built, but WiX `light.exe` failed to produce the MSI. LOOP-005 does not claim installer verification.
+- Baseline desktop debug packaging built Web/Rust but first failed at WiX `light.exe`. The final rerun passed and produced the debug exe, two MSI locales, and NSIS; no installer was run or committed.
 
 ## Conflicts and Risk
 
