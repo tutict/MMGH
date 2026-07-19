@@ -62,4 +62,3 @@
 
 No implementation blocker was observed. The parent Integrator must still inspect this
 Delivery with the combined branch diff and complete the required review barriers.
-
