@@ -49,6 +49,26 @@ test("blocks untrusted https hosts when strict mode is enabled", () => {
   expect(assessment.reason).toBe("untrustedHost");
 });
 
+test("accepts the default trusted host when strict mode is enabled", () => {
+  const assessment = assessProviderBaseUrl("https://api.openai.com/v1", {
+    enforceTrustedHosts: true,
+  });
+
+  expect(assessment.status).toBe("trusted");
+  expect(assessment.reason).toBe("trustedHost");
+});
+
+test("trusts a trailing-dot host when its normalized host is allowlisted", () => {
+  const assessment = assessProviderBaseUrl("https://api.openai.com./v1", {
+    trustedHosts: ["api.openai.com"],
+    enforceTrustedHosts: true,
+  });
+
+  expect(assessment.status).toBe("trusted");
+  expect(assessment.reason).toBe("trustedHost");
+  expect(assessment.host).toBe("api.openai.com");
+});
+
 test("blocks provider urls with embedded credentials", () => {
   const assessment = assessProviderBaseUrl("https://user:pass@example.com/v1");
 

@@ -1758,6 +1758,8 @@ mod tests {
     api_key: Option<String>,
     api_base: Option<String>,
     model: Option<String>,
+    trusted_provider_hosts: Option<String>,
+    enforce_trusted_provider_hosts: Option<String>,
   }
 
   impl EnvGuard {
@@ -1766,11 +1768,15 @@ mod tests {
         api_key: std::env::var("OPENAI_API_KEY").ok(),
         api_base: std::env::var("OPENAI_API_BASE").ok(),
         model: std::env::var("OPENAI_MODEL").ok(),
+        trusted_provider_hosts: std::env::var("MMGH_TRUSTED_PROVIDER_HOSTS").ok(),
+        enforce_trusted_provider_hosts: std::env::var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS").ok(),
       };
 
       std::env::remove_var("OPENAI_API_KEY");
       std::env::remove_var("OPENAI_API_BASE");
       std::env::remove_var("OPENAI_MODEL");
+      std::env::remove_var("MMGH_TRUSTED_PROVIDER_HOSTS");
+      std::env::remove_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS");
 
       guard
     }
@@ -1789,6 +1795,14 @@ mod tests {
       match &self.model {
         Some(value) => std::env::set_var("OPENAI_MODEL", value),
         None => std::env::remove_var("OPENAI_MODEL"),
+      }
+      match &self.trusted_provider_hosts {
+        Some(value) => std::env::set_var("MMGH_TRUSTED_PROVIDER_HOSTS", value),
+        None => std::env::remove_var("MMGH_TRUSTED_PROVIDER_HOSTS"),
+      }
+      match &self.enforce_trusted_provider_hosts {
+        Some(value) => std::env::set_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS", value),
+        None => std::env::remove_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS"),
       }
     }
   }
@@ -3551,6 +3565,10 @@ mod tests {
 
   #[test]
   fn provider_base_url_enforces_allowlist_when_requested() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let _env = EnvGuard::clear_openai_vars();
     std::env::set_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS", "true");
     std::env::set_var("MMGH_TRUSTED_PROVIDER_HOSTS", "api.openai.com");
 
@@ -3558,9 +3576,30 @@ mod tests {
       .expect_err("untrusted host should be rejected when allowlist enforcement is enabled");
 
     assert!(error.to_string().contains("MMGH_TRUSTED_PROVIDER_HOSTS"));
-
-    std::env::remove_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS");
-    std::env::remove_var("MMGH_TRUSTED_PROVIDER_HOSTS");
     Ok(())
+  }
+
+  #[test]
+  fn provider_base_url_normalizes_trailing_dot_for_url_and_allowlist() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let _env = EnvGuard::clear_openai_vars();
+    std::env::set_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS", "true");
+    std::env::set_var("MMGH_TRUSTED_PROVIDER_HOSTS", " API.OPENAI.COM. ");
+
+    validate_provider_base_url("https://api.openai.com./v1")
+  }
+
+  #[test]
+  fn provider_base_url_uses_default_openai_host_when_strict_allowlist_is_unconfigured() -> Result<()>
+  {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let _env = EnvGuard::clear_openai_vars();
+    std::env::set_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS", "true");
+
+    validate_provider_base_url("https://api.openai.com/v1")
   }
 }

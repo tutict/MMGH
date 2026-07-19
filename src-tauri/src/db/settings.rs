@@ -399,12 +399,18 @@ pub(super) fn sanitize_settings_for_persistence(settings: &AgentSettings) -> Age
 }
 
 pub(super) fn configured_trusted_provider_hosts() -> Vec<String> {
-  std::env::var("MMGH_TRUSTED_PROVIDER_HOSTS")
+  let configured = std::env::var("MMGH_TRUSTED_PROVIDER_HOSTS")
     .unwrap_or_default()
     .split(',')
     .map(normalize_provider_host)
     .filter(|host| !host.is_empty())
-    .collect()
+    .collect::<Vec<_>>();
+
+  if configured.is_empty() {
+    vec!["api.openai.com".to_string()]
+  } else {
+    configured
+  }
 }
 
 pub(super) fn enforce_trusted_provider_hosts() -> bool {

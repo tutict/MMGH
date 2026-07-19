@@ -32,7 +32,11 @@ const readEnv = (name: string): string => {
   return "";
 };
 
-const normalizeHost = (value: unknown): string => String(value || "").trim().toLowerCase();
+const normalizeHost = (value: unknown): string =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\.+$/, "");
 
 const parseHostList = (value: unknown): string[] =>
   String(value || "")

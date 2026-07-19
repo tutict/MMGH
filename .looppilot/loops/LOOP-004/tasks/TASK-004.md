@@ -2,9 +2,9 @@
 
 - `task_id`: TASK-004
 - `parent_goal`: MMGH-REFACTOR-EXP-003
-- `status`: proposed
-- `previous_status`: none
-- `status_changed_by`: Supervisor
+- `status`: integrated
+- `previous_status`: approved
+- `status_changed_by`: Integrator
 - `assigned_role`: Implementation Worker
 - `assigned_to`: one serial cross-layer implementation context after TASK-002/003 review readiness
 - `objective`: implement only the approved default-host and trailing-dot parity fix.

@@ -18,11 +18,13 @@ Project: `MMGH-REFACTOR-EXP-003`
 | [x] | LOOP-001 | Workspace Snapshot Reconciliation Boundary | closed | none | approved | accepted | historical EXP-001 |
 | [ ] | LOOP-002 | App Shell Runtime and Lifecycle Orchestration | planned | historical evidence | not-active | not-created | EXP-002 was Lightweight, not this Loop |
 | [ ] | LOOP-003 | Domain Action Controllers for Core Workflows | planned | later decision | not-created | not-created | not-authorized |
-| [ ] | LOOP-004 | Provider Security Contract Alignment | contracted | EXP-002 boundary | approved | not-created | EXP-003 authorized |
+| [ ] | LOOP-004 | Provider Security Contract Alignment | integrated | EXP-002 boundary | approved | not-created | EXP-003 authorized |
 
 ## Current Loop
 
-- `LOOP-004` is contracted after the EXP-003 risk audit and Selection Gate.
+- `LOOP-004` is integrated after TASK-004 independent approval, focused parity verification,
+  and complete Integration Record. Loop-level Spec/Standards/Security/Compatibility reviews
+  remain mandatory before acceptance.
 - It groups one cross-runtime invariant: default trusted hosts and DNS trailing-dot
   normalization must lead TypeScript and Rust strict-mode validation to the same result.
 - `LOOP-002`/`LOOP-003` remain inactive planning entries and are not prerequisites for this

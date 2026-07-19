@@ -2,9 +2,9 @@
 
 - `task_id`: TASK-003
 - `parent_goal`: MMGH-REFACTOR-EXP-003
-- `status`: assigned
-- `previous_status`: proposed
-- `status_changed_by`: Supervisor
+- `status`: approved
+- `previous_status`: under-review
+- `status_changed_by`: Independent Characterization Reviewer
 - `assigned_role`: Rust Contract Worker
 - `assigned_to`: independent Rust context if available; otherwise disclosed Supervisor fallback
 - `objective`: add Rust characterization tests proving strict default and host normalization behavior.
