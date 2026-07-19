@@ -1,0 +1,27 @@
+# Task Contract TASK-002
+
+- `task_id`: TASK-002
+- `parent_goal`: MMGH-REFACTOR-EXP-003
+- `status`: assigned
+- `previous_status`: proposed
+- `status_changed_by`: Supervisor
+- `assigned_role`: Frontend Contract Worker
+- `assigned_to`: independent frontend context if available; otherwise disclosed Supervisor fallback
+- `objective`: add TypeScript characterization tests proving strict default and trailing-dot parity gaps.
+- `scope.allowed`: `src/security/provider.test.ts`; inspect `src/security/provider.ts`.
+- `scope.forbidden`: Rust, production policy edits, Ledgers, commits, pushes, user files.
+- `deliverables`: scoped test Delivery with RED/GREEN evidence and blocker disclosure.
+- `success_criteria`: tests reproduce current TS decisions and isolate expected target behavior.
+- `required_evidence`: focused Vitest command, diff, actual output, no real secret/network.
+- `dependencies`: TASK-001
+- `research_inputs`: none
+- `skill_assignment`: frontend testing capability optional; fallback repository shell/Vitest.
+- `skill_selection`: host-native skill not verified; no invented skill selected.
+- `checklist_item`: none
+- `authority`: read=true, modify=true, delete=false, commit=false, push=false, release=false, deploy=false, external_communication=false
+- `reviewer`: Compatibility Reviewer
+- `integration_owner`: Codex primary agent
+- `revision_count`: 0
+- `revision_budget`: 2
+- `created`: 2026-07-19
+- `updated`: 2026-07-19

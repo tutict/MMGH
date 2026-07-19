@@ -1,80 +1,79 @@
-# EXP-002 Resume Validation
+# EXP-003 Resume Validation
 
 ## Identity and Decision
 
-- Validation ID: `MMGH-EXP-002-RESUME-001`
-- Validation date: 2026-07-18
-- Source Checkpoint: `.looppilot/CHECKPOINT.md` (`EXP-001 Checkpoint`)
-- Decision: `validated-with-corrections`
-- Scope of decision: EXP-001 to EXP-002 decision recovery only.
+- Validation ID: `MMGH-EXP-003-RESUME-001`
+- Validation date: 2026-07-19
+- Source boundary: EXP-002 final result plus the persisted EXP-001 Checkpoint
+- Decision: `validated`
+- Scope of decision: create EXP-003 from the verified EXP-002 boundary, run a fresh
+  baseline, and audit the three authorized cross-layer candidates before any product change.
 
 ## Latest Instruction and Authority
 
-- The latest user instruction explicitly authorizes a new EXP-002 branch, one bounded
-  Runtime/Lifecycle change, experiment records, tests, commits, and push of that branch.
-- It does not authorize master changes, merge, PR, tag, release, deployment, force-push,
-  important deletion, installer execution, or changes to the two user-owned untracked files.
-- Current authority supersedes the Checkpoint's pending choice between stopping and drafting
-  a later contract; it does not reopen `LOOP-001` or expand release/deploy authority.
+- The latest instruction authorizes an EXP-003 experiment branch, evidence-based Full Loop
+  artifacts, one approved cross-layer contract change when justified, isolated tests,
+  commits, and push of the EXP-003 branch.
+- It does not authorize master modification or push, merge, PR, tag, release, deployment,
+  force-push, production-data changes, real API-key access, Tauri/network permission
+  expansion, important deletion, or modification of user-owned untracked files.
+- A no-implementation decision at the Contract Barrier is explicitly valid when the audit
+  finds no safe, verifiable, worthwhile gap.
 
 ## Observed Git Reality
 
 - Repository: `C:\Users\tutic\IdeaProjects\MMGH`
-- Expected EXP-001 final HEAD from the latest instruction:
-  `23ae0246c0fee309a728eb6c1c1dbaba8f50435d`
-- Actual branch before EXP-002 creation: `experiment/looppilot-mmgh-exp-001`
-- Actual HEAD: `23ae0246c0fee309a728eb6c1c1dbaba8f50435d`
-- Checkpoint delivery boundary: `64148b0d9eab0249ae7260c4ed109fa27bf4b8f7`
-- Ancestry: observed; `64148b0` is an ancestor of actual HEAD.
-- Local remote-tracking ref: `origin/experiment/looppilot-mmgh-exp-001` at actual HEAD;
+- Expected EXP-002 boundary: `afa5540f385b06bd9ebf7c6cd6e7188915d05e96`
+- Actual branch before EXP-003 creation: `experiment/looppilot-mmgh-exp-002`
+- Actual HEAD: `afa5540f385b06bd9ebf7c6cd6e7188915d05e96`
+- Remote freshness: observed. `git fetch origin experiment/looppilot-mmgh-exp-002`
+  succeeded on 2026-07-19 after one TLS-handshake failure.
+- Remote-tracking ref: `origin/experiment/looppilot-mmgh-exp-002` at the actual HEAD;
   observed ahead/behind count `0 0`.
-- Remote freshness: unverified. The authorized fetch did not execute because host approval
-  infrastructure was unavailable; no network result is claimed.
 - Tracked working tree: clean; `git diff --check` exited 0.
-- User-owned untracked files: `.impeccable/live/config.json` and `PRODUCT.md`; both exist and
-  remain excluded. Their byte-for-byte continuity is unverified because EXP-001 recorded no
-  prior hashes.
+- User-owned untracked files: `.impeccable/live/config.json` and `PRODUCT.md`; both exist,
+  remain unstaged, and are excluded. Their content was not copied into experiment records.
+- Unknown changes or unpushed commits after EXP-002: none observed.
 
-## Authoritative Sources and Referenced Artifacts
+## Loaded Recovery Sources
 
-- Project status: `.looppilot/PROJECT.md` (`experiment-complete`).
-- Loop status: `.looppilot/LOOP-MAP.md`; `LOOP-001` is `closed`, later Loops are candidates.
-- Scope and acceptance: `.looppilot/loops/LOOP-001/LOOP-CONTRACT.md` and
-  `LOOP-CLOSURE.md`.
-- Task/Finding status: the current `TASK-LEDGER.md` and `FINDING-LEDGER.md`; no open Task,
-  Blocker, Major, or other Finding remains.
-- Experiment interpretation: `docs/experiments/looppilot-exp-001/RESULTS.md` and
-  `EVALUATION-SCORECARD.md`.
-- Recovery authority: `.looppilot/CHECKPOINT.md`; the compaction manifest owns routing only.
+- Latest EXP-003 user instruction.
+- `.looppilot/RESUME-VALIDATION.md` (prior EXP-002 record, now replaced by this record).
+- `.looppilot/CHECKPOINT.md` and `.looppilot/CONTEXT-COMPACTION.md`.
+- `.looppilot/PROJECT.md` and `.looppilot/LOOP-MAP.md`.
+- `.looppilot/loops/LOOP-001/LOOP-CONTRACT.md`, `TASK-LEDGER.md`,
+  `FINDING-LEDGER.md`, and `LOOP-CLOSURE.md`.
+- `docs/experiments/looppilot-exp-002/RESULTS.md` and `MODE-SELECTION.md`.
+- `.looppilot/STATE.md` and `.looppilot/HANDOFF.md` do not exist in MMGH at this boundary.
 
-## Skills and Capabilities
+## Protocol Source and Capabilities
 
-- No host-native LoopPilot Skill was exposed in the current Skill catalog.
-- Read-only fallback used: `C:\Users\tutic\IdeaProjects\LoopPilot` at frozen baseline
+- No host-native LoopPilot Skill appears in the current Skill catalog.
+- Read-only fallback: `C:\Users\tutic\IdeaProjects\LoopPilot` at verified frozen HEAD
   `c9e8b3ec71936f7f3b6ab21a2fc50d15f80f74ee`.
-- Observed local capabilities: PowerShell, Git, repository read/write, and host-native Plan.
-  Node/npm and Rust/cargo availability require the fresh EXP-002 baseline checks.
-- Reviewer independence is not assumed; it must be observed or disclosed during Review.
+- Loaded protocol sources are the supplied `AGENTS.md`, `SKILL.md`, and only the Full Loop,
+  Ledger, review/rework, recovery, and security/data rules needed by this experiment.
+- Observed host capabilities: PowerShell, Git, repository read/write, native Plan,
+  independent sub-agent contexts, and frontend/Rust test runners subject to baseline checks.
+- Commit and push authority applies only to the EXP-003 experiment branch.
 
-## Conflicts, Corrections, and Invalidated Claims
+## Conflicts and Corrections
 
-- Corrected: the Checkpoint records `64148b0` as the pushed delivery boundary, while actual
-  HEAD is the expected documentation-only descendant `23ae024`; the Checkpoint explicitly
-  required this resolution, and ancestry plus the closing-only file delta were observed.
-- Corrected: the old Exact Resume Point requested a decision; the latest instruction now
-  supplies that decision and authorizes the bounded EXP-002 experiment.
-- Corrected: local remote-tracking parity is observed, but current remote parity is not
-  claimed without a successful fetch.
-- Invalidated: the historical statement that cross-session recovery had not been exercised.
-  This session exercised persisted recovery for the bounded EXP-001 to EXP-002 decision.
-- No Scope, Finding severity, risk acceptance, or permission was changed by validation.
+- No conflict exists between expected and actual EXP-002 HEAD, branch ancestry, local
+  tracking state, or user-owned file exclusions.
+- The first remote fetch attempt failed with a TLS handshake error; a bounded retry with
+  explicit network authority succeeded. Remote freshness is therefore observed, not inferred.
+- The persisted Checkpoint names an old EXP-001 decision point. The latest instruction and
+  EXP-002 result supersede that pending decision without reopening LOOP-001.
+- The existing Loop Map reserves `LOOP-004` for Storage/Tauri Contract and Release Evidence;
+  EXP-003 must use the next non-conflicting real Loop ID if implementation is approved.
+- No Scope, Finding severity, risk acceptance, or permission was expanded by validation.
 
-## Resume Point Validity
+## Resume Decision and Exact Next Action
 
-- The Checkpoint identified a stable Git boundary, authoritative files, exclusions,
-  permissions, one exact decision point, and evidence gaps. It was actionable.
-- The latest instruction answered that decision without requiring complete EXP-001 history.
-- Resume is valid for creating EXP-002 from actual HEAD and then running a fresh baseline,
-  focused Runtime/Lifecycle audit, and pre-implementation Mode Selection Gate.
-- Stop if branch creation would overwrite existing work, baseline fails without attribution,
-  or audit shows the selected boundary requires a hard Full Loop trigger.
+Recovery is `validated`. Create `experiment/looppilot-mmgh-exp-003` from the actual
+EXP-002 HEAD, run the complete fresh pre-change baseline, and then produce an evidence-based
+Provider Security, Web/Tauri Storage Adapter, and SQLite Migration audit. Do not modify
+product code until the Full Loop Selection Gate identifies a real, safe gap and the
+Contract Barrier passes. Stop before implementation on unexplained baseline failure,
+user-file overlap, unauthorized product change, or absence of a justified candidate.

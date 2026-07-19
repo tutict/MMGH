@@ -1,0 +1,27 @@
+# Task Contract TASK-004
+
+- `task_id`: TASK-004
+- `parent_goal`: MMGH-REFACTOR-EXP-003
+- `status`: proposed
+- `previous_status`: none
+- `status_changed_by`: Supervisor
+- `assigned_role`: Implementation Worker
+- `assigned_to`: one serial cross-layer implementation context after TASK-002/003 review readiness
+- `objective`: implement only the approved default-host and trailing-dot parity fix.
+- `scope.allowed`: `src/security/provider.ts`, Rust settings policy, focused tests, no other runtime surface.
+- `scope.forbidden`: keyring, storage, SQL/schema, DTO/commands, redirects, timeouts, capabilities, user files.
+- `deliverables`: implementation Delivery with focused and regression checks.
+- `success_criteria`: parity cases pass; existing security/data tests remain green; no scope drift.
+- `required_evidence`: diff, focused TS/Rust tests, lint/typecheck as applicable.
+- `dependencies`: TASK-002, TASK-003, Compatibility/Security characterization review.
+- `research_inputs`: none
+- `skill_assignment`: optional Rust/frontend testing; repository fallback.
+- `skill_selection`: no unverified skill selected.
+- `checklist_item`: none
+- `authority`: read=true, modify=true, delete=false, commit=false, push=false, release=false, deploy=false, external_communication=false
+- `reviewer`: Standards Reviewer plus Security/Compatibility
+- `integration_owner`: Codex primary agent
+- `revision_count`: 0
+- `revision_budget`: 2
+- `created`: 2026-07-19
+- `updated`: 2026-07-19

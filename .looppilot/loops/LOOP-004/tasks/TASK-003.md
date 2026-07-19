@@ -1,0 +1,27 @@
+# Task Contract TASK-003
+
+- `task_id`: TASK-003
+- `parent_goal`: MMGH-REFACTOR-EXP-003
+- `status`: assigned
+- `previous_status`: proposed
+- `status_changed_by`: Supervisor
+- `assigned_role`: Rust Contract Worker
+- `assigned_to`: independent Rust context if available; otherwise disclosed Supervisor fallback
+- `objective`: add Rust characterization tests proving strict default and host normalization behavior.
+- `scope.allowed`: focused test region in `src-tauri/src/db.rs`; inspect `src-tauri/src/db/settings.rs`.
+- `scope.forbidden`: TypeScript, production policy edits, SQL, Ledgers, commits, pushes, user files.
+- `deliverables`: scoped Rust test Delivery with command/output and blocker disclosure.
+- `success_criteria`: tests isolate current Rust decisions and expected parity target without real keyring/network.
+- `required_evidence`: focused cargo test, diff, actual output, temporary in-memory inputs only.
+- `dependencies`: TASK-001
+- `research_inputs`: none
+- `skill_assignment`: Rust testing capability optional; fallback cargo test.
+- `skill_selection`: host-native skill not verified; no invented skill selected.
+- `checklist_item`: none
+- `authority`: read=true, modify=true, delete=false, commit=false, push=false, release=false, deploy=false, external_communication=false
+- `reviewer`: Security Reviewer
+- `integration_owner`: Codex primary agent
+- `revision_count`: 0
+- `revision_budget`: 2
+- `created`: 2026-07-19
+- `updated`: 2026-07-19

@@ -1,0 +1,27 @@
+# Task Contract TASK-001
+
+- `task_id`: TASK-001
+- `parent_goal`: MMGH-REFACTOR-EXP-003
+- `status`: integrated
+- `previous_status`: proposed
+- `status_changed_by`: Integrator
+- `assigned_role`: Supervisor
+- `assigned_to`: Codex primary agent
+- `objective`: audit candidates and approve a bounded Provider Security Full Loop Contract.
+- `scope.allowed`: supplied EXP-003 instruction; MMGH audit docs; LOOP-004 Contract/Ledgers.
+- `scope.forbidden`: product implementation; user files; master/PR/release/deploy/destructive Git.
+- `deliverables`: Resume Validation, Risk Audit, Selection, Project/Map, Contract/Ledgers.
+- `success_criteria`: baseline passes; two real parity gaps observed; Contract Barrier recorded.
+- `required_evidence`: Git, source, tests, and committed artifact diff.
+- `dependencies`: none
+- `research_inputs`: none; current repository evidence is sufficient.
+- `skill_assignment`: LoopPilot read-only fallback; no unverified host Skill selected.
+- `skill_selection`: LoopPilot static baseline `c9e8b3e`; fallback observed available.
+- `checklist_item`: none
+- `authority`: read=true, modify=true, delete=false, commit=true, push=true, release=false, deploy=false, external_communication=false
+- `reviewer`: Supervisor self-review at Contract Barrier; later independent reviewers required.
+- `integration_owner`: Codex primary agent
+- `revision_count`: 0
+- `revision_budget`: 2
+- `created`: 2026-07-19
+- `updated`: 2026-07-19
