@@ -100,15 +100,15 @@
     change.
 49. **Commits (observed):** `ba5dc32` baseline artifacts; `bd3ab1c` parity fix and task evidence;
     `86427b8` integration boundary; `b13343c` final review, Closure, and experiment reports;
-    the final Checkpoint projection commit is reported by the final Git report.
-50. **Push result:** recorded as observed in the final Git report after authorized EXP-003 push;
-    no master/merge/PR/tag/release/deploy action was performed.
-51. **Final HEAD:** recorded as observed in the final Git report after the final documentation
-    projection commit.
-52. **Local/remote sync:** recorded as observed by `git rev-list --left-right --count` after
-    push; expected `0 0`, with no inference used.
-53. **Final `git status --short`:** user files remain untracked and excluded; exact output is
-    recorded after the final push.
+    `7017b33` final Checkpoint projection before this post-push report correction.
+50. **Push result (observed):** `git push -u origin experiment/looppilot-mmgh-exp-003`
+    succeeded; no master/merge/PR/tag/release/deploy action was performed.
+51. **HEAD at push boundary (observed):** `7017b33e50ad93aa9e37c4386d1973c4a7fe6183`.
+    A later documentation-only projection commit cannot truthfully pre-record its own SHA.
+52. **Local/remote sync (observed):** `git rev-list --left-right --count` returned `0 0`.
+53. **Final status at push boundary (observed):** `?? .impeccable/live/config.json` and
+    `?? PRODUCT.md`; these two user files remain untracked and excluded. The exact status after
+    this documentation-only projection is reported in the final handoff.
 54. **Unverified content:** whole-MMGH refactor, long-term security, real attacks, penetration
     testing, real keys/paid Provider, production DB/migration, installer installation,
     macOS/Linux, release/deployment, exact token cost, same-task A/B, automatic mode/Worker
