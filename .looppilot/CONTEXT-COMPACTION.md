@@ -5,7 +5,7 @@
 - Manifest ID: `MMGH-EXP-004-COMPACTION-001`
 - Checkpoint: `CHECKPOINT-004`
 - Project/Loop: `MMGH-REFACTOR-EXP-004` / `LOOP-005`
-- Status: closed-awaiting-push-verification
+- Status: closed-push-verified
 
 ## Must Load
 
@@ -40,7 +40,7 @@
 - EXP-004 starts at verified EXP-003 `90177da` with only excluded user files untracked.
 - Baseline core checks passed; initial WiX bundling failed, while final desktop rerun produced exe/two MSI/NSIS artifacts without installation or staging.
 - Selected RED was a fallible cache store after SQLite commit. The bounded recovery passes full validation and four independent Reviews; zero Findings/Rework.
-- Exact resume point is final EXP-004 commit/push/local-remote verification. Settings/keyring and other parity candidates remain excluded.
+- First EXP-004 push at `c5a2fd7` is verified local/remote `0 0`; the evidence-only commit requires one final push/sync check. Settings/keyring and other parity candidates remain excluded.
 - Token usage is unavailable; no estimate is made.
 - Real disk-full, production DB/keyring/provider, cross-process crash recovery, installer install, macOS/Linux, and user acceptance remain unverified.
 

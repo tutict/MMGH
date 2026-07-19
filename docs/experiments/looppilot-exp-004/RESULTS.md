@@ -56,10 +56,10 @@ EXP-004 completed `LOOP-005` as `accepted-for-experiment` under Full Loop. The b
 48. Desktop build: debug exe, two MSI locales, and NSIS bundle produced; no install/run claim.
 49. Temporary/secret scan: temporary SQLite only, no real DB/credentials; scoped credential-like scan had no matches; generated artifacts unstaged.
 50. Commit list: `62a7857 docs: establish MMGH EXP-004 storage mode decision`; `5a780a3 fix: preserve committed snapshot after cache poison`; `70aa7a4 test: report MMGH LoopPilot EXP-004`.
-51. Push result: pending at this report boundary; only EXP-004 push is authorized.
-52. Final HEAD: recorded in the post-push handoff because a commit cannot pre-record its own SHA.
-53. Local/remote sync: recorded after authorized push; no master/merge/PR/tag/release/deploy/force push.
-54. Final status: expected only the two preserved user files untracked; exact final status is reported after push.
+51. Push result: first authorized `git push -u origin experiment/looppilot-mmgh-exp-004` succeeded at `c5a2fd7b1c8593891aa1d62584ce954235dfa819`.
+52. Final HEAD: the evidence-only commit cannot pre-record its own SHA; the exact final HEAD is reported in the handoff after the second push succeeds.
+53. Local/remote sync: first push boundary returned `0 0`; the evidence-only commit is pushed and rechecked before handoff. No master/merge/PR/tag/release/deploy/force push.
+54. Final status at first push boundary: only `?? .impeccable/live/config.json` and `?? PRODUCT.md`; both remain excluded.
 55. Unverified content: whole MMGH refactor, real user DB, production transaction scale, real data size, long-term consistency, multi-process writes, crash recovery, real installer execution, macOS/Linux, release, deployment, user acceptance, exact token cost, strict A/B, automatic mode-selection accuracy, and general host compatibility.
 
 ## EXP-001 / EXP-002 / EXP-003 / EXP-004 Comparison
@@ -73,9 +73,24 @@ EXP-004 completed `LOOP-005` as `accepted-for-experiment` under Full Loop. The b
 
 Observed/inferred answers: the Storage Adapter risk did need Full Loop for the selected cluster; Data Review did not find a missed implementation defect but materially validated partial-success boundaries; Integration found no new TS/Rust inconsistency because the change was Rust-internal and test-only on Web; mutation/refresh distinction had direct value by separating durable commit from cache publication; multiple Workers supplied useful independent mapping but reliability was weak under 429s; audit, Contract, Integration, and Reviews were used, while Security and Rework artifacts were not triggered; Full Loop cost was material but more reasonable than EXP-003 because the product change was narrower; the mode heuristic is supported for this case but not enough to revise formal rules; no SQLite Migration experiment is recommended yet because no migration gap was selected.
 
+## Experiment Evidence Matrix
+
+| Measure | EXP-001 | EXP-002 | EXP-003 | EXP-004 |
+|---|---|---|---|---|
+| Product files/lines | historical report | historical report | 4 files; historical report | 2 files; 73+/16- |
+| Protocol files/lines | 32 / 2,375 historical | 6 / 552 historical | 24 / 1,274 before final historical | 28 / 989+/291- at first push |
+| Workers | historical Full Loop | 0 | multiple; one retry/final 429 | 2 audit attempts with Supervisor fallback; 2 independent review contexts |
+| Reviewer axes | Spec, Standards | none independent | Spec, Standards, Security, Compatibility | Spec, Standards, Data, Compatibility |
+| Findings/Rework | 1 Major / yes | 1 Minor / no formal | 1 recovery Major / yes; 0 product | 0 / none |
+| Test delta | historical | historical | 84/3 frontend; Rust 42+50/2 | +1 Web assertion, +1 Rust test; 84/3 frontend; Rust 43+51/2 |
+| Full validation time | unavailable | unavailable | unavailable | main chain 23.7s; desktop 38.6s |
+| Recovery | formal Full Loop | bounded Lightweight | fresh-context correction | validated-with-corrections; no review Finding |
+| Human intervention | historical | historical | continuation only | continuation only |
+| Token availability | unavailable | unavailable | unavailable | unavailable |
+
 ## Cost, Proportionality, and Next Work
 
-- Integrated-boundary diff: 22 tracked files and 711 added/305 deleted lines including protocol/audit artifacts; final report/review files are additional documentation. Product diff is 73 additions/16 deletions.
+- First-push diff: 30 tracked files total, including 28 protocol/report files with 989 added/291 deleted lines. Product diff is 73 additions/16 deletions across two files.
 - Main validation wall times observed: `npm.cmd test` 23.7s; final desktop debug build 38.6s. Token usage: unavailable.
 - Full Loop is recommended for future storage/security/schema/cross-runtime or commit-plus-error work; Lightweight remains appropriate for a single-runtime low-risk change.
 - Do not enter SQLite Migration solely from this experiment. A separate authorized audit should first identify a real version/transaction defect.
@@ -83,4 +98,4 @@ Observed/inferred answers: the Storage Adapter risk did need Full Loop for the s
 
 ## Commit and Push Boundary
 
-The review/report/closure commit and authorized EXP-004 push are recorded in the final handoff after they succeed. No master, merge, PR, tag, release, deployment, or force push is performed.
+The first authorized EXP-004 push succeeded at `c5a2fd7` and verified `0 0`. This evidence-only projection is pushed and rechecked before final handoff. No master, merge, PR, tag, release, deployment, or force push is performed.

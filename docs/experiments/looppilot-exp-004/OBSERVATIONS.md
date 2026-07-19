@@ -29,5 +29,6 @@
 - Final `npm.cmd run build:desktop:debug`: exit 0; debug exe, two MSI locales, and NSIS bundle produced. Wall time observed: 38.6 seconds. No installer was run.
 - Expected stderr remained limited to mocked model-network fallback, corrupt preview JSON backup, Rust dead-code/canonical-path warnings, and the injected poison diagnostic.
 - `git diff --check` and `cargo fmt --check` passed. Scoped secret-like literal scan found no matches; generated `dist`/`target`/installer outputs were not staged.
+- First authorized push at `c5a2fd7b1c8593891aa1d62584ce954235dfa819` succeeded and local/remote ahead/behind returned `0 0`. No master, merge, PR, tag, release, deployment, or force push occurred.
 - Unmeasured: token usage, strict same-task A/B, total protocol time, long-term consistency benefit, general host compatibility, and automatic mode-selection accuracy.
 - Unverified: real databases/credentials/provider/network, production scale, multi-process writes, crash recovery, cross-tab writes, installer execution, macOS/Linux, release/deployment, and user acceptance.

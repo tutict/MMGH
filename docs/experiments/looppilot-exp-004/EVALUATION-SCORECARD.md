@@ -28,7 +28,7 @@ Scale: 0 absent/harmful, 1 weak, 2 adequate/partial, 3 strong observed support. 
 | 22 | Compatibility Review | 3 | observed: independent PASS and rerun of Web/Rust focused tests, no findings |
 | 23 | Finding specificity | N/A | not applicable: reviewers raised no Finding; the Contract RED was handled as the selected target |
 | 24 | Rework effectiveness | N/A | not applicable: no review Finding required Rework |
-| 25 | Protocol cost | 2 | observed: material protocol surface and 22 tracked files through the integrated boundary; proportionate but not free |
+| 25 | Protocol cost | 2 | observed: 28 protocol/report files and 989 added/291 deleted protocol lines through the first push boundary; proportionate but not free |
 | 26 | Coordination cost | 2 | observed: two failed Worker contexts and two review contexts added coordination, while preserving independent review |
 | 27 | Human intervention | 3 | observed: no scope-changing intervention; user supplied continuation nudges only |
 | 28 | Closure honesty | 3 | observed: Closure separates experiment acceptance from production, crash, platform, installer, and user-acceptance claims |
