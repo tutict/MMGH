@@ -40,7 +40,8 @@ pub(super) fn store_runtime_api_key(value: String) -> Result<()> {
 
 #[cfg(not(test))]
 fn load_api_key_from_account(account: &str) -> Result<Option<String>> {
-  let entry = keyring::Entry::new(API_KEYRING_SERVICE, account);
+  let entry =
+    keyring::Entry::new(API_KEYRING_SERVICE, account).context("failed to open keyring entry")?;
   match entry.get_password() {
     Ok(api_key) if api_key.trim().is_empty() => Ok(None),
     Ok(api_key) => Ok(Some(api_key)),
@@ -74,6 +75,7 @@ fn store_api_key_in_account(account: &str, value: &str) -> Result<()> {
   }
 
   keyring::Entry::new(API_KEYRING_SERVICE, account)
+    .context("failed to open keyring entry")?
     .set_password(api_key)
     .context("failed to store api key in system keyring")
 }
@@ -94,7 +96,10 @@ fn store_api_key_in_account(account: &str, value: &str) -> Result<()> {
 
 #[cfg(not(test))]
 fn delete_api_key_from_account(account: &str) -> Result<()> {
-  match keyring::Entry::new(API_KEYRING_SERVICE, account).delete_password() {
+  match keyring::Entry::new(API_KEYRING_SERVICE, account)
+    .context("failed to open keyring entry")?
+    .delete_credential()
+  {
     Ok(_) | Err(keyring::Error::NoEntry) => Ok(()),
     Err(error) => Err(error).context("failed to delete api key from system keyring"),
   }

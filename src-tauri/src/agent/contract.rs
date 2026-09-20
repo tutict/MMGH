@@ -1,16 +1,12 @@
-use anyhow::{anyhow, Context, Result};
-use serde::{Deserialize, Serialize};
+use anyhow::Result;
 
-use crate::contracts::{AgentSettingsInput, SkillInput};
 use crate::db;
 
-mod provider;
+use super::text::shorten;
 
-use provider::{CompletionMessage, CompletionPurpose, ProviderConfig};
-
-const MAX_AGENT_PROMPT_CHARS: usize = 20_000;
+pub(super) const MAX_AGENT_PROMPT_CHARS: usize = 20_000;
 const MAX_AGENT_REPLY_CHARS: usize = 12_000;
-const MAX_AGENT_HISTORY_MESSAGES: usize = 18;
+pub(super) const MAX_AGENT_HISTORY_MESSAGES: usize = 18;
 const MAX_AGENT_HISTORY_MESSAGE_CHARS: usize = 2_000;
 const MAX_SYSTEM_PROMPT_CHARS: usize = 4_000;
 const MAX_CONTEXT_NOTES_TO_SCAN: usize = 12;
@@ -20,40 +16,53 @@ const MAX_STAGED_OPEN_REMINDERS: usize = 4;
 const MAX_MOUNTED_SKILLS_IN_PROMPT: usize = 8;
 
 #[derive(Debug, Clone)]
-struct AgentRuntimeContext {
-  session_title: String,
-  session_status: String,
-  message_count: usize,
-  mounted_skill_names: Vec<String>,
-  relevant_notes: Vec<ContextNote>,
-  open_reminders: Vec<ContextReminder>,
-  capability_titles: Vec<String>,
+pub(super) struct AgentRuntimeContext {
+  pub session_title: String,
+  pub session_status: String,
+  pub message_count: usize,
+  pub mounted_skill_names: Vec<String>,
+  pub relevant_notes: Vec<ContextNote>,
+  pub open_reminders: Vec<ContextReminder>,
+  pub capability_titles: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
-struct ContextNote {
-  title: String,
-  excerpt: String,
-  tags: Vec<String>,
+pub(super) struct ContextNote {
+  pub title: String,
+  pub excerpt: String,
+  pub tags: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
-struct ContextReminder {
-  title: String,
-  severity: String,
-  due_label: String,
-  linked_note_title: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-struct AgentRuntimeContract {
-  prompt: String,
-  context: AgentRuntimeContext,
+pub(super) struct ContextReminder {
+  pub title: String,
+  pub severity: String,
+  pub due_label: String,
+  pub linked_note_title: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct AgentContractError {
-  reason: String,
+pub(super) struct AgentHistoryMessage {
+  pub role: String,
+  pub content: String,
+}
+
+#[derive(Debug, Clone)]
+pub(super) struct AgentPromptBundle {
+  pub preamble: String,
+  pub history: Vec<AgentHistoryMessage>,
+  pub prompt: String,
+}
+
+#[derive(Debug, Clone)]
+pub(super) struct AgentRuntimeContract {
+  pub prompt: String,
+  pub context: AgentRuntimeContext,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) struct AgentContractError {
+  pub reason: String,
 }
 
 impl std::fmt::Display for AgentContractError {
@@ -68,73 +77,17 @@ impl std::fmt::Display for AgentContractError {
 
 impl std::error::Error for AgentContractError {}
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GeneratedSkillDraft {
-  name: String,
-  description: String,
-  trigger_hint: String,
-  instructions: String,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  warning: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct GeneratedSkillDraftPayload {
-  name: Option<String>,
-  description: Option<String>,
-  trigger_hint: Option<String>,
-  instructions: Option<String>,
-}
-
-pub async fn forge_skill(
-  prompt: String,
-  lang: Option<String>,
-  existing_skill: Option<SkillInput>,
-  settings_override: Option<AgentSettingsInput>,
-) -> Result<GeneratedSkillDraft> {
-  let trimmed_prompt = normalize_agent_prompt(prompt)?;
-
-  let resolved_lang = normalize_lang(lang.as_deref());
-  let settings = db::resolve_settings_override(settings_override)?;
-
-  if settings.is_ready() {
-    match request_skill_draft_from_model(
-      &settings,
-      &trimmed_prompt,
-      resolved_lang,
-      existing_skill.as_ref(),
-    )
-    .await
-    {
-      Ok(skill) => Ok(skill),
-      Err(error) => Ok(with_skill_generation_warning(
-        build_local_skill_draft(existing_skill.as_ref(), &trimmed_prompt, resolved_lang),
-        skill_generation_fallback_warning_message(resolved_lang, &error),
-      )),
-    }
-  } else {
-    Ok(build_local_skill_draft(
-      existing_skill.as_ref(),
-      &trimmed_prompt,
-      resolved_lang,
-    ))
-  }
-}
-
 impl AgentRuntimeContract {
-  fn for_session(session_id: i64, prompt: String) -> Result<Self> {
-    let normalized_prompt = normalize_agent_prompt(prompt)?;
+  pub(super) fn for_session(session_id: i64, prompt: String) -> Result<Self> {
+    let normalized_prompt = super::text::normalize_agent_prompt(prompt)?;
     let context = build_runtime_context(session_id, &normalized_prompt)?;
-
     Ok(Self {
       prompt: normalized_prompt,
       context,
     })
   }
 
-  fn runtime_context_detail(&self) -> String {
+  pub(super) fn runtime_context_detail(&self) -> String {
     format!(
       "{} Contract enforced: input limit {} chars, reply limit {} chars, history limit {} messages, {} staged notes, {} open reminders, and low-permission mounted skills only.",
       render_runtime_context_activity(&self.context),
@@ -146,17 +99,16 @@ impl AgentRuntimeContract {
     )
   }
 
-  fn plan(&self) -> String {
+  pub(super) fn plan(&self) -> String {
     draft_plan(&self.prompt, &self.context)
   }
 
-  fn compose_messages(
+  pub(super) fn compose_prompt(
     &self,
     settings: &db::AgentSettings,
     history: Vec<db::ChatMessage>,
     enabled_skills: &[db::SkillDetail],
-  ) -> Vec<CompletionMessage> {
-    let mut messages = Vec::new();
+  ) -> AgentPromptBundle {
     let skill_block = render_skill_block(enabled_skills);
     let runtime_block = render_runtime_context_block(&self.context);
     let contract_block = render_contract_boundary_block();
@@ -176,35 +128,24 @@ impl AgentRuntimeContract {
     }
     system_sections.push(contract_block);
 
-    let system_prompt = system_sections.join("\n\n");
-
-    if !system_prompt.trim().is_empty() {
-      messages.push(CompletionMessage {
-        role: "system".to_string(),
-        content: system_prompt,
-      });
-    }
-
-    for item in history.into_iter().take(MAX_AGENT_HISTORY_MESSAGES) {
-      if !matches!(item.role.as_str(), "user" | "assistant") {
-        continue;
-      }
-
-      messages.push(CompletionMessage {
+    let history = history
+      .into_iter()
+      .filter(|item| matches!(item.role.as_str(), "user" | "assistant"))
+      .take(MAX_AGENT_HISTORY_MESSAGES)
+      .map(|item| AgentHistoryMessage {
         role: item.role,
         content: shorten(&item.content, MAX_AGENT_HISTORY_MESSAGE_CHARS),
-      });
+      })
+      .collect();
+
+    AgentPromptBundle {
+      preamble: system_sections.join("\n\n"),
+      history,
+      prompt: self.prompt.clone(),
     }
-
-    messages.push(CompletionMessage {
-      role: "user".to_string(),
-      content: self.prompt.clone(),
-    });
-
-    messages
   }
 
-  fn validate_reply(&self, reply: &str) -> Result<String> {
+  pub(super) fn validate_reply(&self, reply: &str) -> Result<String> {
     let trimmed = reply.trim();
     if trimmed.is_empty() {
       return Err(
@@ -235,145 +176,8 @@ impl AgentRuntimeContract {
   }
 }
 
-pub async fn run_agent(session_id: i64, prompt: String) -> Result<db::WorkspaceSnapshot> {
-  let contract = AgentRuntimeContract::for_session(session_id, prompt)?;
-  let runtime_context_detail = contract.runtime_context_detail();
-  let plan = contract.plan();
-  let settings = db::load_settings()?;
-
-  let (model_title, model_detail, model_status, reply) = if settings.is_ready() {
-    match request_completion(&settings, session_id, &contract).await {
-      Ok(content) => (
-        "Provider call finished".to_string(),
-        format!(
-          "{} / {} returned {} chars.",
-          settings.provider_name,
-          settings.model,
-          content.chars().count()
-        ),
-        "completed".to_string(),
-        content,
-      ),
-      Err(error) => (
-        model_failure_title(&error).to_string(),
-        shorten(&format!("{:#}", error), 200),
-        "failed".to_string(),
-        local_fallback_reply(
-          &contract.prompt,
-          Some(&error.to_string()),
-          &settings,
-          &contract.context,
-        ),
-      ),
-    }
-  } else {
-    (
-      "Provider not configured".to_string(),
-      "Missing baseUrl, model or apiKey. Falling back to local preview mode.".to_string(),
-      "warning".to_string(),
-      local_fallback_reply(&contract.prompt, None, &settings, &contract.context),
-    )
-  };
-
-  db::persist_agent_run(db::AgentRunPersistence {
-    session_id,
-    prompt: &contract.prompt,
-    runtime_context_detail: &runtime_context_detail,
-    plan: &plan,
-    model_title: &model_title,
-    model_detail: &model_detail,
-    model_status: &model_status,
-    reply: &reply,
-  })
-}
-
-async fn request_completion(
-  settings: &db::AgentSettings,
-  session_id: i64,
-  contract: &AgentRuntimeContract,
-) -> Result<String> {
-  let history = db::recent_messages(session_id, MAX_AGENT_HISTORY_MESSAGES)?;
-  let enabled_skills = db::session_enabled_skills(session_id)?;
-
-  let content = provider::complete(
-    ProviderConfig {
-      base_url: &settings.base_url,
-      api_key: &settings.api_key,
-      model: &settings.model,
-    },
-    contract.compose_messages(settings, history, &enabled_skills),
-    0.4,
-    CompletionPurpose::AgentReply,
-  )
-  .await?;
-
-  contract.validate_reply(&content)
-}
-async fn request_skill_draft_from_model(
-  settings: &db::AgentSettings,
-  prompt: &str,
-  lang: &str,
-  existing_skill: Option<&SkillInput>,
-) -> Result<GeneratedSkillDraft> {
-  let system_prompt = if lang == "zh-CN" {
-    [
-      "You are a skill designer. Output a reusable low-permission skill based on the user request.",
-      "Return JSON only. Do not output markdown.",
-      "JSON fields must be name, description, triggerHint, instructions.",
-      "name must be under 40 characters.",
-      "description should summarize the skill value in 1-2 sentences.",
-      "triggerHint should describe the requests where this skill should activate.",
-      "instructions should be reusable, explicit, and actionable.",
-    ]
-    .join("\n")
-  } else {
-    [
-      "You are designing a reusable low-permission skill for an agent workspace.",
-      "Return JSON only. No markdown.",
-      "The JSON fields must be: name, description, triggerHint, instructions.",
-      "Keep name under 40 characters.",
-      "Description should explain the value of the skill in 1-2 sentences.",
-      "triggerHint should explain when this skill should activate.",
-      "instructions should be a reusable instruction block with concrete operational guidance.",
-    ]
-    .join("\n")
-  };
-
-  let user_prompt = if let Some(skill) = existing_skill {
-    format!(
-      "User request: {}\nExisting skill for rewrite reference: {}",
-      prompt,
-      serde_json::to_string(skill)?
-    )
-  } else {
-    format!("User request: {}\nThis is for a brand new skill.", prompt)
-  };
-
-  let content = provider::complete(
-    ProviderConfig {
-      base_url: &settings.base_url,
-      api_key: &settings.api_key,
-      model: &settings.model,
-    },
-    vec![
-      CompletionMessage {
-        role: "system".to_string(),
-        content: system_prompt,
-      },
-      CompletionMessage {
-        role: "user".to_string(),
-        content: user_prompt,
-      },
-    ],
-    0.4,
-    CompletionPurpose::SkillDraft,
-  )
-  .await?;
-  let content = content.trim();
-  if content.is_empty() {
-    return Err(anyhow!("provider returned an empty skill draft"));
-  }
-  parse_generated_skill(content, existing_skill)
+pub(super) fn model_call_failure_title(error: &anyhow::Error) -> &'static str {
+  model_failure_title(error)
 }
 
 fn render_skill_block(skills: &[db::SkillDetail]) -> String {
@@ -635,215 +439,6 @@ fn detect_forbidden_reply_claim(reply: &str) -> Option<String> {
   None
 }
 
-fn parse_generated_skill(
-  content: &str,
-  existing_skill: Option<&SkillInput>,
-) -> Result<GeneratedSkillDraft> {
-  let trimmed = content.trim();
-  let candidate = if let Some(fenced) = trimmed
-    .strip_prefix("```json")
-    .and_then(|value| value.strip_suffix("```"))
-  {
-    fenced.trim()
-  } else if let Some(fenced) = trimmed
-    .strip_prefix("```")
-    .and_then(|value| value.strip_suffix("```"))
-  {
-    fenced.trim()
-  } else {
-    trimmed
-  };
-
-  let start = candidate.find('{').context("model did not return JSON")?;
-  let end = candidate.rfind('}').context("model did not return JSON")?;
-  let payload = &candidate[start..=end];
-  let parsed: GeneratedSkillDraftPayload =
-    serde_json::from_str(payload).context("failed to parse generated skill JSON")?;
-
-  Ok(sanitize_generated_skill(parsed, existing_skill, None))
-}
-
-fn build_local_skill_draft(
-  existing_skill: Option<&SkillInput>,
-  prompt: &str,
-  lang: &str,
-) -> GeneratedSkillDraft {
-  let title_seed = prompt
-    .split(|ch: char| ['\n', ',', '.', '!', '?', ';', ':'].contains(&ch))
-    .find(|part| !part.trim().is_empty())
-    .map(str::trim)
-    .map(|value| value.chars().take(28).collect::<String>());
-
-  let (fallback_name, description, trigger_hint, instructions) = if lang == "zh-CN" {
-    (
-      "\u{751f}\u{6210}\u{6280}\u{80fd}",
-      format!(
-        "\u{6839}\u{636e}\u{4ee5}\u{4e0b}\u{9700}\u{6c42}\u{751f}\u{6210}\u{7684}\u{672c}\u{5730}\u{8349}\u{7a3f}\u{ff1a}{}",
-        trim_for_template(prompt, 88)
-      ),
-      format!(
-        "\u{5f53}\u{4efb}\u{52a1}\u{6d89}\u{53ca}\u{4ee5}\u{4e0b}\u{5185}\u{5bb9}\u{65f6}\u{4f7f}\u{7528}\u{ff1a}{}",
-        trim_for_template(prompt, 72)
-      ),
-      format!(
-        "\u{5c06}\u{4ee5}\u{4e0b}\u{76ee}\u{6807}\u{89e3}\u{91ca}\u{6210}\u{4e00}\u{4e2a}\u{53ef}\u{590d}\u{7528}\u{7684}\u{4f4e}\u{6743}\u{9650}\u{6280}\u{80fd}\u{ff0c}\u{5e76}\u{636e}\u{6b64}\u{8c03}\u{6574}\u{4f60}\u{7684}\u{6267}\u{884c}\u{65b9}\u{5f0f}\u{ff1a}{}\n\n\u{4f18}\u{5148}\u{663e}\u{5f0f}\u{89c4}\u{5212}\u{ff0c}\u{6e05}\u{695a}\u{8bf4}\u{660e}\u{5047}\u{8bbe}\u{ff0c}\u{9664}\u{975e}\u{64cd}\u{4f5c}\u{8005}\u{660e}\u{786e}\u{8981}\u{6c42}\u{ff0c}\u{5426}\u{5219}\u{907f}\u{514d}\u{7834}\u{574f}\u{6027}\u{64cd}\u{4f5c}\u{3002}",
-        trim_for_template(prompt, 180)
-      ),
-    )
-  } else {
-    (
-      "Generated skill",
-      format!("Locally generated draft for: {}", trim_for_template(prompt, 88)),
-      format!("Use when the request is about: {}", trim_for_template(prompt, 72)),
-      format!(
-        "Interpret the following goal as a reusable low-permission skill and bias your execution accordingly: {}\n\nPrefer explicit planning, keep assumptions visible, and avoid destructive actions unless the operator clearly requests them.",
-        trim_for_template(prompt, 180)
-      ),
-    )
-  };
-
-  sanitize_generated_skill(
-    GeneratedSkillDraftPayload {
-      name: title_seed,
-      description: Some(description),
-      trigger_hint: Some(trigger_hint),
-      instructions: Some(instructions),
-    },
-    existing_skill,
-    Some(fallback_name),
-  )
-}
-
-fn sanitize_generated_skill(
-  skill: GeneratedSkillDraftPayload,
-  existing_skill: Option<&SkillInput>,
-  fallback_name: Option<&str>,
-) -> GeneratedSkillDraft {
-  GeneratedSkillDraft {
-    name: skill
-      .name
-      .as_deref()
-      .map(str::trim)
-      .filter(|value| !value.is_empty())
-      .map(|value| value.chars().take(64).collect::<String>())
-      .or_else(|| {
-        existing_skill
-          .map(|value| value.name.trim().to_string())
-          .filter(|value| !value.is_empty())
-      })
-      .or_else(|| fallback_name.map(str::to_string))
-      .unwrap_or_else(|| "Generated skill".to_string()),
-    description: skill
-      .description
-      .as_deref()
-      .map(str::trim)
-      .filter(|value| !value.is_empty())
-      .map(str::to_string)
-      .or_else(|| {
-        existing_skill
-          .map(|value| value.description.trim().to_string())
-          .filter(|value| !value.is_empty())
-      })
-      .unwrap_or_default(),
-    trigger_hint: skill
-      .trigger_hint
-      .as_deref()
-      .map(str::trim)
-      .filter(|value| !value.is_empty())
-      .map(str::to_string)
-      .or_else(|| {
-        existing_skill
-          .map(|value| value.trigger_hint.trim().to_string())
-          .filter(|value| !value.is_empty())
-      })
-      .unwrap_or_default(),
-    instructions: skill
-      .instructions
-      .as_deref()
-      .map(str::trim)
-      .filter(|value| !value.is_empty())
-      .map(str::to_string)
-      .or_else(|| {
-        existing_skill
-          .map(|value| value.instructions.trim().to_string())
-          .filter(|value| !value.is_empty())
-      })
-      .unwrap_or_default(),
-    warning: None,
-  }
-}
-
-fn with_skill_generation_warning(
-  mut draft: GeneratedSkillDraft,
-  warning: String,
-) -> GeneratedSkillDraft {
-  let trimmed = warning.trim();
-  if !trimmed.is_empty() {
-    draft.warning = Some(trimmed.to_string());
-  }
-  draft
-}
-
-/*
-fn skill_generation_fallback_warning(lang: &str, error: &anyhow::Error) -> String {
-  let detail = shorten(&format!("{:#}", error), 200);
-  if lang == "zh-CN" {
-    format!("模型技能生成失败，已退回到本地草稿构建：{}", detail)
-  } else {
-    format!(
-      "Model skill generation failed, so a local draft was created instead: {}",
-      detail
-    )
-  }
-}
-
-*/
-fn skill_generation_fallback_warning_message(lang: &str, error: &anyhow::Error) -> String {
-  let detail = shorten(&format!("{:#}", error), 200);
-  if lang == "zh-CN" {
-    format!(
-      "\u{6a21}\u{578b}\u{6280}\u{80fd}\u{751f}\u{6210}\u{5931}\u{8d25}\u{ff0c}\u{5df2}\u{9000}\u{56de}\u{5230}\u{672c}\u{5730}\u{8349}\u{7a3f}\u{6784}\u{5efa}\u{ff1a}{}",
-      detail
-    )
-  } else {
-    format!(
-      "Model skill generation failed, so a local draft was created instead: {}",
-      detail
-    )
-  }
-}
-
-fn normalize_lang(lang: Option<&str>) -> &str {
-  match lang.unwrap_or_default().to_lowercase() {
-    value if value.starts_with("zh") => "zh-CN",
-    value if value.starts_with("en") => "en-US",
-    _ => "en-US",
-  }
-}
-
-fn normalize_agent_prompt(prompt: String) -> Result<String> {
-  let trimmed = prompt.trim().to_string();
-  if trimmed.is_empty() {
-    return Err(anyhow!("prompt cannot be empty"));
-  }
-  if trimmed.chars().count() > MAX_AGENT_PROMPT_CHARS {
-    return Err(anyhow!(
-      "prompt is too long; maximum is {} characters",
-      MAX_AGENT_PROMPT_CHARS
-    ));
-  }
-  Ok(trimmed)
-}
-
-fn trim_for_template(value: &str, limit: usize) -> String {
-  let compact = value.split_whitespace().collect::<Vec<_>>().join(" ");
-  if compact.chars().count() <= limit {
-    compact
-  } else {
-    compact.chars().take(limit).collect::<String>() + "..."
-  }
-}
-
 fn build_runtime_context(session_id: i64, prompt: &str) -> Result<AgentRuntimeContext> {
   let session = db::agent_session_context(session_id)?;
   let notes = db::recent_note_context(MAX_CONTEXT_NOTES_TO_SCAN, MAX_CONTEXT_NOTE_SOURCE_CHARS)?;
@@ -1100,76 +695,6 @@ fn draft_plan(prompt: &str, context: &AgentRuntimeContext) -> String {
   )
 }
 
-fn local_fallback_reply(
-  prompt: &str,
-  failure_reason: Option<&str>,
-  settings: &db::AgentSettings,
-  context: &AgentRuntimeContext,
-) -> String {
-  let provider_state = match failure_reason {
-    Some(reason) => format!(
-      "Remote model call failed and the runtime switched to local preview mode. Reason: {}.",
-      shorten(reason, 120)
-    ),
-    None if settings.is_ready() => "The runtime is in local preview mode.".to_string(),
-    None => {
-      "No provider is configured yet, so the runtime is using local preview mode.".to_string()
-    }
-  };
-  let staged_notes = if context.relevant_notes.is_empty() {
-    "No relevant notes were staged.".to_string()
-  } else {
-    format!(
-      "Relevant notes: {}.",
-      context
-        .relevant_notes
-        .iter()
-        .map(|note| shorten(&note.title, 24))
-        .collect::<Vec<_>>()
-        .join(", ")
-    )
-  };
-  let staged_reminders = if context.open_reminders.is_empty() {
-    "No open reminders are currently staged.".to_string()
-  } else {
-    format!(
-      "Open reminders: {}.",
-      context
-        .open_reminders
-        .iter()
-        .map(|reminder| shorten(&reminder.title, 24))
-        .collect::<Vec<_>>()
-        .join(", ")
-    )
-  };
-  let mounted_skills = if context.mounted_skill_names.is_empty() {
-    "Mounted skills: none.".to_string()
-  } else {
-    format!(
-      "Mounted skills: {}.",
-      context.mounted_skill_names.join(", ")
-    )
-  };
-
-  format!(
-    "Mission accepted: {}\n\nStaged context:\n- {}\n- {}\n- {}\n\nSuggested next steps:\n1. Break the request into the smallest verifiable outcome.\n2. Decide which context must survive into the next run.\n3. Convert the output into a concrete instruction or code change.\n\n{}\nOnce baseUrl, apiKey and model are configured, the next run will use the real model path.",
-    shorten(prompt, 180),
-    staged_notes,
-    staged_reminders,
-    mounted_skills,
-    provider_state
-  )
-}
-
-fn shorten(value: &str, limit: usize) -> String {
-  let compact = value.split_whitespace().collect::<Vec<_>>().join(" ");
-  if compact.chars().count() <= limit {
-    compact
-  } else {
-    compact.chars().take(limit).collect::<String>() + "..."
-  }
-}
-
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -1230,7 +755,6 @@ mod tests {
     let error = contract
       .validate_reply("I created a note and saved the rollout details.")
       .expect_err("side-effect claim should be rejected");
-
     assert!(error.to_string().contains("unauthorized side effect"));
   }
 
@@ -1240,7 +764,6 @@ mod tests {
     let error = contract
       .validate_reply("   ")
       .expect_err("empty replies should be rejected");
-
     assert!(error.to_string().contains("assistant reply is empty"));
   }
 
@@ -1250,7 +773,6 @@ mod tests {
     let reply = contract
       .validate_reply("I recommend creating a note for the rollout details.")
       .expect("recommendations should stay allowed");
-
     assert!(reply.contains("recommend creating"));
   }
 
@@ -1260,12 +782,11 @@ mod tests {
     let error = contract
       .validate_reply(&"x".repeat(MAX_AGENT_REPLY_CHARS + 1))
       .expect_err("oversized reply should be rejected");
-
     assert!(error.to_string().contains("exceeds"));
   }
 
   #[test]
-  fn compose_messages_enforces_contract_budget() {
+  fn compose_prompt_enforces_contract_budget() {
     let contract = contract_fixture();
     let settings = settings_fixture();
     let history = vec![
@@ -1286,23 +807,18 @@ mod tests {
       .map(skill_fixture)
       .collect::<Vec<_>>();
 
-    let messages = contract.compose_messages(&settings, history, &skills);
+    let bundle = contract.compose_prompt(&settings, history, &skills);
 
-    assert!(messages[0]
-      .content
+    assert!(bundle
+      .preamble
       .contains("Non-negotiable Agent runtime contract"));
-    assert!(messages[0].content.contains("additional mounted skills"));
-    assert_eq!(
-      messages.iter().filter(|item| item.role == "system").count(),
-      1
-    );
-    assert!(messages
+    assert!(bundle.preamble.contains("additional mounted skills"));
+    assert!(bundle
+      .history
       .iter()
-      .all(|item| item.role == "system" || item.role == "user" || item.role == "assistant"));
-    assert!(messages[1].content.chars().count() <= MAX_AGENT_HISTORY_MESSAGE_CHARS + 3);
-    assert_eq!(
-      messages.last().map(|item| item.content.as_str()),
-      Some(contract.prompt.as_str())
-    );
+      .all(|item| item.role == "user" || item.role == "assistant"));
+    assert_eq!(bundle.history.len(), 1);
+    assert!(bundle.history[0].content.chars().count() <= MAX_AGENT_HISTORY_MESSAGE_CHARS + 3);
+    assert_eq!(bundle.prompt, contract.prompt);
   }
 }
