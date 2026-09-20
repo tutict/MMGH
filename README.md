@@ -36,6 +36,7 @@
 - 使用 `React 18 + Vite` 构建桌面端前端界面
 - 使用 `Tauri 2` 将前端与 Rust 本地能力整合为桌面应用
 - 使用 `Rust + rusqlite` 管理本地 SQLite、迁移逻辑与命令调用
+- 使用 `Rig` 作为桌面 Agent 运行时，通过 OpenAI-compatible Chat Completions 调用模型
 - 使用系统 `keyring` 保存 API Key，避免将明文密钥写入 SQLite
 - 对模型提供方地址实施协议与主机白名单约束
 - 使用领域化前端组件与共享业务模型降低主应用编排复杂度
@@ -52,7 +53,7 @@
 | 本地后端 | Rust、Tauri Command |
 | 本地存储 | SQLite、rusqlite、schema migration |
 | 安全存储 | system keyring |
-| 模型接入 | OpenAI-compatible provider |
+| 模型接入 | Rig agent runtime、OpenAI-compatible provider |
 | 测试与质量 | ESLint、Vitest、Cargo Test |
 
 ## 仓库结构

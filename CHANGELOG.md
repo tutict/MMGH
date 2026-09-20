@@ -11,8 +11,16 @@ The format follows a lightweight `Keep a Changelog` style:
 
 ## [Unreleased]
 
+### Added
+
+- Adopted the `Rig` Rust agent framework as the desktop runtime for `run_agent` and `forge_skill`, using OpenAI-compatible Chat Completions.
+
 ### Changed
 
+- Removed the homemade provider HTTP client and monolithic agent completion loop.
+- Restyled the product UI around a light-first Fluent/WinUI desk with liquid-glass chrome: synced MUI with `data-theme`, added a selected-state rail, and moved the mobile mini-player into the shell instead of overlaying content.
+- Upgraded Rust crates: `rusqlite` 0.30 to 0.40, `reqwest` 0.12 to 0.13, `keyring` 1.2 to 4, `tauri` 2.10 to 2.11, plus a compatible `cargo update`.
+- Upgraded frontend packages within current majors, including `@tauri-apps/api`/`cli` 2.11, TypeScript 7.0.2, Vite 7.3.6, and Vitest 3.2.7. MUI stays on 9.2 because 9.4 breaks jsdom Select selectors.
 - Project version has been advanced to `0.1.1` after the `0.1.0` desktop release so the repository is ready for the next development cycle.
 
 ## [0.1.0] - 2026-04-14
@@ -51,3 +59,4 @@ The format follows a lightweight `Keep a Changelog` style:
   - `npm run test:unit`
   - `npm run build`
   - `npm run build:desktop`
+
