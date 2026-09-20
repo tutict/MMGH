@@ -1,7 +1,7 @@
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import ReplayRoundedIcon from "@mui/icons-material/ReplayRounded";
-import { useRef } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useI18n } from "../i18n";
 import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
 import { AppButton, AppIconButton, AppSlider } from "./ui";
@@ -18,7 +18,6 @@ type MiniPlayerBarProps = {
   handleSeek: (event: { target: { value: number | string } }) => void;
   handleTogglePlayback: () => void;
   isPlaying: boolean;
-  isAppVisible?: boolean;
   placement?: string;
   selectedTrack?: MiniPlayerTrack | null;
 };
@@ -35,6 +34,22 @@ function MiniPlayerBar({
   const { t } = useI18n();
   const rootRef = useRef<HTMLElement | null>(null);
   const { currentTime, duration } = usePlaybackSnapshot();
+  const progress = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+  const collapseEnabled = placement !== "rail";
+  const [collapsed, setCollapsed] = useState(() => {
+    if (!collapseEnabled || typeof window === "undefined") {
+      return false;
+    }
+    return window.localStorage.getItem("mmgh.mini-player.collapsed") === "1";
+  });
+  const isCollapsed = collapseEnabled && collapsed;
+
+  useEffect(() => {
+    if (!collapseEnabled || typeof window === "undefined") {
+      return;
+    }
+    window.localStorage.setItem("mmgh.mini-player.collapsed", collapsed ? "1" : "0");
+  }, [collapseEnabled, collapsed]);
 
   const handlePointerMove = (event: React.PointerEvent<HTMLElement>) => {
     const element = rootRef.current;
@@ -68,14 +83,15 @@ function MiniPlayerBar({
   return (
     <section
       ref={rootRef}
-      className={`mini-player-bar mini-player-bar--${placement} panel-surface`}
+      className={`mini-player-bar mini-player-bar--${placement} panel-surface${isCollapsed ? " is-collapsed" : ""}`}
       aria-label={t("app.music.miniPlayer.label")}
+      style={{ "--mini-progress": `${progress}%` } as CSSProperties}
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
     >
       <AppButton
         className="mini-player-bar__meta"
-        onClick={handleOpenMusicWorkspace}
+        onClick={isCollapsed ? () => setCollapsed(false) : handleOpenMusicWorkspace}
         disableRipple
       >
         <img
@@ -102,6 +118,16 @@ function MiniPlayerBar({
       </AppButton>
 
       <div className="mini-player-bar__controls">
+        {collapseEnabled ? (
+          <AppIconButton
+            className="mini-player-bar__button mini-player-bar__collapse"
+            onClick={() => setCollapsed(true)}
+            aria-label={t("app.music.miniPlayer.collapse")}
+            size="small"
+          >
+            <CollapseIcon />
+          </AppIconButton>
+        ) : null}
         <AppIconButton
           className="mini-player-bar__button"
           onClick={handleRestartTrack}
@@ -154,3 +180,14 @@ function formatDuration(value: number) {
 }
 
 export default MiniPlayerBar;
+
+function CollapseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M7 14h3v3h2v-5H7v2Zm7-7h-2v5h5V10h-3V7Z"
+      />
+    </svg>
+  );
+}

@@ -77,7 +77,7 @@ const zhCN = {
   "app.session.preview.collapse": "收起预览",
 
   "app.view.today.eyebrow": "今日桌面",
-  "app.view.today.title": "Today",
+  "app.view.today.title": "今日",
   "app.view.today.description": "把到期事项、待继续会话和最近沉淀放到同一个入口里。",
   "app.view.today.badge.focus": "焦点",
   "app.view.today.badge.due": "到期",
@@ -681,6 +681,8 @@ const zhCN = {
   "app.music.miniPlayer.label": "迷你播放器",
   "app.music.miniPlayer.eyebrow": "正在播放",
   "app.music.miniPlayer.progress": "播放进度",
+  "app.music.miniPlayer.collapse": "收成小窗",
+  "app.music.miniPlayer.expand": "展开播放条",
   "app.music.panelTitle": "播放面板",
   "app.music.panelDescription":
     "将封面、播放控制、频谱和曲库整合在同一面板中。",

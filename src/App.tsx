@@ -636,9 +636,9 @@ function App() {
       return savedTheme;
     }
     if (typeof window === "undefined") {
-      return "dark";
+      return "light";
     }
-    return window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   });
   const [settingsForm, setSettingsForm] = useState({
     providerName: "OpenAI Compatible",
@@ -2282,7 +2282,7 @@ function App() {
   );
   const mobileDockItems = useMemo(
     () =>
-      ["today", "agent", "knowledge", "weather"]
+      ["today", "agent", "knowledge"]
         .map((id) => allNavigationItems.find((item) => item.id === id))
         .filter(Boolean),
     [allNavigationItems]
@@ -4792,7 +4792,10 @@ function App() {
           providerSecurityMessage,
           providerSecurityStatus: providerSecurityAssessment.status,
           settingsForm,
+          setLang,
           setSettingsForm,
+          setTheme,
+          theme,
         }}
         reminders={{
           handleCreateReminder,
@@ -4823,7 +4826,7 @@ function App() {
         showMiniPlayer ? "agent-app--with-mini-player" : ""
       }`}
       data-theme={theme}
-      data-layout-version="a2"
+      data-layout-version="b1"
     >
       <a className="quiet-skip-link" href="#main-content">
         {t("app.nav.title")}
@@ -5195,10 +5198,10 @@ function App() {
             />
           </Suspense>
         )}
-        <div className="quiet-desk__transport" aria-label={t("app.mode.music")}>
-          {renderMiniPlayer("rail")}
-        </div>
       </main>
+      <div className="quiet-desk__transport" aria-label={t("app.mode.music")}>
+        {renderMiniPlayer("rail")}
+      </div>
 
       {isReminderCompletionOpen ? (
         <Suspense fallback={null}>

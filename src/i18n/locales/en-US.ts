@@ -728,6 +728,8 @@ const enUS = {
   "app.music.miniPlayer.label": "Mini player",
   "app.music.miniPlayer.eyebrow": "Now playing",
   "app.music.miniPlayer.progress": "Playback progress",
+  "app.music.miniPlayer.collapse": "Collapse to mini window",
+  "app.music.miniPlayer.expand": "Expand player",
   "app.music.panelTitle": "Cloud music deck",
   "app.music.panelDescription":
     "A Netease Cloud Music inspired player stage that keeps the cover, particles, controls and library in one panel.",

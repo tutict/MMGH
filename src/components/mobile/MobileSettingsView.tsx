@@ -13,9 +13,12 @@ function MobileSettingsView({
   providerConfigured,
   providerSecurityMessage,
   providerSecurityStatus,
+  setLang,
+  setTheme,
   settingsForm = {},
   setSettingsForm,
   t,
+  theme,
 }: Record<string, any>) {
   const [providerOpen, setProviderOpen] = useState(false);
   const [cacheTarget, setCacheTarget] = useState(null);
@@ -84,6 +87,50 @@ function MobileSettingsView({
           </MobileSummaryCell>
         </MobileSummaryGrid>
       </MobileSection>
+
+      {setLang || setTheme ? (
+        <MobileSection>
+          <MobileSectionHead line>
+            <h2>{t("app.hero.appearance")}</h2>
+          </MobileSectionHead>
+          <MobileList variant="inset">
+            {setLang ? (
+              <MobileRow>
+                <MobileRowBody>
+                  <strong>{t("app.language.label")}</strong>
+                  <span>{lang === "zh-CN" ? "中文" : "English"}</span>
+                </MobileRowBody>
+                <div className="mobile-segmented" role="group" aria-label={t("app.language.label")}>
+                  <MobileButton
+                    className={lang === "zh-CN" ? "is-active" : ""}
+                    variant="text"
+                    aria-pressed={lang === "zh-CN"}
+                    onClick={() => setLang("zh-CN")}
+                  >
+                    中文
+                  </MobileButton>
+                  <MobileButton
+                    className={lang === "en-US" ? "is-active" : ""}
+                    variant="text"
+                    aria-pressed={lang === "en-US"}
+                    onClick={() => setLang("en-US")}
+                  >
+                    EN
+                  </MobileButton>
+                </div>
+              </MobileRow>
+            ) : null}
+            {setTheme ? (
+              <MobileRowButton onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                <MobileRowBody>
+                  <strong>{mobileText(lang, "theme")}</strong>
+                  <span>{theme === "dark" ? t("app.theme.dark") : t("app.theme.light")}</span>
+                </MobileRowBody>
+              </MobileRowButton>
+            ) : null}
+          </MobileList>
+        </MobileSection>
+      ) : null}
 
       <MobileSection>
         <MobileSectionHead line>

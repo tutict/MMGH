@@ -1,6 +1,16 @@
 import React from "react";
 import { getMobileDaypart, mobileText } from "./mobileText";
-import { MobileActionRow, MobileButton, MobileCheckButton, MobileEmpty, MobileList, MobilePage, MobileRow, MobileRowBody, MobileRowButton, MobileSection, MobileSectionHead, MobileSummaryCell, MobileSummaryGrid } from "../ui";
+import {
+  MobileButton,
+  MobileCheckButton,
+  MobileList,
+  MobilePage,
+  MobileRow,
+  MobileRowBody,
+  MobileRowButton,
+  MobileSection,
+  MobileSectionHead,
+} from "../ui";
 
 function MobileTodayView({
   activeSession,
@@ -9,7 +19,6 @@ function MobileTodayView({
   completedTodayItems = [],
   continueSessionItems = [],
   dueReminderCount,
-  formatShortClock,
   formatTime,
   handleSelectReminder,
   handleToggleTodayReminderStatus,
@@ -17,58 +26,67 @@ function MobileTodayView({
   loading,
   openReminderCount,
   openView,
-  recentCaptureItems = [],
   ruleActionRecommendations = [],
   ruleEffectivenessSignals = [],
   todayReminderItems = [],
   todayReviewSignals = [],
 }: Record<string, any>) {
-  const summaryItems = [
-    { label: mobileText(lang, "openTasks"), value: openReminderCount },
-    { label: mobileText(lang, "due"), value: dueReminderCount },
-    { label: mobileText(lang, "today"), value: formatShortClock(clockNow, lang) },
-  ];
-  const signals = [...ruleEffectivenessSignals, ...todayReviewSignals].slice(0, 4);
-  const captures = recentCaptureItems.slice(0, 3);
-  const sessions = continueSessionItems.slice(0, 3);
+  const sessionTitle = activeSession?.session?.title || "";
+  const dueCount = Number(dueReminderCount) || 0;
+  const openCount = Number(openReminderCount) || 0;
+  const sessions = continueSessionItems.slice(0, 2);
+  const doneItems = completedTodayItems.slice(0, 3);
+  const signalCards = [
+    ...[...ruleEffectivenessSignals, ...todayReviewSignals]
+      .filter((item) => String(item?.value ?? "") !== "" && String(item.value) !== "0")
+      .filter((item) => item.id !== "notes")
+      .map((item) => ({
+        id: item.id,
+        kind: "metric",
+        label: item.label || item.title,
+        value: item.value,
+      })),
+    ...ruleActionRecommendations
+      .filter((item) => item.actionTitle || item.title)
+      .map((item, index) => ({
+        id: item.id || item.actionType || `action-${index}`,
+        kind: "action",
+        label: item.actionTitle || item.title,
+        value: item.reason || item.detail || item.summary || "",
+      })),
+  ].slice(0, 4);
+  const hasAgenda = todayReminderItems.length > 0 || sessions.length > 0 || signalCards.length > 0 || doneItems.length > 0;
+  const primaryOpensReminders = dueCount > 0 || openCount > 0;
 
   return (
     <MobilePage view="today">
-      <MobileSection flush>
-        <MobileSectionHead>
-          <div>
-            <span className="mobile-eyebrow">{getMobileDaypart(clockNow, lang)}</span>
-            <h1>{activeSession?.session?.title || mobileText(lang, "today")}</h1>
-          </div>
-        </MobileSectionHead>
-        <MobileSummaryGrid>
-          {summaryItems.map((item) => (
-            <MobileSummaryCell key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-            </MobileSummaryCell>
-          ))}
-        </MobileSummaryGrid>
-        <MobileActionRow>
-          <MobileButton variant="contained" mobileAction="primary" onClick={() => openView("agent")}>
-            {mobileText(lang, "continueAgent")}
-          </MobileButton>
-          <MobileButton variant="outlined" mobileAction="secondary" onClick={() => openView("reminders")}>
-            {mobileText(lang, "openReminders")}
-          </MobileButton>
-        </MobileActionRow>
-      </MobileSection>
+      <section className="mobile-today-hero">
+        <h1>{getMobileDaypart(clockNow, lang)}</h1>
+        {sessionTitle ? <p>{sessionTitle}</p> : null}
+        <MobileButton
+          variant="contained"
+          mobileAction="primary"
+          onClick={() => openView(primaryOpensReminders ? "reminders" : "agent")}
+        >
+          {primaryOpensReminders ? mobileText(lang, "openReminders") : mobileText(lang, "continueAgent")}
+        </MobileButton>
+      </section>
 
-      <MobileSection>
-        <MobileSectionHead line>
-          <h2>{mobileText(lang, "today")}</h2>
-          <span>{todayReminderItems.length}</span>
-        </MobileSectionHead>
-        <MobileList>
-          {todayReminderItems.length === 0 ? (
-            <MobileEmpty>{mobileText(lang, "emptyList")}</MobileEmpty>
-          ) : (
-            todayReminderItems.map((item) => (
+      {!hasAgenda ? (
+        <section className="mobile-empty-hero mobile-empty-hero--compact">
+          <strong>{mobileText(lang, "emptyToday")}</strong>
+          <p>{mobileText(lang, "emptyTodayHint")}</p>
+        </section>
+      ) : null}
+
+      {todayReminderItems.length > 0 ? (
+        <MobileSection>
+          <MobileSectionHead line>
+            <h2>{mobileText(lang, "inbox")}</h2>
+            <span>{todayReminderItems.length}</span>
+          </MobileSectionHead>
+          <MobileList>
+            {todayReminderItems.map((item) => (
               <MobileRow key={item.id} interactive>
                 <MobileCheckButton
                   type="button"
@@ -93,65 +111,63 @@ function MobileTodayView({
                 </MobileButton>
                 <time>{item.dueAt ? formatTime(item.dueAt, lang) : ""}</time>
               </MobileRow>
-            ))
-          )}
-        </MobileList>
-      </MobileSection>
+            ))}
+          </MobileList>
+        </MobileSection>
+      ) : null}
 
       {sessions.length > 0 ? (
         <MobileSection>
           <MobileSectionHead line>
-            <h2>{mobileText(lang, "sessionLibrary")}</h2>
+            <h2>{mobileText(lang, sessions.length > 1 ? "sessionLibrary" : "currentSession")}</h2>
           </MobileSectionHead>
           <MobileList>
             {sessions.map((session) => (
-              <MobileRowButton
-              key={session.id}
-              onClick={() => openView("agent")}
-            >
+              <MobileRowButton key={session.id} onClick={() => openView("agent")}>
                 <MobileRowBody>
                   <strong>{session.title}</strong>
                   <span>{session.lastMessagePreview}</span>
                 </MobileRowBody>
-                <time>{session.updatedAt ? formatTime(session.updatedAt, lang) : ""}</time>
               </MobileRowButton>
             ))}
           </MobileList>
         </MobileSection>
       ) : null}
 
-      <MobileSection>
-        <MobileSectionHead line>
-          <h2>{mobileText(lang, "flowSignals")}</h2>
-        </MobileSectionHead>
-        <MobileList>
-          {[...signals, ...ruleActionRecommendations].slice(0, 5).map((signal, index) => (
-            <MobileRow key={`${signal.id || signal.title || index}`}>
-              <MobileRowBody>
-                <strong>{signal.title || signal.label || signal.name}</strong>
-                <span>{signal.description || signal.summary || signal.detail || signal.reason}</span>
-              </MobileRowBody>
-            </MobileRow>
-          ))}
-          {signals.length === 0 && ruleActionRecommendations.length === 0 ? (
-            <MobileEmpty>{mobileText(lang, "emptyList")}</MobileEmpty>
-          ) : null}
-        </MobileList>
-      </MobileSection>
+      {signalCards.length > 0 ? (
+        <MobileSection>
+          <MobileSectionHead line>
+            <h2>{mobileText(lang, "flowSignals")}</h2>
+          </MobileSectionHead>
+          <div className="mobile-signal-grid">
+            {signalCards.map((card) => (
+              <article
+                key={card.id}
+                className={`mobile-signal-card${card.kind === "action" ? " mobile-signal-card--action" : ""}`}
+              >
+                <span>{card.label}</span>
+                <strong>{card.value}</strong>
+              </article>
+            ))}
+          </div>
+        </MobileSection>
+      ) : null}
 
-      {completedTodayItems.length > 0 || captures.length > 0 ? (
+      {doneItems.length > 0 ? (
         <MobileSection>
           <MobileSectionHead line>
             <h2>{mobileText(lang, "doneToday")}</h2>
           </MobileSectionHead>
           <MobileList>
-            {[...completedTodayItems.slice(0, 3), ...captures].slice(0, 5).map((item, index) => (
-              <MobileRow key={`${item.id || item.title || index}`}>
+            {doneItems.map((item, index) => (
+              <MobileRowButton
+                key={`${item.id || item.title || index}`}
+                onClick={() => openView(item.kind === "reminder" ? "reminders" : "knowledge")}
+              >
                 <MobileRowBody>
                   <strong>{item.title || item.label}</strong>
-                  <span>{item.preview || item.summary || item.detail || ""}</span>
                 </MobileRowBody>
-              </MobileRow>
+              </MobileRowButton>
             ))}
           </MobileList>
         </MobileSection>

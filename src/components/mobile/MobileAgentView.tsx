@@ -99,7 +99,7 @@ function MobileAgentView({
         <MobileTextField
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder={mobileText(lang, "send")}
+          placeholder={mobileText(lang, "sendPlaceholder")}
           fullWidth
           multiline
           maxRows={4}

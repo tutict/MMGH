@@ -53,7 +53,7 @@ h2,
 h3,
 h4,
 strong {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 h1,
@@ -130,14 +130,9 @@ a {
 .notes-eyebrow,
 .skills-eyebrow,
 .audio-eyebrow,
-.mini-player-bar__eyebrow {
-  display: inline-flex;
-  color: var(--q-text-faint);
-  font-size: var(--q-text-meta);
-  font-weight: var(--q-weight-medium);
-  line-height: 1.35;
-  letter-spacing: 0;
-  text-transform: none;
+.mini-player-bar__eyebrow,
+.mobile-eyebrow {
+  display: none;
 }
 
 .section-note,
@@ -172,7 +167,7 @@ a {
 .hero-theme-button,
 .shell-menu-button,
 .hero-inspector-toggle {
-  min-height: 2.5rem;
+  min-height: 2rem;
   padding: 0.5625rem 0.875rem;
   border: 0.0625rem solid var(--q-border);
   border-radius: var(--q-radius-sm);
@@ -233,7 +228,7 @@ a {
   min-height: 1.5rem;
   padding: 0.1875rem 0.5rem;
   border: 0.0625rem solid var(--q-border);
-  border-radius: 999px;
+  border-radius: 0.25rem;
   background: var(--q-bg-subtle);
   color: var(--q-text-muted);
   font-size: 0.75rem;

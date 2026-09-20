@@ -1,7 +1,26 @@
 import React, { useEffect, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { MobileTextField, MobileButton, MobileList, MobilePage, MobileRowBody, MobileRowButton, MobileEmpty, MobileForm, MobileSearchRow, MobileSection, MobileSectionHead } from "../ui";
+import {
+  AppIconButton,
+  MobileTextField,
+  MobileButton,
+  MobileList,
+  MobilePage,
+  MobileRowBody,
+  MobileRowButton,
+  MobileForm,
+  MobileSearchRow,
+  MobileSection,
+} from "../ui";
+
+function notePreview(note) {
+  const raw = String(note?.summary || note?.body || "").replace(/^#+\s*/, "").trim();
+  if (!raw || raw === note?.title) {
+    return "";
+  }
+  return raw.replace(/\s+/g, " ");
+}
 
 function MobileKnowledgeView({
   activeNote,
@@ -14,12 +33,14 @@ function MobileKnowledgeView({
   handleOpenNote,
   handleSaveNote,
   lang,
-  noteDraft,
+  noteDraft = { title: "", body: "", tagsText: "" },
   noteSearch,
   setNoteDraft,
   setNoteSearch,
 }: Record<string, any>) {
   const [editorOpen, setEditorOpen] = useState(false);
+  const hasQuery = Boolean(String(noteSearch || "").trim());
+  const hasNotes = filteredNotes.length > 0 || hasQuery;
 
   useEffect(() => {
     if (!activeNote) {
@@ -41,54 +62,74 @@ function MobileKnowledgeView({
 
   return (
     <MobilePage view="knowledge">
-      <MobileSection flush>
-        <MobileSearchRow>
-          <MobileTextField
-            value={noteSearch}
-            onChange={(event) => setNoteSearch(event.target.value)}
-            placeholder={mobileText(lang, "search")}
-            aria-label={mobileText(lang, "search")}
-            fullWidth
-            size="small"
-          />
+      <h1 className="mobile-page-title">{mobileText(lang, "knowledge")}</h1>
+
+      {!hasNotes ? (
+        <section className="mobile-empty-hero">
+          <strong>{mobileText(lang, "emptyNotesHero")}</strong>
+          <p>{mobileText(lang, "emptyNotesHint")}</p>
           <MobileButton
             variant="contained"
             mobileAction="primary"
-            onClick={createNote}
+            onClick={() => void createNote()}
             disabled={busy !== ""}
           >
             {mobileText(lang, "newNote")}
           </MobileButton>
-        </MobileSearchRow>
-      </MobileSection>
+        </section>
+      ) : (
+        <>
+          <MobileSection flush>
+            <MobileSearchRow className="mobile-note-toolbar">
+              <MobileTextField
+                value={noteSearch}
+                onChange={(event) => setNoteSearch(event.target.value)}
+                placeholder={mobileText(lang, "search")}
+                aria-label={mobileText(lang, "search")}
+                fullWidth
+                size="small"
+              />
+              <AppIconButton
+                className="mobile-note-add"
+                onClick={() => void createNote()}
+                disabled={busy !== ""}
+                aria-label={mobileText(lang, "newNote")}
+                size="small"
+              >
+                <PlusIcon />
+              </AppIconButton>
+            </MobileSearchRow>
+          </MobileSection>
 
-      <MobileSection>
-        <MobileSectionHead line>
-          <h1>{mobileText(lang, "allNotes")}</h1>
-          <span>{filteredNotes.length}</span>
-        </MobileSectionHead>
-        <MobileList>
-          {filteredNotes.length === 0 ? (
-            <MobileEmpty>{mobileText(lang, "emptyNotes")}</MobileEmpty>
+          {filteredNotes.length > 0 ? (
+            <MobileSection>
+              <MobileList>
+                {filteredNotes.map((note) => {
+                  const preview = notePreview(note);
+                  return (
+                    <MobileRowButton
+                      key={note.id}
+                      className="mobile-note-card"
+                      onClick={() => void openNote(note)}
+                      active={note.id === activeNoteId}
+                    >
+                      <MobileRowBody>
+                        <strong>{note.title}</strong>
+                        {preview ? <span>{preview}</span> : null}
+                      </MobileRowBody>
+                      <time>{note.updatedAt ? formatTime(note.updatedAt, lang) : ""}</time>
+                    </MobileRowButton>
+                  );
+                })}
+              </MobileList>
+            </MobileSection>
           ) : (
-            filteredNotes.map((note) => (
-              <MobileRowButton
-              key={note.id}
-              onClick={() => void openNote(note)}
-              active={note.id === activeNoteId}
-            >
-                <span className="mobile-note-icon">{note.icon || "*"}</span>
-                <MobileRowBody>
-                  <strong>{note.title}</strong>
-                  <span>{note.summary || note.body}</span>
-                  {note.tags?.length ? <small>{note.tags.join(" / ")}</small> : null}
-                </MobileRowBody>
-                <time>{note.updatedAt ? formatTime(note.updatedAt, lang) : ""}</time>
-              </MobileRowButton>
-            ))
+            <section className="mobile-empty-hero">
+              <strong>{mobileText(lang, "emptyNotes")}</strong>
+            </section>
           )}
-        </MobileList>
-      </MobileSection>
+        </>
+      )}
 
       <MobileSheet
         id="mobile-note-editor"
@@ -105,7 +146,7 @@ function MobileKnowledgeView({
               onClick={handleDeleteNote}
               disabled={busy !== "" || !activeNote}
             >
-              Delete
+              {mobileText(lang, "remove")}
             </MobileButton>
             <MobileButton
               variant="contained"
@@ -120,7 +161,7 @@ function MobileKnowledgeView({
       >
         <MobileForm>
           <MobileTextField
-            label="Title"
+            label={mobileText(lang, "title")}
             value={noteDraft.title}
             onChange={(event) => setNoteDraft((prev) => ({ ...prev, title: event.target.value }))}
             fullWidth
@@ -150,5 +191,11 @@ function MobileKnowledgeView({
 
 export default MobileKnowledgeView;
 
-
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z" />
+    </svg>
+  );
+}
 

@@ -1,0 +1,850 @@
+/* 6.1–6.7 inch phone density: readable type, compact chrome, no stacked CTAs. */
+
+.mobile-app {
+  --q-text-display: 1.375rem;
+  --q-text-title: 1.375rem;
+  --q-text-section: 1.0625rem;
+  --q-text-body: 1rem;
+  --q-text-control: 1rem;
+  --q-text-meta: 0.8125rem;
+  --q-space-lg: 1.125rem;
+  --q-space-md: 0.875rem;
+  font-size: 1rem;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.mobile-app .mobile-topbar {
+  min-height: 2.75rem;
+  padding: max(0.5rem, env(safe-area-inset-top)) 1rem 0.5rem;
+}
+
+.mobile-app .mobile-topbar__title strong {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.mobile-app .mobile-topbar time {
+  font-size: 0.8125rem;
+}
+
+.mobile-app .mobile-topbar__theme {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  color: var(--q-text);
+}
+
+.mobile-app .mobile-topbar__theme svg {
+  display: block;
+}
+
+.mobile-app .mobile-main {
+  padding: 0.75rem 1rem 0.75rem;
+}
+
+.mobile-app .mobile-page {
+  gap: 0.25rem;
+}
+
+.mobile-app .mobile-section {
+  padding: 0.75rem 0 0.5rem;
+}
+
+.mobile-app .mobile-section--flush {
+  padding: 0.25rem 0 0.75rem;
+}
+
+.mobile-app .mobile-section__head h1 {
+  margin-top: 0;
+  font-size: 1.375rem;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.mobile-app .mobile-section__head h2 {
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.mobile-app .mobile-eyebrow {
+  display: none;
+}
+
+.mobile-app .mobile-summary-grid {
+  margin: 0.5rem 0 0.75rem;
+}
+
+.mobile-app .mobile-summary-cell {
+  padding: 0.5rem 0.5rem 0.5rem 0;
+}
+
+.mobile-app .mobile-summary-cell span {
+  color: var(--q-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.mobile-app .mobile-summary-cell strong {
+  margin-top: 0.2rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.mobile-app .mobile-action-row,
+.mobile-app .mobile-action-row--three {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.mobile-app .mobile-action-row--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.375rem;
+}
+
+.mobile-app .MuiButton-root,
+.mobile-app .mobile-primary-action,
+.mobile-app .mobile-secondary-action {
+  min-height: 2.75rem;
+  padding: 0 0.75rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.mobile-app .mobile-action-row--three .MuiButton-root {
+  min-height: 2.5rem;
+  padding: 0 0.375rem;
+  font-size: 0.8125rem;
+}
+
+.mobile-app .mobile-row {
+  min-height: 3rem;
+  padding: 0.625rem 0;
+}
+
+.mobile-app .mobile-row__body strong {
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.mobile-app .mobile-row__body span {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.mobile-app .mobile-empty {
+  padding: 1rem 0;
+  font-size: 0.9375rem;
+}
+
+.mobile-app .mobile-weather-current {
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.mobile-app .mobile-weather-current h1 {
+  font-size: 1.5rem;
+  line-height: 1.2;
+}
+
+.mobile-app .mobile-weather-current p {
+  margin-top: 0.2rem;
+  font-size: 0.9375rem;
+}
+
+.mobile-app .mobile-weather-current strong {
+  font-size: 3rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-app .mini-player-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2.1rem 2.75rem;
+  align-items: center;
+  min-height: 3.55rem;
+  padding: 0.4rem 0.45rem 0.55rem 0.45rem;
+  overflow: hidden;
+}
+
+.mobile-app .mini-player-bar__meta {
+  min-width: 0;
+  gap: 0.7rem;
+}
+
+.mobile-app .mini-player-bar__cover {
+  width: 2.55rem;
+  height: 2.55rem;
+  border-radius: 0.7rem;
+  filter: none;
+}
+
+.mobile-app .mini-player-bar__copy strong {
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.mobile-app .mini-player-bar__copy p {
+  margin-top: 0.1rem;
+  font-size: 0.75rem;
+  color: var(--q-text-muted);
+}
+
+.mobile-app .mini-player-bar__eyebrow,
+.mobile-app .mini-player-bar__visualizer,
+.mobile-app .mini-player-bar__status-row,
+.mobile-app .mini-player-bar__time,
+.mobile-app .mini-player-bar__controls .mini-player-bar__button:not(.mini-player-bar__button--primary):not(.mini-player-bar__collapse) {
+  display: none;
+}
+
+.mobile-app .mini-player-bar__controls {
+  justify-content: center;
+}
+
+.mobile-app .mini-player-bar__button--primary {
+  width: 2.55rem;
+  min-width: 2.55rem;
+  height: 2.55rem;
+  border: 0;
+  background: transparent;
+  color: var(--q-text);
+}
+
+.mobile-app .mini-player-bar__button--primary svg {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
+.mobile-app .mini-player-bar__timeline {
+  position: absolute;
+  right: 0.95rem;
+  bottom: 0.28rem;
+  left: 0.95rem;
+  grid-column: auto;
+  height: 0.14rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.28);
+}
+
+.mobile-app .mini-player-bar__timeline::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--mini-progress, 0%);
+  border-radius: inherit;
+  background: currentColor;
+  content: "";
+}
+
+.mobile-app .mini-player-bar__rail,
+.mobile-app .mini-player-bar__slider,
+.mobile-app .mini-player-bar__slider .MuiSlider-rail,
+.mobile-app .mini-player-bar__slider .MuiSlider-track,
+.mobile-app .mini-player-bar__slider .MuiSlider-thumb {
+  height: 0.14rem;
+}
+
+.mobile-app .mini-player-bar__slider {
+  padding: 0;
+  color: transparent;
+}
+
+.mobile-app .mini-player-bar__slider .MuiSlider-thumb {
+  width: 0.14rem;
+  height: 0.14rem;
+  opacity: 0;
+}
+
+.mobile-app .mobile-dock {
+  min-height: 3.65rem;
+  padding: 0.3rem 0.25rem max(0.3rem, env(safe-area-inset-bottom));
+}
+
+.mobile-app .mobile-dock__item {
+  min-height: 3.15rem;
+  gap: 0.15rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.mobile-app .mobile-dock__icon svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.mobile-app .mobile-sheet {
+  padding-top: env(safe-area-inset-top);
+}
+
+.mobile-app .mobile-sheet__head h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.mobile-app .mobile-sheet .mobile-row__body strong {
+  font-size: 1.0625rem;
+}
+
+.mobile-app .mobile-muted,
+.mobile-app .mobile-field-note {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 21.875rem) {
+  .mobile-app .mobile-action-row,
+  .mobile-app .mobile-action-row--three {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mobile-app .mobile-weather-current strong {
+    font-size: 2.5rem;
+  }
+}
+
+
+.mobile-app.view-agent .mobile-section--flush .mobile-section__head h1,
+.mobile-app.view-knowledge .mobile-section--flush .mobile-section__head h1,
+.mobile-app.view-settings .mobile-section--flush .mobile-section__head h1,
+.mobile-app.view-reminders .mobile-section--flush .mobile-section__head h1,
+.mobile-app.view-weather .mobile-weather-current h1 {
+  display: none;
+}
+
+.mobile-app .mobile-agent-composer {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0 0.25rem;
+  border: 0;
+  border-radius: 0;
+  background: var(--q-bg);
+}
+
+.mobile-app .mobile-agent-composer__field .MuiInputBase-root {
+  min-height: 2.75rem;
+}
+
+.mobile-app .mobile-agent-event {
+  padding: 0.75rem;
+}
+
+.mobile-app .mobile-agent-event p {
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.mobile-app .mobile-row__body span:empty {
+  display: none;
+}
+
+
+
+/* Hide scrollbars on phone chrome; keep scroll. */
+.mobile-app,
+.mobile-app * {
+  scrollbar-width: none;
+}
+
+.mobile-app ::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* Spotify-like now playing: cover, title, transport. Not a desktop console. */
+.mobile-app .mobile-legacy-page {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mobile-app .mobile-legacy-page .audio-console,
+.mobile-app .mobile-legacy-page .audio-console__surface,
+.mobile-app .mobile-legacy-page .audio-console__main {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mobile-app .mobile-legacy-page .audio-console {
+  min-height: 0;
+}
+
+.mobile-app .audio-console__header,
+.mobile-app .audio-console__facts,
+.mobile-app .audio-console__waveform,
+.mobile-app .audio-console__meta,
+.mobile-app .audio-console__volume,
+.mobile-app .audio-console__lyrics-title,
+.mobile-app .audio-console__lyrics-source,
+.mobile-app .audio-console__plinth,
+.mobile-app .audio-console__arm-base,
+.mobile-app .audio-console__needle,
+.mobile-app .audio-console__particle-ring,
+.mobile-app .audio-console__vinyl-ring,
+.mobile-app .audio-console__vinyl-core,
+.mobile-app .audio-console__vinyl-shine,
+.mobile-app .audio-console__track-copy .audio-eyebrow {
+  display: none !important;
+}
+
+.mobile-app .audio-console__library-toggle {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: auto;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0 0.65rem;
+  border: 0;
+  background: transparent;
+  color: var(--q-text);
+  font-size: 0.8125rem;
+}
+
+.mobile-app .audio-console__library-toggle svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.mobile-app .audio-console__stage {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  min-height: 0;
+  padding: 0.25rem 0.25rem 0;
+  overflow: hidden;
+}
+
+.mobile-app .audio-console__turntable {
+  display: grid;
+  width: min(68vw, 16.5rem);
+  padding: 0;
+  border: 0;
+}
+
+.mobile-app .audio-console__disc-stage,
+.mobile-app .audio-console__vinyl {
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.mobile-app .audio-console__vinyl {
+  overflow: hidden;
+  border: 0;
+  border-radius: 0.75rem;
+  background: var(--q-surface-strong);
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.22);
+}
+
+.mobile-app .audio-console__vinyl::before,
+.mobile-app .audio-console__vinyl::after {
+  display: none;
+}
+
+.mobile-app .audio-console__vinyl.audio-is-spinning {
+  animation: none;
+}
+
+.mobile-app .audio-console__vinyl img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0.75rem;
+}
+
+.mobile-app .audio-console__turntable-copy {
+  display: none;
+}
+
+.mobile-app .audio-console__content {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  gap: 0.5rem;
+}
+
+.mobile-app .audio-console__trackline,
+.mobile-app .audio-console__track-copy {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  text-align: center;
+}
+
+.mobile-app .audio-console__track-copy h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.mobile-app .audio-console__track-copy p {
+  margin-top: 0.2rem;
+  color: var(--q-text-muted);
+  font-size: 0.9375rem;
+}
+
+.mobile-app .audio-console__lyrics {
+  width: 100%;
+}
+
+.mobile-app .audio-console__lyrics-header {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.mobile-app .audio-console__lyrics-tools {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 0.5rem;
+  width: auto;
+}
+
+.mobile-app .audio-console__lyrics-action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: auto;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0 0.7rem;
+  border: 0;
+  background: var(--q-subtle-fill);
+  color: var(--q-text);
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.mobile-app .audio-console__lyrics-action svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
+  max-width: 1rem;
+  max-height: 1rem;
+}
+
+.mobile-app .audio-console__lyrics-viewport {
+  display: none;
+}
+
+.mobile-app .audio-console__lyrics-empty {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.35rem 0.5rem;
+  text-align: center;
+}
+
+.mobile-app .audio-console__lyrics-empty strong {
+  color: var(--q-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.mobile-app .audio-console__lyrics-empty span {
+  display: none;
+}
+
+.mobile-app .audio-console__lyric-line {
+  min-height: 0;
+  padding: 0.15rem 0;
+  text-align: center;
+}
+
+.mobile-app .audio-console__lyric-line strong {
+  font-size: 0.9375rem;
+}
+
+.mobile-app .audio-console__lyric-line span {
+  display: none;
+}
+
+.mobile-app .audio-console__footer {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.35rem 0 0.15rem;
+  border: 0;
+  background: transparent;
+}
+
+.mobile-app .audio-console__progress {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.mobile-app .audio-console__progress > span {
+  color: var(--q-text-faint);
+  font-family: var(--q-mono);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-app .audio-console__controls {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.mobile-app .audio-console__player-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.mobile-app .audio-console__icon-button.audio-is-primary {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.mobile-app .audio-console__icon-button.audio-is-primary svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.mobile-app .audio-console__secondary-actions {
+  display: none;
+}
+
+
+.mobile-app .mobile-signal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.mobile-app .mobile-signal-card {
+  display: grid;
+  gap: 0.35rem;
+  min-height: 4.25rem;
+  padding: 0.8rem 0.85rem;
+  border: 0.0625rem solid var(--q-glass-border, rgba(255, 255, 255, 0.58));
+  border-radius: 1rem;
+  background: var(--q-glass, rgba(255, 255, 255, 0.48));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.mobile-app .mobile-signal-card span {
+  color: var(--q-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.3;
+}
+
+.mobile-app .mobile-signal-card strong {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.mobile-app .mobile-signal-card--action {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+
+.mobile-app .mobile-signal-card--action strong {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+
+.mobile-app .mobile-page-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.mobile-app .mobile-empty-hero {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: 3.5rem 1.25rem 1.5rem;
+  text-align: center;
+}
+
+.mobile-app .mobile-empty-hero strong {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.mobile-app .mobile-empty-hero p {
+  max-width: 18rem;
+  color: var(--q-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.mobile-app .mobile-empty-hero .MuiButton-root,
+.mobile-app .mobile-empty-hero .mobile-primary-action {
+  width: min(100%, 16rem);
+  margin-top: 0.5rem;
+}
+
+
+.mobile-app .mobile-today-hero {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.35rem 0 0.9rem;
+}
+
+.mobile-app .mobile-today-hero h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.mobile-app .mobile-today-hero p {
+  color: var(--q-text-muted);
+  font-size: 0.9375rem;
+}
+
+.mobile-app .mobile-today-hero .MuiButton-root,
+.mobile-app .mobile-today-hero .mobile-primary-action {
+  width: min(100%, 16.5rem);
+  margin-top: 0.45rem;
+}
+
+.mobile-app .mobile-empty-hero--compact {
+  padding-top: 1.25rem;
+  justify-items: start;
+  text-align: left;
+}
+
+
+.mobile-app .mini-player-bar__collapse {
+  display: grid;
+  width: 2rem;
+  min-width: 2rem;
+  height: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--q-text-muted);
+}
+
+.mobile-app .mini-player-bar.is-collapsed {
+  left: auto;
+  width: 4.4rem;
+  min-height: 4.4rem;
+  height: 4.4rem;
+  padding: 0.28rem;
+  overflow: hidden;
+  border-radius: 1.3rem;
+  grid-template-columns: 1fr;
+}
+
+.mobile-app .mini-player-bar.is-collapsed .mini-player-bar__copy,
+.mobile-app .mini-player-bar.is-collapsed .mini-player-bar__collapse,
+.mobile-app .mini-player-bar.is-collapsed .mini-player-bar__timeline {
+  display: none;
+}
+
+.mobile-app .mini-player-bar.is-collapsed .mini-player-bar__meta {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+}
+
+.mobile-app .mini-player-bar.is-collapsed .mini-player-bar__cover {
+  width: 100%;
+  height: 100%;
+  border-radius: 1.05rem;
+}
+
+.mobile-app .mini-player-bar.is-collapsed .mini-player-bar__controls {
+  position: absolute;
+  right: 0.12rem;
+  bottom: 0.12rem;
+  z-index: 2;
+}
+
+.mobile-app .mini-player-bar.is-collapsed .mini-player-bar__button--primary {
+  width: 1.7rem;
+  min-width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  background: rgba(8, 10, 16, 0.55);
+  color: #fff;
+}
+
+.mobile-app .mini-player-bar.is-collapsed .mini-player-bar__button--primary svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+
+.mobile-app .mobile-note-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2.75rem;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.mobile-app .mobile-note-add {
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border-radius: 999px;
+  background: #0a84ff;
+  color: #fff;
+}
+
+.mobile-app .mobile-note-add svg {
+  display: block;
+}
+
+.mobile-app .mobile-note-card {
+  align-items: flex-start;
+  min-height: 3.4rem;
+  padding: 0.85rem 0;
+}
+
+.mobile-app .mobile-note-card .mobile-row__body span {
+  -webkit-line-clamp: 1;
+}
+
+.mobile-app .mobile-note-card time {
+  margin-top: 0.2rem;
+}

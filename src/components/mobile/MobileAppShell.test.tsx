@@ -155,7 +155,7 @@ function createShellProps(currentView, openView, legacyContent) {
     legacyContent,
     loading: false,
     mobileDockItems: allNavigationItems.filter((item) =>
-      ["today", "agent", "knowledge", "weather"].includes(item.id)
+      ["today", "agent", "knowledge"].includes(item.id)
     ),
     noteDraft: { id: 0, title: "", body: "", tagsText: "" },
     noteList: [],
@@ -336,20 +336,21 @@ function ShellHarness() {
   return <MobileAppShell {...toShellBags(props)} />;
 }
 
-test("mobile shell renders four primary dock tabs plus More and keeps language/theme out of the top bar", async () => {
+test("mobile shell renders three primary dock tabs plus More and keeps language out of the top bar", async () => {
   const user = userEvent.setup();
   render(<ShellHarness />);
 
   const dock = screen.getByTestId("mobile-dock");
-  expect(within(dock).getAllByRole("button")).toHaveLength(5);
+  expect(within(dock).getAllByRole("button")).toHaveLength(4);
   expect(within(dock).getByRole("button", { name: "Today" })).toBeInTheDocument();
   expect(within(dock).getByRole("button", { name: "Agent" })).toBeInTheDocument();
   expect(within(dock).getByRole("button", { name: "Knowledge" })).toBeInTheDocument();
-  expect(within(dock).getByRole("button", { name: "Weather" })).toBeInTheDocument();
+  expect(within(dock).queryByRole("button", { name: "Weather" })).not.toBeInTheDocument();
 
   const topbar = screen.getByTestId("mobile-topbar");
   expect(within(topbar).queryByText("Language")).not.toBeInTheDocument();
   expect(within(topbar).queryByText("Theme")).not.toBeInTheDocument();
+  expect(within(topbar).getByRole("button", { name: "Light mode" })).toBeInTheDocument();
 
   await user.click(within(dock).getByRole("button", { name: "More" }));
   await user.click(screen.getByRole("button", { name: /Settings/i }));

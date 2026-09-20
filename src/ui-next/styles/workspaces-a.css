@@ -314,11 +314,11 @@
   .settings-workspace,
   .reminder-panel
 ) {
-  margin-top: 1rem;
+  margin-top: 0;
 }
 
 .quiet-desk :where(.notes-workbench, .audio-console, .skills-workbench, .reminder-panel) {
-  height: clamp(32rem, calc(100dvh - 10.5rem), 48rem);
+  height: 100%;
   min-height: 0;
 }
 
@@ -371,7 +371,7 @@
 
 .quiet-desk .runtime-workspace {
   grid-template-rows: auto minmax(0, 1fr);
-  height: clamp(32rem, calc(100dvh - 10.5rem), 48rem);
+  height: 100%;
   min-height: 0;
   overflow: hidden;
 }
@@ -690,6 +690,7 @@
     display: none;
   }
 }
+
 
 @media (max-width: 56rem) {
   .quiet-desk .skills-workbench {
