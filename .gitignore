@@ -47,3 +47,7 @@ temp_fix.py
 quote_test.py
 
 .env
+
+# local agent/tooling worktrees and design scratch
+.claude/
+.impeccable/
