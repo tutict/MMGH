@@ -223,6 +223,7 @@ test("saving session skills for a missing preview session fails fast", async () 
 test("preview workspace persistence failures surface a clear error", async () => {
   const agent = await loadAgentModule();
   await agent.bootstrap();
+  const persistedWorkspace = window.localStorage.getItem(agent.PREVIEW_WORKSPACE_STORAGE_KEY);
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
   const setItemSpy = vi
     .spyOn(Storage.prototype, "setItem")
@@ -230,12 +231,17 @@ test("preview workspace persistence failures surface a clear error", async () =>
       throw new Error("QuotaExceededError");
     });
 
-  await expect(agent.createSession("Overflow")).rejects.toThrow(
-    "Failed to persist preview workspace. Local storage may be full."
-  );
-
-  setItemSpy.mockRestore();
-  consoleErrorSpy.mockRestore();
+  try {
+    await expect(agent.createSession("Overflow")).rejects.toThrow(
+      "Failed to persist preview workspace. Local storage may be full."
+    );
+    expect(window.localStorage.getItem(agent.PREVIEW_WORKSPACE_STORAGE_KEY)).toBe(
+      persistedWorkspace
+    );
+  } finally {
+    setItemSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+  }
 });
 
 test("preview workspace concurrent edits fail with a retryable conflict error", async () => {

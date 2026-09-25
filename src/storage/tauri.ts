@@ -2,6 +2,24 @@ type InvokeFn = typeof import("@tauri-apps/api/core")["invoke"];
 type EventModule = typeof import("@tauri-apps/api/event");
 type UnlistenFn = () => void;
 
+export type DesktopWindowState = {
+  label: string;
+  visible: boolean;
+  focused: boolean;
+  minimized: boolean;
+  maximized: boolean;
+  fullscreen: boolean;
+  resizable: boolean;
+  decorated: boolean;
+  width: number;
+  height: number;
+  scaleFactor: number;
+};
+
+export type DesktopLifecycleEvent = {
+  reason: string;
+};
+
 declare global {
   interface Window {
     __TAURI_INTERNALS__?: unknown;
@@ -53,26 +71,31 @@ export const invokeTauri = async <T = any>(command: string, args?: Record<string
   return invoke<T>(command, args);
 };
 
-export const getDesktopWindowState = async () => invokeTauri("desktop_window_state");
+export const getDesktopWindowState = async (): Promise<DesktopWindowState> =>
+  invokeTauri<DesktopWindowState>("desktop_window_state");
 
-export const listenToDesktopWindowState = async (handler?: (payload: unknown) => void): Promise<UnlistenFn> => {
+export const listenToDesktopWindowState = async (
+  handler?: (payload: DesktopWindowState) => void
+): Promise<UnlistenFn> => {
   if (!isTauriAvailable()) {
     return () => {};
   }
 
   const { listen } = await loadEventModule();
-  return listen(DESKTOP_WINDOW_STATE_EVENT, (event) => {
+  return listen<DesktopWindowState>(DESKTOP_WINDOW_STATE_EVENT, (event) => {
     handler?.(event.payload);
   });
 };
 
-export const listenToDesktopLifecycle = async (handler?: (payload: unknown) => void): Promise<UnlistenFn> => {
+export const listenToDesktopLifecycle = async (
+  handler?: (payload: DesktopLifecycleEvent) => void
+): Promise<UnlistenFn> => {
   if (!isTauriAvailable()) {
     return () => {};
   }
 
   const { listen } = await loadEventModule();
-  return listen(DESKTOP_LIFECYCLE_EVENT, (event) => {
+  return listen<DesktopLifecycleEvent>(DESKTOP_LIFECYCLE_EVENT, (event) => {
     handler?.(event.payload);
   });
 };

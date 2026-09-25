@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 use std::fs;
 use std::path::PathBuf;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Context, Result};
@@ -1194,10 +1194,20 @@ where
 }
 
 fn read_snapshot_cache() -> Result<Option<WorkspaceSnapshot>> {
-  let guard = SNAPSHOT_CACHE
-    .lock()
-    .map_err(|_| anyhow!("snapshot cache mutex poisoned"))?;
+  let guard = snapshot_cache_guard();
   Ok(guard.clone())
+}
+
+fn snapshot_cache_guard() -> MutexGuard<'static, Option<WorkspaceSnapshot>> {
+  match SNAPSHOT_CACHE.lock() {
+    Ok(guard) => guard,
+    Err(poisoned) => {
+      eprintln!("snapshot cache mutex poisoned; recovering cache state");
+      let guard = poisoned.into_inner();
+      SNAPSHOT_CACHE.clear_poison();
+      guard
+    }
+  }
 }
 
 fn read_settings_cache() -> Result<Option<AgentSettings>> {
@@ -1208,9 +1218,7 @@ fn read_settings_cache() -> Result<Option<AgentSettings>> {
 }
 
 fn store_snapshot_cache(snapshot: &WorkspaceSnapshot) -> Result<()> {
-  let mut guard = SNAPSHOT_CACHE
-    .lock()
-    .map_err(|_| anyhow!("snapshot cache mutex poisoned"))?;
+  let mut guard = snapshot_cache_guard();
   *guard = Some(snapshot.clone());
   Ok(())
 }
@@ -1224,9 +1232,7 @@ fn store_settings_cache(settings: &AgentSettings) -> Result<()> {
 }
 
 fn clear_snapshot_cache() -> Result<()> {
-  let mut guard = SNAPSHOT_CACHE
-    .lock()
-    .map_err(|_| anyhow!("snapshot cache mutex poisoned"))?;
+  let mut guard = snapshot_cache_guard();
   *guard = None;
   Ok(())
 }
@@ -1758,6 +1764,8 @@ mod tests {
     api_key: Option<String>,
     api_base: Option<String>,
     model: Option<String>,
+    trusted_provider_hosts: Option<String>,
+    enforce_trusted_provider_hosts: Option<String>,
   }
 
   impl EnvGuard {
@@ -1766,11 +1774,15 @@ mod tests {
         api_key: std::env::var("OPENAI_API_KEY").ok(),
         api_base: std::env::var("OPENAI_API_BASE").ok(),
         model: std::env::var("OPENAI_MODEL").ok(),
+        trusted_provider_hosts: std::env::var("MMGH_TRUSTED_PROVIDER_HOSTS").ok(),
+        enforce_trusted_provider_hosts: std::env::var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS").ok(),
       };
 
       std::env::remove_var("OPENAI_API_KEY");
       std::env::remove_var("OPENAI_API_BASE");
       std::env::remove_var("OPENAI_MODEL");
+      std::env::remove_var("MMGH_TRUSTED_PROVIDER_HOSTS");
+      std::env::remove_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS");
 
       guard
     }
@@ -1789,6 +1801,14 @@ mod tests {
       match &self.model {
         Some(value) => std::env::set_var("OPENAI_MODEL", value),
         None => std::env::remove_var("OPENAI_MODEL"),
+      }
+      match &self.trusted_provider_hosts {
+        Some(value) => std::env::set_var("MMGH_TRUSTED_PROVIDER_HOSTS", value),
+        None => std::env::remove_var("MMGH_TRUSTED_PROVIDER_HOSTS"),
+      }
+      match &self.enforce_trusted_provider_hosts {
+        Some(value) => std::env::set_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS", value),
+        None => std::env::remove_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS"),
       }
     }
   }
@@ -3527,6 +3547,51 @@ mod tests {
   }
 
   #[test]
+  fn committed_transaction_returns_snapshot_when_cache_publish_is_poisoned() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let mut conn = test_connection()?;
+    let baseline = SnapshotProjection::read(&conn, SnapshotSelection::default())?;
+    let initial_count: i64 =
+      conn.query_row("SELECT COUNT(*) FROM agent_sessions", [], |row| row.get(0))?;
+
+    let result = execute_workspace_transaction_in(&mut conn, |tx| {
+      let session = create_session_detail_in(tx, Some("Committed cache probe".to_string()))?;
+      let snapshot = SnapshotProjection::after_change(
+        tx,
+        SnapshotSelection::new(Some(session.session.id))
+          .note(None)
+          .reminder(None)
+          .skill(None),
+        SnapshotChange::SessionCreated,
+        seed_snapshot_for_session_create(Some(baseline.clone()), session),
+      )?;
+      let poison_result = std::panic::catch_unwind(|| {
+        let _guard = SNAPSHOT_CACHE
+          .lock()
+          .expect("snapshot cache should be healthy before injected poison");
+        panic!("injected snapshot cache publication poison");
+      });
+      assert!(poison_result.is_err());
+      Ok(snapshot)
+    });
+
+    SNAPSHOT_CACHE.clear_poison();
+    let final_count: i64 =
+      conn.query_row("SELECT COUNT(*) FROM agent_sessions", [], |row| row.get(0))?;
+    let snapshot = result
+      .context("a committed mutation must return its snapshot when only cache publication fails")?;
+
+    assert_eq!(final_count, initial_count + 1);
+    assert_eq!(
+      snapshot.active_session.session.title,
+      "Committed cache probe"
+    );
+    Ok(())
+  }
+
+  #[test]
   fn provider_base_url_rejects_remote_http() {
     let error = validate_provider_base_url("http://example.com/v1")
       .expect_err("remote http should be rejected");
@@ -3551,6 +3616,10 @@ mod tests {
 
   #[test]
   fn provider_base_url_enforces_allowlist_when_requested() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let _env = EnvGuard::clear_openai_vars();
     std::env::set_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS", "true");
     std::env::set_var("MMGH_TRUSTED_PROVIDER_HOSTS", "api.openai.com");
 
@@ -3558,9 +3627,30 @@ mod tests {
       .expect_err("untrusted host should be rejected when allowlist enforcement is enabled");
 
     assert!(error.to_string().contains("MMGH_TRUSTED_PROVIDER_HOSTS"));
-
-    std::env::remove_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS");
-    std::env::remove_var("MMGH_TRUSTED_PROVIDER_HOSTS");
     Ok(())
+  }
+
+  #[test]
+  fn provider_base_url_normalizes_trailing_dot_for_url_and_allowlist() -> Result<()> {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let _env = EnvGuard::clear_openai_vars();
+    std::env::set_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS", "true");
+    std::env::set_var("MMGH_TRUSTED_PROVIDER_HOSTS", " API.OPENAI.COM. ");
+
+    validate_provider_base_url("https://api.openai.com./v1")
+  }
+
+  #[test]
+  fn provider_base_url_uses_default_openai_host_when_strict_allowlist_is_unconfigured() -> Result<()>
+  {
+    let _serial = TEST_STATE_LOCK
+      .lock()
+      .map_err(|_| anyhow!("test state mutex poisoned"))?;
+    let _env = EnvGuard::clear_openai_vars();
+    std::env::set_var("MMGH_ENFORCE_TRUSTED_PROVIDER_HOSTS", "true");
+
+    validate_provider_base_url("https://api.openai.com/v1")
   }
 }

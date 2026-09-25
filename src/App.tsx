@@ -33,6 +33,8 @@ import {
   saveKnowledgeNote,
   saveSettings,
 } from "./storage/agent";
+import { mergeWorkspaceSnapshot } from "./application/workspaceSnapshot";
+import useDesktopRuntime from "./application/useDesktopRuntime";
 import MiniPlayerBar from "./components/MiniPlayerBar";
 import {
   WEATHER_LOCATIONS,
@@ -81,12 +83,6 @@ import {
   patchPlaybackSnapshot,
   resetPlaybackSnapshot,
 } from "./utils/playbackSnapshot";
-import {
-  getDesktopWindowState,
-  isTauriAvailable,
-  listenToDesktopLifecycle,
-  listenToDesktopWindowState,
-} from "./storage/tauri";
 import {
   createAbortError,
   downloadJsonFile,
@@ -286,345 +282,6 @@ function readInitialAppVisibility() {
   return isVisible && isFocused;
 }
 
-function createInitialDesktopRuntime() {
-  const available = isTauriAvailable();
-  return {
-    available,
-    synced: !available,
-    lifecycle: "",
-    windowState: null,
-  };
-}
-
-function mergeDesktopWindowState(previousState, nextState) {
-  if (!previousState || !nextState) {
-    return nextState;
-  }
-
-  return previousState.label === nextState.label &&
-    previousState.visible === nextState.visible &&
-    previousState.focused === nextState.focused &&
-    previousState.minimized === nextState.minimized &&
-    previousState.maximized === nextState.maximized &&
-    previousState.fullscreen === nextState.fullscreen &&
-    previousState.resizable === nextState.resizable &&
-    previousState.decorated === nextState.decorated &&
-    previousState.width === nextState.width &&
-    previousState.height === nextState.height &&
-    previousState.scaleFactor === nextState.scaleFactor
-    ? previousState
-    : nextState;
-}
-
-function reuseEqualArray(previousItems, nextItems, isEqual) {
-  if (!Array.isArray(nextItems)) {
-    return nextItems;
-  }
-  if (!Array.isArray(previousItems) || previousItems.length !== nextItems.length) {
-    return nextItems;
-  }
-
-  let changed = false;
-  const mergedItems = nextItems.map((item, index) => {
-    const previousItem = previousItems[index];
-    if (isEqual(previousItem, item)) {
-      return previousItem;
-    }
-    changed = true;
-    return item;
-  });
-
-  return changed ? mergedItems : previousItems;
-}
-
-function reuseEqualItem(previousItem, nextItem, isEqual) {
-  if (!previousItem || !nextItem) {
-    return nextItem;
-  }
-  return isEqual(previousItem, nextItem) ? previousItem : nextItem;
-}
-
-function isSamePrimitiveArray(previousItems, nextItems) {
-  if (previousItems === nextItems) {
-    return true;
-  }
-  if (!Array.isArray(previousItems) || !Array.isArray(nextItems)) {
-    return false;
-  }
-  if (previousItems.length !== nextItems.length) {
-    return false;
-  }
-  return previousItems.every((item, index) => item === nextItems[index]);
-}
-
-function isSameStringArray(previousItems, nextItems) {
-  return isSamePrimitiveArray(previousItems, nextItems);
-}
-
-function isSameCapability(previousItem, nextItem) {
-  return (
-    previousItem?.id === nextItem?.id &&
-    previousItem?.title === nextItem?.title &&
-    previousItem?.description === nextItem?.description &&
-    previousItem?.status === nextItem?.status
-  );
-}
-
-function isSameWorkspaceSettings(previousItem, nextItem) {
-  return (
-    previousItem?.providerName === nextItem?.providerName &&
-    previousItem?.baseUrl === nextItem?.baseUrl &&
-    Boolean(previousItem?.hasApiKey) === Boolean(nextItem?.hasApiKey) &&
-    previousItem?.apiKey === nextItem?.apiKey &&
-    previousItem?.model === nextItem?.model &&
-    previousItem?.systemPrompt === nextItem?.systemPrompt
-  );
-}
-
-function isSameSessionSummary(previousItem, nextItem) {
-  return (
-    previousItem?.id === nextItem?.id &&
-    previousItem?.title === nextItem?.title &&
-    previousItem?.status === nextItem?.status &&
-    previousItem?.updatedAt === nextItem?.updatedAt &&
-    previousItem?.messageCount === nextItem?.messageCount &&
-    previousItem?.lastMessagePreview === nextItem?.lastMessagePreview &&
-    previousItem?.mountedSkillCount === nextItem?.mountedSkillCount
-  );
-}
-
-function isSameMessage(previousItem, nextItem) {
-  return (
-    previousItem?.id === nextItem?.id &&
-    previousItem?.role === nextItem?.role &&
-    previousItem?.content === nextItem?.content &&
-    previousItem?.createdAt === nextItem?.createdAt
-  );
-}
-
-function isSameActivityItem(previousItem, nextItem) {
-  return (
-    previousItem?.id === nextItem?.id &&
-    previousItem?.kind === nextItem?.kind &&
-    previousItem?.title === nextItem?.title &&
-    previousItem?.detail === nextItem?.detail &&
-    previousItem?.status === nextItem?.status &&
-    previousItem?.createdAt === nextItem?.createdAt
-  );
-}
-
-function isSameNoteSummary(previousItem, nextItem) {
-  return (
-    previousItem?.id === nextItem?.id &&
-    previousItem?.icon === nextItem?.icon &&
-    previousItem?.title === nextItem?.title &&
-    previousItem?.summary === nextItem?.summary &&
-    isSameStringArray(previousItem?.tags, nextItem?.tags) &&
-    previousItem?.updatedAt === nextItem?.updatedAt
-  );
-}
-
-function isSameNoteDetail(previousItem, nextItem) {
-  return (
-    previousItem?.id === nextItem?.id &&
-    previousItem?.icon === nextItem?.icon &&
-    previousItem?.title === nextItem?.title &&
-    previousItem?.summary === nextItem?.summary &&
-    previousItem?.body === nextItem?.body &&
-    isSameStringArray(previousItem?.tags, nextItem?.tags) &&
-    previousItem?.createdAt === nextItem?.createdAt &&
-    previousItem?.updatedAt === nextItem?.updatedAt
-  );
-}
-
-function isSameReminderSummary(previousItem, nextItem) {
-  return (
-    previousItem?.id === nextItem?.id &&
-    previousItem?.title === nextItem?.title &&
-    previousItem?.preview === nextItem?.preview &&
-    previousItem?.dueAt === nextItem?.dueAt &&
-    previousItem?.severity === nextItem?.severity &&
-    previousItem?.status === nextItem?.status &&
-    previousItem?.linkedNoteId === nextItem?.linkedNoteId &&
-    previousItem?.updatedAt === nextItem?.updatedAt
-  );
-}
-
-function isSameReminderDetail(previousItem, nextItem) {
-  return (
-    previousItem?.id === nextItem?.id &&
-    previousItem?.title === nextItem?.title &&
-    previousItem?.detail === nextItem?.detail &&
-    previousItem?.preview === nextItem?.preview &&
-    previousItem?.dueAt === nextItem?.dueAt &&
-    previousItem?.severity === nextItem?.severity &&
-    previousItem?.status === nextItem?.status &&
-    previousItem?.linkedNoteId === nextItem?.linkedNoteId &&
-    previousItem?.createdAt === nextItem?.createdAt &&
-    previousItem?.updatedAt === nextItem?.updatedAt
-  );
-}
-
-function isSameSkillSummary(previousItem, nextItem) {
-  return (
-    previousItem?.id === nextItem?.id &&
-    previousItem?.name === nextItem?.name &&
-    previousItem?.summary === nextItem?.summary &&
-    previousItem?.triggerHint === nextItem?.triggerHint &&
-    previousItem?.recommendationReason === nextItem?.recommendationReason &&
-    Boolean(previousItem?.enabled) === Boolean(nextItem?.enabled)
-  );
-}
-
-function isSameSkillDetail(previousItem, nextItem) {
-  return (
-    previousItem?.id === nextItem?.id &&
-    previousItem?.name === nextItem?.name &&
-    previousItem?.summary === nextItem?.summary &&
-    previousItem?.description === nextItem?.description &&
-    previousItem?.instructions === nextItem?.instructions &&
-    previousItem?.triggerHint === nextItem?.triggerHint &&
-    Boolean(previousItem?.enabled) === Boolean(nextItem?.enabled) &&
-    previousItem?.permissionLevel === nextItem?.permissionLevel &&
-    previousItem?.createdAt === nextItem?.createdAt &&
-    previousItem?.updatedAt === nextItem?.updatedAt
-  );
-}
-
-function mergeSessionDetail(previousItem, nextItem) {
-  if (!previousItem || !nextItem) {
-    return nextItem;
-  }
-
-  const mergedSession = reuseEqualItem(previousItem.session, nextItem.session, isSameSessionSummary);
-  const mergedMessages = reuseEqualArray(previousItem.messages, nextItem.messages, isSameMessage);
-  const mergedActivity = reuseEqualArray(
-    previousItem.activity,
-    nextItem.activity,
-    isSameActivityItem
-  );
-  const mergedMountedSkillIds = reuseEqualArray(
-    previousItem.mountedSkillIds,
-    nextItem.mountedSkillIds,
-    (left, right) => left === right
-  );
-  const mergedMountedSkills = reuseEqualArray(
-    previousItem.mountedSkills,
-    nextItem.mountedSkills,
-    isSameSkillSummary
-  );
-  const mergedRecommendedSkills = reuseEqualArray(
-    previousItem.recommendedSkills,
-    nextItem.recommendedSkills,
-    isSameSkillSummary
-  );
-
-  if (
-    previousItem.session === mergedSession &&
-    previousItem.messages === mergedMessages &&
-    previousItem.activity === mergedActivity &&
-    previousItem.mountedSkillIds === mergedMountedSkillIds &&
-    previousItem.mountedSkills === mergedMountedSkills &&
-    previousItem.recommendedSkills === mergedRecommendedSkills
-  ) {
-    return previousItem;
-  }
-
-  return {
-    ...nextItem,
-    session: mergedSession,
-    messages: mergedMessages,
-    activity: mergedActivity,
-    mountedSkillIds: mergedMountedSkillIds,
-    mountedSkills: mergedMountedSkills,
-    recommendedSkills: mergedRecommendedSkills,
-  };
-}
-
-function mergeWorkspaceSnapshot(previousSnapshot, nextSnapshot) {
-  if (!previousSnapshot) {
-    return nextSnapshot;
-  }
-  if (!nextSnapshot) {
-    return nextSnapshot;
-  }
-
-  const mergedSettings = reuseEqualItem(
-    previousSnapshot.settings,
-    nextSnapshot.settings,
-    isSameWorkspaceSettings
-  );
-  const mergedCapabilities = reuseEqualArray(
-    previousSnapshot.capabilities,
-    nextSnapshot.capabilities,
-    isSameCapability
-  );
-  const mergedSessions = reuseEqualArray(
-    previousSnapshot.sessions,
-    nextSnapshot.sessions,
-    isSameSessionSummary
-  );
-  const mergedActiveSession = mergeSessionDetail(
-    previousSnapshot.activeSession,
-    nextSnapshot.activeSession
-  );
-  const mergedNotes = reuseEqualArray(previousSnapshot.notes, nextSnapshot.notes, isSameNoteSummary);
-  const mergedActiveNote = reuseEqualItem(
-    previousSnapshot.activeNote,
-    nextSnapshot.activeNote,
-    isSameNoteDetail
-  );
-  const mergedReminders = reuseEqualArray(
-    previousSnapshot.reminders,
-    nextSnapshot.reminders,
-    isSameReminderSummary
-  );
-  const mergedActiveReminder = reuseEqualItem(
-    previousSnapshot.activeReminder,
-    nextSnapshot.activeReminder,
-    isSameReminderDetail
-  );
-  const mergedSkills = reuseEqualArray(previousSnapshot.skills, nextSnapshot.skills, isSameSkillSummary);
-  const mergedActiveSkill = reuseEqualItem(
-    previousSnapshot.activeSkill,
-    nextSnapshot.activeSkill,
-    isSameSkillDetail
-  );
-
-  if (
-    previousSnapshot.settings === mergedSettings &&
-    previousSnapshot.capabilities === mergedCapabilities &&
-    previousSnapshot.sessions === mergedSessions &&
-    previousSnapshot.activeSessionId === nextSnapshot.activeSessionId &&
-    previousSnapshot.activeSession === mergedActiveSession &&
-    previousSnapshot.notes === mergedNotes &&
-    previousSnapshot.activeNoteId === nextSnapshot.activeNoteId &&
-    previousSnapshot.activeNote === mergedActiveNote &&
-    previousSnapshot.reminders === mergedReminders &&
-    previousSnapshot.activeReminderId === nextSnapshot.activeReminderId &&
-    previousSnapshot.activeReminder === mergedActiveReminder &&
-    previousSnapshot.skills === mergedSkills &&
-    previousSnapshot.activeSkillId === nextSnapshot.activeSkillId &&
-    previousSnapshot.activeSkill === mergedActiveSkill
-  ) {
-    return previousSnapshot;
-  }
-
-  return {
-    ...nextSnapshot,
-    settings: mergedSettings,
-    capabilities: mergedCapabilities,
-    sessions: mergedSessions,
-    activeSession: mergedActiveSession,
-    notes: mergedNotes,
-    activeNote: mergedActiveNote,
-    reminders: mergedReminders,
-    activeReminder: mergedActiveReminder,
-    skills: mergedSkills,
-    activeSkill: mergedActiveSkill,
-  };
-}
-
 function App() {
   const { lang, setLang, t } = useI18n();
   const [workspace, setWorkspace] = useState(null);
@@ -677,11 +334,20 @@ function App() {
   const [collapsedSessionPreviews, setCollapsedSessionPreviews] = useState({});
   const [clockNow, setClockNow] = useState(() => Date.now());
   const [isAppVisible, setIsAppVisible] = useState(() => readInitialAppVisibility());
-  const [desktopRuntime, setDesktopRuntime] = useState(() => createInitialDesktopRuntime());
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const handleDesktopVisibilityChange = useCallback((visible: boolean) => {
+    setIsAppVisible(visible);
+  }, []);
+  const handleDesktopRestoredFromTray = useCallback(() => {
+    setNotice(t("app.desktop.runtime.notice.restored"));
+  }, [t]);
+  const desktopRuntime = useDesktopRuntime({
+    onRestoredFromTray: handleDesktopRestoredFromTray,
+    onVisibilityChange: handleDesktopVisibilityChange,
+  });
   const [galleryItems, setGalleryItems] = useState(() => readGalleryItems());
   const [gallerySearch, setGallerySearch] = useState("");
   const [galleryFilter, setGalleryFilter] = useState("all");
@@ -980,107 +646,6 @@ function App() {
       document.removeEventListener("visibilitychange", syncAppVisibility);
     };
   }, []);
-
-  useEffect(() => {
-    if (!isTauriAvailable()) {
-      return undefined;
-    }
-
-    let disposed = false;
-    const unlistenCallbacks = [];
-
-    const applyWindowState = (nextState) => {
-      if (disposed || !nextState) {
-        return;
-      }
-
-      setDesktopRuntime((current) => ({
-        ...current,
-        available: true,
-        synced: true,
-        windowState: mergeDesktopWindowState(current.windowState, nextState),
-      }));
-
-      if (typeof nextState.visible === "boolean" || typeof nextState.focused === "boolean") {
-        setIsAppVisible(Boolean(nextState.visible) && Boolean(nextState.focused));
-      }
-    };
-
-    const connectDesktopRuntime = async () => {
-      try {
-        const nextState = await getDesktopWindowState();
-        applyWindowState(nextState);
-      } catch (err) {
-        console.error("Failed to read initial desktop window state", err);
-        if (!disposed) {
-          setDesktopRuntime((current) => ({
-            ...current,
-            available: true,
-            synced: false,
-          }));
-        }
-      }
-
-      try {
-        const unlistenWindowState = await listenToDesktopWindowState((payload) => {
-          applyWindowState(payload);
-        });
-
-        if (disposed) {
-          await unlistenWindowState?.();
-          return;
-        }
-
-        unlistenCallbacks.push(unlistenWindowState);
-      } catch (err) {
-        console.error("Failed to listen to desktop window state", err);
-      }
-
-      try {
-        const unlistenLifecycle = await listenToDesktopLifecycle((payload: Record<string, any> | null | undefined) => {
-          if (disposed) {
-            return;
-          }
-
-          const reason = String(payload?.reason || "");
-          setDesktopRuntime((current) => ({
-            ...current,
-            available: true,
-            synced: true,
-            lifecycle: reason,
-          }));
-
-          if (reason === "restored-from-tray") {
-            setNotice(t("app.desktop.runtime.notice.restored"));
-          }
-        });
-
-        if (disposed) {
-          await unlistenLifecycle?.();
-          return;
-        }
-
-        unlistenCallbacks.push(unlistenLifecycle);
-      } catch (err) {
-        console.error("Failed to listen to desktop lifecycle", err);
-      }
-    };
-
-    void connectDesktopRuntime();
-
-    return () => {
-      disposed = true;
-      Promise.all(
-        unlistenCallbacks.map(async (unlisten) => {
-          if (typeof unlisten === "function") {
-            await unlisten();
-          }
-        })
-      ).catch((err) => {
-        console.error("Failed to detach desktop listeners", err);
-      });
-    };
-  }, [t]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !isAppVisible) {
