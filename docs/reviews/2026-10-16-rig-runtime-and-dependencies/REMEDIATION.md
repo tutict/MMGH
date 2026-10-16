@@ -69,6 +69,25 @@ Both pass. Residual: this is verified against a loopback stub, not a live provid
 
 - Live provider behaviour (real network, real keyring backend, non-Windows targets) remains unexercised.
 
+## Follow-up — Rig 0.42 to 0.44 migration
+
+A later dependency pass bumped Rig to 0.44, which is a breaking release. `src-tauri/src/agent/runtime.rs` was migrated to the new provider/agent API and re-verified:
+
+- `openai::Client::builder()...completions_api()` -> `openai::OpenAIConfig::new(key).with_base_url(url).connect(ReqwestClient::from(client))`.
+- `client.agent(model)` -> `AgentBuilder::new(client.chat(model))`; `Agent` is now non-generic.
+- `agent.chat(..)` now returns `PromptResponse`; the runtime maps it through `PromptResponse::output()`.
+- The `Chat`/`AgentClientExt` imports were dropped (the methods are inherent).
+
+One behavior change needed pinning: Rig 0.44 routes `completion()` to OpenAI's Responses API by default, while this app targets generic OpenAI-compatible gateways. The runtime therefore requests the Chat Completions wire explicitly (`client.chat(model)`); `complete_reply_concatenates_multi_part_content`, `complete_reply_returns_assistant_content`, and `complete_skill_draft_returns_content` would all return empty output on the Responses wire, so they guard this.
+
+Re-verification after the migration:
+
+- `cargo check --manifest-path src-tauri/Cargo.toml --all-targets` -> exit 0.
+- `cargo test --manifest-path src-tauri/Cargo.toml agent::` -> 16 passed.
+- Full `npm test` chain -> lint, typecheck, unit, build, and Rust suites all green.
+
+The API-key-leak assertion (`complete_reply_never_echoes_the_api_key_in_errors`) still holds after Rig changed `CompletionError` to `ProviderError`, so the residual risk recorded above did not materialize.
+
 ## Verification Observed After Remediation
 
 - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` -> exit 0.

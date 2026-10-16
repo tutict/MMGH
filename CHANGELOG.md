@@ -20,8 +20,9 @@ The format follows a lightweight `Keep a Changelog` style:
 - Removed the homemade provider HTTP client; split the monolithic agent module into focused `agent/` modules and delegated model calls to Rig.
 - Split the monolithic `App.tsx` into a desktop/mobile shell pair, a shared workspace controller, and focused state controllers, and consolidated the scattered stylesheets into `src/ui` design tokens plus shell and page styles; removed the legacy `src/CSS` and `src/ui-next` stylesheets.
 - Restyled the product UI around a light-first Fluent/WinUI desk with liquid-glass chrome: synced MUI with `data-theme`, added a selected-state rail, and moved the mobile mini-player into the shell instead of overlaying content.
-- Upgraded Rust crates: `rusqlite` 0.30 to 0.40 (bundled SQLite via `libsqlite3-sys` 0.38.2), `reqwest` 0.12 to 0.13, `keyring` 1.2 to 4, `tauri` 2.10 to 2.11, plus a compatible `cargo update`.
-- Upgraded frontend packages within current majors, including `@tauri-apps/api`/`cli` 2.11, TypeScript 7.0.2, Vite 7.3.6, and Vitest 3.2.7. MUI stays on 9.2 because 9.4 breaks jsdom Select selectors.
+- Upgraded Rust crates: `rusqlite` 0.30 to 0.40 (bundled SQLite via `libsqlite3-sys` 0.38.2), `reqwest` 0.12 to 0.13, `keyring` 1.2 to 4, `tauri` 2.10 to 2.12, `rig` 0.42 to 0.44, plus a compatible `cargo update` (`serde` 1.0.229, `serde_json` 1.0.154, `anyhow` 1.0.104, `once_cell` 1.21.4).
+- Upgraded frontend packages within current majors, including `@tauri-apps/api` 2.12.4, `@tauri-apps/cli` 2.12.3, TypeScript 7.0.2, Vite 7.3.7, and Vitest 3.2.7. MUI stays on 9.2 because 9.4 breaks jsdom Select selectors.
+- Migrated the Rig runtime to the 0.44 provider/agent API (`OpenAIConfig` + `AgentBuilder`, `PromptResponse::output()`) and pinned the Chat Completions wire so generic OpenAI-compatible gateways keep working.
 - Project version has been advanced to `0.1.1` after the `0.1.0` desktop release so the repository is ready for the next development cycle.
 
 ### Fixed
@@ -42,6 +43,7 @@ The format follows a lightweight `Keep a Changelog` style:
 - Rig concatenates array-of-parts message content without a separator, so multi-part replies read `firstsecond` where the removed client produced `first\nsecond`. Array-of-parts content is uncommon for chat completions; this parity difference is intentional and pinned by a test.
 - `keyring` 1.2 to 4 makes `Entry::new` fallible, so a host without an available keyring backend now reports `failed to open keyring entry` instead of a backend error from `get_password()`.
 - The shared model-call error text changed from `provider returned <status>: <body>` to `Rig agent completion failed: <rig error>`; the UI does not parse this string.
+- Rig 0.44 routes `completion()` to OpenAI's Responses API by default; the runtime pins the Chat Completions wire (`client.chat(model)`) because the app targets generic OpenAI-compatible gateways that only expose `/chat/completions`.
 
 ## [0.1.0] - 2026-04-14
 
