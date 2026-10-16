@@ -70,7 +70,7 @@ function GalleryWorkspace({
 
   const latestImage = filteredGalleryItems[0] || galleryItems[0] || null;
   const activeImage = galleryItems.find((item) => item.id === galleryViewerId) || null;
-  const viewerBackgroundProps = galleryViewerId && activeImage ? { "aria-hidden": true, inert: "" } : {};
+  const viewerBackgroundProps = galleryViewerId && activeImage ? { "aria-hidden": true, inert: true } : {};
 
   useEffect(() => {
     if (!galleryViewerId || !activeImage) {

@@ -774,7 +774,7 @@ function getLocalMinutes(clockNow, timeZone) {
     }
 
     return hour * 60 + minute;
-  } catch (error) {
+  } catch {
     return null;
   }
 }

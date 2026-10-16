@@ -177,7 +177,7 @@ export function parseImportedSkills(raw, t) {
   let parsed;
   try {
     parsed = JSON.parse(raw);
-  } catch (error) {
+  } catch {
     throw new Error(t("app.skills.import.invalidJson"));
   }
 
