@@ -9,6 +9,11 @@ mod runtime;
 mod skill;
 mod text;
 
+#[cfg(test)]
+mod test_support;
+#[cfg(test)]
+mod tests;
+
 use contract::{model_call_failure_title, AgentRuntimeContract};
 use fallback::local_fallback_reply;
 use runtime::RigRuntime;

@@ -43,6 +43,9 @@ static APP_DATA_DIR: Lazy<Mutex<Option<PathBuf>>> = Lazy::new(|| Mutex::new(None
 static DB_INIT_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 static DB_INIT_PATH: Lazy<Mutex<Option<PathBuf>>> = Lazy::new(|| Mutex::new(None));
 static DB_WRITE_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+
+#[cfg(test)]
+pub(crate) static TEST_STATE_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 static CAPABILITY_CATALOG: Lazy<Vec<Capability>> = Lazy::new(build_capability_catalog);
 const SETTINGS_KEY: &str = "agent_settings_v1";
 #[cfg_attr(test, allow(dead_code))]
@@ -1757,8 +1760,6 @@ mod tests {
   use super::*;
   use std::hint::black_box;
   use std::time::Instant;
-
-  static TEST_STATE_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
   struct EnvGuard {
     api_key: Option<String>,
