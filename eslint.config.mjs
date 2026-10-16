@@ -3,6 +3,7 @@ import babelParser from "@babel/eslint-parser";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import { reactRefresh } from "eslint-plugin-react-refresh";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 import globals from "globals";
 
 export default [
@@ -48,15 +49,26 @@ export default [
       react,
       "react-hooks": reactHooks,
       "react-refresh": reactRefresh.plugin,
+      "jsx-a11y": jsxA11y,
     },
     rules: {
       ...js.configs.recommended.rules,
       ...react.configs.recommended.rules,
-      ...reactHooks.configs.recommended.rules,
+      ...reactHooks.configs["recommended-latest"].rules,
+      ...jsxA11y.flatConfigs.recommended.rules,
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
       "react-refresh/only-export-components": "off",
       "react-hooks/set-state-in-effect": "off",
+      // The app plays music, not captioned video, so its <audio> elements have
+      // no captions to require.
+      "jsx-a11y/media-has-caption": "off",
+      // AppCheckbox wraps MUI's Checkbox (a native input) and the label text
+      // sits two levels deep, past the rule's default depth of 2.
+      "jsx-a11y/label-has-associated-control": [
+        "error",
+        { controlComponents: ["AppCheckbox"], depth: 3 },
+      ],
       "no-unused-vars": [
         "error",
         {

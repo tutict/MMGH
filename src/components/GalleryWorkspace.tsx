@@ -261,7 +261,9 @@ function GalleryWorkspace({
 
       {galleryViewerId && activeImage ? (
         <div className="gallery-viewer" role="dialog" aria-modal="true" aria-labelledby="gallery-viewer-title">
-          <div className="gallery-viewer__scrim" onClick={() => setGalleryViewerId("")} />
+          {/* Decorative pointer-only click-catcher: keyboard users dismiss the viewer
+              via Escape or the Close button, so it is hidden from assistive tech. */}
+          <div className="gallery-viewer__scrim" aria-hidden="true" onClick={() => setGalleryViewerId("")} />
           <div
             id="gallery-viewer-dialog"
             ref={viewerCardRef}
