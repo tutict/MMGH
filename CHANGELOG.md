@@ -38,6 +38,7 @@ The format follows a lightweight `Keep a Changelog` style:
 ### Docs
 
 - Documented the Rig adoption, dependency-upgrade, and four-axis review in `docs/reviews/2026-10-16-rig-runtime-and-dependencies/`.
+- Documented the frontend major dependency upgrade (React 19, Vite 8, Vitest 5, ESLint 9, Babel 8) and its four-axis review in `docs/reviews/2026-10-16-frontend-major-dependency-upgrade/`.
 
 ### Notes
 
