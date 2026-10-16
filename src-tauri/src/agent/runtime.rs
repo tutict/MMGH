@@ -1,8 +1,8 @@
 use anyhow::{anyhow, Context, Result};
 use once_cell::sync::Lazy;
-use rig::client::AgentClientExt;
-use rig::completion::{Chat, Message};
+use rig::completion::Message;
 use rig::providers::openai;
+use rig::AgentBuilder;
 
 use crate::db;
 
@@ -29,6 +29,7 @@ impl RigRuntime {
     agent
       .chat(bundle.prompt, &mut history)
       .await
+      .map(|response| response.output())
       .map_err(|error| anyhow!(error))
       .context("Rig agent completion failed")
   }
@@ -43,6 +44,7 @@ impl RigRuntime {
     agent
       .chat(prompt.to_string(), &mut history)
       .await
+      .map(|response| response.output())
       .map_err(|error| anyhow!(error))
       .context("Rig skill generation failed")
   }
@@ -54,18 +56,17 @@ fn build_agent(settings: &db::AgentSettings, preamble: &str) -> Result<rig::Agen
     .map_err(|error| anyhow!(error.clone()))?
     .clone();
 
-  let client = openai::Client::builder()
-    .api_key(settings.api_key.clone())
-    .base_url(normalize_compatible_base_url(&settings.base_url))
-    .http_client(http_client)
-    .build()
-    .map_err(|error| anyhow!(error))
-    .context("failed to build OpenAI-compatible Rig client")?
-    .completions_api();
+  let client = openai::OpenAIConfig::new(settings.api_key.clone())
+    .with_base_url(normalize_compatible_base_url(&settings.base_url))
+    .connect(rig::http_client::ReqwestClient::from(http_client));
+
+  // The app targets generic OpenAI-compatible gateways, which expose the Chat
+  // Completions API. Rig 0.44 routes `completion()` to OpenAI's Responses API
+  // by default, so pin the chat wire explicitly to keep the previous behavior.
+  let model = client.chat(settings.model.clone());
 
   Ok(
-    client
-      .agent(settings.model.clone())
+    AgentBuilder::new(model)
       .preamble(preamble)
       .temperature(0.4)
       .build(),
