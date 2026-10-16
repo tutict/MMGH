@@ -41,29 +41,29 @@ function createAppTheme(mode) {
     palette: {
       mode,
       primary: {
-        main: isDark ? "#8cb4ff" : "#3d6fd9",
-        contrastText: isDark ? "#f6f8ff" : "#ffffff",
+        main: isDark ? "#80bdfb" : "#0059a2",
+        contrastText: isDark ? "#101c28" : "#f4f9ff",
       },
       secondary: {
-        main: isDark ? "#9a9a9a" : "#5d5d5d",
+        main: isDark ? "#e3e8ee" : "#414951",
       },
       background: {
-        default: isDark ? "#0c0e12" : "#f3f3f3",
-        paper: isDark ? "#1a1d24" : "#ffffff",
+        default: isDark ? "#0e1217" : "#f0f4f9",
+        paper: isDark ? "#161b21" : "#f8fafd",
       },
       text: {
-        primary: isDark ? "#ffffff" : "#1a1a1a",
-        secondary: isDark ? "#c8c8c8" : "#5d5d5d",
+        primary: isDark ? "#e3e8ee" : "#212a33",
+        secondary: isDark ? "#c5ced6" : "#414951",
       },
-      divider: isDark ? "#3f3f3f" : "#e5e5e5",
+      divider: isDark ? "#3a4450" : "#c5ced6",
       error: {
-        main: isDark ? "#ff99a4" : "#c42b1c",
+        main: isDark ? "#f69b94" : "#9e2225",
       },
       warning: {
-        main: isDark ? "#fce100" : "#9d5d00",
+        main: isDark ? "#eccd8c" : "#6f4200",
       },
       success: {
-        main: isDark ? "#6ccb5f" : "#0f7b0f",
+        main: isDark ? "#a0d4a0" : "#135d1d",
       },
     },
     shape: {

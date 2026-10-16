@@ -78,17 +78,21 @@ test("skill workspace localizes starter skill display without rewriting saved da
   expect(screen.queryByText("Note Recall")).toBeNull();
 });
 
-test("skill workspace isolates its layout from legacy skill styles", () => {
-  const { container } = render(<SkillWorkspaceHarness />);
-
-  expect(container.querySelector(".skills-workbench")).toBeTruthy();
-  expect(container.querySelector('[class*="skill-"]')).toBeNull();
-  expect(container.querySelectorAll(".skills-switch")).toHaveLength(2);
-  expect(
-    [...container.querySelectorAll(".skills-toolbox__tab")].every((control) =>
-      control.tagName === "BUTTON" && control.hasAttribute("aria-pressed")
-    )
-  ).toBe(true);
+test("skill tools stay mutually exclusive", async () => {
+  const user = userEvent.setup();
+  render(<SkillWorkspaceHarness />);
+  const tools = within(screen.getByRole("group", { name: "技能工具" }));
+  const names = ["会话", "生成", "历史", "模板"];
+  expect(names).toHaveLength(4);
+  for (const name of names) {
+    await user.click(tools.getByRole("button", { name }));
+    for (const other of names) {
+      expect(tools.getByRole("button", { name: other })).toHaveAttribute(
+        "aria-pressed",
+        other === name ? "true" : "false"
+      );
+    }
+  }
 });
 
 test("skill workspace keeps secondary tools behind tabs", async () => {

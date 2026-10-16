@@ -14,6 +14,8 @@ type MiniPlayerTrack = {
 
 type MiniPlayerBarProps = {
   handleOpenMusicWorkspace: () => void;
+  handlePlayNextTrack?: () => void;
+  handlePlayPreviousTrack?: () => void;
   handleRestartTrack: () => void;
   handleSeek: (event: { target: { value: number | string } }) => void;
   handleTogglePlayback: () => void;
@@ -24,6 +26,8 @@ type MiniPlayerBarProps = {
 
 function MiniPlayerBar({
   handleOpenMusicWorkspace,
+  handlePlayNextTrack,
+  handlePlayPreviousTrack,
   handleRestartTrack,
   handleSeek,
   handleTogglePlayback,
@@ -79,6 +83,34 @@ function MiniPlayerBar({
     const nextValue = Array.isArray(value) ? value[0] : value;
     handleSeek({ target: { value: nextValue } });
   };
+
+  if (placement === "phone") {
+    return (
+      <div className="mobile-transport">
+        <button type="button" onClick={handleOpenMusicWorkspace}>{selectedTrack?.title}</button>
+        <AppButton onClick={handleTogglePlayback}>{isPlaying ? t("app.music.pause") : t("app.music.play")}</AppButton>
+      </div>
+    );
+  }
+
+  if (placement === "desk") {
+    return (
+      <div className="desk-transport" aria-label={t("app.music.miniPlayer.label")}>
+        <button type="button" onClick={handleOpenMusicWorkspace}>{selectedTrack?.title}</button>
+        <AppButton onClick={handlePlayPreviousTrack}>{t("app.music.previous")}</AppButton>
+        <AppButton onClick={handleTogglePlayback}>{isPlaying ? t("app.music.pause") : t("app.music.play")}</AppButton>
+        <AppButton onClick={handlePlayNextTrack}>{t("app.music.next")}</AppButton>
+        <input
+          aria-label={t("app.music.miniPlayer.progress")}
+          type="range"
+          min={0}
+          max={duration || 0}
+          value={currentTime}
+          onChange={(event) => handleSeek({ target: { value: event.target.value } })}
+        />
+      </div>
+    );
+  }
 
   return (
     <section

@@ -12,13 +12,16 @@ function SettingsWorkspace({
   providerSecurityMessage,
   providerSecurityStatus,
   settingsForm,
+  setLang = undefined,
   setSettingsForm,
+  setTheme = undefined,
+  theme = "light",
 }) {
   const { t } = useI18n();
 
   return (
     <section className="settings-workspace">
-      <div className="settings-workspace__hero panel-surface">
+      <div className="desk-settings"><div className="settings-workspace__hero">
         <div className="section-head">
           <div>
             <span className="eyebrow">{t("app.settings.page.eyebrow")}</span>
@@ -172,6 +175,24 @@ function SettingsWorkspace({
           </form>
         </section>
 
+      {setTheme || setLang ? (
+        <section className="settings-panel">
+          <h3>{t("app.language.label")}</h3>
+          <div className="desk-nav__prefs">
+            {setTheme ? (
+              <button type="button" className="ghost-button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+                {theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
+              </button>
+            ) : null}
+            {setLang ? (
+              <button type="button" className="ghost-button" onClick={() => setLang("zh-CN")}>中文</button>
+            ) : null}
+            {setLang ? (
+              <button type="button" className="ghost-button" onClick={() => setLang("en-US")}>English</button>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
         <section className="panel-surface settings-cache-panel">
           <div className="section-head">
             <div>
@@ -209,6 +230,7 @@ function SettingsWorkspace({
             {t("app.settings.cache.safeNote")}
           </p>
         </section>
+      </div>
       </div>
     </section>
   );

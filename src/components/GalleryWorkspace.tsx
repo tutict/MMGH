@@ -126,7 +126,7 @@ function GalleryWorkspace({
   }, [activeImage, galleryViewerId, setGalleryViewerId]);
 
   return (
-    <section className="gallery-panel panel-surface">
+    <section className="desk-gallery gallery-panel">
       <div {...viewerBackgroundProps}>
         <div className="gallery-toolbar">
           <div className="section-head gallery-toolbar__head">

@@ -1,0 +1,74 @@
+/* Single OKLCH ramp. Lightness and chroma change between themes; hues do not. */
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --q-font: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif;
+  --q-text-meta: 0.75rem;
+  --q-text-body: 0.875rem;
+  --q-text-title: 1rem;
+  --q-text-section: 1.25rem;
+  --q-text-display: 1.75rem;
+  --q-weight-regular: 400;
+  --q-weight-strong: 600;
+  --q-leading-title: 1.3;
+  --q-leading-body: 1.55;
+  --q-leading-prose: 1.7;
+  --q-space-1: 0.25rem;
+  --q-space-2: 0.5rem;
+  --q-space-3: 0.75rem;
+  --q-space-4: 1rem;
+  --q-space-6: 1.5rem;
+  --q-space-8: 2rem;
+  --q-space-12: 3rem;
+  --q-radius-control: 4px;
+  --q-radius-dialog: 8px;
+  --q-control-height: 2rem;
+  --q-row-height: 2.75rem;
+  --q-duration: 160ms;
+  --q-ease: cubic-bezier(0.2, 0, 0, 1);
+  --q-z-content: 0;
+  --q-z-header: 10;
+  --q-z-dock: 20;
+  --q-z-menu: 30;
+  --q-z-scrim: 40;
+  --q-z-dialog: 50;
+  --q-z-toast: 60;
+  --q-nav-width: 240px;
+  --q-bg: oklch(0.965 0.008 250);
+  --q-surface: oklch(0.985 0.005 250);
+  --q-sunken: oklch(0.94 0.01 250);
+  --q-text: oklch(0.28 0.02 250);
+  --q-text-muted: oklch(0.40 0.018 250);
+  --q-text-faint: oklch(0.48 0.015 250);
+  --q-border: oklch(0.82 0.012 250);
+  --q-control: oklch(0.62 0.03 250);
+  --q-accent: oklch(0.46 0.14 250);
+  --q-accent-ink: oklch(0.98 0.01 250);
+  --q-selected: oklch(0.94 0.03 250);
+  --q-success: oklch(0.42 0.12 145);
+  --q-warning: oklch(0.42 0.11 75);
+  --q-danger: oklch(0.46 0.16 25);
+  --q-focus: var(--q-accent);
+  --q-scrim: oklch(0.18 0.012 250 / 0.45);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --q-bg: oklch(0.18 0.012 250);
+  --q-surface: oklch(0.22 0.014 250);
+  --q-sunken: oklch(0.16 0.012 250);
+  --q-text: oklch(0.93 0.01 250);
+  --q-text-muted: oklch(0.78 0.015 250);
+  --q-text-faint: oklch(0.70 0.012 250);
+  --q-border: oklch(0.38 0.015 250);
+  --q-control: oklch(0.55 0.025 250);
+  --q-accent: oklch(0.78 0.11 250);
+  --q-accent-ink: oklch(0.22 0.03 250);
+  --q-selected: oklch(0.30 0.04 250);
+  --q-success: oklch(0.82 0.09 145);
+  --q-warning: oklch(0.86 0.09 85);
+  --q-danger: oklch(0.78 0.11 25);
+  --q-scrim: oklch(0.12 0.01 250 / 0.62);
+}

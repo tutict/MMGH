@@ -1,5 +1,6 @@
-/*
- * Quiet Task Desk visual entry.
- * The legacy cascade is intentionally not imported here.
- */
-@import "../ui-next/styles/index.css";
+@import "../ui/tokens.css";
+@import "../ui/base.css";
+@import "../ui/desktop/shell.css";
+@import "../ui/desktop/pages.css";
+@import "../ui/mobile/shell.css";
+@import "../ui/mobile/pages.css";

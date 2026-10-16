@@ -136,7 +136,7 @@ function SkillWorkspace({
     : skillDraft;
 
   return (
-    <section className="skills-workbench">
+    <section className="desk-skills skills-workbench">
       <div className="skills-workbench__layout">
       <aside className="skills-registry">
         <div className="skills-registry__header">

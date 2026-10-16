@@ -81,6 +81,7 @@ function t(key: string, params: Record<string, any> = {}) {
     "app.settings.save": "Save settings",
     "app.settings.systemPrompt": "System prompt",
     "app.settings.title": "Provider",
+    "app.nav.menu": "Menu",
     "app.theme.dark": "Dark mode",
     "app.theme.light": "Light mode",
     "app.view.reminders.badge.due": "Due",
@@ -155,7 +156,7 @@ function createShellProps(currentView, openView, legacyContent) {
     legacyContent,
     loading: false,
     mobileDockItems: allNavigationItems.filter((item) =>
-      ["today", "agent", "knowledge"].includes(item.id)
+      ["today", "agent", "knowledge", "reminders"].includes(item.id)
     ),
     noteDraft: { id: 0, title: "", body: "", tagsText: "" },
     noteList: [],
@@ -336,7 +337,7 @@ function ShellHarness() {
   return <MobileAppShell {...toShellBags(props)} />;
 }
 
-test("mobile shell renders three primary dock tabs plus More and keeps language out of the top bar", async () => {
+test("mobile shell renders four primary dock tabs and keeps language out of the top bar", async () => {
   const user = userEvent.setup();
   render(<ShellHarness />);
 
@@ -345,6 +346,7 @@ test("mobile shell renders three primary dock tabs plus More and keeps language 
   expect(within(dock).getByRole("button", { name: "Today" })).toBeInTheDocument();
   expect(within(dock).getByRole("button", { name: "Agent" })).toBeInTheDocument();
   expect(within(dock).getByRole("button", { name: "Knowledge" })).toBeInTheDocument();
+  expect(within(dock).getByRole("button", { name: "Reminders" })).toBeInTheDocument();
   expect(within(dock).queryByRole("button", { name: "Weather" })).not.toBeInTheDocument();
 
   const topbar = screen.getByTestId("mobile-topbar");
@@ -352,27 +354,26 @@ test("mobile shell renders three primary dock tabs plus More and keeps language 
   expect(within(topbar).queryByText("Theme")).not.toBeInTheDocument();
   expect(within(topbar).getByRole("button", { name: "Light mode" })).toBeInTheDocument();
 
-  await user.click(within(dock).getByRole("button", { name: "More" }));
+  await user.click(screen.getByRole("button", { name: "Menu" }));
   await user.click(screen.getByRole("button", { name: /Settings/i }));
   expect(screen.queryByText("Legacy settings page")).not.toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
 
-  await user.click(within(dock).getByRole("button", { name: "More" }));
-  await user.click(screen.getByRole("button", { name: /Reminders/i }));
+  await user.click(within(dock).getByRole("button", { name: "Reminders" }));
   expect(screen.queryByText("Legacy reminders page")).not.toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Reminder Center" })).toBeInTheDocument();
 });
 
-test("mobile More sheet stays inside the app shell so mobile theme tokens apply", async () => {
+test("mobile menu sheet stays inside the app shell so mobile theme tokens apply", async () => {
   const user = userEvent.setup();
   const { container } = render(<ShellHarness />);
 
   await user.click(
-    within(screen.getByTestId("mobile-dock")).getByRole("button", { name: "More" })
+    screen.getByRole("button", { name: "Menu" })
   );
 
   const appShell = container.querySelector(".mobile-app");
-  const moreDialog = screen.getByRole("dialog", { name: "More" });
+  const moreDialog = screen.getByRole("dialog", { name: "Menu" });
 
   expect(appShell).toContainElement(moreDialog);
 });

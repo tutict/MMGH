@@ -4,19 +4,6 @@ import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
 import { AppButton, AppFileInput, AppIconButton, AppSlider } from "./ui";
 
 const LYRIC_LINE_HEIGHT = 72;
-const COSMIC_DUST_PARTICLES = Array.from({ length: 24 }, (_, index) => {
-  const seed = pseudoRandom(index + 1);
-  const secondary = pseudoRandom(index + 101);
-  const tertiary = pseudoRandom(index + 301);
-  return {
-    id: `music-dust-${index}`,
-    angle: seed * Math.PI * 2,
-    radius: 118 + secondary * 50,
-    size: 1.3 + tertiary * 3.2,
-    opacity: 0.16 + seed * 0.34,
-  };
-});
-
 const LEGACY_TRACK_LYRICS = {
   "builtin-reply-pulse": [
     { time: 0, text: "Reply pulse in the midnight glow", subtext: "深夜里，回复的脉冲开始点亮屏幕" },
@@ -97,6 +84,7 @@ function MusicWorkspace({
   localizedTracks,
   onRefreshLyrics,
   onUploadLyricsFile,
+  onUploadTracks,
   playMode,
   selectedTrack,
   selectedTrackId,
@@ -111,23 +99,7 @@ function MusicWorkspace({
   const compactLayoutRef = React.useRef(true);
   const [isLibraryOpen, setIsLibraryOpen] = React.useState(false);
   const [isCompactLayout, setIsCompactLayout] = React.useState(true);
-  const [particleCount, setParticleCount] = React.useState(() =>
-    typeof window === "undefined" ? 18 : resolveParticleBudget(window)
-  );
   const pulseLevel = isPlaying ? 0.34 : 0.18;
-
-  React.useEffect(() => {
-    if (typeof window === "undefined") {
-      return undefined;
-    }
-
-    const handleResize = () => {
-      setParticleCount(resolveParticleBudget(window));
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   React.useEffect(() => {
     const node = consoleRef.current;
@@ -211,7 +183,7 @@ function MusicWorkspace({
   return (
     <section
       ref={consoleRef}
-      className={`audio-console audio-theme-${selectedTrack?.theme || "ember"} ${
+      className={`desk-music audio-console audio-theme-${selectedTrack?.theme || "ember"} ${
         isPlaying ? "audio-is-playing" : "audio-is-paused"
       }`}
     >
@@ -299,25 +271,7 @@ function MusicWorkspace({
               <span className="audio-console__arm-base" aria-hidden="true" />
               <span className={`audio-console__needle ${isPlaying ? "audio-is-playing" : ""}`} aria-hidden="true" />
               <div className="audio-console__disc-stage">
-                <svg
-                  className="audio-console__particle-ring"
-                  viewBox="0 0 400 400"
-                  aria-hidden="true"
-                >
-                  <defs>
-                    <radialGradient id="audio-console-dust-gradient" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" stopColor="rgba(255,255,255,0.95)" />
-                      <stop offset="45%" stopColor="rgba(255,255,255,0.72)" />
-                      <stop offset="72%" stopColor="rgba(255,255,255,0.28)" />
-                      <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-                    </radialGradient>
-                  </defs>
-                  <CosmicDustRing
-                    isPlaying={isPlaying}
-                    particleCount={particleCount}
-                    pulseLevel={pulseLevel}
-                  />
-                </svg>
+                
 
                 <div className={`audio-console__vinyl ${isPlaying ? "audio-is-spinning" : ""}`}>
                   <span className="audio-console__vinyl-ring" aria-hidden="true" />
@@ -392,6 +346,12 @@ function MusicWorkspace({
                       <UploadIcon />
                       <span>{t("app.music.lyrics.upload")}</span>
                     </AppButton>
+                    <AppFileInput
+                      ref={uploadInputRef}
+                      accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg"
+                      multiple
+                      onChange={onUploadTracks}
+                    />
                     <AppFileInput ref={lyricsUploadInputRef}
                       accept=".lrc,.txt,text/plain"
                       onChange={(event) => {
@@ -588,93 +548,10 @@ function getTrackDurationLabel(track, index, selectedTrackId, currentDuration) {
   return formatDuration(188 + index * 13);
 }
 
-function buildCosmicDust({ particles, pulseLevel, isPlaying }: Record<string, any>) {
-  const center = 200;
-  const pulseRadiusBoost = isPlaying ? 5 * pulseLevel : 1;
-
-  return particles.map((particle, index) => {
-    const theta = particle.angle + index * 0.08;
-    const orbitRadius = particle.radius + pulseRadiusBoost;
-    const point = polarToCartesian(
-      center,
-      center,
-      orbitRadius,
-      theta
-    );
-
-    return {
-      id: particle.id,
-      x: point.x,
-      y: point.y,
-      r: particle.size * (0.84 + pulseLevel * 0.66),
-      opacity: Math.min(particle.opacity + pulseLevel * 0.18, 0.72),
-    };
-  });
-}
-
-function polarToCartesian(cx, cy, radius, angle) {
-  return {
-    x: cx + Math.cos(angle) * radius,
-    y: cy + Math.sin(angle) * radius,
-  };
-}
-
 function pseudoRandom(seed) {
   const value = Math.sin(seed * 91.345 + 0.618) * 43758.5453123;
   return value - Math.floor(value);
 }
-
-function resolveParticleBudget(win) {
-  const nav = win.navigator;
-  const reducedMotion = win.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-  const memory = Number(nav?.deviceMemory || 0);
-  const cores = Number(nav?.hardwareConcurrency || 0);
-  const width = Number(win.innerWidth || 0);
-
-  if (reducedMotion) {
-    return 32;
-  }
-
-  if ((memory && memory <= 4) || (cores && cores <= 4) || width <= 900) {
-    return 56;
-  }
-
-  if ((memory && memory <= 8) || (cores && cores <= 8) || width <= 1280) {
-    return 80;
-  }
-
-  return 110;
-}
-
-const CosmicDustRing = React.memo(function CosmicDustRing({
-  isPlaying,
-  particleCount,
-  pulseLevel,
-}: Record<string, any>) {
-  const cosmicDust = React.useMemo(
-    () =>
-      buildCosmicDust({
-        particles: COSMIC_DUST_PARTICLES.slice(0, particleCount),
-        pulseLevel,
-        isPlaying,
-
-      }),
-    [isPlaying, particleCount, pulseLevel]
-  );
-
-  return cosmicDust.map((particle) => (
-    <circle
-      key={particle.id}
-      className="audio-console__particle-dot"
-      cx={particle.x}
-      cy={particle.y}
-      r={particle.r}
-      style={{
-        opacity: particle.opacity,
-      }}
-    />
-  ));
-});
 
 function resolveLyricsStatusLabel({ lyricsError, lyricsSource, lyricsStatus, t }) {
   if (lyricsStatus === "loading") {

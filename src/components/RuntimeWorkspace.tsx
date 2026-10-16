@@ -17,12 +17,10 @@ function RuntimeWorkspace({
   handleOpenSkill,
   handleRunAgent,
   handleToggleSkillMounted,
-  isInspectorOpen,
   lang,
   loading,
   mountedSkillIds,
   normalizeActivityKind,
-  openInspector,
   openView,
   PanelIcon,
   providerConfigured,
@@ -45,7 +43,7 @@ function RuntimeWorkspace({
   const isCapturingReminder = busy === "capture-reminder";
 
   return (
-    <section className="runtime-workspace">
+    <section className="desk-runtime runtime-workspace">
       <section className="panel-surface runtime-status-panel">
         <div className="runtime-status-panel__identity">
           <span className="runtime-status-panel__label">{t("app.view.agent.badge.session")}</span>
@@ -316,22 +314,6 @@ function RuntimeWorkspace({
               </p>
             )}
 
-            <div className="runtime-mini-actions">
-              <AppButton
-                className={`ghost-button runtime-sidebar-card__action ${
-                  isInspectorOpen ? "is-active" : ""
-                }`}
-                onClick={() => openInspector("activity")}
-              >
-                {t("app.activity.title")}
-              </AppButton>
-              <AppButton
-                className="ghost-button runtime-sidebar-card__action"
-                onClick={() => openView("skills")}
-              >
-                {t("app.mode.skills")}
-              </AppButton>
-            </div>
 
             <div className="runtime-disclosure-stack">
               <details className="runtime-disclosure">

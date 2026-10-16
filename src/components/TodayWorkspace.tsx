@@ -1,17 +1,17 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { useI18n } from "../i18n";
 import { AppButton, AppStatusChip } from "./ui";
 
 function TodayWorkspace({
   activeSession,
   activeSessionId,
-  activeWeatherCity,
+  activeWeatherCity: _activeWeatherCity,
   busy,
   clockNow,
   completedTodayItems,
   continueSessionItems,
-  dueReminderCount,
-  formatShortClock,
+  dueReminderCount: _dueReminderCount,
+  formatShortClock: _formatShortClock,
   formatTime,
   handleOpenNote,
   handleOpenLinkedNote,
@@ -27,7 +27,7 @@ function TodayWorkspace({
   noteList,
   openReminderCount,
   openView,
-  providerConfigured,
+  providerConfigured: _providerConfigured,
   recentCaptureItems,
   recurringPatternInsights,
   resolvePatternStatusTone,
@@ -37,82 +37,18 @@ function TodayWorkspace({
   ruleActionRecommendations,
   ruleEffectivenessInsights,
   ruleEffectivenessSignals,
-  sessionLibraryPanel,
   todayReminderItems,
   todayReviewSignals,
-  weatherStatus,
+  weatherStatus: _weatherStatus,
 }) {
   const { t } = useI18n();
   const todayActionBusy = busy === "toggle-reminder-status";
+  const hiddenReminderCount = Math.max(0, Number(openReminderCount) - todayReminderItems.length);
   const todayActionsDisabled = busy !== "" || loading;
-  const dayPeriod = useMemo(() => {
-    const hour = new Date(clockNow).getHours();
-    if (hour < 12) {
-      return t("app.today.daypart.morning");
-    }
-    if (hour < 18) {
-      return t("app.today.daypart.afternoon");
-    }
-    return t("app.today.daypart.evening");
-  }, [clockNow, t]);
   const activeSessionTitle = activeSession?.session?.title || t("app.session.defaultTitle");
-  const activeSessionStatus = activeSession?.session?.status || "idle";
-  const weatherLabel =
-    weatherStatus === "idle" || weatherStatus === "error"
-      ? t(`app.weather.status.${weatherStatus}`)
-      : t(activeWeatherCity?.conditionKey || "app.weather.status.loading");
-
   return (
-    <section className="today-workspace">
+    <section className="desk-today today-workspace">
       <div className="today-layout">
-        <section className="panel-surface today-hero">
-          <div className="today-hero__topline">
-            <div className="today-hero__copy">
-              <span className="eyebrow">{t("app.today.eyebrow")}</span>
-              <h3>{t("app.today.title", { dayPeriod })}</h3>
-              <p>{t("app.today.description")}</p>
-            </div>
-            <div className="today-hero__session">
-              <span className="section-note">{t("app.today.sessions.active")}</span>
-              <strong>{activeSessionTitle}</strong>
-              <AppStatusChip tone={activeSessionStatus}>
-                {t(`app.status.${activeSessionStatus}`)}
-              </AppStatusChip>
-            </div>
-          </div>
-          <div className="today-hero__stats">
-            <div className="today-stat today-stat--accent">
-              <span>{t("app.today.stat.open")}</span>
-              <strong>{openReminderCount}</strong>
-            </div>
-            <div className="today-stat today-stat--warning">
-              <span>{t("app.today.stat.due")}</span>
-              <strong>{dueReminderCount}</strong>
-            </div>
-            <div className="today-stat today-stat--neutral">
-              <span>{t("app.today.stat.clock")}</span>
-              <strong>{formatShortClock(clockNow, lang)}</strong>
-            </div>
-          </div>
-          <div className="today-hero__meta">
-            <span className="today-meta-pill">
-              {activeWeatherCity?.nameKey ? t(activeWeatherCity.nameKey) : activeWeatherCity?.name}
-            </span>
-            <span className="today-meta-pill">{weatherLabel}</span>
-            <span className="today-meta-pill">
-              {t(`app.provider.${providerConfigured ? "configured" : "pending"}`)}
-            </span>
-          </div>
-          <div className="today-hero__actions">
-            <AppButton className="solid-button" onClick={() => openView("agent")}>
-              {t("app.today.action.resume")}
-            </AppButton>
-            <AppButton className="ghost-button" onClick={() => openView("reminders")}>
-              {t("app.today.action.reminders")}
-            </AppButton>
-          </div>
-        </section>
-
         <section className="today-primary-column">
           <section className="panel-surface today-section">
             <div className="today-section__head">
@@ -191,8 +127,13 @@ function TodayWorkspace({
             )}
           </section>
 
-          {sessionLibraryPanel || (
-            <section className="panel-surface today-section">
+          
+            {hiddenReminderCount > 0 ? (
+            <AppButton className="ghost-button" onClick={() => openView("reminders")}>
+              {t("app.today.restCount", { count: hiddenReminderCount })}
+            </AppButton>
+          ) : null}
+          <section className="panel-surface today-section">
               <div className="today-section__head">
                 <div>
                   <span className="eyebrow">{t("app.today.sessions.eyebrow")}</span>
@@ -237,7 +178,6 @@ function TodayWorkspace({
                 </div>
               ) : null}
             </section>
-          )}
         </section>
 
         <aside className="today-sidebar">
@@ -258,8 +198,8 @@ function TodayWorkspace({
               ))}
             </div>
 
-            <div className="today-rule-block">
-              <span className="section-note">{t("app.today.review.rule.actionTitle")}</span>
+            <details open className="today-rule-block">
+              <summary>{t("app.today.review.rule.actionTitle")}</summary>
               {ruleActionRecommendations.length > 0 ? (
                 <div className="today-rule-list">
                   {ruleActionRecommendations.map((item) => (
@@ -325,10 +265,10 @@ function TodayWorkspace({
               ) : (
                 <p className="section-note runtime-sidebar-copy">{t("app.today.review.rule.actionEmpty")}</p>
               )}
-            </div>
+            </details>
 
-            <div className="today-rule-block">
-              <span className="section-note">{t("app.today.review.ruleTitle")}</span>
+            <details className="today-rule-block">
+              <summary>{t("app.today.review.ruleTitle")}</summary>
               <div className="today-rule-grid">
                 {ruleEffectivenessSignals.map((item) => (
                   <article key={item.id} className="today-review-signal today-rule-signal">
@@ -409,11 +349,11 @@ function TodayWorkspace({
               ) : (
                 <p className="section-note runtime-sidebar-copy">{t("app.today.review.ruleEmpty")}</p>
               )}
-            </div>
+            </details>
 
             {recurringPatternInsights.length > 0 ? (
-              <div className="today-pattern-list">
-                <span className="section-note">{t("app.today.review.recurringTitle")}</span>
+              <details className="today-pattern-list">
+                <summary>{t("app.today.review.recurringTitle")}</summary>
                 {recurringPatternInsights.map((item) => (
                   <article key={item.title} className="today-pattern-item">
                     <AppButton
@@ -486,7 +426,7 @@ function TodayWorkspace({
                     </div>
                   </article>
                 ))}
-              </div>
+              </details>
             ) : (
               <p className="section-note runtime-sidebar-copy">
                 {t("app.today.review.recurringEmpty")}
@@ -494,13 +434,8 @@ function TodayWorkspace({
             )}
           </section>
 
-          <section className="panel-surface today-section today-section--compact">
-            <div className="today-section__head">
-              <div>
-                <span className="eyebrow">{t("app.today.completed.eyebrow")}</span>
-                <h4>{t("app.today.completed.title")}</h4>
-              </div>
-            </div>
+          <details className="today-disclosure">
+            <summary>{t("app.today.completed.title")}</summary>
 
             {completedTodayItems.length > 0 ? (
               <div className="today-capture-list">
@@ -559,15 +494,10 @@ function TodayWorkspace({
                 {t("app.today.completed.emptyDescription")}
               </p>
             )}
-          </section>
+          </details>
 
-          <section className="panel-surface today-section today-section--compact">
-            <div className="today-section__head">
-              <div>
-                <span className="eyebrow">{t("app.today.captures.eyebrow")}</span>
-                <h4>{t("app.today.captures.title")}</h4>
-              </div>
-            </div>
+          <details className="today-disclosure">
+            <summary>{t("app.today.captures.title")}</summary>
 
             {recentCaptureItems.length > 0 ? (
               <div className="today-capture-list">
@@ -605,34 +535,9 @@ function TodayWorkspace({
                 {t("app.today.captures.emptyDescription")}
               </p>
             )}
-          </section>
+          </details>
 
-          <section className="panel-surface today-section today-section--compact">
-            <div className="today-section__head">
-              <div>
-                <span className="eyebrow">{t("app.today.shortcuts.eyebrow")}</span>
-                <h4>{t("app.today.shortcuts.title")}</h4>
-              </div>
-            </div>
-            <div className="today-shortcut-grid">
-              <AppButton className="today-shortcut" onClick={() => openView("knowledge")}>
-                <strong>{t("app.mode.knowledge")}</strong>
-                <span>{t("app.today.shortcuts.knowledge")}</span>
-              </AppButton>
-              <AppButton className="today-shortcut" onClick={() => openView("skills")}>
-                <strong>{t("app.mode.skills")}</strong>
-                <span>{t("app.today.shortcuts.skills")}</span>
-              </AppButton>
-              <AppButton className="today-shortcut" onClick={() => openView("weather")}>
-                <strong>{t("app.mode.weather")}</strong>
-                <span>{t("app.today.shortcuts.weather")}</span>
-              </AppButton>
-              <AppButton className="today-shortcut" onClick={() => openView("settings")}>
-                <strong>{t("app.mode.settings")}</strong>
-                <span>{t("app.today.shortcuts.settings")}</span>
-              </AppButton>
-            </div>
-          </section>
+          
         </aside>
       </div>
     </section>

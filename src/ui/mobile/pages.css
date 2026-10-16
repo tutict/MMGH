@@ -1,0 +1,12 @@
+.mobile-main { font-size: 1rem; }
+.mobile-row, .mobile-list button { min-height: 56px; }
+.mobile-button, .mobile-topbar button, .mobile-dock__item { min-height: 44px; }
+.mobile-today, .mobile-page { display: flex; flex-direction: column; gap: var(--q-space-4); }
+.mobile-gallery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--q-space-2); }
+.mobile-gallery-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; }
+.mobile-weather-temp { font-size: 1.75rem; font-variant-numeric: tabular-nums; }
+.mobile-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: var(--q-space-3); }
+.mobile-hourly { display: flex; gap: var(--q-space-3); overflow-x: auto; }
+.mobile-editor { display: flex; flex-direction: column; gap: var(--q-space-3); }
+.mobile-segmented { display: flex; gap: var(--q-space-1); overflow-x: auto; }
+.mobile-segmented button[aria-pressed="true"] { background: var(--q-selected); font-weight: var(--q-weight-strong); }

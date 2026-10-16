@@ -23,7 +23,7 @@ function KnowledgeVault({
   const activeNoteUpdatedAt = activeNote?.updatedAt || 0;
 
   return (
-    <section className="notes-workbench">
+    <section className="desk-knowledge notes-workbench">
       <div className="notes-workbench__layout">
       <aside className="notes-index">
         <div className="notes-index__header">

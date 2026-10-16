@@ -109,7 +109,7 @@ function WeatherWorkspace({
       selectedCity.timeZone,
     ]
   );
-  const weatherAmbientStyle = useMemo(
+  const _weatherAmbientStyle = useMemo(
     () => ({
       "--weather-heat": weatherMood.heat.toFixed(3),
       "--weather-chill": weatherMood.chill.toFixed(3),
@@ -291,46 +291,8 @@ function WeatherWorkspace({
   }
 
   return (
-    <section className="weather-panel panel-surface">
-      <div
-        className={`weather-stage weather-stage--${weatherAppearance.tone} weather-stage--clock-${weatherMood.phase} weather-stage--thermal-${weatherMood.thermalBand}`}
-        style={weatherAmbientStyle as React.CSSProperties}
-      >
-        <div className={`weather-scene weather-scene--${weatherAppearance.scene}`} aria-hidden="true">
-          <span className="weather-scene__glow weather-scene__glow--one" />
-          <span className="weather-scene__glow weather-scene__glow--two" />
-          <span className="weather-scene__cloud weather-scene__cloud--one" />
-          <span className="weather-scene__cloud weather-scene__cloud--two" />
-          <span className="weather-scene__cloud weather-scene__cloud--three" />
-          <span className="weather-scene__streak weather-scene__streak--one" />
-          <span className="weather-scene__streak weather-scene__streak--two" />
-          <span className="weather-scene__streak weather-scene__streak--three" />
-          <span className="weather-scene__streak weather-scene__streak--four" />
-          <span className="weather-scene__snow weather-scene__snow--one" />
-          <span className="weather-scene__snow weather-scene__snow--two" />
-          <span className="weather-scene__snow weather-scene__snow--three" />
-          <span className="weather-scene__snow weather-scene__snow--four" />
-          <span className="weather-scene__mist weather-scene__mist--one" />
-          <span className="weather-scene__mist weather-scene__mist--two" />
-          <span className="weather-scene__gust weather-scene__gust--one" />
-          <span className="weather-scene__gust weather-scene__gust--two" />
-          <span className="weather-scene__bolt weather-scene__bolt--one" />
-          <span className="weather-scene__bolt weather-scene__bolt--two" />
-        </div>
-        <div
-          className={`weather-ambient weather-ambient--${weatherMood.phase} weather-ambient--${weatherMood.thermalBand}`}
-          aria-hidden="true"
-        >
-          <span className="weather-ambient__halo weather-ambient__halo--one" />
-          <span className="weather-ambient__halo weather-ambient__halo--two" />
-          <span className="weather-ambient__star weather-ambient__star--one" />
-          <span className="weather-ambient__star weather-ambient__star--two" />
-          <span className="weather-ambient__star weather-ambient__star--three" />
-          <span className="weather-ambient__star weather-ambient__star--four" />
-          <span className="weather-ambient__thermal weather-ambient__thermal--one" />
-          <span className="weather-ambient__thermal weather-ambient__thermal--two" />
-        </div>
-        <div className="weather-stage__toolbar">
+    <section className="desk-weather weather-panel" data-testid="weather-workspace">
+      <div className="weather-stage__toolbar">
           <div className="weather-stage__status">
             <AppStatusChip tone={resolveWeatherStatusTone(weatherStatus)}>
               {t(`app.weather.status.${weatherStatus}`)}
@@ -593,7 +555,6 @@ function WeatherWorkspace({
             CAMS / Open-Meteo
           </a>
         </div>
-      </div>
     </section>
   );
 }
@@ -760,7 +721,7 @@ function WeatherTiltCard({
   return (
     <Component
       {...props}
-      className={["weather-tilt", className].filter(Boolean).join(" ")}
+      className={className}
       onMouseMove={onMouseMove}
       onMouseLeave={onMouseLeave}
     >

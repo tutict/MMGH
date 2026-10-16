@@ -34,7 +34,7 @@ function MobileTodayView({
   const sessionTitle = activeSession?.session?.title || "";
   const dueCount = Number(dueReminderCount) || 0;
   const openCount = Number(openReminderCount) || 0;
-  const sessions = continueSessionItems.slice(0, 2);
+  const sessions = continueSessionItems.slice(0, 3);
   const doneItems = completedTodayItems.slice(0, 3);
   const signalCards = [
     ...[...ruleEffectivenessSignals, ...todayReviewSignals]
