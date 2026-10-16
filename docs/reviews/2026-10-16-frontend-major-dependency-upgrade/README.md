@@ -48,22 +48,24 @@ and cargo all pass today.
 
 ## Findings Index
 
-| ID | Axis | Severity | Summary |
-|---|---|---|---|
-| S1 | Spec | P3 | Two adjacent CHANGELOG bullets describe the frontend upgrade; accurate but could be merged |
-| T1 | Standards | P2 | `eslint.config.mjs` imports `globals` and `@eslint/js`, neither declared in `package.json` |
-| T2 | Standards | P3 | `eslint-plugin-jsx-a11y` is declared but never enabled (pre-existing) |
-| T3 | Standards | P3 | react-hooks uses the legacy 16-rule `recommended`, not the flat-native `recommended-latest` (17 rules) |
-| T4 | Standards | P3 | The eslint config's `vite.config.ts` override is dead code under `eslint src` (pre-existing) |
-| D1 | Data | P3 | Lockfile regenerated from scratch; one extraneous local package (`yaml`) in `node_modules` |
-| D2 | Data | P3 | Pre-existing tracked file inside the gitignored `dist/` (unrelated to this change set) |
-| C1 | Compatibility | P2 | Vite 8 warns `vite.config.ts` is ESM loaded as CommonJS; `configLoader: native` will become the default |
-| C2 | Compatibility | P3 | React 19 `inert` type change — handled, renders `inert=""` |
-| C3 | Compatibility | P3 | ESLint 9 `no-unused-vars` `caughtErrors` default change — handled |
-| C4 | Compatibility | P3 | Vite 8/rolldown shifted bundle composition; parity verified only by build + tests |
-| C5 | Compatibility | P3 | React 19 removed-API surface — all absent from the codebase (grep-verified) |
-| C6 | Compatibility | P3 | jsdom 26 to 30 / Vitest 3 to 5 change the test environment |
-| C7 | Compatibility | P3 | ESLint is capped at 9 (not 10) by plugin peer ranges |
+Disposition status is authoritative in `REMEDIATION.md`.
+
+| ID | Axis | Severity | Summary | Status |
+|---|---|---|---|---|
+| S1 | Spec | P3 | Two adjacent CHANGELOG bullets describe the frontend upgrade; accurate but could be merged | Fixed |
+| T1 | Standards | P2 | `eslint.config.mjs` imports `globals` and `@eslint/js`, neither declared in `package.json` | Fixed |
+| T2 | Standards | P3 | `eslint-plugin-jsx-a11y` is declared but never enabled (pre-existing) | Fixed |
+| T3 | Standards | P3 | react-hooks uses the legacy 16-rule `recommended`, not the flat-native `recommended-latest` (17 rules) | Fixed |
+| T4 | Standards | P3 | The eslint config's `vite.config.ts` override is dead code under `eslint src` (pre-existing) | Fixed |
+| D1 | Data | P3 | Lockfile regenerated from scratch; one extraneous local package (`yaml`) in `node_modules` | Fixed |
+| D2 | Data | P3 | Pre-existing tracked file inside the gitignored `dist/` (unrelated to this change set) | Fixed |
+| C1 | Compatibility | P2 | Vite 8 warns `vite.config.ts` is ESM loaded as CommonJS; `configLoader: native` will become the default | Fixed |
+| C2 | Compatibility | P3 | React 19 `inert` type change — handled, renders `inert=""` | No action |
+| C3 | Compatibility | P3 | ESLint 9 `no-unused-vars` `caughtErrors` default change — handled | No action |
+| C4 | Compatibility | P3 | Vite 8/rolldown shifted bundle composition; parity verified only by build + tests | Accepted |
+| C5 | Compatibility | P3 | React 19 removed-API surface — all absent from the codebase (grep-verified) | Verified |
+| C6 | Compatibility | P3 | jsdom 26 to 30 / Vitest 3 to 5 change the test environment | Accepted |
+| C7 | Compatibility | P3 | ESLint is capped at 9 (not 10) by plugin peer ranges | Documented |
 
 ## Evidence Observed
 

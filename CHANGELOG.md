@@ -21,9 +21,8 @@ The format follows a lightweight `Keep a Changelog` style:
 - Split the monolithic `App.tsx` into a desktop/mobile shell pair, a shared workspace controller, and focused state controllers, and consolidated the scattered stylesheets into `src/ui` design tokens plus shell and page styles; removed the legacy `src/CSS` and `src/ui-next` stylesheets.
 - Restyled the product UI around a light-first Fluent/WinUI desk with liquid-glass chrome: synced MUI with `data-theme`, added a selected-state rail, and moved the mobile mini-player into the shell instead of overlaying content.
 - Upgraded Rust crates: `rusqlite` 0.30 to 0.40 (bundled SQLite via `libsqlite3-sys` 0.38.2), `reqwest` 0.12 to 0.13, `keyring` 1.2 to 4, `tauri` 2.10 to 2.12, `rig` 0.42 to 0.44, plus a compatible `cargo update` (`serde` 1.0.229, `serde_json` 1.0.154, `anyhow` 1.0.104, `once_cell` 1.21.4).
-- Upgraded frontend packages within their then-current majors, including `@tauri-apps/api` 2.12.4, `@tauri-apps/cli` 2.12.3, TypeScript 7.0.2, and `@testing-library/user-event` 14.6.8. MUI stays on 9.2 because 9.4 breaks jsdom Select selectors.
+- Upgraded the frontend toolchain: within-major refreshes (`@tauri-apps/api` 2.12.4, `@tauri-apps/cli` 2.12.3, TypeScript 7.0.2, `@testing-library/user-event` 14.6.8) plus the across-major bumps React 18 to 19 (`react`, `react-dom`, `@types/react`, `@types/react-dom`), Vite 7 to 8 with `@vitejs/plugin-react` 6, Vitest 3 to 5, jsdom 26 to 30, `@testing-library/jest-dom` 6 to 7, ESLint 8 to 9 (migrated from `.eslintrc.cjs` to flat config in `eslint.config.mjs`), and Babel 7 to 8. MUI stays on 9.2 because 9.4 breaks jsdom Select selectors, and ESLint stops at 9 because `eslint-plugin-react` and `eslint-plugin-jsx-a11y` still cap their peer range at ESLint 9; the unused `eslint-config-react-app` (which pinned ESLint 8) was dropped.
 - Migrated the Rig runtime to the 0.44 provider/agent API (`OpenAIConfig` + `AgentBuilder`, `PromptResponse::output()`) and pinned the Chat Completions wire so generic OpenAI-compatible gateways keep working.
-- Upgraded the frontend toolchain across majors: React 18 to 19 (`react`, `react-dom`, `@types/react`, `@types/react-dom`), Vite 7 to 8 with `@vitejs/plugin-react` 6, Vitest 3 to 5, jsdom 26 to 30, `@testing-library/jest-dom` 6 to 7, ESLint 8 to 9 (migrated from `.eslintrc.cjs` to flat config in `eslint.config.mjs`), and Babel 7 to 8. ESLint stops at 9 because `eslint-plugin-react` and `eslint-plugin-jsx-a11y` still cap their peer range at ESLint 9; the unused `eslint-config-react-app` (which pinned ESLint 8) was dropped.
 - Project version has been advanced to `0.1.1` after the `0.1.0` desktop release so the repository is ready for the next development cycle.
 
 ### Fixed
@@ -49,6 +48,10 @@ The format follows a lightweight `Keep a Changelog` style:
 - React 19 types make `inert` a boolean attribute; `GalleryWorkspace` passes `inert={true}`, which still renders `inert=""`.
 - ESLint 9 defaults `no-unused-vars` `caughtErrors` to `all`, so two unused catch bindings became optional catch bindings (`catch {`).
 - Vitest 5 requires importing `defineConfig` from `vitest/config` for the `test` field in `vite.config.ts` to type-check.
+- `eslint-plugin-jsx-a11y` is now enabled (it was declared but never wired in), which fixed two unassociated toggle labels and hid the decorative gallery scrim from assistive tech; `media-has-caption` is off because the app is a music player.
+- `package.json` sets `"type": "module"` so Vite 8 loads `vite.config.ts` as ESM, removing the `configLoader: native` warning; the lint script also covers `vite.config.ts` now.
+- `eslint.config.mjs` imports `@eslint/js` and `globals`, which are now declared in `devDependencies` instead of relying on ESLint's hoisted copies.
+- The stale `dist/闹钟2-哔声_爱给网_aigei_com.mp3` build artifact is no longer tracked (it duplicated the asset in `public/` and `dist/` is gitignored).
 
 ## [0.1.0] - 2026-04-14
 
