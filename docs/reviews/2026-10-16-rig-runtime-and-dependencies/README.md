@@ -45,7 +45,7 @@ Disposition status is authoritative in `REMEDIATION.md`.
 |---|---|---|---|---|
 | S1 | Spec | P3 | CHANGELOG wording "Removed ... monolithic agent completion loop" is imprecise (refactored, not removed) | Fixed |
 | T1 | Standards | P2 | Deleted `provider.rs` tests (`extract_text` string/array content, `completion_endpoint`) were not replaced | Fixed |
-| T2 | Standards | P2 | No automated test covers the Rig call path, `run_agent`, or `forge_skill` | Fixed (Rig seam) |
+| T2 | Standards | P2 | No automated test covers the Rig call path, `run_agent`, or `forge_skill` | Fixed |
 | T3 | Standards | P3 | `src-tauri/Cargo.toml` lost its trailing newline (spurious diff) | Fixed |
 | D1 | Data | P2 | Rig call path is untested — release-baseline regression risk (duplicate of T2, recorded on the data axis) | Fixed |
 | D2 | Data | P3 | `HTTP_CLIENT` uses `.expect()`, panicking on first use if client construction fails | Fixed |

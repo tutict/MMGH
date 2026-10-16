@@ -18,6 +18,7 @@ The format follows a lightweight `Keep a Changelog` style:
 ### Changed
 
 - Removed the homemade provider HTTP client; split the monolithic agent module into focused `agent/` modules and delegated model calls to Rig.
+- Split the monolithic `App.tsx` into a desktop/mobile shell pair, a shared workspace controller, and focused state controllers, and consolidated the scattered stylesheets into `src/ui` design tokens plus shell and page styles; removed the legacy `src/CSS` and `src/ui-next` stylesheets.
 - Restyled the product UI around a light-first Fluent/WinUI desk with liquid-glass chrome: synced MUI with `data-theme`, added a selected-state rail, and moved the mobile mini-player into the shell instead of overlaying content.
 - Upgraded Rust crates: `rusqlite` 0.30 to 0.40 (bundled SQLite via `libsqlite3-sys` 0.38.2), `reqwest` 0.12 to 0.13, `keyring` 1.2 to 4, `tauri` 2.10 to 2.11, plus a compatible `cargo update`.
 - Upgraded frontend packages within current majors, including `@tauri-apps/api`/`cli` 2.11, TypeScript 7.0.2, Vite 7.3.6, and Vitest 3.2.7. MUI stays on 9.2 because 9.4 breaks jsdom Select selectors.
@@ -26,6 +27,11 @@ The format follows a lightweight `Keep a Changelog` style:
 ### Fixed
 
 - The shared Rig HTTP client is now built fallibly and surfaces a `Result` error instead of panicking on first use.
+
+### Tests
+
+- Added `run_agent` and `forge_skill` orchestration tests that run end-to-end against a loopback provider stub, covering the remote-reply and local-fallback paths.
+- Added a regression test asserting the API key never reaches a provider error or the persisted workspace snapshot.
 
 ### Docs
 

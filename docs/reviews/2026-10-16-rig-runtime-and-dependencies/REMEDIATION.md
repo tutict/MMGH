@@ -33,9 +33,20 @@ Added to `src-tauri/src/agent/runtime.rs` (`#[cfg(test)] mod tests`), backed by 
 
 `[dev-dependencies] tokio = { version = "1", features = [ "rt", "macros" ] }` was added for `#[tokio::test]`. `Cargo.lock` gained one `tokio` entry on the `mygh` package; no other resolution changed.
 
-Observed: `cargo test --manifest-path src-tauri/Cargo.toml agent::runtime` -> 6 passed; full suite -> `k6_backend_harness` 43 passed / 1 ignored, `mygh` 54 passed / 1 ignored.
+Observed: `cargo test --manifest-path src-tauri/Cargo.toml agent::runtime` -> 7 passed; full suite -> `k6_backend_harness` 43 passed / 1 ignored, `mygh` 59 passed / 1 ignored.
 
-Still not covered: `agent::run_agent` and `agent::forge_skill` orchestration (they require a live SQLite workspace), and the live provider network path. The Rig seam itself is now covered.
+### Follow-up — orchestration coverage (previously listed as uncovered)
+
+Added `src-tauri/src/agent/tests.rs` with end-to-end orchestration tests against a loopback stub, plus shared helpers in `src-tauri/src/agent/test_support.rs` (stub provider, temp workspace, env guard):
+
+- `run_agent_persists_remote_reply` — a 200 completion is persisted as the assistant message.
+- `run_agent_falls_back_and_never_leaks_the_api_key` — a 401 persists the local fallback reply and the serialized snapshot never contains the API key.
+- `forge_skill_returns_remote_draft` — the remote draft is parsed and returned with no warning.
+- `forge_skill_falls_back_to_local_draft_on_provider_error` — a provider failure returns the local draft with a warning.
+
+These hold `crate::db::TEST_STATE_LOCK` (promoted to `pub(crate)` in `db.rs`) because the app data dir and provider caches are process-global.
+
+Still not covered: the live provider network path against a real endpoint, and cross-platform keyring behaviour. The orchestration and Rig seams are now covered.
 
 ### C2 — Multi-part content parity (confirmed deviation)
 
@@ -45,9 +56,18 @@ The removed homemade client joined `content` parts with `"\n"`; Rig concatenates
 
 `src-tauri/Cargo.lock` still lists `reqwest 0.12.28` (via `hf-hub` / `lance-namespace-reqwest-client`, pulled by `fastembed`) and Rig vector-store crates (`rig-milvus`, `rig-helixdb`). These are optional dependencies of Rig; `Cargo.lock` is feature-independent, so they cannot be pruned without removing the dependency that declares them. `cargo tree -e normal` shows they are absent from the host build graph. Left as-is; recorded here so SBOM/audit noise is a known, accepted condition.
 
+## API Key Leak Question — Resolved
+
+The open question ("can a Rig error string carry the API key into the persisted `model_detail`?") is now covered by two tests:
+
+- `agent::runtime::tests::complete_reply_never_echoes_the_api_key_in_errors` — a 401 from the stub must not include the configured key in the error string.
+- `agent::tests::run_agent_falls_back_and_never_leaks_the_api_key` — after a failing run, the fully serialized `WorkspaceSnapshot` (which includes the persisted `model_detail` activity) must not contain the key.
+
+Both pass. Residual: this is verified against a loopback stub, not a live provider; a future Rig version could change error formatting, so the assertion should be kept.
+
 ## Remaining Unverified
 
-- Whether a Rig error string can carry the API key into the persisted `model_detail`. No code path places the key into an error and the validated `base_url` carries no credentials, but this was not exercised against a live failing provider.
+- Live provider behaviour (real network, real keyring backend, non-Windows targets) remains unexercised.
 
 ## Verification Observed After Remediation
 
