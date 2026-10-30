@@ -62,8 +62,10 @@
 归流 / MMGH
 ├─ src/                # React 应用、工作区组件、样式与 i18n
 ├─ src-tauri/          # Tauri 运行时、Rust 命令、本地数据库
-├─ docs/               # 安全、发布与操作文档
+├─ docs/               # 安全、发布、操作、实验与四轴评审文档
 ├─ release/            # 版本化发布元数据
+├─ PRODUCT.md          # 产品契约：用户、目标与信息架构
+├─ DESIGN.md           # 设计记录：Quiet Ledger 令牌与组件约定
 ├─ package.json        # 前端与桌面构建脚本
 └─ README.md           # 项目说明
 ```
@@ -226,7 +228,10 @@ Windows 下常见产物包括：
 
 相关文档：
 
+- 产品契约：[PRODUCT.md](PRODUCT.md)
+- 设计记录：[DESIGN.md](DESIGN.md)
 - API Key 处理说明：[docs/API_KEY_HANDLING.md](docs/API_KEY_HANDLING.md)
 - 发布指南：[docs/RELEASE.md](docs/RELEASE.md)
 - 变更记录：[CHANGELOG.md](CHANGELOG.md)
+- 四轴评审记录：[docs/reviews/](docs/reviews/)
 - 首个桌面发行版：[release/0.1.0/README.md](release/0.1.0/README.md)

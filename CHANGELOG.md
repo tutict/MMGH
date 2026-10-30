@@ -14,12 +14,19 @@ The format follows a lightweight `Keep a Changelog` style:
 ### Added
 
 - Adopted the `Rig` Rust agent framework as the desktop runtime for `run_agent` and `forge_skill`, using OpenAI-compatible Chat Completions.
+- Added `PRODUCT.md` (the product contract: users, purpose, information architecture) and `DESIGN.md` (the Quiet Ledger token, layout and component record).
+- Added `src/ui/styleContract.test.ts`, which requires every structural class name used in a TSX file to have a rule in `src/ui/**`, requires dynamic class templates to match a class family, and bans gradients, backdrop filters, raw colours, undefined `--q-*` tokens, the deleted decorative classes, and a stylesheet above 5,200 non-blank lines.
+- Added `src/theme/themeTokenParity.test.ts` (the MUI palette must equal the token layer), `src/i18n/localeCoverage.test.ts` (both locales carry the same keys and every referenced key exists), `src/state/useReminderAlerts.test.ts`, `src/components/mobile/MobileSheet.test.tsx`, `src/App.settingsHydration.test.tsx` and `src/components/TodayWorkspace.test.tsx`.
 
 ### Changed
 
+- Rebuilt the whole product UI as **Quiet Ledger**, replacing the earlier Fluent/WinUI restyle. Every structural class name used in a TSX file now has a rule, the decorative layers are gone (music turntable and vinyl, weather orb and tilt cards, particle rings), colours come from one OKLCH token layer, and the desktop and mobile shells share a single spacing, type and layout scale.
+- Rewrote the desktop shell, the nine desktop workspaces and the nine mobile views against that system, and cut the mobile information density: the mobile Today keeps only a daypart hero, one primary action, the todo list and the active sessions; Settings lost its summary grid; Reminders lost its status selector.
+- Added `src/theme/palette.ts`, which holds OKLCH literals that mirror the token layer one to one instead of `var()` references, and rewrote `src/theme/AppThemeProvider.tsx` to build the theme from that palette and inject it ahead of the stylesheets so `base.css` can override MUI's defaults.
+- Restored the rule-suggestion surface on the desktop Today page. The rebuild had removed all three rule cards, while the plan authorised removing only the duplicate on the phone. The desktop page keeps one compact action card built on the existing recommendation pipeline, and the plumbing that had been left without a consumer was removed.
 - Removed the homemade provider HTTP client; split the monolithic agent module into focused `agent/` modules and delegated model calls to Rig.
 - Split the monolithic `App.tsx` into a desktop/mobile shell pair, a shared workspace controller, and focused state controllers, and consolidated the scattered stylesheets into `src/ui` design tokens plus shell and page styles; removed the legacy `src/CSS` and `src/ui-next` stylesheets.
-- Restyled the product UI around a light-first Fluent/WinUI desk with liquid-glass chrome: synced MUI with `data-theme`, added a selected-state rail, and moved the mobile mini-player into the shell instead of overlaying content.
+- Restyled the product UI around a light-first Fluent/WinUI desk with liquid-glass chrome: synced MUI with `data-theme`, added a selected-state rail, and moved the mobile mini-player into the shell instead of overlaying content. (Superseded by the Quiet Ledger rebuild above.)
 - Upgraded Rust crates: `rusqlite` 0.30 to 0.40 (bundled SQLite via `libsqlite3-sys` 0.38.2), `reqwest` 0.12 to 0.13, `keyring` 1.2 to 4, `tauri` 2.10 to 2.12, `rig` 0.42 to 0.44, plus a compatible `cargo update` (`serde` 1.0.229, `serde_json` 1.0.154, `anyhow` 1.0.104, `once_cell` 1.21.4).
 - Upgraded the frontend toolchain: within-major refreshes (`@tauri-apps/api` 2.12.4, `@tauri-apps/cli` 2.12.3, TypeScript 7.0.2, `@testing-library/user-event` 14.6.8) plus the across-major bumps React 18 to 19 (`react`, `react-dom`, `@types/react`, `@types/react-dom`), Vite 7 to 8 with `@vitejs/plugin-react` 6, Vitest 3 to 5, jsdom 26 to 30, `@testing-library/jest-dom` 6 to 7, ESLint 8 to 9 (migrated from `.eslintrc.cjs` to flat config in `eslint.config.mjs`), and Babel 7 to 8. ESLint stops at 9 because `eslint-plugin-react` and `eslint-plugin-jsx-a11y` still cap their peer range at ESLint 9; the unused `eslint-config-react-app` (which pinned ESLint 8) was dropped.
 - Refreshed both lockfiles onto the newest releases the declared ranges already allow: Vite 8.3.5, Babel 8.0.10, `@types/node` 26.6.6, `@tauri-apps/cli` 2.12.4, `rolldown` 1.2.16 on the frontend; Tauri 2.12.5, `tauri-build` 2.7.4, `tokio` 1.54.1 on the Rust side.
@@ -31,6 +38,17 @@ The format follows a lightweight `Keep a Changelog` style:
 
 ### Fixed
 
+- A reminder created — or back-dated — during a session never alarmed: the start-up seeding pass marked every currently-overdue reminder as already triggered. Seeding is now anchored to a fixed `workspaceReadyAt` and judged per reminder, so a reminder that falls overdue later in the session still fires.
+- Switching providers overwrote an unsaved settings draft. The settings form is hydrated once from the workspace, and a form the user has already touched is never overwritten by a later snapshot.
+- The mobile sheet's scroll lock was applied to an element that was already locked, so the page behind an open sheet still scrolled under keyboard control.
+- Closing a mobile sheet dropped the keyboard focus to the document body when the row that opened it had been deleted; focus now falls back to the sheet's own close control.
+- The rebuild introduced four invisible, unnamed keyboard tab stops — the visually hidden file inputs behind the gallery, audio, lyrics and skill-import buttons — and left the heading outline inconsistent across the workspaces. The desktop Agent and Knowledge pages regained their headings, the three `<h3>`-only workspaces gained an `<h2>`, the mobile "Done today" disclosure became a real heading, and the file inputs left the tab order and the accessibility tree.
+- The desktop page title was focused on every view change with its focus ring suppressed by an unconditional `outline: none`, so keyboard users were moved without seeing where they were.
+- The desktop reminder row carried its severity on a coloured dot alone; the severity is now spelled out in the row's meta line.
+- The mobile menu did not mark the current view, so "open Settings, reopen the menu" landed on a list with nothing marked; the menu rows now carry the same `aria-current` marker as the dock.
+- The Agent skills sheet labelled its toggles "On" and "Add" in hardcoded English, and the weather city sheet labelled every chip "Remove"; the labels now name the item they act on and live in the locale files.
+- Two i18n keys used by the mobile skills view existed in neither locale.
+- A missing translation key returned the key string silently; the helpers now report the miss.
 - The shared Rig HTTP client is now built fallibly and surfaces a `Result` error instead of panicking on first use.
 
 ### Tests
@@ -43,6 +61,7 @@ The format follows a lightweight `Keep a Changelog` style:
 - Documented the Rig adoption, dependency-upgrade, and four-axis review in `docs/reviews/2026-10-16-rig-runtime-and-dependencies/`.
 - Documented the frontend major dependency upgrade (React 19, Vite 8, Vitest 5, ESLint 9, Babel 8) and its four-axis review in `docs/reviews/2026-10-16-frontend-major-dependency-upgrade/`.
 - Documented the dependency refresh (MUI 9.5, `globals` 17, `rig` 0.45, `rusqlite` 0.41, both lockfile refreshes, the vendored-crate removal) and its four-axis review in `docs/reviews/2026-10-30-dependency-refresh/`.
+- Documented the Quiet Ledger redesign and its four-axis review in `docs/reviews/2026-10-30-quiet-ledger-redesign/`, including the remediation ledger and the re-measured evidence.
 
 ### Notes
 
@@ -59,6 +78,7 @@ The format follows a lightweight `Keep a Changelog` style:
 - The stale `dist/闹钟2-哔声_爱给网_aigei_com.mp3` build artifact is no longer tracked (it duplicated the asset in `public/` and `dist/` is gitignored).
 - MUI 9.4 adds an opt-in `theme.focusVisible` focus ring. It stays disabled: the Quiet Ledger focus ring (2 px accent, 2 px offset, driven by `--q-focus`) is the only focus indicator, and enabling both would stack two rings.
 - `npm update` cannot replace the native `rolldown` binding while a dev server holds the `.node` file: npm updates the package metadata but leaves the old binary, and `vite build` then fails with `bindingChunk.getCodeIdentity is not a function`. Stop the dev server before refreshing the lockfile.
+- The Quiet Ledger stylesheet budget is 5,200 non-blank lines and the stylesheet currently stands at 4,531. The plan's 2,600-line figure was an estimate made before the work started; the delivered stylesheet is what nine desktop workspaces and nine mobile views need, so the ceiling was re-recorded at 5,200 and stays enforced so the stylesheet cannot regrow toward the 45,000 lines that were deleted. `DESIGN.md` §3 records the deviation.
 
 ## [0.1.0] - 2026-04-14
 
