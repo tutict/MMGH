@@ -33,7 +33,7 @@
 
 ## 关键技术实现
 
-- 使用 `React 18 + Vite` 构建桌面端前端界面
+- 使用 `React 19 + Vite` 构建桌面端前端界面
 - 使用 `Tauri 2` 将前端与 Rust 本地能力整合为桌面应用
 - 使用 `Rust + rusqlite` 管理本地 SQLite、迁移逻辑与命令调用
 - 使用 `Rig` 作为桌面 Agent 运行时，通过 OpenAI-compatible Chat Completions 调用模型
@@ -48,7 +48,7 @@
 
 | 分层 | 技术方案 |
 | --- | --- |
-| 前端 | React 18、Vite |
+| 前端 | React 19、Vite |
 | 桌面容器 | Tauri 2 |
 | 本地后端 | Rust、Tauri Command |
 | 本地存储 | SQLite、rusqlite、schema migration |
@@ -87,14 +87,16 @@
 
 负责手机宽度下的独立业务界面，避免复用桌面卡片布局。
 
-- 路径：`src/components/mobile/`、`src/CSS/mobile.css`
+- 路径：`src/components/mobile/`、`src/ui/mobile/`
 - 技术关键词：`React`、`CSS scoped classes`、`bottom sheet`
 - 主要能力：
   - 独立移动端 Shell 与底部 Dock
-  - Today / Agent / 知识 / 天气常驻 Tab
-  - 设置与提醒专用移动页面
-  - 更多 Sheet 与 Inspector Sheet
+  - Today / 对话 / 知识 / 提醒四个常驻入口
+  - 设置与工具页收纳进菜单 Sheet
+  - 全屏编辑器与底部 Sheet
   - 极简列表化布局、低圆角、细分割线、暗色模式适配
+
+桌面与手机共用 `Quiet Ledger` 视觉系统：颜色、字号、间距和布局尺寸都来自 `src/ui/tokens.css`，样式分层与组件约定见 `DESIGN.md`。
 
 ### 3. Tauri 与 Rust 本地能力
 
