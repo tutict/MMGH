@@ -1,6 +1,6 @@
 import CloseIcon from "@mui/icons-material/Close";
 import { type ReactNode, useRef } from "react";
-import { AppIconButton, AppModal } from "../ui";
+import { AppIconButton, AppModal, joinClassNames } from "../ui";
 
 type MobileSheetProps = {
   actions?: ReactNode;
@@ -11,6 +11,7 @@ type MobileSheetProps = {
   onClose: () => void;
   open: boolean;
   title: ReactNode;
+  variant?: "sheet" | "full";
 };
 
 function MobileSheet({
@@ -22,8 +23,10 @@ function MobileSheet({
   onClose,
   open,
   title,
+  variant = "sheet",
 }: MobileSheetProps) {
   const portalAnchorRef = useRef<HTMLDivElement>(null);
+  const isFull = variant === "full";
 
   return (
     <>
@@ -43,16 +46,16 @@ function MobileSheet({
           },
         }}
       >
-        <div className="mobile-sheet-host">
+        <div className={joinClassNames("mobile-sheet-host", isFull ? "mobile-sheet-host--full" : null)}>
           <section
             id={id}
-            className="mobile-sheet"
+            className={joinClassNames("mobile-sheet", isFull ? "mobile-sheet--full" : null)}
             role="dialog"
             aria-modal="true"
             aria-labelledby={id ? `${id}-title` : undefined}
           >
             <header className="mobile-sheet__head">
-              <div>
+              <div className="mobile-sheet__heading">
                 {eyebrow ? <span className="mobile-eyebrow">{eyebrow}</span> : null}
                 <h2 id={id ? `${id}-title` : undefined}>
                   {title}
@@ -63,12 +66,11 @@ function MobileSheet({
                 className="mobile-icon-button"
                 onClick={onClose}
                 aria-label={closeLabel}
-                size="small"
               >
                 <CloseIcon fontSize="small" aria-hidden="true" />
               </AppIconButton>
             </header>
-            <div className="mobile-sheet__body">{children}</div>
+            <div className="mobile-sheet__body scroll-area">{children}</div>
             {actions ? <footer className="mobile-sheet__actions">{actions}</footer> : null}
           </section>
         </div>
@@ -78,4 +80,3 @@ function MobileSheet({
 }
 
 export default MobileSheet;
-

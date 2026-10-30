@@ -352,7 +352,8 @@ test("mobile shell renders four primary dock tabs and keeps language out of the 
   const topbar = screen.getByTestId("mobile-topbar");
   expect(within(topbar).queryByText("Language")).not.toBeInTheDocument();
   expect(within(topbar).queryByText("Theme")).not.toBeInTheDocument();
-  expect(within(topbar).getByRole("button", { name: "Light mode" })).toBeInTheDocument();
+  expect(within(topbar).queryByRole("button", { name: "Light mode" })).not.toBeInTheDocument();
+  expect(within(topbar).getByRole("heading", { name: "Today" })).toBeInTheDocument();
 
   await user.click(screen.getByRole("button", { name: "Menu" }));
   await user.click(screen.getByRole("button", { name: /Settings/i }));
@@ -361,7 +362,7 @@ test("mobile shell renders four primary dock tabs and keeps language out of the 
 
   await user.click(within(dock).getByRole("button", { name: "Reminders" }));
   expect(screen.queryByText("Legacy reminders page")).not.toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "Reminder Center" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Reminders" })).toBeInTheDocument();
 });
 
 test("mobile menu sheet stays inside the app shell so mobile theme tokens apply", async () => {
@@ -588,7 +589,7 @@ test("mobile Reminders opens editor and routes save delete linked note and quick
   await user.click(screen.getByRole("button", { name: "Open Billing" }));
   expect(handleToggleTodayReminderStatus).toHaveBeenCalledWith(reminder);
 
-  await user.click(screen.getByRole("button", { name: /Pay invoice/i }));
+  await user.click(screen.getByRole("button", { name: /^Billing/ }));
   await user.click(screen.getByRole("button", { name: "Save reminder" }));
   await user.click(screen.getByRole("button", { name: "Delete" }));
   await user.click(screen.getByRole("button", { name: "Open note" }));

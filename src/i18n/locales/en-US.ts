@@ -44,6 +44,7 @@ const enUS = {
   "app.nav.title": "Workspace",
   "app.today.restCount": "{count} more",
   "app.nav.group.workspace": "Primary",
+  "app.nav.primary": "Primary navigation",
   "app.nav.menu": "Menu",
   "app.nav.group.operations": "Tools",
   "app.nav.group.control": "System",

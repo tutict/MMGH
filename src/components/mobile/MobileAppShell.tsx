@@ -1,4 +1,6 @@
-import React, { useMemo, useState } from "react";
+import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import MobileAgentView from "./MobileAgentView";
 import MobileGalleryView from "./MobileGalleryView";
 import MobileKnowledgeView from "./MobileKnowledgeView";
@@ -59,34 +61,57 @@ function MobileAppShell({
   const showBack = MENU_IDS.includes(currentView);
   const renderIcon = (viewId) => <PanelIcon type={getMobileNavIconType(viewId)} />;
 
+  const titleRef = useRef<HTMLHeadingElement | null>(null);
+  const mainRef = useRef<HTMLElement | null>(null);
+  const lastPrimaryViewRef = useRef(showBack ? "today" : currentView);
+
+  useEffect(() => {
+    if (!showBack) {
+      lastPrimaryViewRef.current = currentView;
+    }
+  }, [currentView, showBack]);
+
+  useEffect(() => {
+    mainRef.current?.scrollTo?.({ top: 0 });
+    titleRef.current?.focus({ preventScroll: true });
+  }, [currentView]);
+
+  const activeNavItem = allItems.find((item) => item.id === currentView);
+  const activeSessionTitle = agent.activeSession?.session?.title;
+  const topbarTitle =
+    currentView === "agent"
+      ? activeSessionTitle || activeNavItem?.label || mobileText(lang, "agent")
+      : activeNavItem?.label || currentMeta.title || currentView;
+
+  const closeToolView = () => openView(lastPrimaryViewRef.current || "today");
+
   return (
-    <div className={`agent-app mobile-app theme-${theme} view-${currentView}${menuOpen ? " is-sheet-open" : ""}`}>
+    <div className={joinClassNames("mobile-app", menuOpen ? "is-sheet-open" : null)}>
       <header className="mobile-topbar" data-testid="mobile-topbar">
         {showBack ? (
-          <MobileButton variant="text" onClick={() => openView("today")}>
-            {mobileText(lang, "close")}
-          </MobileButton>
-        ) : null}
-        <div className="mobile-topbar__title">
-          <strong>{currentMeta.title || currentView}</strong>
-        </div>
-        <time>{formatShortClock(clockNow, lang)}</time>
-        {setTheme ? (
           <AppIconButton
-            className="mobile-topbar__theme"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            aria-label={theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
-            size="small"
+            className="mobile-topbar__action"
+            onClick={closeToolView}
+            aria-label={mobileText(lang, "back")}
           >
-            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+            <ArrowBackRoundedIcon fontSize="small" aria-hidden="true" />
           </AppIconButton>
         ) : null}
-        <MobileButton variant="text" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
-          {t("app.nav.menu")}
-        </MobileButton>
+        <h1 id="mobile-page-title" tabIndex={-1} ref={titleRef} className="mobile-topbar__title">
+          {topbarTitle}
+        </h1>
+        <AppIconButton
+          className="mobile-topbar__action"
+          aria-haspopup="dialog"
+          aria-expanded={menuOpen}
+          aria-label={t("app.nav.menu")}
+          onClick={() => setMenuOpen(true)}
+        >
+          <MenuRoundedIcon fontSize="small" aria-hidden="true" />
+        </AppIconButton>
       </header>
 
-      <main className="mobile-main">
+      <main ref={mainRef} className="mobile-main" aria-labelledby="mobile-page-title">
         {notice ? <div className="mobile-banner mobile-banner--notice">{notice}</div> : null}
         {error ? <div className="mobile-banner mobile-banner--error">{error}</div> : null}
         {currentView === "today" ? (
@@ -112,7 +137,7 @@ function MobileAppShell({
         )}
       </main>
 
-      <nav className="mobile-dock" data-testid="mobile-dock" aria-label="Mobile primary navigation">
+      <nav className="mobile-dock" data-testid="mobile-dock" aria-label={t("app.nav.primary")}>
         {dockItems.map((item) => (
           <MobileButton
             key={item.id}
@@ -120,9 +145,10 @@ function MobileAppShell({
             onClick={() => openView(item.id)}
             aria-current={currentView === item.id ? "page" : undefined}
             variant="text"
+            disableRipple
           >
             <span className="mobile-dock__icon" aria-hidden="true">{renderIcon(item.id)}</span>
-            <span>{item.label}</span>
+            <span className="mobile-dock__label">{item.label}</span>
           </MobileButton>
         ))}
       </nav>
@@ -138,6 +164,7 @@ function MobileAppShell({
           {menuItems.map((item) => (
             <MobileRowButton
               key={item.id}
+              className="mobile-menu-row"
               onClick={() => {
                 openView(item.id);
                 setMenuOpen(false);
@@ -153,22 +180,6 @@ function MobileAppShell({
       </MobileSheet>
       {mediaSlot}
     </div>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <path fill="currentColor" d="M14.5 3.5a8.5 8.5 0 1 0 6 14.2A8.2 8.2 0 0 1 14.5 3.5z" />
-    </svg>
-  );
-}
-
-function SunIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <circle cx="12" cy="12" r="4" fill="currentColor" />
-    </svg>
   );
 }
 

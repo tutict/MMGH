@@ -42,6 +42,7 @@ const zhCN = {
   "app.nav.title": "工作区",
   "app.today.restCount": "其余 {count} 条",
   "app.nav.group.workspace": "主任务",
+  "app.nav.primary": "主导航",
   "app.nav.menu": "菜单",
   "app.nav.group.operations": "工具",
   "app.nav.group.control": "系统",
