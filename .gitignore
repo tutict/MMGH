@@ -25,6 +25,11 @@
 /src-tauri/target
 /src-tauri/gen
 
+# capability assessment
+/artifacts
+/eval/ragas/out
+/.venv-ragas
+
 # logs
 *.log
 npm-debug.log*

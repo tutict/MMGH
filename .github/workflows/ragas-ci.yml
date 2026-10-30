@@ -1,0 +1,166 @@
+name: Capability assessment
+
+# The assessment is a regression gate for the agent runtime, not a general
+# build pipeline. The offline job always runs and needs no credentials.
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: capability-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # The live tier is optional. GitHub does not expose the `secrets` context to
+  # a job-level `if`, so a cheap job reports whether the provider secret
+  # exists and the live job reads that output.
+  detect-live:
+    name: Detect the live provider
+    runs-on: windows-latest
+    outputs:
+      available: ${{ steps.check.outputs.available }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - id: check
+        env:
+          MMGH_EVAL_API_KEY: ${{ secrets.MMGH_EVAL_API_KEY }}
+          MMGH_EVAL_BASE_URL: ${{ secrets.MMGH_EVAL_BASE_URL }}
+          MMGH_EVAL_MODEL: ${{ secrets.MMGH_EVAL_MODEL }}
+        run: |
+          if [ -n "${MMGH_EVAL_API_KEY}" ] && [ -n "${MMGH_EVAL_BASE_URL}" ] && [ -n "${MMGH_EVAL_MODEL}" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  offline:
+    name: Ragas capability gate
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: eval/ragas/requirements.txt
+
+      - name: Install the evaluation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r eval/ragas/requirements.txt
+
+      - name: Install the Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+          rustc --version
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # Only the harness is built. It does not need the frontend bundle, so the
+      # job never runs the Vite build.
+      - name: Build the evaluation harness
+        run: cargo build --manifest-path src-tauri/Cargo.toml --bin ragas_eval_harness
+
+      - name: Run the harness
+        run: |
+          src-tauri/target/debug/ragas_eval_harness.exe \
+            --dataset eval/ragas/dataset.json \
+            --out artifacts/ragas-samples.json \
+            --provider stub \
+            --data-dir artifacts/ragas-work
+
+      - name: Score the samples
+        run: |
+          python eval/ragas/evaluate.py \
+            --input artifacts/ragas-samples.json \
+            --baseline eval/ragas/baseline.json \
+            --out artifacts/ragas-report.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ragas-report
+          path: artifacts/ragas-report.json
+          if-no-files-found: warn
+
+  live:
+    name: Ragas live assessment
+    needs: detect-live
+    if: needs.detect-live.outputs.available == 'true'
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: eval/ragas/requirements.txt
+
+      - name: Install the evaluation dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r eval/ragas/requirements.txt
+
+      - name: Install the Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+          rustc --version
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Build the evaluation harness
+        run: cargo build --manifest-path src-tauri/Cargo.toml --bin ragas_eval_harness
+
+      - name: Run the harness against the live provider
+        env:
+          MMGH_EVAL_BASE_URL: ${{ secrets.MMGH_EVAL_BASE_URL }}
+          MMGH_EVAL_API_KEY: ${{ secrets.MMGH_EVAL_API_KEY }}
+          MMGH_EVAL_MODEL: ${{ secrets.MMGH_EVAL_MODEL }}
+        run: |
+          src-tauri/target/debug/ragas_eval_harness.exe \
+            --dataset eval/ragas/dataset.json \
+            --out artifacts/ragas-live-samples.json \
+            --provider live \
+            --data-dir artifacts/ragas-live-work
+
+      # The judge reuses the provider credentials unless the judge secrets are
+      # set, so one secret pair is enough to run the whole live tier.
+      - name: Score the samples
+        env:
+          RAGAS_JUDGE_API_KEY: ${{ secrets.RAGAS_JUDGE_API_KEY }}
+          RAGAS_JUDGE_BASE_URL: ${{ secrets.RAGAS_JUDGE_BASE_URL }}
+          RAGAS_JUDGE_MODEL: ${{ secrets.RAGAS_JUDGE_MODEL }}
+          RAGAS_JUDGE_EMBEDDING_MODEL: ${{ secrets.RAGAS_JUDGE_EMBEDDING_MODEL }}
+        run: |
+          python eval/ragas/evaluate.py \
+            --input artifacts/ragas-live-samples.json \
+            --baseline eval/ragas/baseline.json \
+            --out artifacts/ragas-live-report.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ragas-live-report
+          path: artifacts/ragas-live-report.json
+          if-no-files-found: warn
