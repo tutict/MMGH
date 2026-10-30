@@ -42,8 +42,6 @@ export default function MobileShell({ model }) {
         openReminderCount: model.openReminderCount,
         openView: model.openView,
         recentCaptureItems: model.recentCaptureItems,
-        ruleActionRecommendations: model.ruleActionRecommendations,
-        ruleEffectivenessSignals: model.ruleEffectivenessSignals,
         todayReminderItems: model.todayReminderItems,
         todayReviewSignals: model.todayReviewSignals,
       }}

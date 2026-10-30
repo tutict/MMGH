@@ -203,32 +203,6 @@ export function buildRuleEffectivenessInsights({
     );
 }
 
-export function buildRuleEffectivenessSignals({ ruleEffectivenessInsights, t }) {
-  return [
-    {
-      id: "working",
-      label: t("app.today.review.rule.signal.working"),
-      value: `${
-        ruleEffectivenessInsights.filter((item) => item.effectivenessState === "working").length
-      }`,
-    },
-    {
-      id: "idle",
-      label: t("app.today.review.rule.signal.idle"),
-      value: `${
-        ruleEffectivenessInsights.filter((item) => item.effectivenessState === "idle").length
-      }`,
-    },
-    {
-      id: "ready",
-      label: t("app.today.review.rule.signal.ready"),
-      value: `${
-        ruleEffectivenessInsights.filter((item) => item.effectivenessState === "ready").length
-      }`,
-    },
-  ];
-}
-
 export function buildRuleActionRecommendations({ ruleEffectivenessInsights, t }) {
   const actionRank = {
     mount: 0,

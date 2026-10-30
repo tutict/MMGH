@@ -229,30 +229,6 @@ export function matchesSkillToReminderPattern(skill, patternTitle) {
   return searchable.some((item) => item.includes(normalizedPattern));
 }
 
-export function resolvePatternStatusTone(status) {
-  switch (status) {
-    case "mounted":
-      return "completed";
-    case "available":
-      return "ready";
-    case "missing":
-    default:
-      return "idle";
-  }
-}
-
-export function resolveRuleEffectivenessTone(state) {
-  switch (state) {
-    case "working":
-      return "completed";
-    case "ready":
-      return "ready";
-    case "idle":
-    default:
-      return "idle";
-  }
-}
-
 export function resolveRuleActionTone(actionType) {
   switch (actionType) {
     case "mount":

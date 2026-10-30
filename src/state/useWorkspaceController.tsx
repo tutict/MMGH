@@ -45,8 +45,6 @@ import {
   buildDefaultFollowUpTitle,
   buildFollowUpReminderDetail,
   buildFollowUpReminderDueAt,
-  buildRecurringPatternSkillInstructions,
-  buildRecurringPatternSkillName,
   buildReminderCompletionDetail,
   buildReminderCompletionNoteEntry,
   buildSessionCaptureDraft,
@@ -54,18 +52,14 @@ import {
   findNoteIdByTitle,
   formatTime,
   mergeUniqueTags,
-  normalizeReminderPatternKey,
-  resolvePatternStatusTone,
   resolveReminderUrgency,
   resolveRuleActionTone,
-  resolveRuleEffectivenessTone,
   toDateTimeLocalValue,
 } from "../utils/todayWorkflow";
 import {
   buildRecurringPatternInsights,
   buildRuleActionRecommendations,
   buildRuleEffectivenessInsights,
-  buildRuleEffectivenessSignals,
   buildRuntimeRecommendedSkills,
   buildTodayReviewSignals,
   selectCompletedTodayItems,
@@ -1140,10 +1134,6 @@ export function useWorkspaceController() {
         reminders,
       }),
     [clockNow, recurringPatternInsights, reminders]
-  );
-  const ruleEffectivenessSignals = useMemo(
-    () => buildRuleEffectivenessSignals({ ruleEffectivenessInsights, t }),
-    [ruleEffectivenessInsights, t]
   );
   const ruleActionRecommendations = useMemo(
     () => buildRuleActionRecommendations({ ruleEffectivenessInsights, t }),
@@ -2609,94 +2599,6 @@ export function useWorkspaceController() {
     }
   }
 
-  async function handleOpenReminderPattern(patternTitle) {
-    const normalizedPattern = normalizeReminderPatternKey(patternTitle);
-    if (!normalizedPattern || busy !== "" || loading) {
-      return false;
-    }
-    if (!confirmDiscardWorkspaceDrafts()) {
-      return false;
-    }
-
-    const matchedReminder = [...reminders]
-      .filter((item) => normalizeReminderPatternKey(item.title) === normalizedPattern)
-      .sort((left, right) => right.updatedAt - left.updatedAt)[0];
-
-    setReminderSearch(patternTitle);
-    openView("reminders");
-
-    if (!matchedReminder) {
-      return true;
-    }
-
-    if (matchedReminder.id === selectedReminderId) {
-      return true;
-    }
-
-    return handleSelectReminder(matchedReminder.id, { force: true });
-  }
-
-  async function handlePromoteReminderPattern(pattern) {
-    if (!pattern?.title || !activeSessionId || busy !== "" || loading) {
-      return false;
-    }
-    if (!confirmDiscardWorkspaceDrafts()) {
-      return false;
-    }
-
-    setBusy("promote-pattern-skill");
-    setError("");
-    setNotice("");
-    let createdSkillId = 0;
-
-    try {
-      const skillName = buildRecurringPatternSkillName(pattern.title, t);
-      const createdSnapshot = await createSkill({
-        name: skillName,
-        activeSessionId,
-      });
-      createdSkillId = createdSnapshot?.activeSkill?.id || createdSnapshot?.activeSkillId || 0;
-      if (!createdSkillId) {
-        throw new Error(t("app.skills.forge.createFailed"));
-      }
-      commitWorkspaceSnapshot(createdSnapshot);
-
-      const savedSnapshot = await saveSkill({
-        activeSessionId,
-        skill: {
-          id: createdSkillId,
-          name: skillName,
-          description: t("app.today.review.skill.description", {
-            count: pattern.count,
-            title: pattern.title,
-          }),
-          triggerHint: t("app.today.review.skill.trigger", {
-            title: pattern.title,
-          }),
-          instructions: buildRecurringPatternSkillInstructions({
-            count: pattern.count,
-            patternTitle: pattern.title,
-            t,
-          }),
-          enabled: true,
-        },
-      });
-      commitWorkspaceSnapshot(savedSnapshot);
-      openView("skills");
-      setNotice(
-        t("app.today.review.skill.notice", {
-          title: pattern.title,
-        })
-      );
-      return true;
-    } catch (err) {
-      setError(await rollbackCreatedSkill(createdSkillId, err));
-      return false;
-    } finally {
-      setBusy("");
-    }
-  }
-
   async function handleRunAgent(event) {
     event.preventDefault();
     if (!activeSessionId || !draft.trim()) {
@@ -3119,7 +3021,9 @@ export function useWorkspaceController() {
               handleOpenNote={handleOpenNote}
               handleOpenLinkedNote={handleOpenReminderNote}
               handleOpenSession={handleOpenSession}
+              handleOpenSkill={handleOpenSkill}
               handleSelectReminder={handleSelectReminder}
+              handleToggleSkillMounted={handleToggleSkillMounted}
               handleToggleTodayReminderStatus={handleToggleTodayReminderStatus}
               lang={lang}
               loading={loading}
@@ -3128,6 +3032,8 @@ export function useWorkspaceController() {
               openView={openView}
               recentCaptureItems={recentCaptureItems}
               resolveReminderUrgency={resolveReminderUrgency}
+              resolveRuleActionTone={resolveRuleActionTone}
+              ruleActionRecommendations={ruleActionRecommendations}
               todayReminderItems={todayReminderItems}
               todayReviewSignals={todayReviewSignals}
             />
@@ -3401,12 +3307,10 @@ export function useWorkspaceController() {
     handleLoadSkillVersion,
     handleOpenNote,
     handleOpenReminderNote,
-    handleOpenReminderPattern,
     handleOpenSession,
     handleOpenSkill,
     handlePlayNextTrack,
     handlePlayPreviousTrack,
-    handlePromoteReminderPattern,
     handleRefreshLyrics,
     handleRemoveWeatherCity,
     handleRestartTrack,
@@ -3453,18 +3357,13 @@ export function useWorkspaceController() {
     providerSecurityMessage,
     railPresenceStatus,
     recentCaptureItems,
-    recurringPatternInsights,
     reminderCompletionDraft,
     reminderDraft,
     reminderSearch,
     reminders,
-    resolvePatternStatusTone,
     resolveReminderUrgency,
     resolveRuleActionTone,
-    resolveRuleEffectivenessTone,
     ruleActionRecommendations,
-    ruleEffectivenessInsights,
-    ruleEffectivenessSignals,
     runtimeCaptureDraft,
     runtimeRecommendedSkills,
     selectedReminderId,

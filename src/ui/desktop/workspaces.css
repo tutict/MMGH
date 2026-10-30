@@ -216,6 +216,35 @@
   font-variant-numeric: tabular-nums;
 }
 
+.today-rule-item__copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.today-rule-item__head {
+  display: flex;
+  align-items: center;
+  gap: var(--q-space-2);
+  min-width: 0;
+}
+
+.today-rule-item__head strong {
+  overflow: hidden;
+  font-size: var(--q-text-sm);
+  font-weight: var(--q-weight-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.today-rule-item__reason {
+  color: var(--q-text-muted);
+  font-size: var(--q-text-xs);
+  line-height: var(--q-leading-body);
+}
+
 .today-disclosure {
   padding-top: var(--q-space-3);
   border-top: 1px solid var(--q-border);

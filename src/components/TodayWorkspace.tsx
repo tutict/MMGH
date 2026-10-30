@@ -1,6 +1,6 @@
 import React from "react";
 import { useI18n } from "../i18n";
-import { AppButton } from "./ui";
+import { AppButton, AppStatusChip } from "./ui";
 
 function TodayWorkspace({
   activeSession,
@@ -13,7 +13,9 @@ function TodayWorkspace({
   handleOpenLinkedNote,
   handleOpenNote,
   handleOpenSession,
+  handleOpenSkill,
   handleSelectReminder,
+  handleToggleSkillMounted,
   handleToggleTodayReminderStatus,
   lang,
   loading,
@@ -22,6 +24,8 @@ function TodayWorkspace({
   openView,
   recentCaptureItems,
   resolveReminderUrgency,
+  resolveRuleActionTone,
+  ruleActionRecommendations,
   todayReminderItems,
   todayReviewSignals,
 }) {
@@ -30,6 +34,19 @@ function TodayWorkspace({
   const hiddenReminderCount = Math.max(0, Number(openReminderCount) - todayReminderItems.length);
   const todayActionsDisabled = busy !== "" || loading;
   const activeSessionTitle = activeSession?.session?.title || t("app.session.defaultTitle");
+  const ruleActionBusy = busy === "save-session-skills" || busy === "open-skill";
+  const resolveRuleActionLabel = (actionType) => {
+    if (ruleActionBusy) {
+      return t("app.common.saving");
+    }
+    if (actionType === "tune") {
+      return t("app.today.review.skill.open");
+    }
+    if (actionType === "unmount") {
+      return t("app.today.review.rule.action.unmount.button");
+    }
+    return t("app.skills.sessionMount.recommendedAction");
+  };
 
   return (
     <section className="desk-today">
@@ -159,6 +176,52 @@ function TodayWorkspace({
               ))}
             </div>
           </section>
+
+          {ruleActionRecommendations.length > 0 ? (
+            <section className="desk-section today-section">
+              <div className="section-head">
+                <h2>{t("app.today.review.rule.actionTitle")}</h2>
+              </div>
+              <div className="desk-list">
+                {ruleActionRecommendations.map((item) => (
+                  <article
+                    key={`${item.actionType}-${item.matchedSkillId}-${item.title}`}
+                    className="desk-row today-rule-item"
+                  >
+                    <div className="today-rule-item__copy">
+                      <div className="today-rule-item__head">
+                        <strong>{item.actionTitle}</strong>
+                        <AppStatusChip tone={resolveRuleActionTone(item.actionType)}>
+                          {t(`app.today.review.rule.action.${item.actionType}.badge`)}
+                        </AppStatusChip>
+                      </div>
+                      <span className="desk-row__meta">
+                        <span>{item.matchedSkillName}</span>
+                        <span>{t("app.today.review.rule.loop", { title: item.title })}</span>
+                      </span>
+                      <span className="today-rule-item__reason">{item.reason}</span>
+                    </div>
+                    <AppButton
+                      className="ghost-button desk-row__action"
+                      disabled={todayActionsDisabled}
+                      onClick={async () => {
+                        if (item.actionType === "tune") {
+                          const opened = await handleOpenSkill(item.matchedSkillId);
+                          if (opened) {
+                            openView("skills");
+                          }
+                          return;
+                        }
+                        void handleToggleSkillMounted(item.matchedSkillId);
+                      }}
+                    >
+                      {resolveRuleActionLabel(item.actionType)}
+                    </AppButton>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           <details className="today-disclosure desk-section">
             <summary>
