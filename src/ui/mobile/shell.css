@@ -218,6 +218,11 @@
   pointer-events: none;
 }
 
+/* The sheet is the only scrollable surface while it is open. */
+.mobile-app:has(.mobile-sheet-host) .mobile-main {
+  overflow: hidden;
+}
+
 .mobile-sheet-portal-anchor {
   display: none;
 }

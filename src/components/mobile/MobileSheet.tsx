@@ -1,5 +1,5 @@
 import CloseIcon from "@mui/icons-material/Close";
-import { type ReactNode, useRef } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useRef } from "react";
 import { AppIconButton, AppModal, joinClassNames } from "../ui";
 
 type MobileSheetProps = {
@@ -26,7 +26,45 @@ function MobileSheet({
   variant = "sheet",
 }: MobileSheetProps) {
   const portalAnchorRef = useRef<HTMLDivElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
+  const restoreTargetRef = useRef<HTMLElement | null>(null);
   const isFull = variant === "full";
+
+  // The focus trap moves focus into the sheet in a passive effect, so a layout
+  // effect still sees the control that opened it.
+  useLayoutEffect(() => {
+    if (!open) {
+      return;
+    }
+    const active = document.activeElement;
+    if (!(active instanceof HTMLElement) || active === document.body) {
+      return;
+    }
+    if (hostRef.current?.contains(active)) {
+      return;
+    }
+    restoreTargetRef.current = active;
+  }, [open]);
+
+  // The trigger can be gone by the time the sheet closes — deleting a reminder
+  // removes the row that opened its editor — and focusing a detached node
+  // silently drops focus onto the document body. The trap restores focus to a
+  // trigger that is still connected; this covers the one that is not.
+  useEffect(() => {
+    if (open) {
+      return;
+    }
+    const trigger = restoreTargetRef.current;
+    restoreTargetRef.current = null;
+    if (!trigger) {
+      return;
+    }
+    if (trigger.isConnected) {
+      trigger.focus();
+      return;
+    }
+    document.getElementById("mobile-page-title")?.focus();
+  }, [open]);
 
   return (
     <>
@@ -46,7 +84,10 @@ function MobileSheet({
           },
         }}
       >
-        <div className={joinClassNames("mobile-sheet-host", isFull ? "mobile-sheet-host--full" : null)}>
+        <div
+          ref={hostRef}
+          className={joinClassNames("mobile-sheet-host", isFull ? "mobile-sheet-host--full" : null)}
+        >
           <section
             id={id}
             className={joinClassNames("mobile-sheet", isFull ? "mobile-sheet--full" : null)}

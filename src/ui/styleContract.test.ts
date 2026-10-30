@@ -305,6 +305,15 @@ test("the shells keep their required selectors and tokens", () => {
   }
 });
 
+test("the mobile shell locks the scroller while a sheet is open", () => {
+  const shellCss = readFileSync(join(uiRoot, "mobile/shell.css"), "utf8");
+  const rule = shellCss.match(
+    /\.mobile-app:has\(\.mobile-sheet-host\)\s+\.mobile-main\s*{[^}]*}/
+  );
+  expect(rule, "the shell must lock .mobile-main while a sheet is open").not.toBeNull();
+  expect(rule![0]).toMatch(/overflow:\s*hidden/);
+});
+
 test("styles stay flat: no backdrop filters, gradients or raw colours", () => {
   for (const { file, code } of styleSources) {
     for (const { pattern, label } of FORBIDDEN_CSS_PATTERNS) {
