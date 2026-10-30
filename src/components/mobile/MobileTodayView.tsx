@@ -120,7 +120,7 @@ function MobileTodayView({
       {doneItems.length > 0 ? (
         <details className="mobile-today__done">
           <summary>
-            {mobileText(lang, "doneToday")}
+            <h2>{mobileText(lang, "doneToday")}</h2>
             <span>{doneItems.length}</span>
           </summary>
           <MobileList>

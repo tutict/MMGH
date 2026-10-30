@@ -172,9 +172,12 @@
   font-weight: var(--q-weight-strong);
   letter-spacing: -0.01em;
   line-height: var(--q-leading-tight);
-  outline: none;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.desk-header h1:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .desk-header__status {

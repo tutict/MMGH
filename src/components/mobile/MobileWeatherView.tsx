@@ -183,6 +183,7 @@ function MobileWeatherView({
                   color="default"
                   variant="outlined"
                   label={mobileText(lang, "remove")}
+                  aria-label={`${mobileText(lang, "remove")} ${resolveWeatherCityName(city, t)}`}
                   onClick={() => onRemoveWeatherCity(city.id)}
                   disabled={weatherCities.length <= 1}
                 />

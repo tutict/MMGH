@@ -349,6 +349,11 @@
   display: none;
 }
 
+.mobile-today__done summary h2 {
+  font-size: inherit;
+  line-height: inherit;
+}
+
 .mobile-today__done summary span {
   margin-left: auto;
   color: var(--q-text-faint);

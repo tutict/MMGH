@@ -23,6 +23,7 @@ function KnowledgeVault({
 
   return (
     <section className="desk-knowledge notes-workbench">
+      <h2 className="sr-only">{t("app.knowledge.title")}</h2>
       <div className="notes-workbench__layout">
         <aside className="notes-index">
           <div className="notes-index__header">
@@ -175,13 +176,6 @@ function KnowledgeVault({
           ) : (
             <div className="desk-empty notes-editor__empty">
               <p>{t("app.knowledge.editor.description")}</p>
-              <AppButton
-                className="solid-button"
-                onClick={handleCreateNote}
-                disabled={busy !== "" || loading}
-              >
-                {t("app.knowledge.newPage")}
-              </AppButton>
             </div>
           )}
         </div>

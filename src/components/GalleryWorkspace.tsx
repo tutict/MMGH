@@ -104,6 +104,7 @@ function GalleryWorkspace({
 
   return (
     <section className="desk-gallery">
+      <h2 className="sr-only">{t("app.gallery.title")}</h2>
       <div className="gallery-body" {...viewerBackgroundProps}>
         <header className="gallery-toolbar">
           <div className="gallery-toolbar__actions">

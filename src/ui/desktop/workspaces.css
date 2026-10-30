@@ -739,6 +739,10 @@
   white-space: nowrap;
 }
 
+.reminder-card__severity {
+  flex: none;
+}
+
 .reminder-editor {
   min-width: 0;
   padding-left: var(--q-space-6);
@@ -817,7 +821,7 @@
   flex: 1 1 100%;
 }
 
-.skills-registry__intro h3 {
+.skills-registry__intro h2 {
   font-size: var(--q-text-md);
 }
 

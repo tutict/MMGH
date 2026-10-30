@@ -40,6 +40,7 @@ function RuntimeWorkspace({
   return (
     <section className="desk-runtime runtime-workspace">
       <div className="runtime-main-column">
+        <h2 className="sr-only">{t("app.agent.conversation.title")}</h2>
         <div className="runtime-status-strip">
           <AppStatusChip tone={activeStatus}>{t(`app.status.${activeStatus}`)}</AppStatusChip>
           <span>
@@ -87,6 +88,7 @@ function RuntimeWorkspace({
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             placeholder={t("app.agent.composer.placeholder")}
+            slotProps={{ htmlInput: { "aria-label": t("app.common.send") } }}
             multiline
             minRows={3}
             maxRows={8}

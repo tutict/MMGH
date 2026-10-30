@@ -165,6 +165,7 @@ function MobileAppShell({
             <MobileRowButton
               key={item.id}
               className="mobile-menu-row"
+              aria-current={currentView === item.id ? "page" : undefined}
               onClick={() => {
                 openView(item.id);
                 setMenuOpen(false);

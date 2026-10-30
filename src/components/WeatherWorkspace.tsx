@@ -262,6 +262,7 @@ function WeatherWorkspace({
 
   return (
     <section className="desk-weather" data-testid="weather-workspace">
+      <h2 className="sr-only">{t("app.weather.hero.eyebrow")}</h2>
       <header className="desk-weather__toolbar">
         <div className="desk-weather__status">
           <AppStatusChip tone={resolveWeatherStatusTone(weatherStatus)}>

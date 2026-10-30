@@ -136,7 +136,7 @@ function SkillWorkspace({
       <aside className="skills-registry">
         <div className="skills-registry__header">
           <div className="skills-registry__intro">
-            <h3>{t("app.skills.centerTitle")}</h3>
+            <h2>{t("app.skills.centerTitle")}</h2>
             <span className="section-note">
               {t("app.skills.totalLabel")} {skillList.length} · {t("app.skills.enabledLabel")}{" "}
               {enabledCount} · {t("app.skills.mountedLabel")} {mountedCount}

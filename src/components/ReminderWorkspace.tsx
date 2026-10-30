@@ -136,6 +136,9 @@ function ReminderWorkspace({
                               ? reminderDateFormatter.format(item.dueAt)
                               : t("app.reminders.noDueDate")}
                           </span>
+                          <span className="reminder-card__severity">
+                            {t(`app.reminders.severity.${item.severity || "medium"}`)}
+                          </span>
                           <span>
                             {linkedNote
                               ? t("app.reminders.linked", { title: linkedNote.title })

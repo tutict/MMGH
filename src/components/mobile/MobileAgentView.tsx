@@ -203,6 +203,7 @@ function MobileAgentView({
                   color={isMounted ? "primary" : "default"}
                   variant={isMounted ? "filled" : "outlined"}
                   label={isMounted ? mobileText(lang, "skillMounted") : mobileText(lang, "skillAdd")}
+                  aria-label={`${isMounted ? mobileText(lang, "skillMounted") : mobileText(lang, "skillAdd")} ${skill.name}`}
                   onClick={() => handleToggleSkillMounted(skill.id)}
                   disabled={busy !== ""}
                 />

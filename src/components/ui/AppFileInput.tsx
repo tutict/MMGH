@@ -8,7 +8,18 @@ const AppFileInput = React.forwardRef<HTMLInputElement, AppFileInputProps>(funct
   { className, ...props },
   ref
 ) {
-  return <input ref={ref} className={joinClassNames("upload-input", className)} {...props} type="file" />;
+  // The visible button owns the action, so the input stays out of the tab order
+  // and out of the accessibility tree.
+  return (
+    <input
+      ref={ref}
+      className={joinClassNames("upload-input", className)}
+      {...props}
+      type="file"
+      tabIndex={-1}
+      aria-hidden="true"
+    />
+  );
 });
 
 export default AppFileInput;
