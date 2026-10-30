@@ -54,7 +54,7 @@
 | 本地存储 | SQLite、rusqlite、schema migration |
 | 安全存储 | system keyring |
 | 模型接入 | Rig agent runtime、OpenAI-compatible provider |
-| 测试与质量 | ESLint、Vitest、Cargo Test |
+| 测试与质量 | ESLint、Vitest、Cargo Test、Ragas 能力测评 |
 
 ## 仓库结构
 
@@ -62,6 +62,7 @@
 归流 / MMGH
 ├─ src/                # React 应用、工作区组件、样式与 i18n
 ├─ src-tauri/          # Tauri 运行时、Rust 命令、本地数据库
+├─ eval/               # Agent 能力测评：Ragas 数据集、评测脚本与基线
 ├─ docs/               # 安全、发布、操作、实验与四轴评审文档
 ├─ release/            # 版本化发布元数据
 ├─ PRODUCT.md          # 产品契约：用户、目标与信息架构
@@ -193,6 +194,27 @@ npm run test:unit
 npm run test:rust
 ```
 
+## Agent 能力测评
+
+仓库内置一套 Ragas 能力测评，用来守住 Agent 运行时的检索能力与回复护栏：
+
+- 评测数据：`eval/ragas/dataset.json`
+- 离线评测器：`src-tauri/src/bin/ragas_eval_harness.rs`，直接驱动生产环境的提示词装配路径
+- 评分与门禁：`eval/ragas/evaluate.py`
+- 能力基线：`eval/ragas/baseline.json`
+- CI 工作流：`.github/workflows/ragas-ci.yml`
+
+离线层不需要任何密钥：
+
+```bash
+python -m pip install -r eval/ragas/requirements.txt
+cargo build --manifest-path src-tauri/Cargo.toml --bin ragas_eval_harness
+src-tauri/target/debug/ragas_eval_harness --dataset eval/ragas/dataset.json --out artifacts/ragas-samples.json --provider stub --data-dir artifacts/ragas-work
+python eval/ragas/evaluate.py --input artifacts/ragas-samples.json --baseline eval/ragas/baseline.json --out artifacts/ragas-report.json
+```
+
+离线层度量三件事：目标笔记是否被送入提示词、是否排在第一位，以及运行时是否拒绝了声称越权副作用的回复。指标口径、分层方式与基线更新流程见 [eval/ragas/README.md](eval/ragas/README.md)。
+
 ## 提供方配置
 
 可在 `Settings` 中配置模型接入信息：
@@ -233,5 +255,6 @@ Windows 下常见产物包括：
 - API Key 处理说明：[docs/API_KEY_HANDLING.md](docs/API_KEY_HANDLING.md)
 - 发布指南：[docs/RELEASE.md](docs/RELEASE.md)
 - 变更记录：[CHANGELOG.md](CHANGELOG.md)
+- 能力测评说明：[eval/ragas/README.md](eval/ragas/README.md)
 - 四轴评审记录：[docs/reviews/](docs/reviews/)
 - 首个桌面发行版：[release/0.1.0/README.md](release/0.1.0/README.md)

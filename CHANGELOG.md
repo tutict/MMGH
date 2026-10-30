@@ -17,6 +17,8 @@ The format follows a lightweight `Keep a Changelog` style:
 - Added `PRODUCT.md` (the product contract: users, purpose, information architecture) and `DESIGN.md` (the Quiet Ledger token, layout and component record).
 - Added `src/ui/styleContract.test.ts`, which requires every structural class name used in a TSX file to have a rule in `src/ui/**`, requires dynamic class templates to match a class family, and bans gradients, backdrop filters, raw colours, undefined `--q-*` tokens, the deleted decorative classes, and a stylesheet above 5,200 non-blank lines.
 - Added `src/theme/themeTokenParity.test.ts` (the MUI palette must equal the token layer), `src/i18n/localeCoverage.test.ts` (both locales carry the same keys and every referenced key exists), `src/state/useReminderAlerts.test.ts`, `src/components/mobile/MobileSheet.test.tsx`, `src/App.settingsHydration.test.tsx` and `src/components/TodayWorkspace.test.tsx`.
+- Added a Ragas capability assessment under `eval/ragas/`. `src-tauri/src/bin/ragas_eval_harness.rs` drives the production prompt-assembly path over `eval/ragas/dataset.json` and writes one sample per case; `eval/ragas/evaluate.py` scores the samples with the Ragas offline metrics plus project metrics and gates them against the committed `eval/ragas/baseline.json`. The harness injects an explicit provider configuration, so an evaluation run never reads the system keyring.
+- Added `.github/workflows/ragas-ci.yml`, the repository's first CI workflow. The offline job always runs and needs no credentials; an optional live job runs the same dataset against a configured provider and adds the LLM-judged answer metrics when `MMGH_EVAL_API_KEY`, `MMGH_EVAL_BASE_URL` and `MMGH_EVAL_MODEL` are configured as repository secrets.
 
 ### Changed
 
@@ -62,9 +64,12 @@ The format follows a lightweight `Keep a Changelog` style:
 - Documented the frontend major dependency upgrade (React 19, Vite 8, Vitest 5, ESLint 9, Babel 8) and its four-axis review in `docs/reviews/2026-10-16-frontend-major-dependency-upgrade/`.
 - Documented the dependency refresh (MUI 9.5, `globals` 17, `rig` 0.45, `rusqlite` 0.41, both lockfile refreshes, the vendored-crate removal) and its four-axis review in `docs/reviews/2026-10-30-dependency-refresh/`.
 - Documented the Quiet Ledger redesign and its four-axis review in `docs/reviews/2026-10-30-quiet-ledger-redesign/`, including the remediation ledger and the re-measured evidence.
+- Documented the capability assessment in `eval/ragas/README.md`: the definition and denominator of every metric, the tier layout, how to record a new baseline, and what the assessment is not — a regression gate over a synthetic dataset, not a statistically powered benchmark.
 
 ### Notes
 
+- `ragas` 0.4.3 declares `langchain-community` without an upper bound, and 0.4.2 removed `langchain_community.chat_models.vertexai`, which `ragas/llms/base.py` imports; `eval/ragas/requirements.txt` pins 0.4.1. `rapidfuzz` backs the non-LLM context metrics but ragas declares it only under the `all` extra, so the assessment installs it explicitly.
+- Ragas adds `1e-10` to the denominator of its average precision, so a perfect ranking reads `0.9999999999`; the capability assessment rounds the value to 1.0.
 - Rig concatenates array-of-parts message content without a separator, so multi-part replies read `firstsecond` where the removed client produced `first\nsecond`. Array-of-parts content is uncommon for chat completions; this parity difference is intentional and pinned by a test.
 - `keyring` 1.2 to 4 makes `Entry::new` fallible, so a host without an available keyring backend now reports `failed to open keyring entry` instead of a backend error from `get_password()`.
 - The shared model-call error text changed from `provider returned <status>: <body>` to `Rig agent completion failed: <rig error>`; the UI does not parse this string.
