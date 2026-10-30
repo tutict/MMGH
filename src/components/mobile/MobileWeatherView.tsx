@@ -1,7 +1,20 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { Chip } from "@mui/material";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
-import { MobileTextField, MobileActionRow, MobileButton, MobileChip, MobileForm, MobileList, MobilePage, MobileRow, MobileRowBody, MobileEmpty, MobileMuted, MobileSection, MobileSectionHead } from "../ui";
+import {
+  MobileButton,
+  MobileEmpty,
+  MobileForm,
+  MobileList,
+  MobileMuted,
+  MobilePage,
+  MobileRow,
+  MobileRowBody,
+  MobileSection,
+  MobileSectionHead,
+  MobileTextField,
+} from "../ui";
 import {
   formatMobileWeatherDate,
   formatMobileWeatherTime,
@@ -28,16 +41,21 @@ function MobileWeatherView({
 }: Record<string, any>) {
   const [citySheetOpen, setCitySheetOpen] = useState(false);
   const [cityQuery, setCityQuery] = useState("");
-  const savedLocationIds = new Set(weatherLocations.map((city) => city.id));
   const citySuggestions = useMemo(() => {
+    const savedLocationIds = new Set(weatherLocations.map((city) => city.id));
     const needle = cityQuery.trim().toLowerCase();
     return WEATHER_LOCATIONS.filter((city) => {
+      if (savedLocationIds.has(city.id)) {
+        return false;
+      }
       const label = [city.name, city.region, city.id, city.nameKey ? t(city.nameKey) : ""]
         .join(" ")
         .toLowerCase();
       return !needle || label.includes(needle);
     });
-  }, [cityQuery, t]);
+  }, [cityQuery, t, weatherLocations]);
+  const hourly = activeWeatherCity?.hourly || [];
+  const daily = activeWeatherCity?.daily || [];
   const metrics = [
     { label: t("app.weather.metric.feelsLike"), value: valueWithDegree(activeWeatherCity?.feelsLike, t) },
     { label: t("app.weather.metric.humidity"), value: percentageValue(activeWeatherCity?.humidity) },
@@ -50,82 +68,83 @@ function MobileWeatherView({
 
   return (
     <MobilePage view="weather">
-      <MobileSection flush>
-        <div className="mobile-weather-current">
-          <div>
-            <span className="mobile-eyebrow">{resolveWeatherRegion(activeWeatherCity, t)}</span>
-            <h1>{resolveWeatherCityName(activeWeatherCity, t)}</h1>
-            <p>{resolveWeatherCondition(activeWeatherCity, t)}</p>
-          </div>
-          <strong>{valueWithDegree(activeWeatherCity?.temperature, t)}</strong>
+      <section className="mobile-weather-hero">
+        <div className="mobile-weather-hero__summary">
+          <p className="mobile-weather-hero__city">{resolveWeatherCityName(activeWeatherCity, t)}</p>
+          <p className="mobile-weather-hero__condition">{resolveWeatherCondition(activeWeatherCity, t)}</p>
         </div>
-        <MobileActionRow>
-          <MobileButton
-            variant="text"
-            mobileAction="secondary"
-            onClick={() => setCitySheetOpen(true)}
-          >
-            {mobileText(lang, "city")}
-          </MobileButton>
-          <MobileButton variant="text" mobileAction="secondary" onClick={onRefresh}>
-            {mobileText(lang, "refresh")}
-          </MobileButton>
-        </MobileActionRow>
-        <MobileMuted>
+        {activeWeatherCity?.temperature != null ? (
+          <strong className="mobile-weather-hero__temp">
+            {valueWithDegree(activeWeatherCity.temperature, t)}
+          </strong>
+        ) : null}
+        <p className="mobile-weather-hero__meta">
           {weatherStatus === "error"
             ? weatherError
             : weatherUpdatedAt
               ? t("app.weather.updatedAt", { date: formatMobileWeatherTime(weatherUpdatedAt, lang) })
               : t("app.weather.updatedAtPending")}
-        </MobileMuted>
-      </MobileSection>
+        </p>
+        <div className="mobile-weather-hero__actions">
+          <MobileButton variant="text" onClick={() => setCitySheetOpen(true)}>
+            {mobileText(lang, "city")}
+          </MobileButton>
+          <MobileButton variant="text" onClick={onRefresh}>
+            {mobileText(lang, "refresh")}
+          </MobileButton>
+        </div>
+      </section>
 
-      <MobileSection>
-        <MobileList variant="metrics">
-          {metrics.map((metric) => (
-            <MobileRow key={metric.label}>
-              <span>{metric.label}</span>
-              <strong>{metric.value}</strong>
-            </MobileRow>
-          ))}
-        </MobileList>
-      </MobileSection>
+      <div className="mobile-weather-metrics">
+        {metrics.map((metric) => (
+          <div key={metric.label} className="mobile-weather-metric">
+            <span>{metric.label}</span>
+            <strong>{metric.value}</strong>
+          </div>
+        ))}
+      </div>
 
-      <MobileSection>
-        <MobileSectionHead line>
-          <h2>{mobileText(lang, "hourly")}</h2>
-        </MobileSectionHead>
-        <div className="mobile-weather-strip">
-          {(activeWeatherCity?.hourly || []).length === 0 ? (
-            <MobileEmpty>{t("app.weather.emptyForecast")}</MobileEmpty>
-          ) : (
-            activeWeatherCity.hourly.map((item) => (
+      {hourly.length === 0 && daily.length === 0 ? (
+        <MobileEmpty>{t("app.weather.emptyForecast")}</MobileEmpty>
+      ) : null}
+
+      {hourly.length > 0 ? (
+        <MobileSection>
+          <MobileSectionHead line>
+            <h2>{mobileText(lang, "hourly")}</h2>
+          </MobileSectionHead>
+          <div className="mobile-weather-strip">
+            {hourly.map((item) => (
               <div key={item.time} className="mobile-weather-chip">
                 <time>{formatMobileWeatherTime(item.time, lang)}</time>
                 <strong>{valueWithDegree(item.temperature, t)}</strong>
                 <span>{percentageValue(item.precipitation)}</span>
               </div>
-            ))
-          )}
-        </div>
-      </MobileSection>
+            ))}
+          </div>
+        </MobileSection>
+      ) : null}
 
-      <MobileSection>
-        <MobileSectionHead line>
-          <h2>{mobileText(lang, "weekly")}</h2>
-        </MobileSectionHead>
-        <MobileList>
-          {(activeWeatherCity?.daily || []).slice(0, 7).map((item) => (
-            <MobileRow key={item.time}>
-              <MobileRowBody>
-                <strong>{formatMobileWeatherDate(item.time, lang)}</strong>
-                <span>{item.conditionKey ? t(item.conditionKey) : "--"}</span>
-              </MobileRowBody>
-              <span>{valueWithDegree(item.high, t)} / {valueWithDegree(item.low, t)}</span>
-            </MobileRow>
-          ))}
-        </MobileList>
-      </MobileSection>
+      {daily.length > 0 ? (
+        <MobileSection>
+          <MobileSectionHead line>
+            <h2>{mobileText(lang, "weekly")}</h2>
+          </MobileSectionHead>
+          <MobileList>
+            {daily.slice(0, 7).map((item) => (
+              <MobileRow key={item.time}>
+                <MobileRowBody>
+                  <strong>{formatMobileWeatherDate(item.time, lang)}</strong>
+                  <span>{item.conditionKey ? t(item.conditionKey) : "--"}</span>
+                </MobileRowBody>
+                <span className="mobile-weather-range">
+                  {valueWithDegree(item.high, t)} / {valueWithDegree(item.low, t)}
+                </span>
+              </MobileRow>
+            ))}
+          </MobileList>
+        </MobileSection>
+      ) : null}
 
       <MobileSheet
         id="mobile-weather-cities"
@@ -144,57 +163,58 @@ function MobileWeatherView({
             size="small"
           />
         </MobileForm>
-        <MobileList>
-          {weatherCities.map((city) => (
-            <MobileRow key={city.id} active={city.id === selectedWeatherCityId}>
-              <MobileButton
-                variant="text"
-                className="mobile-row__body"
-                onClick={() => {
-                  setSelectedWeatherCityId(city.id);
-                  setCitySheetOpen(false);
-                }}
-              >
-                <strong>{resolveWeatherCityName(city, t)}</strong>
-                <span>{resolveWeatherCondition(city, t)}</span>
-              </MobileButton>
-              <MobileChip
-                clickable
-                color="default"
-                variant="outlined"
-                label={mobileText(lang, "remove")}
-                onClick={() => onRemoveWeatherCity(city.id)}
-                disabled={weatherCities.length <= 1}
-              />
-            </MobileRow>
-          ))}
-        </MobileList>
-        <MobileList variant="suggestions">
-          {citySuggestions.map((city) => {
-            const isSaved = savedLocationIds.has(city.id);
-            return (
-              <MobileRow key={city.id}>
-                <MobileRowBody>
-                  <strong>{resolveWeatherCityName(city, t)}</strong>
-                  <span>{resolveWeatherRegion(city, t)}</span>
-                </MobileRowBody>
-                <MobileChip
-                  clickable
-                  color={isSaved ? "primary" : "default"}
-                  variant={isSaved ? "filled" : "outlined"}
-                  active={isSaved}
-                  label={isSaved ? t("app.weather.search.open") : t("app.weather.search.add")}
+        <div className="mobile-weather-city-groups">
+          <MobileList>
+            {weatherCities.map((city) => (
+              <MobileRow key={city.id} active={city.id === selectedWeatherCityId}>
+                <MobileButton
+                  variant="text"
+                  className="mobile-row__body"
                   onClick={() => {
-                    if (!isSaved) {
-                      onAddWeatherCity(city);
-                    }
                     setSelectedWeatherCityId(city.id);
+                    setCitySheetOpen(false);
                   }}
+                >
+                  <strong>{resolveWeatherCityName(city, t)}</strong>
+                  <span>{resolveWeatherCondition(city, t)}</span>
+                </MobileButton>
+                <Chip
+                  clickable
+                  color="default"
+                  variant="outlined"
+                  label={mobileText(lang, "remove")}
+                  onClick={() => onRemoveWeatherCity(city.id)}
+                  disabled={weatherCities.length <= 1}
                 />
               </MobileRow>
-            );
-          })}
-        </MobileList>
+            ))}
+          </MobileList>
+          {citySuggestions.length > 0 ? (
+            <>
+              <MobileMuted>{t("app.weather.search.section.results")}</MobileMuted>
+              <MobileList>
+                {citySuggestions.map((city) => (
+                  <MobileRow key={city.id}>
+                    <MobileRowBody>
+                      <strong>{resolveWeatherCityName(city, t)}</strong>
+                      <span>{resolveWeatherRegion(city, t)}</span>
+                    </MobileRowBody>
+                    <Chip
+                      clickable
+                      color="default"
+                      variant="outlined"
+                      label={t("app.weather.search.add")}
+                      onClick={() => {
+                        onAddWeatherCity(city);
+                        setSelectedWeatherCityId(city.id);
+                      }}
+                    />
+                  </MobileRow>
+                ))}
+              </MobileList>
+            </>
+          ) : null}
+        </div>
       </MobileSheet>
     </MobilePage>
   );
@@ -213,6 +233,3 @@ function windValue(value, t) {
 }
 
 export default MobileWeatherView;
-
-
-

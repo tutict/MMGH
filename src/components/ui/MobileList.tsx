@@ -2,7 +2,7 @@ import React from "react";
 import { joinClassNames } from "./classNames";
 
 type MobileListProps = React.HTMLAttributes<HTMLDivElement> & {
-  variant?: "inset" | "metrics" | "suggestions";
+  variant?: "inset";
 };
 
 function MobileList({ children, className, variant, ...props }: MobileListProps) {

@@ -1,0 +1,331 @@
+.mobile-player {
+  display: flex;
+  flex-direction: column;
+  gap: var(--q-space-3);
+  padding-top: var(--q-space-1);
+}
+
+.mobile-player__art {
+  width: min(100%, 14rem);
+  aspect-ratio: 1;
+  margin-inline: auto;
+  overflow: hidden;
+  background: var(--q-sunken);
+  border: 1px solid var(--q-border);
+  border-radius: var(--q-radius-md);
+}
+
+.mobile-player__art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mobile-player__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+}
+
+.mobile-player__meta strong {
+  font-size: var(--q-text-lg);
+  font-weight: var(--q-weight-strong);
+  line-height: var(--q-leading-title);
+}
+
+.mobile-player__lyrics.MuiButton-root {
+  align-self: center;
+  min-height: var(--q-touch);
+  color: var(--q-text-muted);
+}
+
+.mobile-player__meta span {
+  color: var(--q-text-muted);
+  font-size: var(--q-text-sm);
+}
+
+.mobile-player__progress {
+  padding: 0 var(--q-space-1);
+}
+
+.mobile-player__time {
+  display: flex;
+  justify-content: space-between;
+  margin-top: calc(-1 * var(--q-space-2));
+  color: var(--q-text-faint);
+  font-size: var(--q-text-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-player__controls {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  justify-items: center;
+  padding: var(--q-space-1) 0;
+}
+
+.mobile-player__controls .MuiIconButton-root {
+  color: var(--q-text-muted);
+}
+
+.mobile-player__controls .MuiIconButton-root:hover {
+  background: var(--q-sunken);
+  color: var(--q-text);
+}
+
+.mobile-player__play.MuiIconButton-root {
+  width: 3.5rem;
+  height: 3.5rem;
+  background: var(--q-accent);
+  color: var(--q-accent-ink);
+}
+
+.mobile-player__play.MuiIconButton-root:hover {
+  background: var(--q-accent-strong);
+  color: var(--q-accent-ink);
+}
+
+.mobile-player__volume {
+  display: flex;
+  align-items: center;
+  gap: var(--q-space-2);
+  color: var(--q-text-muted);
+}
+
+.mobile-player__volume .MuiSlider-root {
+  flex: 1;
+}
+
+.mobile-lyrics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--q-space-3);
+  padding: var(--q-space-2) 0;
+}
+
+.mobile-lyrics p {
+  color: var(--q-text-muted);
+  font-size: var(--q-text-md);
+  line-height: var(--q-leading-prose);
+  text-align: center;
+}
+
+.mobile-queue-row img {
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  object-fit: cover;
+  background: var(--q-sunken);
+  border-radius: var(--q-radius-sm);
+}
+
+.mobile-queue-row small {
+  color: var(--q-accent);
+  font-weight: var(--q-weight-strong);
+}
+
+.mobile-gallery-toolbar,
+.mobile-skill-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--q-space-2);
+}
+
+.mobile-gallery-upload.MuiIconButton-root {
+  flex: none;
+  width: var(--q-touch);
+  height: var(--q-touch);
+  background: var(--q-surface);
+  border: 1px solid var(--q-border);
+  border-radius: var(--q-radius-md);
+  color: var(--q-text);
+}
+
+.mobile-gallery-upload.MuiIconButton-root:hover {
+  background: var(--q-sunken);
+}
+
+.mobile-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--q-space-2);
+}
+
+.mobile-gallery-tile {
+  aspect-ratio: 1;
+  padding: 0;
+  overflow: hidden;
+  background: var(--q-sunken);
+  border: 1px solid var(--q-border);
+  border-radius: var(--q-radius-sm);
+}
+
+.mobile-gallery-tile:hover {
+  border-color: var(--q-control);
+}
+
+.mobile-gallery-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mobile-gallery-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--q-space-4);
+}
+
+.mobile-gallery-viewer img {
+  width: 100%;
+  max-height: 58dvh;
+  object-fit: contain;
+  background: var(--q-sunken);
+  border-radius: var(--q-radius-md);
+}
+
+.mobile-gallery-viewer__actions {
+  display: flex;
+  gap: var(--q-space-2);
+}
+
+.mobile-gallery-viewer__actions .MuiButton-root {
+  flex: 1;
+  min-height: var(--q-touch);
+}
+
+.mobile-weather-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--q-space-1) var(--q-space-3);
+  align-items: start;
+  padding: var(--q-space-2) 0;
+}
+
+.mobile-weather-hero__summary {
+  min-width: 0;
+}
+
+.mobile-weather-hero__city {
+  font-size: var(--q-text-xl);
+  font-weight: var(--q-weight-strong);
+  line-height: var(--q-leading-title);
+  overflow-wrap: anywhere;
+}
+
+.mobile-weather-hero__condition {
+  color: var(--q-text-muted);
+  font-size: var(--q-text-sm);
+}
+
+.mobile-weather-hero__temp {
+  font-size: var(--q-text-display);
+  font-weight: var(--q-weight-strong);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-weather-hero__meta {
+  grid-column: 1 / -1;
+  color: var(--q-text-faint);
+  font-size: var(--q-text-2xs);
+}
+
+.mobile-weather-hero__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: var(--q-space-1);
+  margin-left: calc(-1 * var(--q-space-2));
+}
+
+.mobile-weather-hero__actions .MuiButton-root {
+  color: var(--q-text-muted);
+  font-size: var(--q-text-sm);
+}
+
+.mobile-weather-hero__actions .MuiButton-root:hover {
+  color: var(--q-text);
+}
+
+.mobile-weather-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--q-space-2);
+}
+
+.mobile-weather-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--q-space-3);
+  background: var(--q-surface);
+  border: 1px solid var(--q-border);
+  border-radius: var(--q-radius-md);
+}
+
+.mobile-weather-metric span {
+  color: var(--q-text-faint);
+  font-size: var(--q-text-2xs);
+}
+
+.mobile-weather-metric strong {
+  font-size: var(--q-text-md);
+  font-weight: var(--q-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-weather-strip {
+  display: flex;
+  gap: var(--q-space-2);
+  overflow-x: auto;
+  padding-bottom: var(--q-space-1);
+}
+
+.mobile-weather-chip {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  min-width: 3.5rem;
+  padding: var(--q-space-2);
+  background: var(--q-surface);
+  border: 1px solid var(--q-border);
+  border-radius: var(--q-radius-md);
+}
+
+.mobile-weather-chip time {
+  color: var(--q-text-faint);
+  font-size: var(--q-text-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-weather-chip strong {
+  font-size: var(--q-text-sm);
+  font-weight: var(--q-weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-weather-chip span {
+  color: var(--q-text-muted);
+  font-size: var(--q-text-2xs);
+}
+
+.mobile-weather-range {
+  flex: none;
+  margin-left: auto;
+  color: var(--q-text-muted);
+  font-size: var(--q-text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.mobile-weather-city-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--q-space-3);
+  margin-top: var(--q-space-3);
+}
