@@ -1,5 +1,8 @@
+import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
+import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
+import TranslateRoundedIcon from "@mui/icons-material/TranslateRounded";
 import { useEffect, useRef } from "react";
-import { AppButton } from "../components/ui";
+import { AppButton, AppIconButton } from "../components/ui";
 
 const PRIMARY_IDS = ["today", "agent", "knowledge", "reminders"];
 const TOOL_IDS = ["skills", "gallery", "music", "weather"];
@@ -47,6 +50,7 @@ export default function DesktopShell({ model, children }) {
     : dirty
       ? t("app.common.dirty")
       : t(`app.status.${providerConfigured ? "ready" : railPresenceStatus}`);
+  const statusTone = loading || busy ? "running" : dirty ? "dirty" : providerConfigured ? "ready" : "idle";
 
   useEffect(() => {
     titleRef.current?.focus();
@@ -100,16 +104,14 @@ export default function DesktopShell({ model, children }) {
     );
   };
 
+  const nextThemeLabel = theme === "dark" ? t("app.theme.light") : t("app.theme.dark");
+
   return (
-    <div className={`desk theme-${theme} view-${currentView}`} data-theme={theme}>
+    <div className="desk" data-theme={theme}>
       <aside className="desk-nav">
         <div className="desk-brand">
-          <h1>归流</h1>
-          <p>本地工作台</p>
-          <p className="desk-presence" data-status={railPresenceStatus}>
-            <span className="desk-presence__dot" aria-hidden="true" />
-            <span>{t(`app.status.${railPresenceStatus}`)}</span>
-          </p>
+          <p className="desk-brand__name">归流</p>
+          <p className="desk-brand__tagline">本地工作台</p>
         </div>
         <nav aria-label={t("app.nav.title")}>
           <p className="desk-nav__group">{t("app.nav.group.workspace")}</p>
@@ -120,19 +122,34 @@ export default function DesktopShell({ model, children }) {
         <div className="desk-nav__footer">
           {renderItem("settings")}
           <div className="desk-nav__prefs">
-            <AppButton className="ghost-button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-              {theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
-            </AppButton>
-            <AppButton className="ghost-button" onClick={() => setLang(lang === "zh-CN" ? "en-US" : "zh-CN")}>
-              {t("app.language.label")}
-            </AppButton>
+            <AppIconButton
+              className="desk-nav__pref"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label={nextThemeLabel}
+              title={nextThemeLabel}
+              size="small"
+            >
+              {theme === "dark" ? <LightModeOutlinedIcon fontSize="small" /> : <DarkModeOutlinedIcon fontSize="small" />}
+            </AppIconButton>
+            <AppIconButton
+              className="desk-nav__pref"
+              onClick={() => setLang(lang === "zh-CN" ? "en-US" : "zh-CN")}
+              aria-label={t("app.language.label")}
+              title={t("app.language.label")}
+              size="small"
+            >
+              <TranslateRoundedIcon fontSize="small" />
+            </AppIconButton>
           </div>
         </div>
       </aside>
       <div className="desk-main">
         <header className="desk-header">
           <h1 id="desk-page-title" tabIndex={-1} ref={titleRef}>{pageTitle}</h1>
-          <p>{status}</p>
+          <p className="desk-header__status" data-status={statusTone}>
+            <span className="desk-header__dot" aria-hidden="true" />
+            <span>{status}</span>
+          </p>
         </header>
         {model.notice ? <div className="notice-banner" role="status">{model.notice}</div> : null}
         {model.error ? <div className="error-banner" role="alert">{model.error}</div> : null}

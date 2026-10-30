@@ -2901,7 +2901,7 @@ export function useWorkspaceController() {
   };
 
   const sessionLibraryPanel = (
-    <section className="panel-surface today-section today-session-library-panel">
+    <section className="panel-surface today-section">
         <div className="rail-section__head rail-section__head--split">
           <div>
             <span className="eyebrow">{t("app.nav.sessions.eyebrow")}</span>
@@ -2953,14 +2953,12 @@ export function useWorkspaceController() {
               value={sessionSearch}
               onChange={(event) => setSessionSearch(event.target.value)}
               placeholder={t("app.session.searchPlaceholder")}
-              className="session-search-input"
               aria-label={t("app.session.searchLabel")}
               size="small"
               fullWidth
             />
 
-            <div className="session-list-shell">
-              <div className="session-list">
+            <div className="session-list">
                 {filteredSessions.length === 0 ? (
                   <div className="session-list__empty">
                     <strong>{t("app.session.searchEmptyTitle")}</strong>
@@ -2972,7 +2970,7 @@ export function useWorkspaceController() {
                     return (
                       <div key={group.id} className="session-group">
                         <AppButton
-                          className="session-group__head session-group__toggle"
+                          className="session-group__head"
                           onClick={() => handleToggleSessionGroup(group.id)}
                           aria-expanded={!isGroupCollapsed}
                         >
@@ -3008,7 +3006,7 @@ export function useWorkspaceController() {
                                         </span>
                                         <strong>{session.title}</strong>
                                       </div>
-                                      <span className={`rail-nav-item__badge session-card__badge status-${session.status}`}>
+                                      <span className={`session-card__badge status-${session.status}`}>
                                         {t(`app.status.${session.status}`)}
                                       </span>
                                     </div>
@@ -3051,7 +3049,6 @@ export function useWorkspaceController() {
                     );
                   })
                 )}
-              </div>
             </div>
 
             <AppButton
@@ -3324,7 +3321,6 @@ export function useWorkspaceController() {
       handleOpenMusicWorkspace={() => openView("music")}
       handlePlayNextTrack={handlePlayNextTrack}
       handlePlayPreviousTrack={handlePlayPreviousTrack}
-      handleRestartTrack={handleRestartTrack}
       handleSeek={handleSeek}
       handleTogglePlayback={handleTogglePlayback}
       isPlaying={isPlaying}
