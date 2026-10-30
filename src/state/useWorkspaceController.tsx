@@ -3333,6 +3333,8 @@ export function useWorkspaceController() {
     />
   );
   return {
+    activeNote,
+    activeNoteId,
     activeSession,
     activeSessionId,
     activeSessionSkillIds,

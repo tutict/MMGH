@@ -1,3 +1,4 @@
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
 import {
   filterReminders,
@@ -5,7 +6,7 @@ import {
 } from "../reminderWorkspaceModel";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { AppMenuItem, MobileTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileForm, MobileFormGrid, MobileList, MobileMuted, MobilePage, MobileRow, MobileSearchRow, MobileSection, MobileSectionHead } from "../ui";
+import { AppMenuItem, MobileTextField, MobileButton, MobileCheckButton, MobileEmpty, MobileForm, MobileFormGrid, MobileList, MobilePage, MobileRow, MobileSearchRow, MobileSection, MobileSectionHead } from "../ui";
 
 function MobileRemindersView({
   busy,
@@ -101,79 +102,65 @@ function MobileRemindersView({
 
   return (
     <MobilePage view="reminders">
-      <h1 className="mobile-page-title">{t("app.reminders.title")}</h1>
+      <div className="mobile-toolbar mobile-reminders__toolbar">
+        <MobileButton
+          variant="contained"
+          mobileAction="primary"
+          onClick={() => void createReminderAndOpen()}
+          disabled={busy !== "" || loading}
+        >
+          {t("app.reminders.newReminder")}
+        </MobileButton>
+        {reminders.length > 2 ? (
+          <MobileSearchRow>
+            <MobileTextField
+              value={reminderSearch}
+              onChange={(event) => setReminderSearch(event.target.value)}
+              placeholder={t("app.reminders.search")}
+              aria-label={t("app.reminders.search")}
+              fullWidth
+              size="small"
+            />
+          </MobileSearchRow>
+        ) : null}
+      </div>
 
       {!hasReminders ? (
         <section className="mobile-empty-hero">
           <strong>{mobileText(lang, "emptyReminders")}</strong>
           <p>{mobileText(lang, "emptyRemindersHint")}</p>
-          <MobileButton
-            variant="contained"
-            mobileAction="primary"
-            onClick={() => void createReminderAndOpen()}
-            disabled={busy !== "" || loading}
-          >
-            {t("app.reminders.newReminder")}
-          </MobileButton>
+        </section>
+      ) : hasMatches ? (
+        <section className="mobile-reminder-groups">
+          {populatedGroups.map((group) => (
+            <MobileSection key={group.key} className="mobile-reminder-group">
+              <MobileSectionHead line>
+                <h2>{group.title}</h2>
+                <span className="mobile-section__count">{group.items.length}</span>
+              </MobileSectionHead>
+              <MobileList>
+                {group.items.map((item) => (
+                  <ReminderRow
+                    key={item.id}
+                    busy={busy}
+                    dateFormatter={dateFormatter}
+                    handleToggleTodayReminderStatus={handleToggleTodayReminderStatus}
+                    item={item}
+                    loading={loading}
+                    noteList={noteList}
+                    onOpen={() => void openReminderEditor(item)}
+                    selected={item.id === selectedReminderId}
+                    t={t}
+                  />
+                ))}
+              </MobileList>
+            </MobileSection>
+          ))}
         </section>
       ) : (
-        <>
-          <MobileSection flush>
-            <MobileButton
-              variant="contained"
-              mobileAction="primary"
-              onClick={() => void createReminderAndOpen()}
-              disabled={busy !== "" || loading}
-            >
-              {t("app.reminders.newReminder")}
-            </MobileButton>
-            {reminders.length > 2 ? (
-              <MobileSearchRow>
-                <MobileTextField
-                  value={reminderSearch}
-                  onChange={(event) => setReminderSearch(event.target.value)}
-                  placeholder={t("app.reminders.search")}
-                  aria-label={t("app.reminders.search")}
-                  fullWidth
-                  size="small"
-                />
-              </MobileSearchRow>
-            ) : null}
-          </MobileSection>
-
-          {hasMatches ? (
-            <section className="mobile-reminder-groups">
-              {populatedGroups.map((group) => (
-                <MobileSection key={group.key} className="mobile-reminder-group">
-                  <MobileSectionHead line>
-                    <h2>{group.title}</h2>
-                    <MobileMuted as="span">{group.items.length}</MobileMuted>
-                  </MobileSectionHead>
-                  <MobileList>
-                    {group.items.map((item) => (
-                      <ReminderRow
-                        key={item.id}
-                        busy={busy}
-                        dateFormatter={dateFormatter}
-                        handleToggleTodayReminderStatus={handleToggleTodayReminderStatus}
-                        item={item}
-                        loading={loading}
-                        noteList={noteList}
-                        onOpen={() => void openReminderEditor(item)}
-                        selected={item.id === selectedReminderId}
-                        t={t}
-                      />
-                    ))}
-                  </MobileList>
-                </MobileSection>
-              ))}
-            </section>
-          ) : (
-            <section className="mobile-empty-hero">
-              <strong>{mobileText(lang, "emptyRemindersSearch")}</strong>
-            </section>
-          )}
-        </>
+        <section className="mobile-empty-hero">
+          <strong>{mobileText(lang, "emptyRemindersSearch")}</strong>
+        </section>
       )}
 
       <MobileSheet
@@ -206,7 +193,7 @@ function MobileRemindersView({
         }
       >
         {reminderDraft.id ? (
-          <MobileForm className="mobile-reminder-form">
+          <MobileForm>
             <MobileTextField
               label={t("app.reminders.form.title")}
               value={reminderDraft.title || ""}
@@ -254,23 +241,6 @@ function MobileRemindersView({
                 <AppMenuItem value="medium">{t("app.reminders.severity.medium")}</AppMenuItem>
                 <AppMenuItem value="high">{t("app.reminders.severity.high")}</AppMenuItem>
                 <AppMenuItem value="critical">{t("app.reminders.severity.critical")}</AppMenuItem>
-              </MobileTextField>
-
-              <MobileTextField
-                label={t("app.reminders.form.status")}
-                select
-                value={reminderDraft.status || "scheduled"}
-                onChange={(event) =>
-                  setReminderDraft((prev) => ({
-                    ...prev,
-                    status: event.target.value,
-                  }))
-                }
-                fullWidth
-                size="small"
-              >
-                <AppMenuItem value="scheduled">{t("app.reminders.status.scheduled")}</AppMenuItem>
-                <AppMenuItem value="done">{t("app.reminders.status.done")}</AppMenuItem>
               </MobileTextField>
 
               <MobileTextField
@@ -349,6 +319,9 @@ function ReminderRow({
   const linkedNote = noteList.find((note) => note.id === item.linkedNoteId) || null;
   const dueLabel = item.dueAt ? formatReminderDue(item.dueAt, dateFormatter) : t("app.reminders.noDueDate");
   const statusKey = item.status === "done" ? "done" : "open";
+  const meta = [dueLabel, t(`app.reminders.severity.${item.severity || "medium"}`), linkedNote?.title]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <MobileRow variant="reminder" active={selected}>
@@ -358,9 +331,10 @@ function ReminderRow({
         onClick={() => void handleToggleTodayReminderStatus(item)}
         disabled={busy !== "" || loading}
         aria-label={`${t(`app.reminders.status.${statusKey}`)} ${item.title}`}
-        size="small"
       >
-        <span aria-hidden="true">{item.status === "done" ? "↩" : "✓"}</span>
+        <span aria-hidden="true">
+          <CheckRoundedIcon fontSize="inherit" />
+        </span>
       </MobileCheckButton>
       <MobileButton
         variant="text"
@@ -369,13 +343,7 @@ function ReminderRow({
         disabled={busy !== "" || loading}
       >
         <strong>{item.title || t("app.reminders.defaultTitle")}</strong>
-        <span>{item.preview || t("app.reminders.emptyBucket")}</span>
-        <span className="mobile-reminder-meta">
-          <span>{dueLabel}</span>
-          <span>{t(`app.reminders.severity.${item.severity || "medium"}`)}</span>
-          <span>{t(`app.reminders.status.${statusKey}`)}</span>
-        </span>
-        {linkedNote ? <small>{t("app.reminders.linked", { title: linkedNote.title })}</small> : null}
+        <span className="mobile-row__meta">{meta}</span>
       </MobileButton>
     </MobileRow>
   );
@@ -390,7 +358,3 @@ function formatReminderDue(value, formatter) {
 }
 
 export default MobileRemindersView;
-
-
-
-

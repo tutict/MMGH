@@ -1,12 +1,44 @@
 import React, { useMemo, useState } from "react";
+import { Chip } from "@mui/material";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { MobileTextField, MobileActionRow, MobileButton, MobileChip, MobileList, MobilePage, MobileSection, MobileSectionHead, MobileStatusDot, MobileRow, MobileRowBody, MobileRowButton, MobileEmpty, joinClassNames } from "../ui";
+import {
+  MobileButton,
+  MobileEmpty,
+  MobileList,
+  MobilePage,
+  MobileRow,
+  MobileRowBody,
+  MobileRowButton,
+  MobileStatusDot,
+  MobileTextField,
+  joinClassNames,
+} from "../ui";
+
+const MESSAGE_ROLES = ["user", "assistant", "system"];
+
+function roleLabel(role, lang) {
+  if (role === "user") {
+    return mobileText(lang, "you");
+  }
+  if (role === "system") {
+    return mobileText(lang, "system");
+  }
+  if (role === "activity") {
+    return mobileText(lang, "activity");
+  }
+  return mobileText(lang, "agent");
+}
 
 function normalizeTimelineItem(item, index, type, lang, formatTime) {
   const time = item.createdAt || item.updatedAt || item.timestamp || item.time || 0;
-  const role = item.role || item.kind || type;
-  const title = item.title || item.label || (role === "assistant" ? "Agent" : role === "user" ? "You" : role);
+  const rawRole = String(item.role || item.kind || "assistant").toLowerCase();
+  const role =
+    type === "activity"
+      ? "activity"
+      : MESSAGE_ROLES.includes(rawRole)
+        ? rawRole
+        : "assistant";
   const body = item.content || item.message || item.summary || item.detail || item.description || "";
 
   return {
@@ -15,7 +47,7 @@ function normalizeTimelineItem(item, index, type, lang, formatTime) {
     meta: time ? formatTime(time, lang) : "",
     role,
     time,
-    title,
+    title: item.title || item.label || roleLabel(role, lang),
     type,
   };
 }
@@ -52,46 +84,51 @@ function MobileAgentView({
   const recommendedSkills = activeSessionRecommendedSkills.filter(
     (skill) => !activeSessionSkillIds.includes(skill.id)
   );
+  const providerLabel = providerConfigured
+    ? mobileText(lang, "providerReady")
+    : mobileText(lang, "providerPending");
 
   return (
     <MobilePage view="agent">
-      <MobileSection flush>
-        <MobileSectionHead>
-          <div>
-            <span className="mobile-eyebrow">{mobileText(lang, "currentSession")}</span>
-            <h1>{activeSession?.session?.title || mobileText(lang, "agent")}</h1>
-          </div>
-          <MobileStatusDot tone={providerConfigured ? "ready" : "pending"} />
-        </MobileSectionHead>
-        <MobileActionRow columns="three">
-          <MobileButton variant="outlined" mobileAction="secondary" onClick={() => setSheet("sessions")}>
+      <div className="mobile-agent-bar">
+        <div className="mobile-agent-bar__actions">
+          <MobileButton variant="text" onClick={() => setSheet("sessions")}>
             {mobileText(lang, "sessionLibrary")}
           </MobileButton>
-          <MobileButton variant="outlined" mobileAction="secondary" onClick={() => setSheet("skills")}>
+          <MobileButton variant="text" onClick={() => setSheet("skills")}>
             {mobileText(lang, "skills")}
           </MobileButton>
-          <MobileButton variant="outlined" mobileAction="secondary" onClick={() => setSheet("details")}>
-            {mobileText(lang, "details")}
-          </MobileButton>
-        </MobileActionRow>
-      </MobileSection>
+        </div>
+        <span className="mobile-agent-bar__status">
+          <MobileStatusDot tone={providerConfigured ? "ready" : "pending"} />
+          <span className="sr-only">{providerLabel}</span>
+        </span>
+      </div>
 
       <section className="mobile-agent-timeline" aria-label={mobileText(lang, "activity")}>
         {timeline.length === 0 ? (
           <MobileEmpty>{mobileText(lang, "emptyAgent")}</MobileEmpty>
         ) : (
-          timeline.map((item) => (
-            <article
-              key={item.id}
-              className={joinClassNames("mobile-agent-event", `mobile-agent-event--${item.role || item.type}`)}
-            >
-              <div className="mobile-agent-event__head">
-                <strong>{item.title}</strong>
-                <time>{item.meta}</time>
-              </div>
-              {item.body ? <p>{item.body}</p> : null}
-            </article>
-          ))
+          timeline.map((item) =>
+            item.role === "activity" ? (
+              <p key={item.id} className="mobile-message mobile-message--activity">
+                <span>{item.title}</span>
+                {item.body ? <span>{item.body}</span> : null}
+                {item.meta ? <time>{item.meta}</time> : null}
+              </p>
+            ) : (
+              <article
+                key={item.id}
+                className={joinClassNames("mobile-message", `mobile-message--${item.role}`)}
+              >
+                <header className="mobile-message__head">
+                  <strong>{item.title}</strong>
+                  {item.meta ? <time>{item.meta}</time> : null}
+                </header>
+                {item.body ? <p className="mobile-message__body">{item.body}</p> : null}
+              </article>
+            )
+          )
         )}
       </section>
 
@@ -128,6 +165,7 @@ function MobileAgentView({
           {sessionList.map((session) => (
             <MobileRowButton
               key={session.id}
+              active={session.id === activeSession?.session?.id}
               onClick={() => {
                 void handleOpenSession?.(session.id);
                 setSheet("");
@@ -135,11 +173,12 @@ function MobileAgentView({
             >
               <MobileRowBody>
                 <strong>{session.title}</strong>
-                <span>{session.lastMessagePreview}</span>
+                {session.lastMessagePreview ? <span>{session.lastMessagePreview}</span> : null}
               </MobileRowBody>
               <time>{session.updatedAt ? formatTime(session.updatedAt, lang) : ""}</time>
             </MobileRowButton>
           ))}
+          {sessionList.length === 0 ? <MobileEmpty>{mobileText(lang, "emptyList")}</MobileEmpty> : null}
         </MobileList>
       </MobileSheet>
 
@@ -159,11 +198,10 @@ function MobileAgentView({
                   <strong>{skill.name}</strong>
                   <span>{skill.summary || skill.description || skill.triggerHint}</span>
                 </MobileRowBody>
-                <MobileChip
+                <Chip
                   clickable
                   color={isMounted ? "primary" : "default"}
                   variant={isMounted ? "filled" : "outlined"}
-                  active={isMounted}
                   label={isMounted ? "On" : "Add"}
                   onClick={() => handleToggleSkillMounted(skill.id)}
                   disabled={busy !== ""}
@@ -176,35 +214,8 @@ function MobileAgentView({
           ) : null}
         </MobileList>
       </MobileSheet>
-
-      <MobileSheet
-        id="mobile-agent-details"
-        open={sheet === "details"}
-        onClose={() => setSheet("")}
-        closeLabel={mobileText(lang, "close")}
-        title={mobileText(lang, "details")}
-      >
-        <MobileList>
-          <MobileRow>
-            <MobileRowBody>
-              <strong>{mobileText(lang, "provider")}</strong>
-              <span>{providerConfigured ? "Configured" : "Pending"}</span>
-            </MobileRowBody>
-          </MobileRow>
-          <MobileRow>
-            <MobileRowBody>
-              <strong>{mobileText(lang, "activity")}</strong>
-              <span>{timeline.length}</span>
-            </MobileRowBody>
-          </MobileRow>
-        </MobileList>
-      </MobileSheet>
     </MobilePage>
   );
 }
 
 export default MobileAgentView;
-
-
-
-

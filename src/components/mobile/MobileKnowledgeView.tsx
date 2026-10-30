@@ -1,3 +1,4 @@
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import React, { useEffect, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
@@ -62,8 +63,6 @@ function MobileKnowledgeView({
 
   return (
     <MobilePage view="knowledge">
-      <h1 className="mobile-page-title">{mobileText(lang, "knowledge")}</h1>
-
       {!hasNotes ? (
         <section className="mobile-empty-hero">
           <strong>{mobileText(lang, "emptyNotesHero")}</strong>
@@ -94,9 +93,8 @@ function MobileKnowledgeView({
                 onClick={() => void createNote()}
                 disabled={busy !== ""}
                 aria-label={mobileText(lang, "newNote")}
-                size="small"
               >
-                <PlusIcon />
+                <AddRoundedIcon fontSize="small" aria-hidden="true" />
               </AppIconButton>
             </MobileSearchRow>
           </MobileSection>
@@ -109,15 +107,16 @@ function MobileKnowledgeView({
                   return (
                     <MobileRowButton
                       key={note.id}
-                      className="mobile-note-card"
                       onClick={() => void openNote(note)}
                       active={note.id === activeNoteId}
                     >
                       <MobileRowBody>
                         <strong>{note.title}</strong>
-                        {preview ? <span>{preview}</span> : null}
+                        {preview ? <span className="mobile-note-card__preview">{preview}</span> : null}
+                        {note.updatedAt ? (
+                          <span className="mobile-row__meta">{formatTime(note.updatedAt, lang)}</span>
+                        ) : null}
                       </MobileRowBody>
-                      <time>{note.updatedAt ? formatTime(note.updatedAt, lang) : ""}</time>
                     </MobileRowButton>
                   );
                 })}
@@ -137,6 +136,7 @@ function MobileKnowledgeView({
         onClose={() => setEditorOpen(false)}
         closeLabel={mobileText(lang, "close")}
         title={activeNote?.title || mobileText(lang, "knowledge")}
+        variant="full"
         actions={
           <>
             <MobileButton
@@ -190,12 +190,3 @@ function MobileKnowledgeView({
 }
 
 export default MobileKnowledgeView;
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-      <path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z" />
-    </svg>
-  );
-}
-

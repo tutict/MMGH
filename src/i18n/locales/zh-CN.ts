@@ -294,6 +294,9 @@ const zhCN = {
   "app.knowledge.search": "搜索笔记",
   "app.knowledge.noTags": "无标签",
   "app.knowledge.defaultTitle": "未命名笔记",
+  "app.knowledge.form.icon": "图标",
+  "app.knowledge.form.title": "标题",
+  "app.knowledge.form.body": "正文",
   "app.knowledge.tags": "标签，使用逗号分隔",
   "app.knowledge.bodyPlaceholder":
     "在这里记下长期会用到的内容，比如背景信息、资料摘录或常用提示词。",
@@ -746,6 +749,8 @@ const zhCN = {
   "app.inspector.resize": "调整右侧边栏宽度",
   "app.settings.eyebrow": "网关",
   "app.settings.title": "Provider",
+  "app.settings.appearance.title": "外观",
+  "app.settings.appearance.theme": "主题",
   "app.settings.providerName": "Provider 名称",
   "app.settings.baseUrl": "Base URL",
   "app.settings.apiKey": "API Key",

@@ -2,7 +2,7 @@ import React from "react";
 
 import { joinClassNames } from "./classNames";
 
-type MobileRowVariant = "cache" | "reminder" | "summary";
+type MobileRowVariant = "cache" | "reminder";
 
 type MobileRowProps = React.HTMLAttributes<HTMLDivElement> & {
   active?: boolean;

@@ -1,3 +1,4 @@
+import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import React from "react";
 import { getMobileDaypart, mobileText } from "./mobileText";
 import {
@@ -26,43 +27,23 @@ function MobileTodayView({
   loading,
   openReminderCount,
   openView,
-  ruleActionRecommendations = [],
-  ruleEffectivenessSignals = [],
   todayReminderItems = [],
-  todayReviewSignals = [],
 }: Record<string, any>) {
   const sessionTitle = activeSession?.session?.title || "";
   const dueCount = Number(dueReminderCount) || 0;
   const openCount = Number(openReminderCount) || 0;
   const sessions = continueSessionItems.slice(0, 3);
-  const doneItems = completedTodayItems.slice(0, 3);
-  const signalCards = [
-    ...[...ruleEffectivenessSignals, ...todayReviewSignals]
-      .filter((item) => String(item?.value ?? "") !== "" && String(item.value) !== "0")
-      .filter((item) => item.id !== "notes")
-      .map((item) => ({
-        id: item.id,
-        kind: "metric",
-        label: item.label || item.title,
-        value: item.value,
-      })),
-    ...ruleActionRecommendations
-      .filter((item) => item.actionTitle || item.title)
-      .map((item, index) => ({
-        id: item.id || item.actionType || `action-${index}`,
-        kind: "action",
-        label: item.actionTitle || item.title,
-        value: item.reason || item.detail || item.summary || "",
-      })),
-  ].slice(0, 4);
-  const hasAgenda = todayReminderItems.length > 0 || sessions.length > 0 || signalCards.length > 0 || doneItems.length > 0;
+  const doneItems = completedTodayItems.slice(0, 5);
+  const hasAgenda = todayReminderItems.length > 0 || sessions.length > 0 || doneItems.length > 0;
   const primaryOpensReminders = dueCount > 0 || openCount > 0;
 
   return (
     <MobilePage view="today">
-      <section className="mobile-today-hero">
-        <h1>{getMobileDaypart(clockNow, lang)}</h1>
-        {sessionTitle ? <p>{sessionTitle}</p> : null}
+      <section className="mobile-today__hero">
+        <p className="mobile-today__greeting">{getMobileDaypart(clockNow, lang)}</p>
+        <p className="mobile-today__meta">
+          {sessionTitle || mobileText(lang, "emptyTodayHint")}
+        </p>
         <MobileButton
           variant="contained"
           mobileAction="primary"
@@ -83,20 +64,21 @@ function MobileTodayView({
         <MobileSection>
           <MobileSectionHead line>
             <h2>{mobileText(lang, "inbox")}</h2>
-            <span>{todayReminderItems.length}</span>
+            <span className="mobile-section__count">{todayReminderItems.length}</span>
           </MobileSectionHead>
           <MobileList>
             {todayReminderItems.map((item) => (
-              <MobileRow key={item.id} interactive>
+              <MobileRow key={item.id} variant="reminder">
                 <MobileCheckButton
                   type="button"
                   checked={item.status === "done"}
                   onClick={() => handleToggleTodayReminderStatus(item)}
                   disabled={busy !== "" || loading}
                   aria-label={item.status === "done" ? mobileText(lang, "completed") : mobileText(lang, "due")}
-                  size="small"
                 >
-                  <span aria-hidden="true">{item.status === "done" ? "✓" : ""}</span>
+                  <span aria-hidden="true">
+                    <CheckRoundedIcon fontSize="inherit" />
+                  </span>
                 </MobileCheckButton>
                 <MobileButton
                   variant="text"
@@ -107,9 +89,10 @@ function MobileTodayView({
                   }}
                 >
                   <strong>{item.title}</strong>
-                  <span>{item.preview || item.detail || formatTime(item.dueAt, lang)}</span>
+                  <span className="mobile-row__meta">
+                    {item.dueAt ? formatTime(item.dueAt, lang) : mobileText(lang, "due")}
+                  </span>
                 </MobileButton>
-                <time>{item.dueAt ? formatTime(item.dueAt, lang) : ""}</time>
               </MobileRow>
             ))}
           </MobileList>
@@ -119,7 +102,7 @@ function MobileTodayView({
       {sessions.length > 0 ? (
         <MobileSection>
           <MobileSectionHead line>
-            <h2>{mobileText(lang, sessions.length > 1 ? "sessionLibrary" : "currentSession")}</h2>
+            <h2>{mobileText(lang, "continueAgent")}</h2>
           </MobileSectionHead>
           <MobileList>
             {sessions.map((session) => (
@@ -134,30 +117,12 @@ function MobileTodayView({
         </MobileSection>
       ) : null}
 
-      {signalCards.length > 0 ? (
-        <MobileSection>
-          <MobileSectionHead line>
-            <h2>{mobileText(lang, "flowSignals")}</h2>
-          </MobileSectionHead>
-          <div className="mobile-signal-grid">
-            {signalCards.map((card) => (
-              <article
-                key={card.id}
-                className={`mobile-signal-card${card.kind === "action" ? " mobile-signal-card--action" : ""}`}
-              >
-                <span>{card.label}</span>
-                <strong>{card.value}</strong>
-              </article>
-            ))}
-          </div>
-        </MobileSection>
-      ) : null}
-
       {doneItems.length > 0 ? (
-        <MobileSection>
-          <MobileSectionHead line>
-            <h2>{mobileText(lang, "doneToday")}</h2>
-          </MobileSectionHead>
+        <details className="mobile-today__done">
+          <summary>
+            {mobileText(lang, "doneToday")}
+            <span>{doneItems.length}</span>
+          </summary>
           <MobileList>
             {doneItems.map((item, index) => (
               <MobileRowButton
@@ -170,12 +135,10 @@ function MobileTodayView({
               </MobileRowButton>
             ))}
           </MobileList>
-        </MobileSection>
+        </details>
       ) : null}
     </MobilePage>
   );
 }
 
 export default MobileTodayView;
-
-

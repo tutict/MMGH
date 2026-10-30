@@ -326,6 +326,9 @@ const enUS = {
   "app.knowledge.search": "Search notes",
   "app.knowledge.noTags": "No tags",
   "app.knowledge.defaultTitle": "Untitled note",
+  "app.knowledge.form.icon": "Icon",
+  "app.knowledge.form.title": "Title",
+  "app.knowledge.form.body": "Body",
   "app.knowledge.tags": "Tags, comma separated",
   "app.knowledge.bodyPlaceholder":
     "Write your note here. Keep stable facts, research snippets, reusable prompts, or product knowledge.",
@@ -794,6 +797,8 @@ const enUS = {
   "app.inspector.resize": "Resize right sidebar",
   "app.settings.eyebrow": "Gateway",
   "app.settings.title": "Provider",
+  "app.settings.appearance.title": "Appearance",
+  "app.settings.appearance.theme": "Theme",
   "app.settings.providerName": "Provider name",
   "app.settings.baseUrl": "Base URL",
   "app.settings.apiKey": "API key",

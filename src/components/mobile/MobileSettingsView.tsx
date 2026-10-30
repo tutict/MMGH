@@ -1,7 +1,8 @@
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import React, { useMemo, useState } from "react";
 import MobileSheet from "./MobileSheet";
 import { mobileText } from "./mobileText";
-import { MobileTextField, MobileButton, MobileForm, MobileInlineWarning, MobileList, MobileMuted, MobilePage, MobileRow, MobileRowBody, MobileRowButton, MobileSection, MobileSectionHead, MobileStatusDot, MobileSummaryCell, MobileSummaryGrid } from "../ui";
+import { AppIconButton, MobileTextField, MobileButton, MobileForm, MobileInlineWarning, MobileList, MobileMuted, MobilePage, MobileRow, MobileRowBody, MobileRowButton, MobileSection, MobileSectionHead, MobileStatusDot } from "../ui";
 
 function MobileSettingsView({
   busy,
@@ -23,7 +24,6 @@ function MobileSettingsView({
   const [providerOpen, setProviderOpen] = useState(false);
   const [cacheTarget, setCacheTarget] = useState(null);
   const providerStateKey = providerConfigured ? "configured" : "pending";
-  const settingsStateKey = hasUnsavedSettings ? "dirty" : "saved";
   const cacheCount = useMemo(() => cacheCards.length, [cacheCards]);
 
   const updateField = (field) => (event) => {
@@ -56,38 +56,6 @@ function MobileSettingsView({
 
   return (
     <MobilePage view="settings">
-      <MobileSection flush>
-        <MobileSectionHead>
-          <div>
-            <span className="mobile-eyebrow">{t("app.settings.page.eyebrow")}</span>
-            <h1>{t("app.settings.page.title")}</h1>
-          </div>
-          <MobileButton
-            mobileAction="secondary"
-            onClick={() => setProviderOpen(true)}
-            variant="outlined"
-            size="small"
-          >
-            {t("app.settings.title")}
-          </MobileButton>
-        </MobileSectionHead>
-
-        <MobileSummaryGrid aria-label={t("app.settings.page.title")}>
-          <MobileSummaryCell>
-            <span>{t("app.view.settings.badge.gateway")}</span>
-            <strong>{t(`app.provider.${providerStateKey}`)}</strong>
-          </MobileSummaryCell>
-          <MobileSummaryCell>
-            <span>{t("app.view.settings.badge.state")}</span>
-            <strong>{t(`app.common.${settingsStateKey}`)}</strong>
-          </MobileSummaryCell>
-          <MobileSummaryCell>
-            <span>{t("app.settings.cache.title")}</span>
-            <strong>{t("app.settings.cache.groupCount", { count: cacheCount })}</strong>
-          </MobileSummaryCell>
-        </MobileSummaryGrid>
-      </MobileSection>
-
       {setLang || setTheme ? (
         <MobileSection>
           <MobileSectionHead line>
@@ -98,7 +66,6 @@ function MobileSettingsView({
               <MobileRow>
                 <MobileRowBody>
                   <strong>{t("app.language.label")}</strong>
-                  <span>{lang === "zh-CN" ? "中文" : "English"}</span>
                 </MobileRowBody>
                 <div className="mobile-segmented" role="group" aria-label={t("app.language.label")}>
                   <MobileButton
@@ -121,12 +88,29 @@ function MobileSettingsView({
               </MobileRow>
             ) : null}
             {setTheme ? (
-              <MobileRowButton onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+              <MobileRow>
                 <MobileRowBody>
                   <strong>{mobileText(lang, "theme")}</strong>
-                  <span>{theme === "dark" ? t("app.theme.dark") : t("app.theme.light")}</span>
                 </MobileRowBody>
-              </MobileRowButton>
+                <div className="mobile-segmented" role="group" aria-label={mobileText(lang, "theme")}>
+                  <MobileButton
+                    className={theme === "light" ? "is-active" : ""}
+                    variant="text"
+                    aria-pressed={theme === "light"}
+                    onClick={() => setTheme("light")}
+                  >
+                    {t("app.theme.light")}
+                  </MobileButton>
+                  <MobileButton
+                    className={theme === "dark" ? "is-active" : ""}
+                    variant="text"
+                    aria-pressed={theme === "dark"}
+                    onClick={() => setTheme("dark")}
+                  >
+                    {t("app.theme.dark")}
+                  </MobileButton>
+                </div>
+              </MobileRow>
             ) : null}
           </MobileList>
         </MobileSection>
@@ -134,27 +118,34 @@ function MobileSettingsView({
 
       <MobileSection>
         <MobileSectionHead line>
-          <h2>{t("app.settings.title")}</h2>
-          <MobileStatusDot tone={providerSecurityStatus || "ready"} />
+          <div className="mobile-settings__provider-head">
+            <h2>{t("app.settings.title")}</h2>
+            <span className="mobile-settings__provider-state">
+              <MobileStatusDot tone={providerConfigured ? "success" : "warning"} />
+              <span>{t(`app.provider.${providerStateKey}`)}</span>
+            </span>
+          </div>
+          <AppIconButton
+            className="mobile-settings__edit"
+            onClick={() => setProviderOpen(true)}
+            aria-label={t("app.settings.title")}
+          >
+            <EditRoundedIcon fontSize="small" aria-hidden="true" />
+          </AppIconButton>
         </MobileSectionHead>
         <MobileList variant="inset">
           <SummaryRow label={t("app.settings.providerName")} value={settingsForm.providerName} />
           <SummaryRow label={t("app.settings.model")} value={settingsForm.model} />
           <SummaryRow label={t("app.settings.baseUrl")} value={settingsForm.baseUrl} />
         </MobileList>
-        {providerSecurityMessage ? (
-          <MobileInlineWarning danger={providerSecurityStatus === "blocked"}>
-            {providerSecurityMessage}
-          </MobileInlineWarning>
-        ) : null}
       </MobileSection>
 
       <MobileSection>
         <MobileSectionHead line>
           <div>
-            <span className="mobile-eyebrow">{t("app.settings.cache.eyebrow")}</span>
             <h2>{t("app.settings.cache.title")}</h2>
           </div>
+          <span className="mobile-section__count">{cacheCount}</span>
         </MobileSectionHead>
         <MobileMuted>{t("app.settings.cache.description")}</MobileMuted>
         <MobileList>
@@ -331,7 +322,7 @@ function MobileSettingsView({
 
 function SummaryRow({ label, value }) {
   return (
-    <MobileRow variant="summary">
+    <MobileRow>
       <MobileRowBody>
         <strong>{label}</strong>
         <span>{value || "--"}</span>
@@ -341,6 +332,3 @@ function SummaryRow({ label, value }) {
 }
 
 export default MobileSettingsView;
-
-
-

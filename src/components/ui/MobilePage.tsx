@@ -8,7 +8,7 @@ type MobilePageProps = React.HTMLAttributes<HTMLDivElement> & {
 
 function MobilePage({ children, className, view, ...props }: MobilePageProps) {
   return (
-    <div className={joinClassNames("mobile-page", `mobile-page--${view}`, className)} {...props}>
+    <div className={joinClassNames("mobile-page", className)} data-view={view} {...props}>
       {children}
     </div>
   );
