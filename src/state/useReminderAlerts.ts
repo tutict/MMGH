@@ -57,6 +57,7 @@ function playReminderTone(audioRef) {
 export function useReminderAlerts({ active, onOpen, reminders, t }) {
   const triggeredRemindersRef = useRef(new Set());
   const reminderAudioRef = useRef(null);
+  const seededRef = useRef(false);
 
   useEffect(() => {
     if (!active || typeof window === "undefined") {
@@ -64,6 +65,16 @@ export function useReminderAlerts({ active, onOpen, reminders, t }) {
     }
     let timer = 0;
     const triggeredReminderKeys = triggeredRemindersRef.current;
+    // Overdue reminders that predate this session should not hijack the first view.
+    if (!seededRef.current && reminders.length > 0) {
+      seededRef.current = true;
+      const seededAt = Date.now();
+      for (const reminder of reminders) {
+        if (isOpenReminderWithDueTime(reminder) && Number(reminder.dueAt) <= seededAt) {
+          triggeredReminderKeys.add(createReminderAlertKey(reminder));
+        }
+      }
+    }
     const triggerDueReminder = (dueReminder) => {
       const alertKey = createReminderAlertKey(dueReminder);
       triggeredReminderKeys.add(alertKey);
