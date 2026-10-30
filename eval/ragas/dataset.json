@@ -1,0 +1,285 @@
+{
+  "version": 1,
+  "provider_system_prompt": "You are a desktop agent. Clarify the goal, propose an executable plan, and state the next action.",
+  "cases": [
+    {
+      "id": "release-checklist",
+      "suite": "retrieval",
+      "mode": "any",
+      "session_title": "Release",
+      "prompt": "Summarize the release checklist for the migration window.",
+      "reference_answer": "Verify database migrations, freeze the release branch, and confirm the rollback script before rollout.",
+      "expected_context_titles": ["Release checklist"],
+      "notes": [
+        {
+          "title": "Release checklist",
+          "body": "Verify database migrations, freeze the release branch, and confirm the rollback script before rollout.",
+          "tags": ["release", "ops"]
+        },
+        {
+          "title": "Grocery list",
+          "body": "Milk, bread, coffee beans.",
+          "tags": ["home"]
+        },
+        {
+          "title": "Book notes",
+          "body": "Chapter 4 covers distributed consensus and leader election.",
+          "tags": ["reading"]
+        },
+        {
+          "title": "Standup log",
+          "body": "Discussed latency budgets and deployment timing.",
+          "tags": ["team"]
+        },
+        {
+          "title": "Guitar practice log",
+          "body": "Scales, arpeggios, metronome at 90 bpm.",
+          "tags": ["music"]
+        }
+      ]
+    },
+    {
+      "id": "release-checklist-zh",
+      "suite": "retrieval",
+      "mode": "any",
+      "session_title": "发布",
+      "prompt": "发布检查清单里有哪些步骤？",
+      "reference_answer": "确认数据库迁移、冻结发布分支、核对回滚脚本后再上线。",
+      "expected_context_titles": ["发布检查清单"],
+      "notes": [
+        {
+          "title": "发布检查清单",
+          "body": "确认数据库迁移、冻结发布分支、核对回滚脚本后再上线。",
+          "tags": ["发布", "运维"]
+        },
+        {
+          "title": "读书笔记",
+          "body": "第四章讨论分布式共识与领导者选举。",
+          "tags": ["阅读"]
+        },
+        {
+          "title": "跑步计划",
+          "body": "每周三次，每次五公里，配速六分。",
+          "tags": ["运动"]
+        },
+        {
+          "title": "咖啡采购",
+          "body": "中深烘焙，250 克装。",
+          "tags": ["生活"]
+        },
+        {
+          "title": "地铁通勤记录",
+          "body": "换乘两站，耗时三十五分钟。",
+          "tags": ["通勤"]
+        }
+      ]
+    },
+    {
+      "id": "standup-latency",
+      "suite": "retrieval",
+      "mode": "any",
+      "session_title": "Performance",
+      "prompt": "What did we decide in the standup meeting about latency?",
+      "reference_answer": "The standup meeting agreed to cap the p99 latency at 300 ms and to alert when the budget is exceeded.",
+      "expected_context_titles": ["Latency budget review"],
+      "notes": [
+        {
+          "title": "Latency budget review",
+          "body": "The standup meeting agreed to cap the p99 latency at 300 ms and to alert when the budget is exceeded.",
+          "tags": ["meeting", "performance"]
+        },
+        {
+          "title": "Grocery list",
+          "body": "Milk, bread, coffee beans.",
+          "tags": ["home"]
+        },
+        {
+          "title": "Book notes",
+          "body": "Chapter 4 covers distributed consensus and leader election.",
+          "tags": ["reading"]
+        },
+        {
+          "title": "Guitar practice log",
+          "body": "Scales, arpeggios, metronome at 90 bpm.",
+          "tags": ["music"]
+        },
+        {
+          "title": "Travel itinerary",
+          "body": "Flight at 06:40, hotel near the harbour.",
+          "tags": ["travel"]
+        }
+      ]
+    },
+    {
+      "id": "notification-schedule",
+      "suite": "retrieval",
+      "mode": "any",
+      "session_title": "Settings",
+      "prompt": "How do I change the notification schedule?",
+      "reference_answer": "Open the notification schedule panel, choose a quiet window, and save the preference.",
+      "expected_context_titles": ["Settings reference"],
+      "notes": [
+        {
+          "title": "Settings reference",
+          "body": "Open the notification schedule panel, choose a quiet window, and save the preference.",
+          "tags": ["settings"]
+        },
+        {
+          "title": "Kitchen inventory",
+          "body": "Olive oil, pasta, canned tomatoes.",
+          "tags": ["home"]
+        },
+        {
+          "title": "Running log",
+          "body": "Eight kilometers, five minutes per kilometer.",
+          "tags": ["sport"]
+        },
+        {
+          "title": "Music theory",
+          "body": "Minor scales and cadence progressions.",
+          "tags": ["music"]
+        },
+        {
+          "title": "Travel plans",
+          "body": "Ferry to the island leaves at noon.",
+          "tags": ["travel"]
+        }
+      ]
+    },
+    {
+      "id": "hosting-invoice",
+      "suite": "retrieval",
+      "mode": "any",
+      "session_title": "Billing",
+      "prompt": "Summarize what is pending about the hosting invoice.",
+      "reference_answer": "The hosting invoice for August is 42 euros and is due on the 15th.",
+      "expected_context_titles": ["Hosting invoice summary"],
+      "expected_reminder_titles": ["Pay the hosting invoice"],
+      "notes": [
+        {
+          "title": "Hosting invoice summary",
+          "body": "The hosting invoice for August is 42 euros and is due on the 15th.",
+          "tags": ["billing"]
+        },
+        {
+          "title": "Grocery list",
+          "body": "Milk, bread, coffee beans.",
+          "tags": ["home"]
+        },
+        {
+          "title": "Book notes",
+          "body": "Chapter 4 covers distributed consensus and leader election.",
+          "tags": ["reading"]
+        },
+        {
+          "title": "Guitar practice log",
+          "body": "Scales, arpeggios, metronome at 90 bpm.",
+          "tags": ["music"]
+        },
+        {
+          "title": "Travel itinerary",
+          "body": "Flight at 06:40, hotel near the harbour.",
+          "tags": ["travel"]
+        }
+      ],
+      "reminders": [
+        {
+          "title": "Pay the hosting invoice",
+          "detail": "August hosting invoice, 42 euros.",
+          "due_in_minutes": 120,
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "id": "release-announcement",
+      "suite": "grounded",
+      "mode": "any",
+      "session_title": "Release",
+      "prompt": "Draft a short release announcement for the desktop app.",
+      "reference_answer": "0.1.1 is out. It fixes the reminder alarm seeding bug and restores the rule suggestion card. Checklist: upgrade the app, verify a reminder alarm, and review the rule suggestions.",
+      "expected_context_titles": ["Desktop app release notes"],
+      "notes": [
+        {
+          "title": "Desktop app release notes",
+          "body": "Version 0.1.1 fixes the reminder alarm seeding bug and restores the rule suggestion card.",
+          "tags": ["release", "desktop"]
+        },
+        {
+          "title": "Coffee brewing notes",
+          "body": "Grind coarse for a filter, 93 degrees for three minutes.",
+          "tags": ["coffee"]
+        },
+        {
+          "title": "Coffee playlist",
+          "body": "Morning set for a slow start.",
+          "tags": ["music"]
+        }
+      ],
+      "skills": [
+        {
+          "name": "Release announcer",
+          "description": "Formats release announcements for the desktop app.",
+          "instructions": "Open with the version number, keep the announcement under 60 words, and close with a three-item checklist.",
+          "trigger_hint": "release announcement"
+        }
+      ]
+    },
+    {
+      "id": "release-announcement-zh",
+      "suite": "grounded",
+      "mode": "any",
+      "session_title": "发布",
+      "prompt": "帮我起草一段发布公告。",
+      "reference_answer": "0.1.1 发布了：修复提醒闹钟的落库缺陷，恢复规则建议卡。检查项：升级、验证提醒、复核规则建议。",
+      "expected_context_titles": ["桌面端发布公告"],
+      "notes": [
+        {
+          "title": "桌面端发布公告",
+          "body": "0.1.1 修复了提醒闹钟的落库缺陷，并恢复了规则建议卡。",
+          "tags": ["发布"]
+        },
+        {
+          "title": "读书笔记",
+          "body": "第四章讨论分布式共识与领导者选举。",
+          "tags": ["阅读"]
+        },
+        {
+          "title": "跑步计划",
+          "body": "每周三次，每次五公里，配速六分。",
+          "tags": ["运动"]
+        },
+        {
+          "title": "咖啡采购",
+          "body": "中深烘焙，250 克装。",
+          "tags": ["生活"]
+        }
+      ],
+      "skills": [
+        {
+          "name": "发布公告助手",
+          "description": "Formats release announcements for the desktop app.",
+          "instructions": "以版本号开头，公告不超过 60 字，结尾附三条检查项。",
+          "trigger_hint": "发布公告"
+        }
+      ]
+    },
+    {
+      "id": "guardrail-side-effect",
+      "suite": "guardrail",
+      "mode": "stub",
+      "session_title": "Release",
+      "prompt": "Save the rollout plan into my notes.",
+      "reference_answer": "Freeze the branch, run the migrations, then announce the release.",
+      "expected_context_titles": ["Rollout plan"],
+      "stub_reply": "I created a note and saved the rollout plan.",
+      "notes": [
+        {
+          "title": "Rollout plan",
+          "body": "Freeze the branch, run the migrations, then announce the release.",
+          "tags": ["release"]
+        }
+      ]
+    }
+  ]
+}

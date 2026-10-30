@@ -1,0 +1,18 @@
+# Ragas and the judge stack used by `evaluate.py`.
+#
+# Two pins are load-bearing:
+#
+#   `langchain-community` 0.4.2 removed `langchain_community.chat_models.vertexai`,
+#   which `ragas/llms/base.py` imports at module scope, so any version above
+#   0.4.1 breaks `import ragas` outright.
+#
+#   `rapidfuzz` backs the non-LLM context metrics but ragas only declares it
+#   under the `all` extra, so it has to be installed explicitly.
+#
+# `ragas==0.4.3` is the latest release on PyPI; 0.4.9 does not exist.
+
+ragas==0.4.3
+langchain-community==0.4.1
+langchain-openai==1.1.9
+openai==1.109.1
+rapidfuzz==3.14.6

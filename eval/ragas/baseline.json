@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "tiers": {
+    "stub:offline": {
+      "description": "Deterministic retrieval and guardrail assessment. The provider is a loopback stub, so the model call itself is not measured; the prompt assembly, the note ranking and the reply contract are.",
+      "metrics": {
+        "guardrail_pass_rate": {
+          "value": 1.0,
+          "tolerance": 0.0,
+          "gated": true
+        },
+        "non_llm_context_precision_with_reference": {
+          "value": 1.0,
+          "tolerance": 0.05,
+          "gated": true
+        },
+        "non_llm_context_recall": {
+          "value": 1.0,
+          "tolerance": 0.0,
+          "gated": true
+        },
+        "provider_completion_rate": {
+          "value": 0.875,
+          "tolerance": 0.0,
+          "gated": false
+        },
+        "reminder_hit_rate": {
+          "value": 1.0,
+          "tolerance": 0.0,
+          "gated": true
+        },
+        "retrieval_hit_rate": {
+          "value": 1.0,
+          "tolerance": 0.0,
+          "gated": true
+        }
+      }
+    }
+  },
+  "recorded_at": "2026-10-30"
+}

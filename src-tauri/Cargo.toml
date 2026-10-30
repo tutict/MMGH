@@ -29,3 +29,11 @@ tauri-build = { version = "2", features = [] }
 [[bin]]
 name = "mygh"
 path = "src/main.rs"
+
+# The evaluation harness has no tests of its own; `test = false` keeps `cargo
+# test` from compiling the reused agent test modules a second time.
+[[bin]]
+name = "ragas_eval_harness"
+path = "src/bin/ragas_eval_harness.rs"
+test = false
+doctest = false
