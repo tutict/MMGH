@@ -30,6 +30,9 @@
   line-height: var(--q-leading-tight);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.mobile-topbar__title:focus:not(:focus-visible) {
   outline: none;
 }
 

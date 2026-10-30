@@ -159,7 +159,10 @@ function createAppTheme(mode: AppThemeMode) {
             "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
               borderColor: "var(--q-accent)",
               borderWidth: 1,
-              boxShadow: "0 0 0 1px var(--q-accent)",
+            },
+            "&:has(input:focus-visible)": {
+              outline: "2px solid var(--q-focus)",
+              outlineOffset: "2px",
             },
           },
           notchedOutline: {
@@ -229,8 +232,9 @@ function createAppTheme(mode: AppThemeMode) {
         styleOverrides: {
           paper: {
             marginTop: 4,
+            border: "1px solid var(--q-border)",
             borderRadius: 8,
-            boxShadow: "0 12px 32px rgb(0 0 0 / 0.16)",
+            backgroundImage: "none",
           },
           list: {
             padding: 4,
@@ -264,8 +268,12 @@ function createAppTheme(mode: AppThemeMode) {
           },
           thumb: {
             boxShadow: "none",
-            "&:hover, &.Mui-focusVisible": {
+            "&:hover": {
               boxShadow: "0 0 0 6px var(--q-accent-soft)",
+            },
+            "&.Mui-focusVisible": {
+              outline: "2px solid var(--q-focus)",
+              outlineOffset: "2px",
             },
           },
         },
@@ -312,8 +320,9 @@ function createAppTheme(mode: AppThemeMode) {
       MuiDialog: {
         styleOverrides: {
           paper: {
+            border: "1px solid var(--q-border)",
             borderRadius: 8,
-            boxShadow: "0 24px 64px rgb(0 0 0 / 0.24)",
+            backgroundImage: "none",
           },
         },
       },
