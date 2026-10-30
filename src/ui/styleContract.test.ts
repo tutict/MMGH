@@ -59,6 +59,8 @@ const FORBIDDEN_CSS_PATTERNS = [
   { pattern: /backdrop-filter/, label: "backdrop-filter" },
   { pattern: /-gradient\(/, label: "gradient" },
   { pattern: /#[0-9a-f]{3,8}\b/i, label: "bare hex colour" },
+  { pattern: /\brgba?\(/, label: "raw rgb colour" },
+  { pattern: /\bhsla?\(/, label: "raw hsl colour" },
 ];
 
 const DECORATIVE_CLASSES = [
@@ -98,12 +100,34 @@ const cssSources = cssFiles.map((file) => ({
   text: readFileSync(file, "utf8"),
 }));
 
+// The MUI theme writes most of its styles inline, so the stylesheets alone
+// cannot prove the flatness contract on their own.
+const themeSources = [
+  {
+    file: "src/theme/AppThemeProvider.tsx",
+    text: readFileSync(join(projectRoot, "src/theme/AppThemeProvider.tsx"), "utf8"),
+  },
+];
+
 function stripCssNoise(source: string) {
   return source
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .replace(/"(?:[^"\\]|\\.)*"/g, '""')
     .replace(/'(?:[^'\\]|\\.)*'/g, "''");
 }
+
+function stripComments(source: string) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+}
+
+// Stylesheets hide their string literals, but inline theme styles carry their
+// colours inside strings, so only comments are removed there.
+const styleSources = [
+  ...cssSources.map((source) => ({ ...source, code: stripCssNoise(source.text) })),
+  ...themeSources.map((source) => ({ ...source, code: stripComments(source.text) })),
+];
 
 const classDefinitions = new Map<string, string>();
 for (const { file, text } of cssSources) {
@@ -281,11 +305,10 @@ test("the shells keep their required selectors and tokens", () => {
   }
 });
 
-test("styles stay flat: no backdrop filters, gradients or hex colours", () => {
-  for (const { file, text } of cssSources) {
-    const source = stripCssNoise(text);
+test("styles stay flat: no backdrop filters, gradients or raw colours", () => {
+  for (const { file, code } of styleSources) {
     for (const { pattern, label } of FORBIDDEN_CSS_PATTERNS) {
-      expect(pattern.test(source), `${file} uses ${label}`).toBe(false);
+      expect(pattern.test(code), `${file} uses ${label}`).toBe(false);
     }
   }
 });
@@ -296,7 +319,7 @@ test("every --q-* variable used by CSS is defined", () => {
     [...tokensCss.matchAll(/--(q-[\w-]+)\s*:/g)].map((match) => match[1])
   );
   const missing = new Map<string, Set<string>>();
-  for (const { file, text } of cssSources) {
+  for (const { file, text } of [...cssSources, ...themeSources]) {
     for (const match of text.matchAll(/var\(--(q-[\w-]+)/g)) {
       if (defined.has(match[1])) {
         continue;
