@@ -11,6 +11,17 @@ function isOpenReminderWithDueTime(reminder) {
   return reminder?.status !== "done" && Number.isFinite(Number(reminder?.dueAt));
 }
 
+// A reminder that was already overdue when the workspace arrived must not hijack
+// the first view. The comparison is anchored to that moment, so a reminder created
+// during the session still alarms even when its due time already passed.
+function existedBeforeWorkspace(reminder, workspaceReadyAt) {
+  const createdAt = Number(reminder?.createdAt);
+  if (!Number.isFinite(createdAt)) {
+    return true;
+  }
+  return createdAt <= workspaceReadyAt;
+}
+
 function findDueReminder(reminders, now, triggeredReminderKeys) {
   return reminders.find((item) => {
     if (!isOpenReminderWithDueTime(item) || Number(item.dueAt) > now) {
@@ -54,25 +65,30 @@ function playReminderTone(audioRef) {
   void audio.play().catch(() => {});
 }
 
-export function useReminderAlerts({ active, onOpen, reminders, t }) {
+export function useReminderAlerts({ active, onOpen, reminders, t, workspaceReadyAt }) {
   const triggeredRemindersRef = useRef(new Set());
   const reminderAudioRef = useRef(null);
-  const seededRef = useRef(false);
 
   useEffect(() => {
-    if (!active || typeof window === "undefined") {
+    if (!active || typeof window === "undefined" || !workspaceReadyAt) {
       return undefined;
     }
     let timer = 0;
     const triggeredReminderKeys = triggeredRemindersRef.current;
-    // Overdue reminders that predate this session should not hijack the first view.
-    if (!seededRef.current && reminders.length > 0) {
-      seededRef.current = true;
-      const seededAt = Date.now();
-      for (const reminder of reminders) {
-        if (isOpenReminderWithDueTime(reminder) && Number(reminder.dueAt) <= seededAt) {
-          triggeredReminderKeys.add(createReminderAlertKey(reminder));
-        }
+    // Overdue reminders that predate the workspace should not hijack the first
+    // view. The rule is evaluated per reminder against a fixed anchor, so it does
+    // not depend on when the list happens to arrive.
+    for (const reminder of reminders) {
+      if (!isOpenReminderWithDueTime(reminder)) {
+        continue;
+      }
+      const alertKey = createReminderAlertKey(reminder);
+      if (triggeredReminderKeys.has(alertKey)) {
+        continue;
+      }
+      const overdueBeforeWorkspace = Number(reminder.dueAt) <= workspaceReadyAt;
+      if (overdueBeforeWorkspace && existedBeforeWorkspace(reminder, workspaceReadyAt)) {
+        triggeredReminderKeys.add(alertKey);
       }
     }
     const triggerDueReminder = (dueReminder) => {
@@ -103,5 +119,5 @@ export function useReminderAlerts({ active, onOpen, reminders, t }) {
     };
     scheduleNextReminderCheck();
     return () => window.clearTimeout(timer);
-  }, [active, onOpen, reminders, t]);
+  }, [active, onOpen, reminders, t, workspaceReadyAt]);
 }

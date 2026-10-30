@@ -164,6 +164,19 @@ const EMPTY_REMINDER_COMPLETION_DRAFT = {
 };
 const EMPTY_LIST = [];
 const THEME_STORAGE_KEY = "mmgh-theme";
+
+// The settings form starts out empty, so the first workspace snapshot has to fill
+// it in. Fields the user already edited keep their typed value.
+function mergeSettingsForm(workspaceSettings, currentForm, touchedFields) {
+  const merged = { ...workspaceSettings, clearApiKey: false };
+  for (const field of touchedFields) {
+    if (Object.prototype.hasOwnProperty.call(currentForm, field)) {
+      merged[field] = currentForm[field];
+    }
+  }
+  return merged;
+}
+
 function readStoredTheme() {
   if (typeof window === "undefined") {
     return "";
@@ -209,6 +222,7 @@ function readInitialAppVisibility() {
 export function useWorkspaceController() {
   const { lang, setLang, t } = useI18n();
   const [workspace, setWorkspace] = useState(null);
+  const [workspaceReadyAt, setWorkspaceReadyAt] = useState(0);
   const [currentView, setCurrentView] = useState("today");
   const isMobileViewport = useMobileViewport("(max-width: 760px)");
   const [theme, setTheme] = useState(() => {
@@ -306,6 +320,7 @@ export function useWorkspaceController() {
   const pendingWorkspaceSyncRef = useRef(false);
   const hasUnsavedWorkspaceDraftsRef = useRef(false);
   const settingsHydratedRef = useRef(false);
+  const settingsTouchedFieldsRef = useRef(new Set<string>());
   const busyRef = useRef("");
   const loadingRef = useRef(true);
   const mobileDrawerPanelRef = useRef(null);
@@ -317,6 +332,19 @@ export function useWorkspaceController() {
   const runAgentRequestVersionRef = useRef(0);
   const forgeSkillRequestVersionRef = useRef(0);
   const forgeSkillAbortControllerRef = useRef(null);
+  // The first hydration must not overwrite a field the user already typed into,
+  // so every user-driven update records the fields it touched.
+  const changeSettingsForm = useCallback((updater) => {
+    setSettingsForm((previous) => {
+      const next = typeof updater === "function" ? updater(previous) : updater;
+      for (const field of Object.keys(next)) {
+        if (next[field] !== previous[field]) {
+          settingsTouchedFieldsRef.current.add(field);
+        }
+      }
+      return next;
+    });
+  }, []);
   const openView = useCallback(
     (viewId) => {
       if (!viewId) {
@@ -330,6 +358,11 @@ export function useWorkspaceController() {
     },
     [currentView]
   );
+  // The moment the workspace first becomes available. Reminder alerts use it to
+  // tell leftovers from reminders the user creates during the session.
+  const markWorkspaceReady = useCallback(() => {
+    setWorkspaceReadyAt((current) => current || Date.now());
+  }, []);
   const {
     handleAddWeatherCity,
     handleClearWeatherCache,
@@ -376,6 +409,7 @@ export function useWorkspaceController() {
 
     try {
       const snapshot = await bootstrap();
+      markWorkspaceReady();
       startTransition(() => {
         setWorkspace((current) => mergeWorkspaceSnapshot(current, snapshot));
       });
@@ -389,17 +423,18 @@ export function useWorkspaceController() {
       setError(normalizeError(err));
       return false;
     }
-  }, [t]);
+  }, [markWorkspaceReady, t]);
 
   const commitWorkspaceSnapshot = useCallback((snapshot) => {
     if (!snapshot) {
       return;
     }
 
+    markWorkspaceReady();
     startTransition(() => {
       setWorkspace((current) => mergeWorkspaceSnapshot(current, snapshot));
     });
-  }, []);
+  }, [markWorkspaceReady]);
 
 
 
@@ -923,10 +958,11 @@ export function useWorkspaceController() {
     if (workspace?.settings) {
       if (!settingsHydratedRef.current) {
         settingsHydratedRef.current = true;
-        setSettingsForm({
-          ...workspace.settings,
-          clearApiKey: false,
-        });
+        // The form starts out empty, so the first snapshot has to fill it in. A
+        // field the user already touched keeps the typed value instead.
+        setSettingsForm((previous) =>
+          mergeSettingsForm(workspace.settings, previous, settingsTouchedFieldsRef.current)
+        );
       } else if (!hasUnsavedSettings) {
         setSettingsForm({
           ...workspace.settings,
@@ -1371,6 +1407,7 @@ export function useWorkspaceController() {
     onOpen: openDueReminder,
     reminders,
     t,
+    workspaceReadyAt,
   });
 
 
@@ -1509,13 +1546,13 @@ export function useWorkspaceController() {
   ]);
 
   const handleClearApiKey = useCallback(() => {
-    setSettingsForm((prev) => ({
+    changeSettingsForm((prev) => ({
       ...prev,
       clearApiKey: !prev.clearApiKey,
       hasApiKey: prev.clearApiKey ? Boolean(workspace?.settings?.hasApiKey) : false,
       apiKey: "",
     }));
-  }, [workspace?.settings?.hasApiKey]);
+  }, [changeSettingsForm, workspace?.settings?.hasApiKey]);
 
   async function handleOpenNote(noteId) {
     if (!noteId || noteId === activeNoteId) {
@@ -3254,7 +3291,7 @@ export function useWorkspaceController() {
               providerSecurityStatus={providerSecurityAssessment.status}
               settingsForm={settingsForm}
               setLang={setLang}
-              setSettingsForm={setSettingsForm}
+              setSettingsForm={changeSettingsForm}
               setTheme={setTheme}
               theme={theme}
             />
@@ -3454,7 +3491,7 @@ export function useWorkspaceController() {
     setReminderDraft,
     setReminderSearch,
     setSelectedWeatherCityId,
-    setSettingsForm,
+    setSettingsForm: changeSettingsForm,
     setSkillDraft,
     setSkillSearch,
     setTheme,
