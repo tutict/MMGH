@@ -83,7 +83,7 @@ function RuntimeWorkspace({
         </div>
 
         <form className="runtime-composer" onSubmit={handleRunAgent}>
-          <AppTextField
+          <AppTextField
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             placeholder={t("app.agent.composer.placeholder")}
