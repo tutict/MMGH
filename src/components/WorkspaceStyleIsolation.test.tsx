@@ -127,7 +127,7 @@ test("weather workspace has no tilt scene", () => {
         weatherCities={[{
           id: "shanghai",
           name: "Shanghai",
-          conditionKey: "app.weather.condition.clear",
+          conditionKey: "app.weather.condition.bright",
           temperature: 20,
           hourly: [],
           daily: [],

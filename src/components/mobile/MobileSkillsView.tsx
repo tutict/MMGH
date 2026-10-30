@@ -137,7 +137,7 @@ export default function MobileSkillsView({
                   disabled={busy !== "" || loading}
                   slotProps={{
                     input: {
-                      "aria-label": `${t?.("app.skills.mountedOnSession") || "Mounted"} ${skill.name}`,
+                      "aria-label": `${t?.("app.skills.form.mountedOnSession") || "Mounted on session"} ${skill.name}`,
                     },
                   }}
                 />
@@ -260,7 +260,7 @@ export default function MobileSkillsView({
             label={t?.("app.skills.forge.title") || "Generate"}
             value={prompt}
             onChange={(event) => setPrompt(event.target.value)}
-            placeholder={t?.("app.skills.forge.description")}
+            placeholder={t?.("app.skills.forge.placeholder")}
             size="small"
             fullWidth
             multiline

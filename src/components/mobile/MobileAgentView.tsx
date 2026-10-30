@@ -202,7 +202,7 @@ function MobileAgentView({
                   clickable
                   color={isMounted ? "primary" : "default"}
                   variant={isMounted ? "filled" : "outlined"}
-                  label={isMounted ? "On" : "Add"}
+                  label={isMounted ? mobileText(lang, "skillMounted") : mobileText(lang, "skillAdd")}
                   onClick={() => handleToggleSkillMounted(skill.id)}
                   disabled={busy !== ""}
                 />

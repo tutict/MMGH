@@ -49,7 +49,7 @@ const weatherDataMock = vi.hoisted(() => {
     fetchWeatherSnapshots: vi.fn(async (locations) =>
       (Array.isArray(locations) ? locations : weatherLocations).map((location) => ({
         ...createInitialWeatherCity(location),
-        conditionKey: "app.weather.condition.clear",
+        conditionKey: "app.weather.condition.bright",
         temperature: 24,
         updatedAt: Date.now(),
       }))
@@ -80,7 +80,7 @@ const createWorkspaceSnapshot = () => {
       {
         id: 1,
         title: "Primary Session",
-        status: "active",
+        status: "completed",
         updatedAt: now,
         messageCount: 1,
         lastMessagePreview: "Initial request",
@@ -92,7 +92,7 @@ const createWorkspaceSnapshot = () => {
       session: {
         id: 1,
         title: "Primary Session",
-        status: "active",
+        status: "completed",
         updatedAt: now,
         messageCount: 1,
         lastMessagePreview: "Initial request",

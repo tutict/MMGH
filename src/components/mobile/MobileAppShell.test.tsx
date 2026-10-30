@@ -109,7 +109,7 @@ function createShellProps(currentView, openView, legacyContent) {
     activeSessionRecommendedSkills: [],
     activeSessionSkillIds: [],
     activeSessionSkills: [],
-    activeWeatherCity: { id: "shanghai", name: "Shanghai", conditionKey: "app.weather.condition.clear" },
+    activeWeatherCity: { id: "shanghai", name: "Shanghai", conditionKey: "app.weather.condition.bright" },
     allNavigationItems,
     busy: "",
     capabilities: [],

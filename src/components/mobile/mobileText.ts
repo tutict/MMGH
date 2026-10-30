@@ -51,6 +51,8 @@ const copy = {
     send: "Send",
     sendPlaceholder: "Message",
     sessionLibrary: "Sessions",
+    skillAdd: "Add",
+    skillMounted: "Mounted",
     skills: "Skills",
     system: "System",
     tags: "Tags",
@@ -112,6 +114,8 @@ const copy = {
     send: "发送",
     sendPlaceholder: "输入消息",
     sessionLibrary: "会话库",
+    skillAdd: "添加",
+    skillMounted: "已挂载",
     skills: "技能",
     system: "系统",
     tags: "标签",
@@ -123,9 +127,29 @@ const copy = {
   },
 };
 
+export const mobileCopy = copy;
+
+const warnedKeys = new Set<string>();
+
+function reportMissingKey(scope: string, key: string) {
+  const token = `${scope}:${key}`;
+  if (warnedKeys.has(token)) {
+    return;
+  }
+  warnedKeys.add(token);
+  if (import.meta.env?.DEV) {
+    console.warn(`[i18n] missing translation for ${token}`);
+  }
+}
+
 export function mobileText(lang, key) {
   const locale = String(lang || "").toLowerCase().startsWith("zh") ? "zh-CN" : "en-US";
-  return copy[locale][key] || copy["en-US"][key] || key;
+  const message = copy[locale][key] ?? copy["en-US"][key];
+  if (message === undefined) {
+    reportMissingKey("mobileText", key);
+    return key;
+  }
+  return message;
 }
 
 export function getMobileDaypart(date, lang) {

@@ -116,6 +116,24 @@ const formatMessage = (message: string, vars?: I18nVars): string => {
   });
 };
 
+const warnedKeys = new Set<string>();
+
+function reportMissingKey(lang: string, key: string, fellBack: boolean) {
+  const token = `${lang}:${key}`;
+  if (warnedKeys.has(token)) {
+    return;
+  }
+  warnedKeys.add(token);
+  if (!import.meta.env?.DEV) {
+    return;
+  }
+  console.warn(
+    fellBack
+      ? `[i18n] "${key}" is missing from ${lang}; falling back to ${DEFAULT_LANG}`
+      : `[i18n] "${key}" is missing from ${lang} and ${DEFAULT_LANG}`
+  );
+}
+
 export const I18nProvider = ({ children, initialLang }: I18nProviderProps) => {
   const [lang, setLangState] = useState<Lang>(() => getInitialLang(initialLang));
 
@@ -136,8 +154,13 @@ export const I18nProvider = ({ children, initialLang }: I18nProviderProps) => {
     (key: string, vars?: I18nVars) => {
       const dict = DICTS[lang] || DICTS[DEFAULT_LANG];
       const fallback = DICTS[DEFAULT_LANG] || {};
-      const message = dict[key as keyof typeof dict] ?? fallback[key as keyof typeof fallback] ?? key;
-      return formatMessage(String(message), vars);
+      const message = dict[key as keyof typeof dict];
+      if (message !== undefined) {
+        return formatMessage(String(message), vars);
+      }
+      const fallbackMessage = fallback[key as keyof typeof fallback];
+      reportMissingKey(lang, key, fallbackMessage !== undefined);
+      return formatMessage(fallbackMessage === undefined ? key : String(fallbackMessage), vars);
     },
     [lang]
   );
