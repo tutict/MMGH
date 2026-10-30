@@ -318,7 +318,6 @@ const zhCN = {
   "app.gallery.favoriteImage": "收藏图片",
   "app.gallery.libraryImage": "图库图片",
   "app.gallery.deleteConfirm": "确认将这张图片从相册中移除？",
-  "app.gallery.shotCount": "{count} 张",
   "app.gallery.filter.all": "全部",
   "app.gallery.filter.favorites": "收藏",
   "app.gallery.empty.eyebrow": "相册",

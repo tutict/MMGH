@@ -2,8 +2,8 @@
 @import "../ui/base.css";
 @import "../ui/primitives.css";
 @import "../ui/desktop/shell.css";
-@import "../ui/desktop/pages.css";
 @import "../ui/desktop/workspaces.css";
+@import "../ui/desktop/tools.css";
 @import "../ui/mobile/shell.css";
 @import "../ui/mobile/pages.css";
 @import "../ui/mobile/tools.css";

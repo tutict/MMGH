@@ -1,6 +1,5 @@
 export { joinClassNames } from "./classNames";
 export { default as AppButton } from "./AppButton";
-export { default as AppCheckbox } from "./AppCheckbox";
 export { default as AppFileInput } from "./AppFileInput";
 export { default as AppIconButton } from "./AppIconButton";
 export { default as AppMenuItem } from "./AppMenuItem";

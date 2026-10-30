@@ -53,8 +53,19 @@ function renderMusic() {
 test("music workspace uses the desktop music root and has no particle canvas", () => {
   const { container } = renderMusic();
   expect(container.querySelector(".desk-music")).toBeTruthy();
+  expect(container.querySelector(".desk-music__queue")).toBeTruthy();
+  expect(container.querySelector(".audio-console__lyrics-viewport")).toBeTruthy();
   expect(container.querySelector("canvas")).toBeNull();
-  expect(container.querySelector(".audio-console__particle-ring")).toBeNull();
+  for (const forbidden of [
+    ".audio-console__particle-ring",
+    ".audio-console__turntable",
+    ".audio-console__vinyl",
+    ".audio-console__plinth",
+    ".audio-console__backdrop",
+    ".audio-console__scrim",
+  ]) {
+    expect(container.querySelector(forbidden)).toBeNull();
+  }
 });
 
 test("music queue can collapse", async () => {
@@ -129,6 +140,17 @@ test("weather workspace has no tilt scene", () => {
     </I18nProvider>
   );
   expect(container.querySelector(".desk-weather")).toBeTruthy();
-  expect(container.querySelector(".weather-scene")).toBeNull();
-  expect(container.querySelector(".weather-tilt")).toBeNull();
+  expect(container.querySelector(".weather-current")).toBeTruthy();
+  expect(container.querySelector(".weather-cities")).toBeTruthy();
+  for (const forbidden of [
+    ".weather-scene",
+    ".weather-tilt",
+    ".weather-hero-card",
+    ".weather-hero-card__orb",
+    ".weather-hero-card__ring",
+    ".weather-hero-card__glass",
+    ".weather-hero-card__spark",
+  ]) {
+    expect(container.querySelector(forbidden)).toBeNull();
+  }
 });

@@ -20,15 +20,6 @@ function GalleryWorkspace({
   const viewerCardRef = useRef(null);
   const lastViewerTriggerRef = useRef(null);
   const deferredGallerySearch = useDeferredValue(gallerySearch);
-  const galleryDateFormatter = useMemo(
-    () =>
-      new Intl.DateTimeFormat(lang, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-    [lang]
-  );
 
   const filteredGalleryItems = useMemo(() => {
     const needle = deferredGallerySearch.trim().toLowerCase();
@@ -46,29 +37,15 @@ function GalleryWorkspace({
         .includes(needle);
     });
   }, [deferredGallerySearch, galleryFilter, galleryItems]);
-  const favoriteCount = useMemo(
-    () => filteredGalleryItems.filter((item) => item.favorite).length,
+
+  const sortedGalleryItems = useMemo(
+    () =>
+      [...filteredGalleryItems].sort(
+        (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+      ),
     [filteredGalleryItems]
   );
 
-  const groupedGalleryItems = useMemo(() => {
-    const groups = new Map();
-    filteredGalleryItems.forEach((item) => {
-      const key = new Date(item.createdAt).toDateString();
-      if (!groups.has(key)) {
-        groups.set(key, []);
-      }
-      groups.get(key).push(item);
-    });
-
-    return Array.from(groups.entries()).map(([key, items]) => ({
-      key,
-      label: galleryDateFormatter.format(new Date(items[0].createdAt)),
-      items,
-    }));
-  }, [filteredGalleryItems, galleryDateFormatter]);
-
-  const latestImage = filteredGalleryItems[0] || galleryItems[0] || null;
   const activeImage = galleryItems.find((item) => item.id === galleryViewerId) || null;
   const viewerBackgroundProps = galleryViewerId && activeImage ? { "aria-hidden": true, inert: true } : {};
 
@@ -126,34 +103,12 @@ function GalleryWorkspace({
   }, [activeImage, galleryViewerId, setGalleryViewerId]);
 
   return (
-    <section className="desk-gallery gallery-panel">
-      <div {...viewerBackgroundProps}>
-        <div className="gallery-toolbar">
-          <div className="section-head gallery-toolbar__head">
-            <div>
-              <span className="eyebrow">{t("app.gallery.eyebrow")}</span>
-              <h3>{t("app.gallery.title")}</h3>
-            </div>
-            <span className="section-note">
-              {t("app.gallery.imageCount", { count: filteredGalleryItems.length })} /{" "}
-              {t(`app.gallery.filter.${galleryFilter}`)}
-            </span>
-          </div>
-
-          <div className="gallery-toolbar__summary">
-            <span className="gallery-toolbar__pill">{t(`app.gallery.filter.${galleryFilter}`)}</span>
-            <span className="gallery-toolbar__pill">
-              {t("app.gallery.filter.favorites")} {favoriteCount}
-            </span>
-            {latestImage ? (
-              <span className="gallery-toolbar__pill">
-                {formatGalleryTime(latestImage.createdAt, lang)}
-              </span>
-            ) : null}
-          </div>
-
+    <section className="desk-gallery">
+      <div className="gallery-body" {...viewerBackgroundProps}>
+        <header className="gallery-toolbar">
           <div className="gallery-toolbar__actions">
             <AppTextField
+              className="gallery-toolbar__search"
               value={gallerySearch}
               onChange={(event) => setGallerySearch(event.target.value)}
               placeholder={t("app.gallery.search")}
@@ -174,6 +129,9 @@ function GalleryWorkspace({
                 {t("app.gallery.filter.favorites")}
               </AppButton>
             </div>
+            <span className="section-note gallery-toolbar__count">
+              {t("app.gallery.imageCount", { count: filteredGalleryItems.length })}
+            </span>
             <AppButton
               className="solid-button"
               onClick={() => galleryUploadInputRef.current?.click()}
@@ -181,78 +139,60 @@ function GalleryWorkspace({
               {t("app.gallery.import")}
             </AppButton>
           </div>
-        </div>
+        </header>
 
         <div className="gallery-stage">
-          {groupedGalleryItems.length > 0 ? (
-            groupedGalleryItems.map((group) => (
-              <section key={group.key} className="gallery-group">
-                <div className="gallery-group__head">
-                  <div className="gallery-group__intro">
-                    <span className="eyebrow">{group.label}</span>
-                    <strong>{group.items[0]?.name}</strong>
-                  </div>
-                  <span className="section-note">
-                    {t("app.gallery.shotCount", { count: group.items.length })}
-                  </span>
-                </div>
-                <div className="gallery-grid">
-                  {group.items.map((item) => (
-                    <article
-                      key={item.id}
-                      className={`gallery-card ${item.favorite ? "is-favorite" : ""}`}
-                    >
+          {sortedGalleryItems.length > 0 ? (
+            <div className="gallery-grid">
+              {sortedGalleryItems.map((item) => (
+                <figure
+                  key={item.id}
+                  className={`gallery-tile ${item.favorite ? "is-favorite" : ""}`}
+                >
+                  <AppButton
+                    className="gallery-tile__image"
+                    onClick={() => openGalleryViewer(item.id)}
+                    aria-haspopup="dialog"
+                    aria-expanded={galleryViewerId === item.id}
+                    aria-controls="gallery-viewer-dialog"
+                  >
+                    <img src={item.src} alt={item.name} loading="lazy" />
+                  </AppButton>
+                  <figcaption className="gallery-tile__meta">
+                    <span className="gallery-tile__copy">
+                      <strong>{item.name}</strong>
+                      <span>{formatGalleryTime(item.createdAt, lang)}</span>
+                    </span>
+                    <span className="gallery-tile__actions">
                       <AppButton
-                        className="gallery-card__image"
-                        onClick={() => openGalleryViewer(item.id)}
-                        aria-haspopup="dialog"
-                        aria-expanded={galleryViewerId === item.id}
-                        aria-controls="gallery-viewer-dialog"
+                        className={`gallery-tile__action ${item.favorite ? "is-active" : ""}`}
+                        onClick={() => handleToggleFavoriteGalleryItem(item.id)}
                       >
-                        <img src={item.src} alt={item.name} />
-                        <span className="gallery-card__badge">
-                          {item.favorite
-                            ? t("app.gallery.favoriteImage")
-                            : t("app.gallery.libraryImage")}
-                        </span>
+                        {item.favorite
+                          ? t("app.gallery.favorited")
+                          : t("app.gallery.favorite")}
                       </AppButton>
-                      <div className="gallery-card__meta">
-                        <div className="gallery-card__copy">
-                          <strong>{item.name}</strong>
-                          <p>{item.caption || formatGalleryTime(item.createdAt, lang)}</p>
-                        </div>
-                        <div className="gallery-card__actions">
-                          <AppButton
-                            className={`chip-button ${item.favorite ? "is-active" : ""}`}
-                            onClick={() => handleToggleFavoriteGalleryItem(item.id)}
-                          >
-                            {item.favorite
-                              ? t("app.gallery.favorited")
-                              : t("app.gallery.favorite")}
-                          </AppButton>
-                          <AppButton
-                            className="chip-button danger"
-                            onClick={() => handleDeleteGalleryItem(item.id)}
-                          >
-                            {t("app.gallery.remove")}
-                          </AppButton>
-                        </div>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              </section>
-            ))
+                      <AppButton
+                        className="gallery-tile__action"
+                        onClick={() => handleDeleteGalleryItem(item.id)}
+                      >
+                        {t("app.gallery.remove")}
+                      </AppButton>
+                    </span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
           ) : (
             <div className="gallery-empty">
-              <span className="eyebrow">{t("app.gallery.empty.eyebrow")}</span>
               <h3>{t("app.gallery.empty.title")}</h3>
               <p>{t("app.gallery.empty.description")}</p>
             </div>
           )}
         </div>
 
-        <AppFileInput ref={galleryUploadInputRef}
+        <AppFileInput
+          ref={galleryUploadInputRef}
           accept="image/*"
           multiple
           onChange={handleGalleryUpload}
@@ -270,10 +210,10 @@ function GalleryWorkspace({
             className="gallery-viewer__card panel-surface"
             tabIndex={-1}
           >
-            <div className="gallery-viewer__head">
+            <header className="gallery-viewer__head">
               <div>
-                <span className="eyebrow">{t("app.gallery.preview")}</span>
                 <h3 id="gallery-viewer-title">{activeImage.name}</h3>
+                <span className="section-note">{formatGalleryTime(activeImage.createdAt, lang)}</span>
               </div>
               <AppButton
                 className="ghost-button"
@@ -281,22 +221,19 @@ function GalleryWorkspace({
               >
                 {t("app.common.close")}
               </AppButton>
-            </div>
+            </header>
             <div className="gallery-viewer__image">
               <img src={activeImage.src} alt={activeImage.name} />
             </div>
-            <div className="gallery-viewer__foot">
-              <div className="gallery-viewer__detail">
-                <span>{formatGalleryTime(activeImage.createdAt, lang)}</span>
-                <strong>
-                  {activeImage.favorite
-                    ? t("app.gallery.favoriteImage")
-                    : t("app.gallery.libraryImage")}
-                </strong>
-              </div>
-              <div className="gallery-card__actions gallery-viewer__actions">
+            <footer className="gallery-viewer__foot">
+              <span className="section-note">
+                {activeImage.favorite
+                  ? t("app.gallery.favoriteImage")
+                  : t("app.gallery.libraryImage")}
+              </span>
+              <div className="gallery-viewer__actions">
                 <AppButton
-                  className={`chip-button ${activeImage.favorite ? "is-active" : ""}`}
+                  className="ghost-button"
                   onClick={() => handleToggleFavoriteGalleryItem(activeImage.id)}
                 >
                   {activeImage.favorite
@@ -304,7 +241,7 @@ function GalleryWorkspace({
                     : t("app.gallery.favorite")}
                 </AppButton>
                 <AppButton
-                  className="chip-button danger"
+                  className="danger-button"
                   onClick={() => {
                     handleDeleteGalleryItem(activeImage.id);
                     setGalleryViewerId("");
@@ -313,7 +250,7 @@ function GalleryWorkspace({
                   {t("app.gallery.remove")}
                 </AppButton>
               </div>
-            </div>
+            </footer>
           </div>
         </div>
       ) : null}
@@ -400,4 +337,3 @@ function formatGalleryTime(value, lang) {
 }
 
 export default React.memo(GalleryWorkspace);
-

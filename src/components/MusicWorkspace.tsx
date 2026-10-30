@@ -3,30 +3,7 @@ import { useI18n } from "../i18n";
 import { usePlaybackSnapshot } from "../utils/playbackSnapshot";
 import { AppButton, AppFileInput, AppIconButton, AppSlider } from "./ui";
 
-const LYRIC_LINE_HEIGHT = 72;
-const LEGACY_TRACK_LYRICS = {
-  "builtin-reply-pulse": [
-    { time: 0, text: "Reply pulse in the midnight glow", subtext: "深夜里，回复的脉冲开始点亮屏幕" },
-    { time: 14, text: "City lights drift into the low end", subtext: "城市灯火沉进低频，气氛慢慢下坠" },
-    { time: 28, text: "Every signal circles back to you", subtext: "每一道信号，最后都绕回你这里" },
-    { time: 43, text: "Static melts into a warmer hue", subtext: "噪声融化，夜色染上一层暖红" },
-    { time: 58, text: "Heartbeat syncing with the afterglow", subtext: "心跳跟着余晖同步，节奏贴近耳边" },
-    { time: 73, text: "Hold the line while the chorus blooms", subtext: "副歌展开之前，把这条连线握紧" },
-    { time: 88, text: "Neon echoes move through empty rooms", subtext: "霓虹回声穿过安静的房间" },
-    { time: 104, text: "Stay awake, the waveform knows", subtext: "别睡，声波已经记住此刻的温度" },
-  ],
-  "builtin-neon-orbit": [
-    { time: 0, text: "Orbit lights are carving blue halos", subtext: "轨道霓虹划出一圈一圈冷蓝光环" },
-    { time: 16, text: "A silver kick drums through the dark", subtext: "银色鼓点在暗色里敲出清晰轮廓" },
-    { time: 31, text: "Gravity bends around the chorus", subtext: "引力在副歌边缘被悄悄拉弯" },
-    { time: 47, text: "The skyline shivers into sparks", subtext: "天际线抖落成细碎的火花" },
-    { time: 63, text: "Spin slower, then break into the drop", subtext: "先放慢旋转，再俯冲进下一次坠落" },
-    { time: 79, text: "Cold air glows inside the reverb", subtext: "残响里也有发光的冷空气" },
-    { time: 95, text: "We keep floating past the last stop", subtext: "我们越过终点，继续失重漂浮" },
-    { time: 111, text: "Orbit lights are still awake", subtext: "直到最后，轨道上的灯仍然清醒" },
-  ],
-};
-void LEGACY_TRACK_LYRICS;
+const LYRIC_LINE_HEIGHT = 56;
 
 const PLAY_MODE_META = {
   loop: {
@@ -96,10 +73,9 @@ function MusicWorkspace({
   const { t } = useI18n();
   const { currentTime, duration } = usePlaybackSnapshot();
   const consoleRef = React.useRef<HTMLElement | null>(null);
-  const compactLayoutRef = React.useRef(true);
+  const wasCompactRef = React.useRef(true);
   const [isLibraryOpen, setIsLibraryOpen] = React.useState(false);
   const [isCompactLayout, setIsCompactLayout] = React.useState(true);
-  const pulseLevel = isPlaying ? 0.34 : 0.18;
 
   React.useEffect(() => {
     const node = consoleRef.current;
@@ -108,19 +84,13 @@ function MusicWorkspace({
     }
 
     const observer = new ResizeObserver(([entry]) => {
-      const compact = entry.contentRect.width < 1180;
-      const wasCompact = compactLayoutRef.current;
-      compactLayoutRef.current = compact;
+      const compact = entry.contentRect.width < 900;
+      if (compact === wasCompactRef.current) {
+        return;
+      }
+      wasCompactRef.current = compact;
       setIsCompactLayout(compact);
-      setIsLibraryOpen((previous) => {
-        if (localizedTracks.length === 0) {
-          return false;
-        }
-        if (!compact) {
-          return true;
-        }
-        return wasCompact ? previous : false;
-      });
+      setIsLibraryOpen(!compact && localizedTracks.length > 0);
     });
 
     observer.observe(node);
@@ -138,27 +108,11 @@ function MusicWorkspace({
   const handleVolumeChange = (_event: Event, value: number | number[]) => {
     setVolume(Array.isArray(value) ? value[0] : value);
   };
-  const syncStateLabel = autoPlayOnReply
-    ? t("app.music.replySyncOn")
-    : t("app.music.manualMode");
   const sourceLabel =
     typeof selectedTrackId === "string" && selectedTrackId.startsWith("upload-")
       ? t("app.music.sourceUpload")
       : t("app.music.sourceBuiltIn");
   const playModeMeta = PLAY_MODE_META[playMode] || PLAY_MODE_META.loop;
-  const waveformBars = React.useMemo(
-    () =>
-      Array.from({ length: 34 }, (_, index) => {
-        const trackSeed = typeof selectedTrackId === "string" ? selectedTrackId.length : 8;
-        const seed = pseudoRandom(trackSeed * 13 + index * 17);
-        return {
-          id: `waveform-${index}`,
-          delay: index * 42,
-          height: 22 + Math.round(seed * 68),
-        };
-      }),
-    [selectedTrackId]
-  );
   const activeLyricIndex = React.useMemo(() => {
     let index = 0;
     lyricsLines.forEach((line, lineIndex) => {
@@ -183,65 +137,26 @@ function MusicWorkspace({
   return (
     <section
       ref={consoleRef}
-      className={`desk-music audio-console audio-theme-${selectedTrack?.theme || "ember"} ${
-        isPlaying ? "audio-is-playing" : "audio-is-paused"
-      }`}
+      className={`desk-music ${isLibraryOpen ? "is-queue-open" : "is-queue-collapsed"}`}
     >
-      <div
-        className="audio-console__backdrop"
-        style={{ backgroundImage: `url(${coverSrc})` }}
-        aria-hidden="true"
-      />
-      <div className="audio-console__scrim" aria-hidden="true" />
-
-      <div className={`audio-console__surface ${isLibraryOpen ? "audio-library-open" : "audio-library-collapsed"}`}>
-        <AppButton
-          className={`audio-console__library-toggle ${isLibraryOpen ? "audio-is-open" : ""}`}
-          onClick={() => setIsLibraryOpen((prev) => !prev)}
-          aria-label={t("app.music.libraryToggle")}
-          aria-expanded={isLibraryOpen}
-          aria-controls="audio-console-library"
-        >
-          <LibraryIcon />
-          <span>{t("app.music.libraryToggle")}</span>
-        </AppButton>
-
-        <div className="audio-console__main">
-          <header className="audio-console__header">
-            <div className="audio-console__header-shell">
-              <div className="audio-console__headline">
-                <span className="audio-eyebrow">{t("app.music.eyebrow")}</span>
-                <h2>{t("app.music.panelTitle")}</h2>
-                <p>{t("app.music.panelDescription")}</p>
-              </div>
-
-              <div className="audio-console__status-strip">
-                <div className="audio-console__status-item">
-                  <span>{t("app.music.statsLibrary")}</span>
-                  <strong>{t("app.music.trackCount", { count: localizedTracks.length })}</strong>
-                </div>
-                <div className="audio-console__status-item">
-                  <span>{t("app.music.statsSource")}</span>
-                  <strong>{sourceLabel}</strong>
-                </div>
-                <div className="audio-console__status-item">
-                  <span>{t("app.music.playMode")}</span>
-                  <strong>{t(playModeMeta.labelKey)}</strong>
-                </div>
-                <div className="audio-console__status-item">
-                  <span>{t("app.sound.autoPlay")}</span>
-                  <strong>{syncStateLabel}</strong>
-                </div>
-              </div>
+      <div className="desk-music__main">
+        <header className="desk-music__hero">
+          <img
+            className="desk-music__cover"
+            src={coverSrc}
+            alt={currentTrackLabel || t("app.music.trackCover")}
+          />
+          <div className="desk-music__track">
+            <p className="desk-music__eyebrow">{t("app.music.nowPlaying")}</p>
+            <h2>{currentTrackLabel}</h2>
+            <p className="desk-music__artist">{currentArtistLabel}</p>
+            <div className="desk-music__facts">
+              <span>{sourceLabel}</span>
+              <span>{t(playModeMeta.labelKey)}</span>
+              <span>{t("app.music.trackCount", { count: localizedTracks.length })}</span>
             </div>
-
-            <div className="audio-console__meta">
-              <span className="audio-console__chip">{sourceLabel}</span>
-              <span className={`audio-console__chip ${isPlaying ? "audio-is-live" : ""}`}>
-                {isPlaying ? t("app.music.playing") : t("app.music.paused")}
-              </span>
-              <span className="audio-console__chip">{t(playModeMeta.labelKey)}</span>
-              <label className="audio-console__sync">
+            <div className="desk-music__actions">
+              <label className="desk-music__sync">
                 <span>{t("app.sound.autoPlay")}</span>
                 <AppButton
                   className={`audio-switch ${autoPlayOnReply ? "audio-is-on" : ""}`}
@@ -252,285 +167,221 @@ function MusicWorkspace({
                   <span />
                 </AppButton>
               </label>
-              <AppButton
-                className="audio-console__utility"
-                onClick={() => uploadInputRef.current?.click()}
-              >
+              <AppButton className="ghost-button" onClick={() => uploadInputRef.current?.click()}>
                 <UploadIcon />
                 <span>{t("app.music.upload")}</span>
               </AppButton>
-            </div>
-          </header>
-
-          <div className="audio-console__stage">
-            <div className="audio-console__turntable" style={{ "--audio-pulse-level": pulseLevel } as React.CSSProperties}>
-              <div className="audio-console__plinth" aria-hidden="true">
-                <span className="audio-console__plinth-mark audio-console__plinth-mark--left" />
-                <span className="audio-console__plinth-mark audio-console__plinth-mark--right" />
-              </div>
-              <span className="audio-console__arm-base" aria-hidden="true" />
-              <span className={`audio-console__needle ${isPlaying ? "audio-is-playing" : ""}`} aria-hidden="true" />
-              <div className="audio-console__disc-stage">
-                
-
-                <div className={`audio-console__vinyl ${isPlaying ? "audio-is-spinning" : ""}`}>
-                  <span className="audio-console__vinyl-ring" aria-hidden="true" />
-                  <span className="audio-console__vinyl-ring audio-is-inner" aria-hidden="true" />
-                  <img src={coverSrc} alt={currentTrackLabel || t("app.music.trackCover")} />
-                  <span className="audio-console__vinyl-shine" aria-hidden="true" />
-                  <span className="audio-console__vinyl-core" aria-hidden="true" />
-                </div>
-              </div>
-
-              <div className="audio-console__turntable-copy">
-                <strong>{currentTrackLabel}</strong>
-                <p>{currentArtistLabel}</p>
-              </div>
-            </div>
-
-            <div className="audio-console__content">
-              <div className="audio-console__trackline">
-                <div className="audio-console__track-copy">
-                  <span className="audio-eyebrow">{t("app.music.nowPlaying")}</span>
-                  <h3>{currentTrackLabel}</h3>
-                  <p>{currentArtistLabel}</p>
-                </div>
-
-                <div className="audio-console__facts">
-                  <span>{t("app.music.currentLabel")} {formatDuration(currentTime)}</span>
-                  <span>{t("app.music.durationLabel")} {formatDuration(duration)}</span>
-                  <span>{t("app.music.volume")} {volume}%</span>
-                </div>
-
-                <div
-                  className={`audio-console__waveform ${isPlaying ? "audio-is-playing" : ""}`}
-                  aria-hidden="true"
-                >
-                  {waveformBars.map((bar) => (
-                    <span
-                      key={bar.id}
-                      style={{
-                        "--bar-height": `${bar.height}%`,
-                        "--bar-delay": `${bar.delay}ms`,
-                      } as React.CSSProperties}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="audio-console__lyrics">
-                <div className="audio-console__lyrics-header">
-                  <div className="audio-console__lyrics-title">
-                    <span>{t("app.music.lyricsTitle")}</span>
-                    <strong>{currentTrackLabel}</strong>
-                    <p>
-                      {lyricsStatus === "manual"
-                        ? t("app.music.uploadHint")
-                        : t("app.music.lyricsHint")}
-                    </p>
-                  </div>
-                  <div className="audio-console__lyrics-tools">
-                    <span className={`audio-console__lyrics-source audio-status-${lyricsStatus}`}>{lyricsStatusLabel}</span>
-                    <AppButton
-                      className="audio-console__lyrics-action"
-                      disabled={lyricsStatus === "loading"}
-                      onClick={onRefreshLyrics}
-                    >
-                      <SearchIcon />
-                      <span>{t("app.music.lyrics.search")}</span>
-                    </AppButton>
-                    <AppButton
-                      className="audio-console__lyrics-action"
-                      onClick={() => lyricsUploadInputRef.current?.click()}
-                    >
-                      <UploadIcon />
-                      <span>{t("app.music.lyrics.upload")}</span>
-                    </AppButton>
-                    <AppFileInput
-                      ref={uploadInputRef}
-                      accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg"
-                      multiple
-                      onChange={onUploadTracks}
-                    />
-                    <AppFileInput ref={lyricsUploadInputRef}
-                      accept=".lrc,.txt,text/plain"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) {
-                          void onUploadLyricsFile(file);
-                        }
-                        event.target.value = "";
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div
-                  className={`audio-console__lyrics-viewport ${
-                    lyricsLines.length === 0 ? "audio-is-empty" : ""
-                  }`}
-                >
-                  {lyricsLines.length === 0 ? (
-                    <div className="audio-console__lyrics-empty" role="status">
-                      <strong>{t("app.music.lyrics.fallback.line1")}</strong>
-                      <span>{t("app.music.lyrics.fallback.line2")}</span>
-                    </div>
-                  ) : (
-                    <div className="audio-console__lyrics-track" style={{ transform: lyricsTransform }}>
-                      {lyricsLines.map((line, index) => (
-                        <article
-                          key={`${selectedTrackId || "track"}-lyric-${line.time}-${index}`}
-                          className={`audio-console__lyric-line ${
-                            index === activeLyricIndex ? "audio-is-active" : ""
-                          } ${index < activeLyricIndex ? "audio-is-past" : ""}`}
-                        >
-                          <strong>{line.text}</strong>
-                          {line.subtext ? <span>{line.subtext}</span> : null}
-                        </article>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+              <AppButton
+                className={`ghost-button audio-console__library-toggle ${isLibraryOpen ? "audio-is-open" : ""}`}
+                onClick={() => setIsLibraryOpen((prev) => !prev)}
+                aria-label={t("app.music.libraryToggle")}
+                aria-expanded={isLibraryOpen}
+                aria-controls="audio-console-library"
+              >
+                <LibraryIcon />
+                <span>{t("app.music.libraryToggle")}</span>
+              </AppButton>
             </div>
           </div>
+        </header>
 
-          <footer className="audio-console__footer">
-            <div className="audio-console__progress">
-              <span>{formatDuration(currentTime)}</span>
+        <div className="desk-music__player">
+          <div className="desk-music__progress">
+            <span>{formatDuration(currentTime)}</span>
+            <AppSlider
+              className="desk-music__range"
+              min={0}
+              max={Math.max(duration, 1)}
+              step={0.1}
+              value={progressValue}
+              onChange={handleProgressChange}
+              aria-label={t("app.music.miniPlayer.progress")}
+              size="small"
+            />
+            <span>{formatDuration(duration)}</span>
+          </div>
+
+          <div className="desk-music__controls">
+            <div className="desk-music__transport">
+              <AppIconButton
+                className="audio-console__icon-button"
+                aria-label={t("app.music.previous")}
+                onClick={handlePlayPreviousTrack}
+                size="small"
+              >
+                <PreviousIcon />
+              </AppIconButton>
+              <AppIconButton
+                className="audio-console__icon-button audio-is-primary"
+                aria-label={isPlaying ? t("app.music.pause") : t("app.music.play")}
+                onClick={handleTogglePlayback}
+                size="small"
+              >
+                {isPlaying ? <PauseIcon /> : <PlayIcon />}
+              </AppIconButton>
+              <AppIconButton
+                className="audio-console__icon-button"
+                aria-label={t("app.music.next")}
+                onClick={handlePlayNextTrack}
+                size="small"
+              >
+                <NextIcon />
+              </AppIconButton>
+            </div>
+
+            <div className="desk-music__utilities">
+              <AppIconButton
+                className="audio-console__mode-button"
+                aria-label={`${t("app.music.playMode")} ${t(playModeMeta.labelKey)}`}
+                onClick={handleCyclePlayMode}
+                size="small"
+              >
+                <ModeIcon mode={playMode} />
+                <span>{playModeMeta.shortLabel}</span>
+              </AppIconButton>
+              <AppIconButton
+                className="audio-console__icon-button"
+                aria-label={t("app.music.restart")}
+                onClick={handleRestartTrack}
+                size="small"
+              >
+                <ReplayIcon />
+              </AppIconButton>
+            </div>
+
+            <label className="desk-music__volume">
+              <VolumeIcon />
               <AppSlider
-                className="audio-console__range"
+                className="desk-music__range"
                 min={0}
-                max={Math.max(duration, 1)}
-                step={0.1}
-                value={progressValue}
-                onChange={handleProgressChange}
-                aria-label={t("app.music.miniPlayer.progress")}
+                max={100}
+                value={volume}
+                onChange={handleVolumeChange}
+                aria-label={t("app.music.volume")}
                 size="small"
               />
-              <span>{formatDuration(duration)}</span>
-            </div>
-
-            <div className="audio-console__controls">
-              <div className="audio-console__player-actions">
-                <AppIconButton
-                  className="audio-console__icon-button"
-                  aria-label={t("app.music.previous")}
-                  onClick={handlePlayPreviousTrack}
-                  size="small"
-                >
-                  <PreviousIcon />
-                </AppIconButton>
-                <AppIconButton
-                  className="audio-console__icon-button audio-is-primary"
-                  aria-label={isPlaying ? t("app.music.pause") : t("app.music.play")}
-                  onClick={handleTogglePlayback}
-                  size="small"
-                >
-                  {isPlaying ? <PauseIcon /> : <PlayIcon />}
-                </AppIconButton>
-                <AppIconButton
-                  className="audio-console__icon-button"
-                  aria-label={t("app.music.next")}
-                  onClick={handlePlayNextTrack}
-                  size="small"
-                >
-                  <NextIcon />
-                </AppIconButton>
-              </div>
-
-              <div className="audio-console__secondary-actions">
-                <AppIconButton
-                  className="audio-console__mode-button"
-                  aria-label={`${t("app.music.playMode")} ${t(playModeMeta.labelKey)}`}
-                  onClick={handleCyclePlayMode}
-                  size="small"
-                >
-                  <ModeIcon mode={playMode} />
-                  <span>{playModeMeta.shortLabel}</span>
-                </AppIconButton>
-                <AppIconButton
-                  className="audio-console__icon-button"
-                  aria-label={t("app.music.restart")}
-                  onClick={handleRestartTrack}
-                  size="small"
-                >
-                  <ReplayIcon />
-                </AppIconButton>
-              </div>
-
-              <label className="audio-console__volume">
-                <VolumeIcon />
-                <AppSlider
-                  className="audio-console__range"
-                  min={0}
-                  max={100}
-                  value={volume}
-                  onChange={handleVolumeChange}
-                  aria-label={t("app.music.volume")}
-                  size="small"
-                />
-                <span>{volume}%</span>
-              </label>
-            </div>
-          </footer>
+              <span>{volume}%</span>
+            </label>
+          </div>
         </div>
 
-        <aside
-          id="audio-console-library"
-          className={`audio-console__library ${isLibraryOpen ? "audio-is-open" : "audio-is-collapsed"}`}
-        >
-          <div className="audio-console__library-head">
+        <section className="desk-music__lyrics">
+          <div className="section-head">
             <div>
-              <span className="audio-eyebrow">{t("app.music.queueEyebrow")}</span>
-              <h3>{t("app.music.queueTitle")}</h3>
+              <h3>{t("app.music.lyricsTitle")}</h3>
+              <p className="section-note">
+                {lyricsStatus === "manual"
+                  ? t("app.music.uploadHint")
+                  : t("app.music.lyricsHint")}
+              </p>
             </div>
-            <AppIconButton
-              className="audio-console__library-close"
-              onClick={() => setIsLibraryOpen(false)}
-              aria-label={t("app.music.queueCollapse")}
-              size="small"
-            >
-              <ChevronRightIcon />
-            </AppIconButton>
+            <div className="desk-music__lyrics-tools">
+              <span className={`audio-console__lyrics-source audio-status-${lyricsStatus}`}>
+                {lyricsStatusLabel}
+              </span>
+              <AppButton
+                className="ghost-button"
+                disabled={lyricsStatus === "loading"}
+                onClick={onRefreshLyrics}
+              >
+                <SearchIcon />
+                <span>{t("app.music.lyrics.search")}</span>
+              </AppButton>
+              <AppButton
+                className="ghost-button"
+                onClick={() => lyricsUploadInputRef.current?.click()}
+              >
+                <UploadIcon />
+                <span>{t("app.music.lyrics.upload")}</span>
+              </AppButton>
+            </div>
           </div>
 
-          <div className="audio-console__library-hint">
-            <span>{t("app.music.trackCount", { count: localizedTracks.length })}</span>
-            <p>{t("app.music.queueHint")}</p>
-          </div>
-
-          <div className="audio-console__library-list">
-            {localizedTracks.length === 0 ? (
-              <div className="audio-console__library-empty">{t("app.music.queueEmpty")}</div>
+          <div className="audio-console__lyrics-viewport">
+            {lyricsLines.length === 0 ? (
+              <div className="audio-console__lyrics-empty" role="status">
+                <strong>{t("app.music.lyrics.fallback.line1")}</strong>
+                <span>{t("app.music.lyrics.fallback.line2")}</span>
+              </div>
             ) : (
-              localizedTracks.map((track, index) => (
-                <AppButton
-                  key={track.id}
-                  className={`audio-console__track ${track.id === selectedTrackId ? "audio-is-active" : ""}`}
-                  onClick={() => handleTrackPick(track.id)}
-                >
-                  <span className="audio-console__track-index">{String(index + 1).padStart(2, "0")}</span>
-                  <img src={track.cover || coverSrc} alt={track.title} />
-                  <div className="audio-console__track-copy">
-                    <span className="audio-console__track-title">{track.title}</span>
-                    <strong>{track.title}</strong>
-                    <p>{track.artist}</p>
-                  </div>
-                  <div className="audio-console__track-meta">
-                    <span
-                      className={`audio-console__track-pulse ${
-                        track.id === selectedTrackId && isPlaying ? "audio-is-playing" : ""
-                      }`}
-                    />
-                    <span>{getTrackDurationLabel(track, index, selectedTrackId, duration)}</span>
-                  </div>
-                </AppButton>
-              ))
+              <div className="audio-console__lyrics-track" style={{ transform: lyricsTransform }}>
+                {lyricsLines.map((line, index) => (
+                  <article
+                    key={`${selectedTrackId || "track"}-lyric-${line.time}-${index}`}
+                    className={`audio-console__lyric-line ${
+                      index === activeLyricIndex ? "audio-is-active" : ""
+                    } ${index < activeLyricIndex ? "audio-is-past" : ""}`}
+                  >
+                    <strong>{line.text}</strong>
+                    {line.subtext ? <span>{line.subtext}</span> : null}
+                  </article>
+                ))}
+              </div>
             )}
           </div>
-        </aside>
+        </section>
       </div>
+
+      <aside
+        id="audio-console-library"
+        className={`desk-music__queue ${isLibraryOpen ? "is-open" : "is-collapsed"}`}
+      >
+        <div className="desk-music__queue-head">
+          <h3>{t("app.music.queueTitle")}</h3>
+          <span className="section-note">
+            {t("app.music.trackCount", { count: localizedTracks.length })}
+          </span>
+        </div>
+
+        <div className="desk-music__queue-list">
+          {localizedTracks.length === 0 ? (
+            <p className="desk-empty">{t("app.music.queueEmpty")}</p>
+          ) : (
+            localizedTracks.map((track, index) => (
+              <AppButton
+                key={track.id}
+                className={`audio-console__track ${track.id === selectedTrackId ? "audio-is-active" : ""}`}
+                onClick={() => handleTrackPick(track.id)}
+              >
+                <span className="audio-console__track-index">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <img
+                  className="audio-console__track-cover"
+                  src={track.cover || coverSrc}
+                  alt=""
+                  aria-hidden="true"
+                />
+                <div className="audio-console__track-copy">
+                  <strong>{track.title}</strong>
+                  <span>{track.artist}</span>
+                </div>
+                <span className="audio-console__track-duration">
+                  {getTrackDurationLabel(track, index, selectedTrackId, duration)}
+                </span>
+              </AppButton>
+            ))
+          )}
+        </div>
+      </aside>
+
+      <AppFileInput
+        ref={uploadInputRef}
+        accept="audio/*,.mp3,.wav,.m4a,.flac,.ogg"
+        multiple
+        onChange={onUploadTracks}
+      />
+      <AppFileInput
+        ref={lyricsUploadInputRef}
+        accept=".lrc,.txt,text/plain"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) {
+            void onUploadLyricsFile(file);
+          }
+          event.target.value = "";
+        }}
+      />
     </section>
   );
 }
@@ -546,11 +397,6 @@ function getTrackDurationLabel(track, index, selectedTrackId, currentDuration) {
   }
 
   return formatDuration(188 + index * 13);
-}
-
-function pseudoRandom(seed) {
-  const value = Math.sin(seed * 91.345 + 0.618) * 43758.5453123;
-  return value - Math.floor(value);
 }
 
 function resolveLyricsStatusLabel({ lyricsError, lyricsSource, lyricsStatus, t }) {
@@ -685,14 +531,6 @@ function LibraryIcon() {
   );
 }
 
-function ChevronRightIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="m9 6 6 6-6 6-1.4-1.4 4.6-4.6-4.6-4.6L9 6Z" fill="currentColor" />
-    </svg>
-  );
-}
-
 function ModeIcon({ mode }) {
   if (mode === "single") {
     return (
@@ -768,9 +606,3 @@ function ModeIcon({ mode }) {
 }
 
 export default MusicWorkspace;
-
-
-
-
-
-

@@ -23,7 +23,6 @@ function SkillWorkspace({
   activeSkillId,
   activeSkillVersions,
   activeSessionRecommendedSkills,
-  activeSessionTitle,
   busy,
   handleCreateSkill,
   handleDeleteSkill,
@@ -107,10 +106,6 @@ function SkillWorkspace({
     [skillList]
   );
   const mountedCount = mountedSkillEntries.length;
-  const starterCount = useMemo(
-    () => skillList.filter((skill) => isStarterSkill(skill, templateNameMap)).length,
-    [skillList, templateNameMap]
-  );
 
   const catalogSkills = useMemo(() => {
     const needle = deferredCatalogSearch.trim().toLowerCase();
@@ -141,45 +136,28 @@ function SkillWorkspace({
       <aside className="skills-registry">
         <div className="skills-registry__header">
           <div className="skills-registry__intro">
-            <span className="skills-eyebrow">{t("app.skills.eyebrow")}</span>
             <h3>{t("app.skills.centerTitle")}</h3>
-            <p>{t("app.skills.editor.description")}</p>
+            <span className="section-note">
+              {t("app.skills.totalLabel")} {skillList.length} · {t("app.skills.enabledLabel")}{" "}
+              {enabledCount} · {t("app.skills.mountedLabel")} {mountedCount}
+            </span>
           </div>
           <div className="skills-registry__actions">
             <AppButton
-              className="skills-button skills-button--secondary"
+              className="ghost-button"
               onClick={() => skillImportInputRef.current?.click()}
               disabled={busy !== "" || loading}
             >
               {t("app.skills.import.button")}
             </AppButton>
             <AppButton
-              className="skills-button skills-button--primary"
+              className="solid-button"
               onClick={handleCreateSkill}
               disabled={busy !== "" || loading}
             >
               {t("app.skills.newSkill")}
             </AppButton>
           </div>
-        </div>
-
-        <div className="skills-stats">
-          <article className="skills-stat">
-            <span>{t("app.skills.totalLabel")}</span>
-            <strong>{skillList.length}</strong>
-          </article>
-          <article className="skills-stat">
-            <span>{t("app.skills.enabledLabel")}</span>
-            <strong>{enabledCount}</strong>
-          </article>
-          <article className="skills-stat">
-            <span>{t("app.skills.mountedLabel")}</span>
-            <strong>{mountedCount}</strong>
-          </article>
-          <article className="skills-stat">
-            <span>{t("app.skills.starterLabel")}</span>
-            <strong>{starterCount}</strong>
-          </article>
         </div>
 
         <AppTextField fieldClassName="skills-input"
@@ -230,7 +208,6 @@ function SkillWorkspace({
                   <p>{display.summary}</p>
 
                   <div className="skills-entry__meta">
-                    <span>{display.triggerHint || t("app.skills.noTriggerHint")}</span>
                     <span>{t("app.skills.updatedAt", { date: formatSkillDate(skill.updatedAt, lang) })}</span>
                   </div>
                 </AppButton>
@@ -248,27 +225,26 @@ function SkillWorkspace({
 
       <div className="skills-editor-pane">
         <div className="skills-editor-pane__toolbar">
-          <div className="skills-editor-pane__intro">
-            <span className="skills-eyebrow">{t("app.skills.editor.eyebrow")}</span>
-            <p>{t("app.skills.editor.description")}</p>
-          </div>
+          <span className="section-note">
+            {t(hasUnsavedSkill ? "app.common.dirty" : "app.common.saved")}
+          </span>
           <div className="skills-editor-pane__actions">
             <AppButton
-              className="skills-button skills-button--secondary"
+              className="ghost-button"
               onClick={() => handleExportSkill(activeSkill)}
               disabled={!activeSkill || busy !== "" || loading}
             >
               {t("app.skills.export.selected")}
             </AppButton>
             <AppButton
-              className="skills-button skills-button--secondary"
+              className="ghost-button danger-button"
               onClick={handleDeleteSkill}
               disabled={!activeSkill || busy !== "" || loading}
             >
               {t("app.common.delete")}
             </AppButton>
             <AppButton
-              className="skills-button skills-button--primary"
+              className="solid-button"
               onClick={handleSaveSkill}
               disabled={!hasUnsavedSkill || busy !== "" || loading}
             >
@@ -279,28 +255,10 @@ function SkillWorkspace({
 
         {activeSkill && activeSkillMeta && activeSkillDisplay ? (
           <div className="skills-editor-pane__body">
-            <section className="skills-profile">
-              <div className="skills-profile__header">
-                <div>
-                  <span className="skills-eyebrow">{t("app.skills.profile.eyebrow")}</span>
-                  <h4>{activeSkillDisplay.name}</h4>
-                </div>
-                <div className="skills-badges">
-                  <span className="skills-badge">{activeSkillMeta.sourceLabel}</span>
-                  <span className="skills-badge">{activeSkillMeta.categoryLabel}</span>
-                  <span className="skills-badge">{t(`app.permission.${activeSkill.permissionLevel}`)}</span>
-                </div>
-              </div>
-              <p>{activeSkillDisplay.description || t("app.skills.form.descriptionPlaceholder")}</p>
-            </section>
-
             <div className="skills-controls">
               <div className="skills-controls__toggles">
                 <div className="skills-control">
                   <span>{t("app.skills.form.enabled")}</span>
-                  <strong>
-                    {skillDraft.enabled ? t("app.skills.enabled") : t("app.skills.disabled")}
-                  </strong>
                   <AppButton
                     className={"skills-switch " + (skillDraft.enabled ? "is-on" : "")}
                     aria-pressed={skillDraft.enabled}
@@ -320,11 +278,6 @@ function SkillWorkspace({
 
                 <div className="skills-control">
                   <span>{t("app.skills.form.mountedOnSession")}</span>
-                  <strong>
-                    {mountedSkillSet.has(activeSkill.id)
-                      ? t("app.skills.mounted")
-                      : t("app.skills.unmounted")}
-                  </strong>
                   <AppButton
                     className={"skills-switch " + (mountedSkillSet.has(activeSkill.id) ? "is-on" : "")}
                     aria-pressed={mountedSkillSet.has(activeSkill.id)}
@@ -336,16 +289,6 @@ function SkillWorkspace({
                     <span />
                   </AppButton>
                 </div>
-              </div>
-
-              <div className="skills-session-card">
-                <span className="skills-eyebrow">{t("app.skills.currentSession")}</span>
-                <strong>{activeSessionTitle}</strong>
-                <p>
-                  {mountedSkillSet.has(activeSkill.id)
-                    ? t("app.skills.attached")
-                    : t("app.skills.notAttached")}
-                </p>
               </div>
             </div>
 
@@ -453,7 +396,7 @@ function SkillWorkspace({
                 <h3>{t("app.skills.sessionMount.title")}</h3>
               </div>
               <AppButton
-                className="skills-button skills-button--secondary"
+                className="ghost-button"
                 onClick={handleExportAllSkills}
                 disabled={!skillList.length || busy !== "" || loading}
               >
@@ -482,7 +425,7 @@ function SkillWorkspace({
                         <div className="skills-action-row">
                           <span className="skills-badge">{meta.categoryLabel}</span>
                           <AppButton
-                            className="skills-button skills-button--primary"
+                            className="solid-button"
                             disabled={mountedSkillSet.has(skill.id) || busy !== "" || loading}
                             onClick={() => handleToggleSkillMounted(skill.id)}
                           >
@@ -553,7 +496,7 @@ function SkillWorkspace({
             />
             <div className="skills-action-row">
               <AppButton
-                className="skills-button skills-button--primary"
+                className="solid-button"
                 disabled={!forgePrompt.trim() || busy !== "" || loading}
                 onClick={() => handleForgeSkill({ prompt: forgePrompt, mode: "new" })}
               >
@@ -562,7 +505,7 @@ function SkillWorkspace({
                   : t("app.skills.forge.generate")}
               </AppButton>
               <AppButton
-                className="skills-button skills-button--secondary"
+                className="ghost-button"
                 disabled={!forgePrompt.trim() || !activeSkill || busy !== "" || loading}
                 onClick={() => handleForgeSkill({ prompt: forgePrompt, mode: "rewrite" })}
               >
@@ -615,14 +558,14 @@ function SkillWorkspace({
 
                     <div className="skills-action-row">
                       <AppButton
-                        className="skills-button skills-button--secondary"
+                        className="ghost-button"
                         onClick={() => handleLoadSkillVersion(version)}
                         disabled={busy !== "" || loading}
                       >
                         {t("app.skills.history.loadDraft")}
                       </AppButton>
                       <AppButton
-                        className="skills-button skills-button--primary"
+                        className="solid-button"
                         onClick={() => handleRestoreSkillVersion(version)}
                         disabled={busy !== "" || loading}
                       >
@@ -696,7 +639,7 @@ function SkillWorkspace({
                           })}
                         </span>
                         <AppButton
-                          className={"skills-button " + (installedSkill ? "skills-button--secondary" : "skills-button--primary")}
+                          className={installedSkill ? "ghost-button" : "solid-button"}
                           disabled={busy !== "" || loading}
                           onClick={() =>
                             installedSkill

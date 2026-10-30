@@ -350,7 +350,6 @@ const enUS = {
   "app.gallery.favoriteImage": "Favorite image",
   "app.gallery.libraryImage": "Library image",
   "app.gallery.deleteConfirm": "Remove this image from the album?",
-  "app.gallery.shotCount": "{count} shots",
   "app.gallery.filter.all": "All",
   "app.gallery.filter.favorites": "Favorites",
   "app.gallery.empty.eyebrow": "Album",

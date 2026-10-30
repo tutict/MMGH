@@ -88,36 +88,6 @@ function WeatherWorkspace({
       createInitialWeatherCity(WEATHER_LOCATIONS[0]),
     [selectedCityId, weatherCities]
   );
-  const weatherAppearance = useMemo(
-    () => resolveWeatherAppearance(selectedCity.conditionKey, selectedCity.tone),
-    [selectedCity.conditionKey, selectedCity.tone]
-  );
-  const weatherMood = useMemo(
-    () =>
-      resolveWeatherMood({
-        clockNow,
-        sunrise: selectedCity.sunrise,
-        sunset: selectedCity.sunset,
-        temperature: selectedCity.temperature,
-        timeZone: selectedCity.timeZone,
-      }),
-    [
-      clockNow,
-      selectedCity.sunrise,
-      selectedCity.sunset,
-      selectedCity.temperature,
-      selectedCity.timeZone,
-    ]
-  );
-  const _weatherAmbientStyle = useMemo(
-    () => ({
-      "--weather-heat": weatherMood.heat.toFixed(3),
-      "--weather-chill": weatherMood.chill.toFixed(3),
-      "--weather-phase-progress": weatherMood.phaseProgress.toFixed(3),
-    }),
-    [weatherMood.chill, weatherMood.heat, weatherMood.phaseProgress]
-  );
-
   useEffect(() => {
     const keyword = searchQuery.trim();
     const requestId = searchRequestIdRef.current + 1;
@@ -291,238 +261,105 @@ function WeatherWorkspace({
   }
 
   return (
-    <section className="desk-weather weather-panel" data-testid="weather-workspace">
-      <div className="weather-stage__toolbar">
-          <div className="weather-stage__status">
-            <AppStatusChip tone={resolveWeatherStatusTone(weatherStatus)}>
-              {t(`app.weather.status.${weatherStatus}`)}
-            </AppStatusChip>
-            <span className="section-note">
-              {weatherUpdatedAt
-                ? t("app.weather.updatedAt", {
-                    date: formatTime(weatherUpdatedAt, lang),
-                  })
-                : t("app.weather.updatedAtPending")}
-            </span>
-          </div>
-
-          <div className="weather-stage__actions">
-            <AppButton
-              className="ghost-button"
-              onClick={onRefresh}
-              disabled={weatherStatus === "loading"}
-            >
-              {weatherStatus === "loading" ? t("app.common.loading") : t("app.weather.refresh")}
-            </AppButton>
-          </div>
+    <section className="desk-weather" data-testid="weather-workspace">
+      <header className="desk-weather__toolbar">
+        <div className="desk-weather__status">
+          <AppStatusChip tone={resolveWeatherStatusTone(weatherStatus)}>
+            {t(`app.weather.status.${weatherStatus}`)}
+          </AppStatusChip>
+          <span className="section-note">
+            {weatherUpdatedAt
+              ? t("app.weather.updatedAt", {
+                  date: formatTime(weatherUpdatedAt, lang),
+                })
+              : t("app.weather.updatedAtPending")}
+          </span>
         </div>
 
-        {weatherError ? <div className="error-banner">{weatherError}</div> : null}
+        <AppButton
+          className="ghost-button"
+          onClick={onRefresh}
+          disabled={weatherStatus === "loading"}
+        >
+          {weatherStatus === "loading" ? t("app.common.loading") : t("app.weather.refresh")}
+        </AppButton>
+      </header>
 
-        <div className="weather-top-grid">
-          <WeatherTiltCard
-            className={`weather-hero-card weather-hero-card--${weatherMood.phase} weather-hero-card--${weatherMood.thermalBand}`}
-          >
-            <div
-              className={`weather-hero-card__sky weather-hero-card__sky--${weatherMood.phase} weather-hero-card__sky--${weatherMood.thermalBand}`}
-              aria-hidden="true"
-            >
-              <span className="weather-hero-card__orb" />
-              <span className="weather-hero-card__ring weather-hero-card__ring--one" />
-              <span className="weather-hero-card__ring weather-hero-card__ring--two" />
-              <span className="weather-hero-card__glass weather-hero-card__glass--one" />
-              <span className="weather-hero-card__glass weather-hero-card__glass--two" />
-              <span className="weather-hero-card__spark weather-hero-card__spark--one" />
-              <span className="weather-hero-card__spark weather-hero-card__spark--two" />
-              <span className="weather-hero-card__spark weather-hero-card__spark--three" />
-            </div>
+      {weatherError ? <div className="error-banner">{weatherError}</div> : null}
 
-            <div className="weather-hero-card__body">
-              <div className="weather-hero-card__eyebrow-row">
-                <span className="eyebrow">{t("app.weather.hero.eyebrow")}</span>
-                <span className="weather-pill">
-                  {formatCityTime(clockNow, selectedCity.timeZone, lang)}
-                </span>
-              </div>
-
-              <div className="weather-hero-card__headline">
-                <div>
-                  <h3>{getCityName(selectedCity, t)}</h3>
-                  <p>{getCityRegion(selectedCity, t)}</p>
-                </div>
-                <span className={`weather-condition-pill weather-condition-pill--${weatherAppearance.scene}`}>
-                  {t(selectedCity.conditionKey)}
-                </span>
-              </div>
-
-              <div className="weather-hero-card__temperature">
-                <strong>{selectedCity.temperature != null ? selectedCity.temperature : "--"}</strong>
-                <span>{t("app.weather.unit.celsius")}</span>
-              </div>
-
-              <div className="weather-hero-card__summary">
-                <p>{buildWeatherSummary({ city: selectedCity, t })}</p>
-                <div className="weather-range-row">
-                  <span>
-                    {t("app.weather.metric.high")} {formatMetricValue(selectedCity.high, t("app.weather.unit.degree"))}
-                  </span>
-                  <span>
-                    {t("app.weather.metric.low")} {formatMetricValue(selectedCity.low, t("app.weather.unit.degree"))}
-                  </span>
-                  <span>
-                    {t("app.weather.metric.precipitation")} {selectedCity.precipitation ?? "--"}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          </WeatherTiltCard>
-
-          <WeatherTiltCard className="weather-city-widget">
-            <div className="weather-card-head">
+      <div className="desk-weather__layout">
+        <div className="desk-weather__primary">
+          <article className="weather-current">
+            <div className="weather-current__head">
               <div>
-                <span className="eyebrow">{t("app.weather.cityWidget.eyebrow")}</span>
-                <h3>{t("app.weather.cityWidget.title")}</h3>
+                <h3>{getCityName(selectedCity, t)}</h3>
+                <p className="section-note">
+                  {getCityRegion(selectedCity, t)} ·{" "}
+                  {formatCityTime(clockNow, selectedCity.timeZone, lang)}
+                </p>
               </div>
-              <span className="section-note">
-                {t("app.weather.cityWidget.count", { count: weatherCities.length })}
+              <span className="weather-current__condition">{t(selectedCity.conditionKey)}</span>
+            </div>
+
+            <div className="weather-current__readout">
+              <strong>{selectedCity.temperature != null ? selectedCity.temperature : "--"}</strong>
+              <span>{t("app.weather.unit.celsius")}</span>
+            </div>
+
+            <p className="weather-current__summary">
+              {buildWeatherSummary({ city: selectedCity, t })}
+            </p>
+
+            <div className="weather-current__ranges">
+              <span>
+                {t("app.weather.metric.high")}{" "}
+                {formatMetricValue(selectedCity.high, t("app.weather.unit.degree"))}
+              </span>
+              <span>
+                {t("app.weather.metric.low")}{" "}
+                {formatMetricValue(selectedCity.low, t("app.weather.unit.degree"))}
+              </span>
+              <span>
+                {t("app.weather.metric.precipitation")} {selectedCity.precipitation ?? "--"}%
               </span>
             </div>
+          </article>
 
-            <div className="weather-city-search">
-              <AppTextField
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder={t("app.weather.search.placeholder")}
-                size="small"
-                fullWidth
-              />
+          <section className="weather-metrics">
+            {metricCards.map((card) => (
+              <article key={card.label} className="weather-metric">
+                <span>{card.label}</span>
+                <strong>{card.value}</strong>
+                <p>{card.detail}</p>
+              </article>
+            ))}
+          </section>
 
-              <div className="weather-search-results">
-                {searchSections.map((section) => (
-                  <div key={section.key} className="weather-search-section">
-                    <div className="weather-search-section__head">
-                      <strong>{section.title}</strong>
-                      <span>{section.items.length}</span>
-                    </div>
-
-                    {section.items.length > 0 ? (
-                      section.items.map((result) => {
-                        const alreadyAdded = weatherCityIds.has(getCityIdentity(result));
-                        return (
-                          <div key={`${section.key}-${result.id}`} className="weather-search-result">
-                            <AppButton
-                              className="weather-search-result__button"
-                              onClick={() => handleSuggestionSelect(result)}
-                            >
-                              <div className="weather-search-result__copy">
-                                <strong>{getCityName(result, t)}</strong>
-                                <span>{getCityRegion(result, t)}</span>
-                              </div>
-                            </AppButton>
-                            <AppButton
-                              className={`chip-button ${alreadyAdded ? "is-active" : ""}`}
-                              onClick={() => handleSuggestionSelect(result)}
-                            >
-                              {alreadyAdded ? t("app.weather.search.open") : t("app.weather.search.add")}
-                            </AppButton>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="weather-search-empty">{section.empty}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="weather-city-widget__list">
-              {weatherCities.map((city) => {
-                const isActive = city.id === selectedCity.id;
-                const canRemove = weatherCities.length > 1;
-                return (
-                  <article
-                    key={city.id}
-                    className={`weather-city-widget__item ${isActive ? "is-active" : ""}`}
-                  >
-                    <AppButton
-                      className="weather-city-widget__select"
-                      onClick={() => {
-                        rememberCityUsage(city, { includeRecent: false });
-                        setSelectedCityId(city.id);
-                      }}
-                    >
-                      <span className={`weather-city-widget__icon weather-city-widget__icon--${city.tone}`} />
-                      <div className="weather-city-widget__copy">
-                        <strong>{getCityName(city, t)}</strong>
-                        <span>{getCityRegion(city, t)}</span>
-                      </div>
-                      <div className="weather-city-widget__meta">
-                        <strong>{formatMetricValue(city.temperature, t("app.weather.unit.degree"))}</strong>
-                        <span>{formatCityTime(clockNow, city.timeZone, lang)}</span>
-                      </div>
-                    </AppButton>
-                    <AppButton
-                      className="weather-city-widget__remove"
-                      onClick={() => {
-                        if (canRemove) {
-                          onRemoveCity(city.id);
-                        }
-                      }}
-                      disabled={!canRemove}
-                      aria-label={t("app.weather.cityWidget.remove")}
-                    >
-                      {t("app.weather.cityWidget.remove")}
-                    </AppButton>
-                  </article>
-                );
-              })}
-            </div>
-          </WeatherTiltCard>
-        </div>
-
-        <div className="weather-metric-grid">
-          {metricCards.map((card) => (
-            <WeatherTiltCard key={card.label} className="weather-metric-card">
-              <span>{card.label}</span>
-              <strong>{card.value}</strong>
-              <p>{card.detail}</p>
-            </WeatherTiltCard>
-          ))}
-        </div>
-
-        <div className="weather-bottom-grid">
-          <WeatherTiltCard className="weather-forecast-card">
-            <div className="weather-card-head">
-              <div>
-                <span className="eyebrow">{t("app.weather.hourly.eyebrow")}</span>
-                <h3>{t("app.weather.hourly.title")}</h3>
-              </div>
+          <section className="weather-forecast">
+            <div className="section-head">
+              <h3>{t("app.weather.hourly.title")}</h3>
               <span className="section-note">{t("app.weather.hourly.range")}</span>
             </div>
 
             {selectedCity.hourly.length > 0 ? (
               <div className="weather-hourly-row">
                 {selectedCity.hourly.map((hour, index) => (
-                  <article key={`${selectedCity.id}-${hour.time}`} className="weather-hourly-chip">
+                  <article key={`${selectedCity.id}-${hour.time}`} className="weather-hourly">
                     <span>{formatHourlyLabel(hour, index, t)}</span>
                     <strong>{formatMetricValue(hour.temperature, t("app.weather.unit.degree"))}</strong>
-                    <p>{t(hour.conditionKey)}</p>
-                    <small>{hour.precipitation ?? "--"}%</small>
+                    <span className="weather-hourly__detail">{t(hour.conditionKey)}</span>
+                    <span className="weather-hourly__detail">{hour.precipitation ?? "--"}%</span>
                   </article>
                 ))}
               </div>
             ) : (
-              <div className="weather-empty-state">{t("app.weather.emptyForecast")}</div>
+              <p className="desk-empty">{t("app.weather.emptyForecast")}</p>
             )}
-          </WeatherTiltCard>
+          </section>
 
-          <WeatherTiltCard className="weather-forecast-card">
-            <div className="weather-card-head">
-              <div>
-                <span className="eyebrow">{t("app.weather.weekly.eyebrow")}</span>
-                <h3>{t("app.weather.weekly.title")}</h3>
-              </div>
+          <section className="weather-forecast">
+            <div className="section-head">
+              <h3>{t("app.weather.weekly.title")}</h3>
               <span className="section-note">{t("app.weather.weekly.range")}</span>
             </div>
 
@@ -533,28 +370,126 @@ function WeatherWorkspace({
                     <strong>{formatDailyLabel(day, index, lang, t)}</strong>
                     <span>{t(day.conditionKey)}</span>
                     <span>{day.precipitation ?? "--"}%</span>
-                    <span>
+                    <span className="weather-week-row__range">
                       {formatMetricValue(day.high, t("app.weather.unit.degree"))} / {formatMetricValue(day.low, t("app.weather.unit.degree"))}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="weather-empty-state">{t("app.weather.emptyForecast")}</div>
+              <p className="desk-empty">{t("app.weather.emptyForecast")}</p>
             )}
-          </WeatherTiltCard>
+          </section>
+
+          <div className="weather-attribution">
+            <span>{t("app.weather.attribution.label")}</span>
+            <a href="https://open-meteo.com/en/docs" target="_blank" rel="noreferrer">
+              Open-Meteo
+            </a>
+            <span>{t("app.weather.attribution.separator")}</span>
+            <a href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noreferrer">
+              CAMS / Open-Meteo
+            </a>
+          </div>
         </div>
 
-        <div className="weather-attribution">
-          <span>{t("app.weather.attribution.label")}</span>
-          <a href="https://open-meteo.com/en/docs" target="_blank" rel="noreferrer">
-            Open-Meteo
-          </a>
-          <span>{t("app.weather.attribution.separator")}</span>
-          <a href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noreferrer">
-            CAMS / Open-Meteo
-          </a>
-        </div>
+        <aside className="weather-cities">
+          <div className="section-head">
+            <h3>{t("app.weather.cityWidget.title")}</h3>
+            <span className="section-note">
+              {t("app.weather.cityWidget.count", { count: weatherCities.length })}
+            </span>
+          </div>
+
+          <AppTextField
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={t("app.weather.search.placeholder")}
+            size="small"
+            fullWidth
+          />
+
+          {searchQuery.trim() ? (
+            <div className="weather-search-results">
+              {searchSections.map((section) => {
+                if (section.key !== "search-results" && section.items.length === 0) {
+                  return null;
+                }
+                return (
+                  <div key={section.key} className="weather-search-section">
+                    <div className="weather-search-section__head">
+                      <strong>{section.title}</strong>
+                      <span>{section.items.length}</span>
+                    </div>
+
+                    {section.items.length > 0 ? (
+                      section.items.map((result) => {
+                        const alreadyAdded = weatherCityIds.has(getCityIdentity(result));
+                        return (
+                          <AppButton
+                            key={`${section.key}-${result.id}`}
+                            className="weather-search-row"
+                            onClick={() => handleSuggestionSelect(result)}
+                          >
+                            <span className="weather-search-row__copy">
+                              <strong>{getCityName(result, t)}</strong>
+                              <span>{getCityRegion(result, t)}</span>
+                            </span>
+                            <span className="weather-search-row__action">
+                              {alreadyAdded ? t("app.weather.search.open") : t("app.weather.search.add")}
+                            </span>
+                          </AppButton>
+                        );
+                      })
+                    ) : (
+                      <p className="weather-search-empty">{section.empty}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+
+          <div className="weather-city-list">
+            {weatherCities.map((city) => {
+              const isActive = city.id === selectedCity.id;
+              const canRemove = weatherCities.length > 1;
+              return (
+                <div key={city.id} className={`weather-city-row ${isActive ? "is-active" : ""}`}>
+                  <AppButton
+                    className="weather-city-row__select"
+                    onClick={() => {
+                      rememberCityUsage(city, { includeRecent: false });
+                      setSelectedCityId(city.id);
+                    }}
+                  >
+                    <span className="weather-city-row__copy">
+                      <strong>{getCityName(city, t)}</strong>
+                      <span>{getCityRegion(city, t)}</span>
+                    </span>
+                    <span className="weather-city-row__meta">
+                      <strong>{formatMetricValue(city.temperature, t("app.weather.unit.degree"))}</strong>
+                      <span>{formatCityTime(clockNow, city.timeZone, lang)}</span>
+                    </span>
+                  </AppButton>
+                  <AppButton
+                    className="weather-city-row__remove"
+                    onClick={() => {
+                      if (canRemove) {
+                        onRemoveCity(city.id);
+                      }
+                    }}
+                    disabled={!canRemove}
+                    aria-label={t("app.weather.cityWidget.remove")}
+                  >
+                    {t("app.weather.cityWidget.remove")}
+                  </AppButton>
+                </div>
+              );
+            })}
+          </div>
+        </aside>
+      </div>
     </section>
   );
 }
@@ -606,130 +541,6 @@ function buildWeatherSummary({ city, t }) {
   });
 }
 
-function resolveWeatherAppearance(conditionKey, fallbackTone = "sunrise") {
-  const normalizedKey = String(conditionKey || "");
-
-  if (normalizedKey.endsWith(".bright")) {
-    return { scene: "clear", tone: "sunrise" };
-  }
-  if (normalizedKey.endsWith(".partlyCloudy")) {
-    return { scene: "cloud", tone: "sunrise" };
-  }
-  if (normalizedKey.endsWith(".cloudy")) {
-    return { scene: "cloud", tone: "polar" };
-  }
-  if (normalizedKey.endsWith(".mist")) {
-    return { scene: "mist", tone: "polar" };
-  }
-  if (normalizedKey.endsWith(".snow")) {
-    return { scene: "snow", tone: "polar" };
-  }
-  if (normalizedKey.endsWith(".storm")) {
-    return { scene: "storm", tone: "aurora" };
-  }
-  if (normalizedKey.endsWith(".wind")) {
-    return { scene: "wind", tone: "rain" };
-  }
-  if (normalizedKey.endsWith(".rain")) {
-    return { scene: "rain", tone: "rain" };
-  }
-
-  return {
-    scene: "cloud",
-    tone: ["sunrise", "rain", "aurora", "polar"].includes(fallbackTone) ? fallbackTone : "sunrise",
-  };
-}
-
-function resolveWeatherMood({ clockNow, sunrise, sunset, temperature, timeZone }) {
-  const localMinutes = getLocalMinutes(clockNow, timeZone);
-  const sunriseMinutes = parseClockToMinutes(sunrise);
-  const sunsetMinutes = parseClockToMinutes(sunset);
-  const transitionWindow = 78;
-  let phase = "day";
-  let phaseProgress = 0.72;
-
-  if (localMinutes != null && sunriseMinutes != null && sunsetMinutes != null) {
-    const sunriseDistance = localMinutes - sunriseMinutes;
-    const sunsetDistance = localMinutes - sunsetMinutes;
-
-    if (Math.abs(sunriseDistance) <= transitionWindow) {
-      phase = "sunrise";
-      phaseProgress = 1 - Math.min(Math.abs(sunriseDistance) / transitionWindow, 1);
-    } else if (Math.abs(sunsetDistance) <= transitionWindow) {
-      phase = "sunset";
-      phaseProgress = 1 - Math.min(Math.abs(sunsetDistance) / transitionWindow, 1);
-    } else if (
-      localMinutes > sunriseMinutes + transitionWindow &&
-      localMinutes < sunsetMinutes - transitionWindow
-    ) {
-      phase = "day";
-      phaseProgress = 0.86;
-    } else {
-      phase = "night";
-      phaseProgress = 0.94;
-    }
-  } else if (localMinutes != null) {
-    if (localMinutes >= 330 && localMinutes < 510) {
-      phase = "sunrise";
-      phaseProgress = 0.78;
-    } else if (localMinutes >= 510 && localMinutes < 1050) {
-      phase = "day";
-      phaseProgress = 0.82;
-    } else if (localMinutes >= 1050 && localMinutes < 1170) {
-      phase = "sunset";
-      phaseProgress = 0.78;
-    } else {
-      phase = "night";
-      phaseProgress = 0.92;
-    }
-  }
-
-  const normalizedTemp = normalizeNumber(temperature);
-  let thermalBand = "mild";
-
-  if (normalizedTemp != null) {
-    if (normalizedTemp <= 0) {
-      thermalBand = "freezing";
-    } else if (normalizedTemp <= 12) {
-      thermalBand = "cool";
-    } else if (normalizedTemp <= 24) {
-      thermalBand = "mild";
-    } else if (normalizedTemp <= 32) {
-      thermalBand = "warm";
-    } else {
-      thermalBand = "hot";
-    }
-  }
-
-  return {
-    phase,
-    phaseProgress,
-    thermalBand,
-    heat: normalizedTemp == null ? 0.34 : clamp((normalizedTemp - 18) / 18, 0, 1),
-    chill: normalizedTemp == null ? 0.16 : clamp((14 - normalizedTemp) / 18, 0, 1),
-  };
-}
-
-function WeatherTiltCard({
-  as: Component = "article",
-  children,
-  className = "",
-  onMouseLeave,
-  onMouseMove,
-  ...props
-}: Record<string, any>) {
-  return (
-    <Component
-      {...props}
-      className={className}
-      onMouseMove={onMouseMove}
-      onMouseLeave={onMouseLeave}
-    >
-      {children}
-    </Component>
-  );
-}
-
 function getCityName(city, t) {
   return city.nameKey ? t(city.nameKey) : city.name || "--";
 }
@@ -752,46 +563,6 @@ function formatCityTime(clockNow, timeZone, lang) {
     hour12: false,
     timeZone,
   }).format(new Date(clockNow));
-}
-
-function getLocalMinutes(clockNow, timeZone) {
-  if (!clockNow || !timeZone) {
-    return null;
-  }
-
-  try {
-    const parts = new Intl.DateTimeFormat("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone,
-    }).formatToParts(new Date(clockNow));
-
-    const hour = Number(parts.find((part) => part.type === "hour")?.value);
-    const minute = Number(parts.find((part) => part.type === "minute")?.value);
-    if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
-      return null;
-    }
-
-    return hour * 60 + minute;
-  } catch {
-    return null;
-  }
-}
-
-function parseClockToMinutes(value) {
-  const match = String(value || "").match(/^(\d{2}):(\d{2})$/);
-  if (!match) {
-    return null;
-  }
-
-  const hour = Number(match[1]);
-  const minute = Number(match[2]);
-  if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
-    return null;
-  }
-
-  return hour * 60 + minute;
 }
 
 function resolveWeatherStatusTone(status) {
@@ -820,14 +591,6 @@ function formatMetricValue(value, suffix = "") {
 function normalizeNumber(value) {
   const normalized = Number(value);
   return Number.isFinite(normalized) ? normalized : null;
-}
-
-function clamp(value, min, max) {
-  const normalized = Number(value);
-  if (!Number.isFinite(normalized)) {
-    return min;
-  }
-  return Math.min(Math.max(normalized, min), max);
 }
 
 function roundToFour(value) {

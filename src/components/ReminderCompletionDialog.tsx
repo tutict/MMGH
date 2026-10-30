@@ -1,6 +1,7 @@
 import React from "react";
 import { useI18n } from "../i18n";
-import { AppButton, AppCheckbox, AppStatusChip, AppTextField } from "./ui";
+import { Checkbox } from "@mui/material";
+import { AppButton, AppStatusChip, AppTextField } from "./ui";
 
 function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, panelRef, setDraft }) {
   const { t } = useI18n();
@@ -65,7 +66,7 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
 
         <div className="completion-dialog__toggles">
           <label className="completion-dialog__toggle">
-            <AppCheckbox
+            <Checkbox
               checked={draft.saveToNote}
               onChange={(event) =>
                 setDraft((prev) => ({
@@ -84,7 +85,7 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
             </span>
           </label>
           <label className="completion-dialog__toggle">
-            <AppCheckbox
+            <Checkbox
               checked={draft.createFollowUp}
               onChange={(event) =>
                 setDraft((prev) => ({
