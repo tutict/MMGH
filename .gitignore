@@ -29,6 +29,7 @@
 /artifacts
 /eval/ragas/out
 /.venv-ragas
+__pycache__/
 
 # logs
 *.log
