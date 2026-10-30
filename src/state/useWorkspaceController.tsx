@@ -305,6 +305,7 @@ export function useWorkspaceController() {
   const skillImportInputRef = useRef(null);
   const pendingWorkspaceSyncRef = useRef(false);
   const hasUnsavedWorkspaceDraftsRef = useRef(false);
+  const settingsHydratedRef = useRef(false);
   const busyRef = useRef("");
   const loadingRef = useRef(true);
   const mobileDrawerPanelRef = useRef(null);
@@ -919,11 +920,19 @@ export function useWorkspaceController() {
   }, [hasUnsavedWorkspaceDrafts]);
 
   useEffect(() => {
-    if (workspace?.settings && !hasUnsavedSettings) {
-      setSettingsForm({
-        ...workspace.settings,
-        clearApiKey: false,
-      });
+    if (workspace?.settings) {
+      if (!settingsHydratedRef.current) {
+        settingsHydratedRef.current = true;
+        setSettingsForm({
+          ...workspace.settings,
+          clearApiKey: false,
+        });
+      } else if (!hasUnsavedSettings) {
+        setSettingsForm({
+          ...workspace.settings,
+          clearApiKey: false,
+        });
+      }
     }
 
     if (workspace?.activeNote && (!hasUnsavedNote || noteDraft.id !== workspace.activeNote.id)) {
