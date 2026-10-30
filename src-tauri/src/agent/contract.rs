@@ -191,13 +191,7 @@ fn render_skill_block(skills: &[db::SkillDetail]) -> String {
   ];
 
   for skill in skills.iter().take(MAX_MOUNTED_SKILLS_IN_PROMPT) {
-    lines.push(format!(
-      "- {} [{}]: Trigger when {}. Instructions: {}",
-      skill.name,
-      skill.permission_level,
-      shorten(&skill.trigger_hint, 120),
-      shorten(&skill.instructions, 260)
-    ));
+    lines.push(render_skill_line(skill));
   }
   if skills.len() > MAX_MOUNTED_SKILLS_IN_PROMPT {
     lines.push(format!(
@@ -207,6 +201,31 @@ fn render_skill_block(skills: &[db::SkillDetail]) -> String {
   }
 
   lines.join("\n")
+}
+
+pub(super) fn render_skill_line(skill: &db::SkillDetail) -> String {
+  format!(
+    "- {} [{}]: Trigger when {}. Instructions: {}",
+    skill.name,
+    skill.permission_level,
+    shorten(&skill.trigger_hint, 120),
+    shorten(&skill.instructions, 260)
+  )
+}
+
+/// Renders a staged note the way the runtime context block presents it.
+pub(super) fn render_context_note(note: &ContextNote) -> String {
+  let tag_block = if note.tags.is_empty() {
+    String::new()
+  } else {
+    format!(" [{}]", note.tags.join(", "))
+  };
+  format!(
+    "{}{}: {}",
+    shorten(&note.title, 48),
+    tag_block,
+    shorten(&note.excerpt, 180)
+  )
 }
 
 fn render_contract_boundary_block() -> String {
@@ -670,7 +689,7 @@ fn render_due_label(due_at: Option<i64>) -> String {
   }
 }
 
-fn first_non_empty_line(value: &str) -> Option<String> {
+pub(super) fn first_non_empty_line(value: &str) -> Option<String> {
   value
     .lines()
     .map(str::trim)
