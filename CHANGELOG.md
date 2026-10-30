@@ -21,7 +21,11 @@ The format follows a lightweight `Keep a Changelog` style:
 - Split the monolithic `App.tsx` into a desktop/mobile shell pair, a shared workspace controller, and focused state controllers, and consolidated the scattered stylesheets into `src/ui` design tokens plus shell and page styles; removed the legacy `src/CSS` and `src/ui-next` stylesheets.
 - Restyled the product UI around a light-first Fluent/WinUI desk with liquid-glass chrome: synced MUI with `data-theme`, added a selected-state rail, and moved the mobile mini-player into the shell instead of overlaying content.
 - Upgraded Rust crates: `rusqlite` 0.30 to 0.40 (bundled SQLite via `libsqlite3-sys` 0.38.2), `reqwest` 0.12 to 0.13, `keyring` 1.2 to 4, `tauri` 2.10 to 2.12, `rig` 0.42 to 0.44, plus a compatible `cargo update` (`serde` 1.0.229, `serde_json` 1.0.154, `anyhow` 1.0.104, `once_cell` 1.21.4).
-- Upgraded the frontend toolchain: within-major refreshes (`@tauri-apps/api` 2.12.4, `@tauri-apps/cli` 2.12.3, TypeScript 7.0.2, `@testing-library/user-event` 14.6.8) plus the across-major bumps React 18 to 19 (`react`, `react-dom`, `@types/react`, `@types/react-dom`), Vite 7 to 8 with `@vitejs/plugin-react` 6, Vitest 3 to 5, jsdom 26 to 30, `@testing-library/jest-dom` 6 to 7, ESLint 8 to 9 (migrated from `.eslintrc.cjs` to flat config in `eslint.config.mjs`), and Babel 7 to 8. MUI stays on 9.2 because 9.4 breaks jsdom Select selectors, and ESLint stops at 9 because `eslint-plugin-react` and `eslint-plugin-jsx-a11y` still cap their peer range at ESLint 9; the unused `eslint-config-react-app` (which pinned ESLint 8) was dropped.
+- Upgraded the frontend toolchain: within-major refreshes (`@tauri-apps/api` 2.12.4, `@tauri-apps/cli` 2.12.3, TypeScript 7.0.2, `@testing-library/user-event` 14.6.8) plus the across-major bumps React 18 to 19 (`react`, `react-dom`, `@types/react`, `@types/react-dom`), Vite 7 to 8 with `@vitejs/plugin-react` 6, Vitest 3 to 5, jsdom 26 to 30, `@testing-library/jest-dom` 6 to 7, ESLint 8 to 9 (migrated from `.eslintrc.cjs` to flat config in `eslint.config.mjs`), and Babel 7 to 8. ESLint stops at 9 because `eslint-plugin-react` and `eslint-plugin-jsx-a11y` still cap their peer range at ESLint 9; the unused `eslint-config-react-app` (which pinned ESLint 8) was dropped.
+- Refreshed both lockfiles onto the newest releases the declared ranges already allow: Vite 8.3.5, Babel 8.0.10, `@types/node` 26.6.6, `@tauri-apps/cli` 2.12.4, `rolldown` 1.2.16 on the frontend; Tauri 2.12.5, `tauri-build` 2.7.4, `tokio` 1.54.1 on the Rust side.
+- Upgraded MUI 9.2 to 9.5 (`@mui/material` and `@mui/icons-material`) and `globals` 14 to 17. MUI 9.3 through 9.5 publish no breaking changes against the components this app uses, and the 9.2 pin recorded in the 2026-10-16 review no longer applies — the app renders no MUI `Select`, and the `TextField select`, standalone `Select`, native `Select`, and `Autocomplete` shapes behave identically under jsdom on 9.4.0 and 9.5.0.
+- Upgraded `rig` 0.44 to 0.45 and `rusqlite` 0.40 to 0.41 (bundled SQLite 3.54.0 via `libsqlite3-sys` 0.39.1). rig 0.45's breaking changes are confined to its coding-agent harness and JSON front end, and rusqlite 0.41's iterator-returning `Statement::column_names` is unused here, so the agent runtime and the database layer compile unchanged.
+- Removed the unused vendored Tauri v1 crates under `src-tauri/vendor/` (`nfd` 0.0.4 and `ntapi` 0.3.7, 114 tracked files): neither crate appears in `Cargo.toml` or `Cargo.lock`, no `.cargo/config.toml` points at the directory, and no Rust source names them.
 - Migrated the Rig runtime to the 0.44 provider/agent API (`OpenAIConfig` + `AgentBuilder`, `PromptResponse::output()`) and pinned the Chat Completions wire so generic OpenAI-compatible gateways keep working.
 - Project version has been advanced to `0.1.1` after the `0.1.0` desktop release so the repository is ready for the next development cycle.
 
@@ -38,6 +42,7 @@ The format follows a lightweight `Keep a Changelog` style:
 
 - Documented the Rig adoption, dependency-upgrade, and four-axis review in `docs/reviews/2026-10-16-rig-runtime-and-dependencies/`.
 - Documented the frontend major dependency upgrade (React 19, Vite 8, Vitest 5, ESLint 9, Babel 8) and its four-axis review in `docs/reviews/2026-10-16-frontend-major-dependency-upgrade/`.
+- Documented the dependency refresh (MUI 9.5, `globals` 17, `rig` 0.45, `rusqlite` 0.41, both lockfile refreshes, the vendored-crate removal) and its four-axis review in `docs/reviews/2026-10-30-dependency-refresh/`.
 
 ### Notes
 
@@ -52,6 +57,8 @@ The format follows a lightweight `Keep a Changelog` style:
 - `package.json` sets `"type": "module"` so Vite 8 loads `vite.config.ts` as ESM, removing the `configLoader: native` warning; the lint script also covers `vite.config.ts` now.
 - `eslint.config.mjs` imports `@eslint/js` and `globals`, which are now declared in `devDependencies` instead of relying on ESLint's hoisted copies.
 - The stale `dist/闹钟2-哔声_爱给网_aigei_com.mp3` build artifact is no longer tracked (it duplicated the asset in `public/` and `dist/` is gitignored).
+- MUI 9.4 adds an opt-in `theme.focusVisible` focus ring. It stays disabled: the Quiet Ledger focus ring (2 px accent, 2 px offset, driven by `--q-focus`) is the only focus indicator, and enabling both would stack two rings.
+- `npm update` cannot replace the native `rolldown` binding while a dev server holds the `.node` file: npm updates the package metadata but leaves the old binary, and `vite build` then fails with `bindingChunk.getCodeIdentity is not a function`. Stop the dev server before refreshing the lockfile.
 
 ## [0.1.0] - 2026-04-14
 
