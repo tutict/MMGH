@@ -70,5 +70,11 @@ for (const theme of ["light", "dark"] as const) {
     expectContrast(theme, "q-success", "q-bg", 4.5);
     expectContrast(theme, "q-warning", "q-bg", 4.5);
     expectContrast(theme, "q-danger", "q-bg", 4.5);
+    expectContrast(theme, "q-success", "q-success-soft", 4.5);
+    expectContrast(theme, "q-warning", "q-warning-soft", 4.5);
+    expectContrast(theme, "q-danger", "q-danger-soft", 4.5);
+    expectContrast(theme, "q-accent", "q-accent-soft", 4.5);
+    expectContrast(theme, "q-text-muted", "q-selected", 4.5);
+    expectContrast(theme, "q-text-muted", "q-sunken", 4.5);
   });
 }

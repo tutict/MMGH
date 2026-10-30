@@ -1,5 +1,6 @@
 @import "../ui/tokens.css";
 @import "../ui/base.css";
+@import "../ui/primitives.css";
 @import "../ui/desktop/shell.css";
 @import "../ui/desktop/pages.css";
 @import "../ui/mobile/shell.css";
