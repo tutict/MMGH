@@ -3074,48 +3074,31 @@ export function useWorkspaceController() {
             <TodayWorkspace
               activeSession={activeSession}
               activeSessionId={activeSessionId}
-              activeWeatherCity={activeWeatherCity}
               busy={busy}
               clockNow={clockNow}
               completedTodayItems={completedTodayItems}
               continueSessionItems={continueSessionItems}
-              dueReminderCount={dueReminderCount}
-              formatShortClock={formatShortClock}
               formatTime={formatTime}
               handleOpenNote={handleOpenNote}
               handleOpenLinkedNote={handleOpenReminderNote}
-              handleOpenReminderPattern={handleOpenReminderPattern}
               handleOpenSession={handleOpenSession}
-              handleOpenSkill={handleOpenSkill}
-              handlePromoteReminderPattern={handlePromoteReminderPattern}
               handleSelectReminder={handleSelectReminder}
-              handleToggleSkillMounted={handleToggleSkillMounted}
               handleToggleTodayReminderStatus={handleToggleTodayReminderStatus}
               lang={lang}
               loading={loading}
               noteList={noteList}
               openReminderCount={openReminderCount}
               openView={openView}
-              providerConfigured={providerConfigured}
               recentCaptureItems={recentCaptureItems}
-              recurringPatternInsights={recurringPatternInsights}
-              resolvePatternStatusTone={resolvePatternStatusTone}
               resolveReminderUrgency={resolveReminderUrgency}
-              resolveRuleActionTone={resolveRuleActionTone}
-              resolveRuleEffectivenessTone={resolveRuleEffectivenessTone}
-              ruleActionRecommendations={ruleActionRecommendations}
-              ruleEffectivenessInsights={ruleEffectivenessInsights}
-              ruleEffectivenessSignals={ruleEffectivenessSignals}
-                            todayReminderItems={todayReminderItems}
+              todayReminderItems={todayReminderItems}
               todayReviewSignals={todayReviewSignals}
-              weatherStatus={weatherStatus}
             />
           </Suspense>
         ) : currentView === "agent" ? (
           <Suspense fallback={workspaceLoadingFallback}>
             <RuntimeWorkspace
               activeSession={activeSession}
-              activeSessionId={activeSessionId}
               activeSessionRecommendedSkills={runtimeRecommendedSkills}
               activeSessionSkills={activeSessionSkills}
               busy={busy}
@@ -3124,18 +3107,16 @@ export function useWorkspaceController() {
               formatTime={formatTime}
               handleCaptureSessionNote={handleCaptureSessionNote}
               handleCaptureSessionReminder={handleCaptureSessionReminder}
-              handleOpenSession={handleOpenSession}
               handleOpenSkill={handleOpenSkill}
               handleRunAgent={handleRunAgent}
               handleToggleSkillMounted={handleToggleSkillMounted}
-                            lang={lang}
+              lang={lang}
               loading={loading}
               mountedSkillIds={activeSessionSkillIds}
               normalizeActivityKind={normalizeActivityKind}
-                            openView={openView}
+              openView={openView}
               PanelIcon={PanelIcon}
               providerConfigured={providerConfigured}
-              sessionList={sessionList}
               setDraft={setDraft}
             />
           </Suspense>
@@ -3793,8 +3774,8 @@ function getPanelIconPath(type) {
 
 function WorkspaceLoadingState({ label }) {
   return (
-    <section className="panel-surface today-section today-section--compact">
-      <p className="section-note runtime-sidebar-copy">{label}</p>
+    <section className="panel-surface today-section">
+      <p className="section-note">{label}</p>
     </section>
   );
 }

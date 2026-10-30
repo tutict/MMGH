@@ -17,43 +17,80 @@ function SettingsWorkspace({
   setTheme = undefined,
   theme = "light",
 }) {
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
+  const showPreferences = Boolean(setTheme || setLang);
 
   return (
     <section className="settings-workspace">
-      <div className="desk-settings"><div className="settings-workspace__hero">
-        <div className="section-head">
-          <div>
-            <span className="eyebrow">{t("app.settings.page.eyebrow")}</span>
-            <h3>{t("app.settings.page.title")}</h3>
-          </div>
-          <div className="settings-summary__chips">
+      <div className="desk-settings">
+        {showPreferences ? (
+          <section className="settings-section">
+            <div className="section-head">
+              <h2>{t("app.settings.appearance.title")}</h2>
+            </div>
+
+            <div className="settings-pref-row">
+              <span className="settings-pref-row__label">{t("app.settings.appearance.theme")}</span>
+              <div className="settings-segments" role="group" aria-label={t("app.settings.appearance.theme")}>
+                {setTheme ? (
+                  <>
+                    <AppButton
+                      className={`settings-segment ${theme === "light" ? "is-selected" : ""}`}
+                      aria-pressed={theme === "light"}
+                      onClick={() => setTheme("light")}
+                    >
+                      {t("app.theme.light")}
+                    </AppButton>
+                    <AppButton
+                      className={`settings-segment ${theme === "dark" ? "is-selected" : ""}`}
+                      aria-pressed={theme === "dark"}
+                      onClick={() => setTheme("dark")}
+                    >
+                      {t("app.theme.dark")}
+                    </AppButton>
+                  </>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="settings-pref-row">
+              <span className="settings-pref-row__label">{t("app.language.label")}</span>
+              <div className="settings-segments" role="group" aria-label={t("app.language.label")}>
+                {setLang ? (
+                  <>
+                    <AppButton
+                      className={`settings-segment ${lang === "zh-CN" ? "is-selected" : ""}`}
+                      aria-pressed={lang === "zh-CN"}
+                      onClick={() => setLang("zh-CN")}
+                    >
+                      中文
+                    </AppButton>
+                    <AppButton
+                      className={`settings-segment ${lang === "en-US" ? "is-selected" : ""}`}
+                      aria-pressed={lang === "en-US"}
+                      onClick={() => setLang("en-US")}
+                    >
+                      English
+                    </AppButton>
+                  </>
+                ) : null}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="settings-section">
+          <div className="section-head">
+            <h2>{t("app.settings.title")}</h2>
             <AppStatusChip tone={providerConfigured ? "completed" : "warning"}>
               {t(`app.provider.${providerConfigured ? "configured" : "pending"}`)}
             </AppStatusChip>
-            <AppStatusChip tone={hasUnsavedSettings ? "running" : "idle"}>
-              {t(`app.common.${hasUnsavedSettings ? "dirty" : "saved"}`)}
-            </AppStatusChip>
-          </div>
-        </div>
-        <p className="section-note settings-workspace__note">
-          {t("app.settings.page.description")}
-        </p>
-      </div>
-
-      <div className="settings-workspace__grid">
-        <section className="panel-surface settings-panel">
-          <div className="section-head">
-            <div>
-              <span className="eyebrow">{t("app.settings.eyebrow")}</span>
-              <h3>{t("app.settings.title")}</h3>
-            </div>
           </div>
 
           <form className="settings-form" onSubmit={handleSaveSettings}>
             <div className="settings-form__grid">
-              <label className="settings-form__card settings-form__card--compact">
-                <span>{t("app.settings.providerName")}</span>
+              <label className="settings-field">
+                <span className="field-label">{t("app.settings.providerName")}</span>
                 <AppTextField
                   value={settingsForm.providerName || ""}
                   onChange={(event) =>
@@ -66,8 +103,8 @@ function SettingsWorkspace({
                   fullWidth
                 />
               </label>
-              <label className="settings-form__card settings-form__card--compact">
-                <span>{t("app.settings.model")}</span>
+              <label className="settings-field">
+                <span className="field-label">{t("app.settings.model")}</span>
                 <AppTextField
                   value={settingsForm.model || ""}
                   onChange={(event) =>
@@ -80,8 +117,8 @@ function SettingsWorkspace({
                   fullWidth
                 />
               </label>
-              <label className="settings-form__card settings-form__card--wide">
-                <span>{t("app.settings.baseUrl")}</span>
+              <label className="settings-field settings-field--wide">
+                <span className="field-label">{t("app.settings.baseUrl")}</span>
                 <AppTextField
                   value={settingsForm.baseUrl || ""}
                   onChange={(event) =>
@@ -95,7 +132,7 @@ function SettingsWorkspace({
                 />
                 {providerSecurityMessage ? (
                   <span
-                    className={`section-note ${
+                    className={`field-hint ${
                       providerSecurityStatus === "blocked" ? "danger-copy" : ""
                     }`}
                   >
@@ -103,8 +140,8 @@ function SettingsWorkspace({
                   </span>
                 ) : null}
               </label>
-              <label className="settings-form__card settings-form__card--wide">
-                <span>{t("app.settings.apiKey")}</span>
+              <label className="settings-field settings-field--wide">
+                <span className="field-label">{t("app.settings.apiKey")}</span>
                 <AppTextField
                   type="password"
                   value={settingsForm.apiKey || ""}
@@ -125,28 +162,30 @@ function SettingsWorkspace({
                   size="small"
                   fullWidth
                 />
-                <span className="section-note">
+                <span className="field-hint">
                   {settingsForm.clearApiKey
                     ? t("app.settings.apiKeyHint.clearing")
                     : settingsForm.hasApiKey
                     ? t("app.settings.apiKeyHint.keep")
                     : t("app.settings.apiKeyHint.missing")}
                 </span>
-                {(settingsForm.hasApiKey || settingsForm.clearApiKey) && (
-                  <AppButton
-                    className={`ghost-button ${settingsForm.clearApiKey ? "danger-button" : ""}`}
-                    onClick={handleClearApiKey}
-                  >
-                    {settingsForm.clearApiKey
-                      ? t("app.settings.apiKeyAction.undoClear")
-                      : t("app.settings.apiKeyAction.clear")}
-                  </AppButton>
-                )}
+                {settingsForm.hasApiKey || settingsForm.clearApiKey ? (
+                  <span className="settings-key-actions">
+                    <AppButton
+                      className={`ghost-button ${settingsForm.clearApiKey ? "danger-button" : ""}`}
+                      onClick={handleClearApiKey}
+                    >
+                      {settingsForm.clearApiKey
+                        ? t("app.settings.apiKeyAction.undoClear")
+                        : t("app.settings.apiKeyAction.clear")}
+                    </AppButton>
+                  </span>
+                ) : null}
               </label>
             </div>
 
-            <label className="settings-form__card settings-form__card--prompt">
-              <span>{t("app.settings.systemPrompt")}</span>
+            <label className="settings-field">
+              <span className="field-label">{t("app.settings.systemPrompt")}</span>
               <AppTextField
                 className="settings-form__prompt"
                 value={settingsForm.systemPrompt || ""}
@@ -163,7 +202,7 @@ function SettingsWorkspace({
             </label>
 
             <div className="settings-form__footer">
-              <p className="section-note">{t("app.hero.settingsHint")}</p>
+              <span className="field-hint">{t("app.hero.settingsHint")}</span>
               <AppButton
                 type="submit"
                 className="solid-button"
@@ -175,62 +214,34 @@ function SettingsWorkspace({
           </form>
         </section>
 
-      {setTheme || setLang ? (
-        <section className="settings-panel">
-          <h3>{t("app.language.label")}</h3>
-          <div className="desk-nav__prefs">
-            {setTheme ? (
-              <button type="button" className="ghost-button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-                {theme === "dark" ? t("app.theme.light") : t("app.theme.dark")}
-              </button>
-            ) : null}
-            {setLang ? (
-              <button type="button" className="ghost-button" onClick={() => setLang("zh-CN")}>中文</button>
-            ) : null}
-            {setLang ? (
-              <button type="button" className="ghost-button" onClick={() => setLang("en-US")}>English</button>
-            ) : null}
-          </div>
-        </section>
-      ) : null}
-        <section className="panel-surface settings-cache-panel">
+        <section className="settings-section">
           <div className="section-head">
-            <div>
-              <span className="eyebrow">{t("app.settings.cache.eyebrow")}</span>
-              <h3>{t("app.settings.cache.title")}</h3>
-            </div>
+            <h2>{t("app.settings.cache.title")}</h2>
           </div>
+          <p className="section-note">{t("app.settings.cache.description")}</p>
 
-          <p className="section-note settings-cache-panel__description">
-            {t("app.settings.cache.description")}
-          </p>
-
-          <div className="cache-grid">
+          <div className="desk-list">
             {cacheCards.map((card) => (
-              <article key={card.id} className="cache-card">
-                <div className="cache-card__head">
-                  <div>
-                    <strong>{card.title}</strong>
-                    <span className="section-note">{card.summary}</span>
-                  </div>
-                  <AppStatusChip tone="idle">{card.countLabel}</AppStatusChip>
+              <div key={card.id} className="desk-row settings-cache-row">
+                <div className="settings-cache-row__copy">
+                  <strong>{card.title}</strong>
+                  <span className="desk-row__meta">
+                    <span>{card.summary}</span>
+                    <span>{card.countLabel}</span>
+                  </span>
                 </div>
-                <p>{card.description}</p>
                 <AppButton
                   className={`ghost-button ${card.danger ? "danger-button" : ""}`}
                   onClick={card.onClear}
                 >
                   {card.buttonLabel}
                 </AppButton>
-              </article>
+              </div>
             ))}
           </div>
 
-          <p className="section-note settings-cache-panel__safe-note">
-            {t("app.settings.cache.safeNote")}
-          </p>
+          <p className="field-hint">{t("app.settings.cache.safeNote")}</p>
         </section>
-      </div>
       </div>
     </section>
   );
