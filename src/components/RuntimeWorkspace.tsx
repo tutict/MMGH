@@ -165,7 +165,7 @@ function RuntimeWorkspace({
                   >
                     <strong>{skill.name}</strong>
                     <span className="desk-row__meta">
-                      {skill.recommendationReason || skill.triggerHint}
+                      <span>{skill.recommendationReason || skill.triggerHint}</span>
                     </span>
                   </AppButton>
                   <AppButton
@@ -202,7 +202,7 @@ function RuntimeWorkspace({
               </div>
               <div className="runtime-quick-actions">
                 <AppButton
-                  className="solid-button"
+                  className="ghost-button"
                   disabled={busy !== "" || loading}
                   onClick={handleCaptureSessionNote}
                 >

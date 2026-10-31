@@ -2880,7 +2880,7 @@ export function useWorkspaceController() {
                 fullWidth
               />
               <AppButton
-                className="solid-button"
+                className="ghost-button"
                 onClick={handleCreateSession}
                 disabled={busy !== "" || loading}
               >

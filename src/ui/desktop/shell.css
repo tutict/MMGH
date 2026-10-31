@@ -82,7 +82,6 @@
 
 .desk-nav__item.is-active {
   background: var(--q-selected);
-  box-shadow: inset 2px 0 0 var(--q-accent);
   font-weight: var(--q-weight-strong);
 }
 
@@ -236,7 +235,7 @@
 /* Session library rail, agent view */
 .desk-sessions {
   flex: none;
-  width: 17.5rem;
+  width: 15rem;
   position: sticky;
   top: var(--q-header-h);
   align-self: flex-start;
@@ -670,5 +669,15 @@
 
   .desk-transport__timeline {
     width: 12rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .desk {
+    grid-template-columns: 12.5rem minmax(0, 1fr);
+  }
+
+  .desk-nav {
+    padding-inline: var(--q-space-2);
   }
 }
