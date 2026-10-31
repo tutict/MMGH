@@ -2762,7 +2762,7 @@ export function useWorkspaceController() {
     },
     music: {
       eyebrow: t("app.view.music.eyebrow"),
-      title: selectedTrack?.title || t("app.view.music.title"),
+      title: t("app.view.music.title"),
       description: t("app.view.music.description"),
       badges: [
         { label: t("app.view.music.badge.tracks"), value: `${localizedTracks.length}` },

@@ -14,7 +14,7 @@ function ReminderCompletionDialog({ busy, draft, noteList, onClose, onSubmit, pa
       <AppButton
         className="completion-dialog__scrim"
         onClick={onClose}
-        aria-label={t("app.common.close")}
+        aria-label={t("app.today.review.dismiss")}
         disableRipple
       />
       <section ref={panelRef} className="completion-dialog__panel panel-surface" tabIndex={-1}>

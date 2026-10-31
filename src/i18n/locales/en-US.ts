@@ -212,6 +212,7 @@ const enUS = {
   "app.today.notice.reopened": "Reopened reminder: {title}",
   "app.today.review.eyebrow": "Completion",
   "app.today.review.title": "Close the loop",
+  "app.today.review.dismiss": "Dismiss completion dialog",
   "app.today.review.description":
     "Capture the outcome, optionally queue the next step, and write the result back into knowledge.",
   "app.today.review.subject": "Reminder",

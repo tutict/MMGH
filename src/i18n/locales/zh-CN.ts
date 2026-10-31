@@ -195,6 +195,7 @@ const zhCN = {
   "app.today.notice.reopened": "已重新打开提醒：{title}",
   "app.today.review.eyebrow": "完成记录",
   "app.today.review.title": "把结果写回系统",
+  "app.today.review.dismiss": "关闭完成对话框",
   "app.today.review.description": "记录结果、按需安排下一步，并把这次完成写回知识上下文。",
   "app.today.review.subject": "提醒事项",
   "app.today.review.result": "结果",

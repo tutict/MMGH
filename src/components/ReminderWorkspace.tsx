@@ -227,6 +227,13 @@ function ReminderWorkspace({
                       }))
                     }
                     select
+                    slotProps={{
+                      select: {
+                        SelectDisplayProps: {
+                          "aria-label": t("app.reminders.form.severity"),
+                        },
+                      },
+                    }}
                     size="small"
                     fullWidth
                   >
@@ -248,6 +255,13 @@ function ReminderWorkspace({
                       }))
                     }
                     select
+                    slotProps={{
+                      select: {
+                        SelectDisplayProps: {
+                          "aria-label": t("app.reminders.form.status"),
+                        },
+                      },
+                    }}
                     size="small"
                     fullWidth
                   >
@@ -267,6 +281,13 @@ function ReminderWorkspace({
                       }))
                     }
                     select
+                    slotProps={{
+                      select: {
+                        SelectDisplayProps: {
+                          "aria-label": t("app.reminders.form.linkedNote"),
+                        },
+                      },
+                    }}
                     size="small"
                     fullWidth
                   >
