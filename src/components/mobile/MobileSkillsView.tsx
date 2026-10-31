@@ -120,7 +120,7 @@ export default function MobileSkillsView({
           {filteredSkills.map((skill) => {
             const isMounted = mountedSkillIds.includes(skill.id);
             return (
-              <MobileRow key={skill.id}>
+              <MobileRow key={skill.id} className="mobile-skill-row">
                 <MobileButton
                   variant="text"
                   className="mobile-row__body"
@@ -131,6 +131,7 @@ export default function MobileSkillsView({
                   <span>{skill.summary || skill.triggerHint || t?.("app.skills.noTriggerHint")}</span>
                 </MobileButton>
                 <Switch
+                  className="mobile-switch"
                   size="small"
                   checked={isMounted}
                   onChange={() => handleToggleSkillMounted?.(skill.id)}
@@ -218,6 +219,7 @@ export default function MobileSkillsView({
             <div className="mobile-field-note">
               <span>{t?.("app.skills.form.enabled") || "Enabled"}</span>
               <Switch
+                className="mobile-switch"
                 size="small"
                 checked={Boolean(skillDraft.enabled)}
                 onChange={(event) =>

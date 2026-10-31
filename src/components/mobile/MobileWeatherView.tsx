@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { Chip } from "@mui/material";
 import { WEATHER_LOCATIONS } from "../weatherData";
 import MobileSheet from "./MobileSheet";
 import {
@@ -56,7 +55,9 @@ function MobileWeatherView({
   }, [cityQuery, t, weatherLocations]);
   const hourly = activeWeatherCity?.hourly || [];
   const daily = activeWeatherCity?.daily || [];
-  const metrics = [
+  const hasReading = activeWeatherCity?.temperature != null;
+  const weatherFailed = weatherStatus === "error";
+  const facts = [
     { label: t("app.weather.metric.feelsLike"), value: valueWithDegree(activeWeatherCity?.feelsLike, t) },
     { label: t("app.weather.metric.humidity"), value: percentageValue(activeWeatherCity?.humidity) },
     { label: t("app.weather.metric.wind"), value: windValue(activeWeatherCity?.wind, t) },
@@ -65,25 +66,23 @@ function MobileWeatherView({
       value: `${valueWithDegree(activeWeatherCity?.high, t)} / ${valueWithDegree(activeWeatherCity?.low, t)}`,
     },
   ];
+  const statusLabel = weatherFailed
+    ? weatherError
+    : weatherUpdatedAt
+      ? t("app.weather.updatedAt", { date: formatMobileWeatherTime(weatherUpdatedAt, lang) })
+      : t("app.weather.updatedAtPending");
 
   return (
     <MobilePage view="weather">
       <section className="mobile-weather-hero">
-        <div className="mobile-weather-hero__summary">
-          <p className="mobile-weather-hero__city">{resolveWeatherCityName(activeWeatherCity, t)}</p>
-          <p className="mobile-weather-hero__condition">{resolveWeatherCondition(activeWeatherCity, t)}</p>
-        </div>
-        {activeWeatherCity?.temperature != null ? (
-          <strong className="mobile-weather-hero__temp">
-            {valueWithDegree(activeWeatherCity.temperature, t)}
-          </strong>
-        ) : null}
-        <p className="mobile-weather-hero__meta">
-          {weatherStatus === "error"
-            ? weatherError
-            : weatherUpdatedAt
-              ? t("app.weather.updatedAt", { date: formatMobileWeatherTime(weatherUpdatedAt, lang) })
-              : t("app.weather.updatedAtPending")}
+        <p className="mobile-weather-hero__city">{resolveWeatherCityName(activeWeatherCity, t)}</p>
+        <strong className="mobile-weather-hero__temp">
+          {valueWithDegree(activeWeatherCity?.temperature, t)}
+        </strong>
+        <p className={weatherFailed ? "mobile-weather-hero__meta is-error" : "mobile-weather-hero__meta"}>
+          {hasReading
+            ? `${resolveWeatherCondition(activeWeatherCity, t)} · ${statusLabel}`
+            : statusLabel}
         </p>
         <div className="mobile-weather-hero__actions">
           <MobileButton variant="text" onClick={() => setCitySheetOpen(true)}>
@@ -95,11 +94,11 @@ function MobileWeatherView({
         </div>
       </section>
 
-      <div className="mobile-weather-metrics">
-        {metrics.map((metric) => (
-          <div key={metric.label} className="mobile-weather-metric">
-            <span>{metric.label}</span>
-            <strong>{metric.value}</strong>
+      <div className="mobile-weather-facts">
+        {facts.map((fact) => (
+          <div key={fact.label} className="mobile-weather-fact">
+            <span>{fact.label}</span>
+            <strong>{fact.value}</strong>
           </div>
         ))}
       </div>
@@ -116,9 +115,11 @@ function MobileWeatherView({
           <div className="mobile-weather-strip">
             {hourly.map((item) => (
               <div key={item.time} className="mobile-weather-chip">
-                <time>{formatMobileWeatherTime(item.time, lang)}</time>
-                <strong>{valueWithDegree(item.temperature, t)}</strong>
-                <span>{percentageValue(item.precipitation)}</span>
+                <time dateTime={item.time}>{formatMobileWeatherTime(item.time, lang)}</time>
+                <span className="mobile-weather-chip__reading">
+                  <strong>{valueWithDegree(item.temperature, t)}</strong>
+                  <span>{percentageValue(item.precipitation)}</span>
+                </span>
               </div>
             ))}
           </div>
@@ -134,7 +135,9 @@ function MobileWeatherView({
             {daily.slice(0, 7).map((item) => (
               <MobileRow key={item.time}>
                 <MobileRowBody>
-                  <strong>{formatMobileWeatherDate(item.time, lang)}</strong>
+                  <strong>
+                    <time dateTime={item.time}>{formatMobileWeatherDate(item.time, lang)}</time>
+                  </strong>
                   <span>{item.conditionKey ? t(item.conditionKey) : "--"}</span>
                 </MobileRowBody>
                 <span className="mobile-weather-range">
@@ -178,15 +181,15 @@ function MobileWeatherView({
                   <strong>{resolveWeatherCityName(city, t)}</strong>
                   <span>{resolveWeatherCondition(city, t)}</span>
                 </MobileButton>
-                <Chip
-                  clickable
-                  color="default"
-                  variant="outlined"
-                  label={mobileText(lang, "remove")}
+                <MobileButton
+                  variant="text"
+                  className="mobile-row__action"
                   aria-label={`${mobileText(lang, "remove")} ${resolveWeatherCityName(city, t)}`}
                   onClick={() => onRemoveWeatherCity(city.id)}
                   disabled={weatherCities.length <= 1}
-                />
+                >
+                  {mobileText(lang, "remove")}
+                </MobileButton>
               </MobileRow>
             ))}
           </MobileList>
@@ -200,16 +203,17 @@ function MobileWeatherView({
                       <strong>{resolveWeatherCityName(city, t)}</strong>
                       <span>{resolveWeatherRegion(city, t)}</span>
                     </MobileRowBody>
-                    <Chip
-                      clickable
-                      color="default"
-                      variant="outlined"
-                      label={t("app.weather.search.add")}
+                    <MobileButton
+                      variant="text"
+                      className="mobile-row__action"
+                      aria-label={`${t("app.weather.search.add")} ${resolveWeatherCityName(city, t)}`}
                       onClick={() => {
                         onAddWeatherCity(city);
                         setSelectedWeatherCityId(city.id);
                       }}
-                    />
+                    >
+                      {t("app.weather.search.add")}
+                    </MobileButton>
                   </MobileRow>
                 ))}
               </MobileList>

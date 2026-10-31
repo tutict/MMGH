@@ -8,6 +8,10 @@
   line-height: var(--q-leading-body);
 }
 
+.mobile-page > .mobile-segmented {
+  align-self: flex-start;
+}
+
 .mobile-page time {
   color: var(--q-text-faint);
   font-size: var(--q-text-xs);
@@ -123,6 +127,12 @@
   overflow-wrap: anywhere;
 }
 
+.mobile-row__body time {
+  color: inherit;
+  font-size: inherit;
+  white-space: normal;
+}
+
 .mobile-row__body span {
   max-width: 100%;
   overflow: hidden;
@@ -137,6 +147,19 @@
   color: var(--q-text-muted);
   font-size: var(--q-text-xs);
   font-variant-numeric: tabular-nums;
+}
+
+.mobile-row__action.MuiButton-root {
+  flex: none;
+  min-height: var(--q-touch);
+  padding-inline: var(--q-space-2);
+  color: var(--q-text-muted);
+  font-size: var(--q-text-sm);
+  white-space: nowrap;
+}
+
+.mobile-row__action.MuiButton-root:hover {
+  color: var(--q-text);
 }
 
 .mobile-row__icon {
