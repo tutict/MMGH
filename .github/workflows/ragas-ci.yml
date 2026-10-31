@@ -97,10 +97,13 @@ jobs:
           path: artifacts/ragas-report.json
           if-no-files-found: warn
 
+  # Pull request workflows from same-repository branches receive the provider
+  # secrets, and this job would run the pull request's code with them in the
+  # environment. Only the trusted branches and manual runs may spend the key.
   live:
     name: Ragas live assessment
     needs: detect-live
-    if: needs.detect-live.outputs.available == 'true'
+    if: needs.detect-live.outputs.available == 'true' && github.event_name != 'pull_request'
     runs-on: windows-latest
     defaults:
       run:
