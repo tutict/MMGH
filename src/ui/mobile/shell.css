@@ -201,7 +201,7 @@
 
 .mobile-transport__copy span {
   color: var(--q-text-muted);
-  font-size: var(--q-text-2xs);
+  font-size: var(--q-text-xs);
 }
 
 .mobile-transport__play.MuiIconButton-root {

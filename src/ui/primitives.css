@@ -69,15 +69,67 @@
   border-radius: var(--q-radius-md);
 }
 
-.section-head {
+.section-head,
+.skills-section-header,
+.mobile-section__head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--q-space-3);
+  min-width: 0;
 }
 
-.section-head h3 {
-  font-size: var(--q-text-md);
+.section-head h2,
+.section-head h3,
+.skills-section-header h2,
+.skills-section-header h3,
+.mobile-section__head h2 {
+  color: var(--q-text-muted);
+  font-size: var(--q-text-xs);
+  font-weight: var(--q-weight-strong);
+  line-height: var(--q-leading-title);
+  overflow-wrap: anywhere;
+}
+
+.section-head .ghost-button {
+  min-height: 1.75rem;
+  padding: 0 var(--q-space-2);
+}
+
+/* Segmented controls: a sunken track with the selected segment on the surface. */
+.mobile-segmented,
+.segmented-filter,
+.settings-segments {
+  display: inline-flex;
+  flex: none;
+  padding: 2px;
+  border: 1px solid var(--q-border);
+  border-radius: var(--q-radius-md);
+  background: var(--q-sunken);
+}
+
+.mobile-segmented .MuiButton-root,
+.segmented-filter__button.MuiButtonBase-root,
+.settings-segment {
+  min-height: 1.5rem;
+  padding: 0 var(--q-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--q-radius-sm);
+  color: var(--q-text-muted);
+  font-size: var(--q-text-xs);
+  font-weight: var(--q-weight-strong);
+}
+
+.mobile-segmented .MuiButton-root:hover,
+.segmented-filter__button.MuiButtonBase-root:hover {
+  color: var(--q-text);
+}
+
+.mobile-segmented .MuiButton-root.is-active,
+.segmented-filter__button.is-active,
+.settings-segment.is-selected {
+  background: var(--q-surface);
+  color: var(--q-text);
 }
 
 .section-note {
@@ -95,9 +147,8 @@
   border-radius: var(--q-radius-pill);
   background: var(--q-surface);
   color: var(--q-text-muted);
-  font-size: var(--q-text-2xs);
+  font-size: var(--q-text-xs);
   font-weight: var(--q-weight-strong);
-  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 

@@ -464,8 +464,8 @@
 
 .session-card__badge {
   flex: none;
-  color: var(--q-text-faint);
-  font-size: var(--q-text-2xs);
+  color: var(--q-text-muted);
+  font-size: var(--q-text-xs);
   font-weight: var(--q-weight-regular);
 }
 
@@ -498,8 +498,8 @@
   justify-content: space-between;
   gap: var(--q-space-2);
   margin-top: var(--q-space-1);
-  color: var(--q-text-faint);
-  font-size: var(--q-text-2xs);
+  color: var(--q-text-muted);
+  font-size: var(--q-text-xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -511,8 +511,8 @@
   margin: 0 var(--q-space-2) var(--q-space-1);
   padding: 0 var(--q-space-1);
   border-radius: var(--q-radius-sm);
-  color: var(--q-text-faint);
-  font-size: var(--q-text-2xs);
+  color: var(--q-text-muted);
+  font-size: var(--q-text-xs);
 }
 
 .session-card__toggle:hover {
@@ -628,7 +628,7 @@
 
 .desk-transport__time {
   color: var(--q-text-muted);
-  font-size: var(--q-text-2xs);
+  font-size: var(--q-text-xs);
   font-variant-numeric: tabular-nums;
 }
 

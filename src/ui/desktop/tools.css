@@ -60,7 +60,7 @@
   flex-wrap: wrap;
   gap: var(--q-space-3);
   margin-top: var(--q-space-2);
-  color: var(--q-text-faint);
+  color: var(--q-text-muted);
   font-size: var(--q-text-xs);
   font-variant-numeric: tabular-nums;
 }
@@ -295,7 +295,8 @@
   gap: var(--q-space-3);
 }
 .desk-music__queue-head h3 {
-  font-size: var(--q-text-md);
+  color: var(--q-text-muted);
+  font-size: var(--q-text-xs);
 }
 .desk-music__queue-list {
   display: flex;
@@ -348,7 +349,7 @@
   white-space: nowrap;
 }
 .audio-console__track-copy strong {
-  font-size: var(--q-text-sm);
+  font-size: var(--q-text-base);
 }
 .audio-console__track-copy span {
   color: var(--q-text-muted);
@@ -462,7 +463,7 @@
   background: var(--q-surface);
 }
 .weather-metric > span {
-  color: var(--q-text-faint);
+  color: var(--q-text-muted);
   font-size: var(--q-text-xs);
 }
 .weather-metric strong {
@@ -505,7 +506,7 @@
 }
 .weather-hourly__detail {
   color: var(--q-text-muted);
-  font-size: var(--q-text-2xs);
+  font-size: var(--q-text-xs);
   white-space: nowrap;
 }
 .weather-week-list {
@@ -663,7 +664,7 @@
 }
 .weather-city-row__copy strong {
   overflow: hidden;
-  font-size: var(--q-text-sm);
+  font-size: var(--q-text-base);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -683,11 +684,11 @@
   font-variant-numeric: tabular-nums;
 }
 .weather-city-row__meta strong {
-  font-size: var(--q-text-sm);
+  font-size: var(--q-text-base);
 }
 .weather-city-row__meta span {
-  color: var(--q-text-faint);
-  font-size: var(--q-text-2xs);
+  color: var(--q-text-muted);
+  font-size: var(--q-text-xs);
 }
 .weather-city-row__remove.MuiButtonBase-root {
   flex: none;
@@ -743,28 +744,8 @@
   flex: none;
   font-variant-numeric: tabular-nums;
 }
-.segmented-filter {
-  display: inline-flex;
-  padding: 2px;
-  border: 1px solid var(--q-border);
-  border-radius: var(--q-radius-md);
-  background: var(--q-sunken);
-}
-.segmented-filter__button.MuiButtonBase-root {
-  min-height: 1.5rem;
-  padding: 0 var(--q-space-3);
-  border-radius: var(--q-radius-sm);
-  color: var(--q-text-muted);
-  font-size: var(--q-text-xs);
-}
 .segmented-filter__button.MuiButtonBase-root:hover {
   color: var(--q-text);
-}
-.segmented-filter__button.is-active {
-  background: var(--q-surface);
-  box-shadow: inset 0 0 0 1px var(--q-border);
-  color: var(--q-text);
-  font-weight: var(--q-weight-strong);
 }
 .gallery-stage {
   display: flex;

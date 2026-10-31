@@ -54,7 +54,7 @@
   justify-content: space-between;
   margin-top: calc(-1 * var(--q-space-2));
   color: var(--q-text-faint);
-  font-size: var(--q-text-2xs);
+  font-size: var(--q-text-xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -230,8 +230,8 @@
 
 .mobile-weather-hero__meta {
   grid-column: 1 / -1;
-  color: var(--q-text-faint);
-  font-size: var(--q-text-2xs);
+  color: var(--q-text-muted);
+  font-size: var(--q-text-xs);
 }
 
 .mobile-weather-hero__actions {
@@ -267,8 +267,8 @@
 }
 
 .mobile-weather-metric span {
-  color: var(--q-text-faint);
-  font-size: var(--q-text-2xs);
+  color: var(--q-text-muted);
+  font-size: var(--q-text-xs);
 }
 
 .mobile-weather-metric strong {
@@ -299,7 +299,7 @@
 
 .mobile-weather-chip time {
   color: var(--q-text-faint);
-  font-size: var(--q-text-2xs);
+  font-size: var(--q-text-xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -311,7 +311,7 @@
 
 .mobile-weather-chip span {
   color: var(--q-text-muted);
-  font-size: var(--q-text-2xs);
+  font-size: var(--q-text-xs);
 }
 
 .mobile-weather-range {
