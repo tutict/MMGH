@@ -154,6 +154,8 @@ npm run dev:web
 npm run dev:tauri
 ```
 
+手动走查或 UI 自动化时，提醒到期提示会播放提示音并把视图切到提醒页。需要在测试里静音时，加载应用前设置 `localStorage["mmgh-reminder-alerts-disabled"] = "1"`，或给页面地址加 `?disableReminderAlerts=1`；两种方式都会跳过声音、提示与视图切换，正常使用不受影响。
+
 ## 构建与校验
 
 前端构建：

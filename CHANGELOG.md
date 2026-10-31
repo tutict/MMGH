@@ -54,6 +54,7 @@ The format follows a lightweight `Keep a Changelog` style:
 - The mobile menu did not mark the current view, so "open Settings, reopen the menu" landed on a list with nothing marked; the menu rows now carry the same `aria-current` marker as the dock.
 - The music editor sheet's "open note" action was 37px tall, and the mobile Agent bar showed its provider state as a colour-only dot. The action now meets the 44px touch floor, and the bar prints the localized provider status as 12px muted text instead of relying on the dot.
 - The Agent skills sheet labelled its toggles "On" and "Add" in hardcoded English, and the weather city sheet labelled every chip "Remove"; the labels now name the item they act on and live in the locale files.
+- The reminder due alert opened a blocking `window.alert` on top of the tone and the view change, and re-armed whenever a reminder was edited. It now raises an in-app notice instead of the modal, re-arms only when the due time or status changes, and UI automation can silence it entirely with `localStorage["mmgh-reminder-alerts-disabled"] = "1"` or a `?disableReminderAlerts=1` query flag (documented in the README).
 - Two i18n keys used by the mobile skills view existed in neither locale.
 - A missing translation key returned the key string silently; the helpers now report the miss.
 - The shared Rig HTTP client is now built fallibly and surfaces a `Result` error instead of panicking on first use.

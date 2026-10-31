@@ -1392,11 +1392,14 @@ export function useWorkspaceController() {
     setCurrentView("reminders");
     return handleSelectReminder(dueReminder.id, { force: true });
   }, [handleSelectReminder]);
+  const showReminderAlert = useCallback((dueReminder) => {
+    setNotice(t("app.reminders.alertDue", { title: dueReminder.title }));
+  }, [t]);
   useReminderAlerts({
     active: !(hasUnsavedWorkspaceDrafts || busy !== "" || loading),
+    onAlert: showReminderAlert,
     onOpen: openDueReminder,
     reminders,
-    t,
     workspaceReadyAt,
   });
 

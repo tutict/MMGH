@@ -2,9 +2,27 @@ import { useEffect, useRef } from "react";
 
 const REMINDER_ALERT_SOUND_SRC = "/reply-pulse.mp3";
 const MAX_REMINDER_TIMER_DELAY_MS = 60 * 60 * 1000;
+// UI automation and manual review set this key (or the query flag) before the
+// workspace loads so a due test reminder cannot steal focus or play audio.
+export const REMINDER_ALERTS_DISABLED_STORAGE_KEY = "mmgh-reminder-alerts-disabled";
+const REMINDER_ALERTS_DISABLED_QUERY_KEY = "disableReminderAlerts";
+
+function reminderAlertsDisabled() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  try {
+    if (window.localStorage.getItem(REMINDER_ALERTS_DISABLED_STORAGE_KEY) === "1") {
+      return true;
+    }
+  } catch {
+    // Storage can be unavailable; fall through to the query flag.
+  }
+  return new URLSearchParams(window.location.search).get(REMINDER_ALERTS_DISABLED_QUERY_KEY) === "1";
+}
 
 function createReminderAlertKey(reminder) {
-  return `${reminder.id}:${reminder.updatedAt}:${reminder.status}`;
+  return `${reminder.id}:${reminder.dueAt}:${reminder.status}`;
 }
 
 function isOpenReminderWithDueTime(reminder) {
@@ -65,12 +83,15 @@ function playReminderTone(audioRef) {
   void audio.play().catch(() => {});
 }
 
-export function useReminderAlerts({ active, onOpen, reminders, t, workspaceReadyAt }) {
+export function useReminderAlerts({ active, onAlert, onOpen, reminders, workspaceReadyAt }) {
   const triggeredRemindersRef = useRef(new Set());
   const reminderAudioRef = useRef(null);
 
   useEffect(() => {
     if (!active || typeof window === "undefined" || !workspaceReadyAt) {
+      return undefined;
+    }
+    if (reminderAlertsDisabled()) {
       return undefined;
     }
     let timer = 0;
@@ -94,15 +115,14 @@ export function useReminderAlerts({ active, onOpen, reminders, t, workspaceReady
     const triggerDueReminder = (dueReminder) => {
       const alertKey = createReminderAlertKey(dueReminder);
       triggeredReminderKeys.add(alertKey);
-      void Promise.resolve(onOpen(dueReminder)).then((opened) => {
-        if (!opened) {
+      const opened = Promise.resolve(onOpen(dueReminder));
+      onAlert(dueReminder);
+      void opened.then((didOpen) => {
+        if (!didOpen) {
           triggeredReminderKeys.delete(alertKey);
         }
       });
       playReminderTone(reminderAudioRef);
-      window.setTimeout(() => {
-        window.alert(t("app.reminders.alertDue", { title: dueReminder.title }));
-      }, 120);
     };
     const scheduleNextReminderCheck = () => {
       const now = Date.now();
@@ -119,5 +139,5 @@ export function useReminderAlerts({ active, onOpen, reminders, t, workspaceReady
     };
     scheduleNextReminderCheck();
     return () => window.clearTimeout(timer);
-  }, [active, onOpen, reminders, t, workspaceReadyAt]);
+  }, [active, onAlert, onOpen, reminders, workspaceReadyAt]);
 }
