@@ -25,7 +25,7 @@
   min-width: 0;
   margin: 0 var(--q-space-1);
   overflow: hidden;
-  font-size: var(--q-text-md);
+  font-size: var(--q-text-lg);
   font-weight: var(--q-weight-strong);
   line-height: var(--q-leading-tight);
   text-overflow: ellipsis;
@@ -66,6 +66,16 @@
 
 .mobile-app:has(.mobile-transport) .mobile-main {
   padding-bottom: calc(var(--q-mobile-dock) + var(--q-mobile-transport) + var(--q-space-4) + env(safe-area-inset-bottom));
+}
+
+.mobile-app:has(.mobile-agent-composer) .mobile-main {
+  padding-bottom: calc(var(--q-mobile-dock) + var(--q-space-2) + env(safe-area-inset-bottom));
+}
+
+.mobile-app:has(.mobile-agent-composer):has(.mobile-transport) .mobile-main {
+  padding-bottom: calc(
+    var(--q-mobile-dock) + var(--q-mobile-transport) + var(--q-space-2) + env(safe-area-inset-bottom)
+  );
 }
 
 .mobile-legacy-page {
@@ -207,6 +217,10 @@
 .mobile-transport__play.MuiIconButton-root {
   width: var(--q-touch);
   height: var(--q-touch);
+  color: var(--q-text);
+}
+
+.mobile-transport.is-playing .mobile-transport__play.MuiIconButton-root {
   color: var(--q-accent);
 }
 

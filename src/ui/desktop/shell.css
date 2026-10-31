@@ -609,11 +609,19 @@
 .desk-transport__button--primary.MuiIconButton-root {
   width: 2.25rem;
   height: 2.25rem;
+  border: 1px solid var(--q-control);
+  background: transparent;
+  color: var(--q-text);
+}
+
+.desk-transport.is-playing .desk-transport__button--primary.MuiIconButton-root {
+  border-color: var(--q-accent);
   background: var(--q-accent);
   color: var(--q-accent-ink);
 }
 
-.desk-transport__button--primary.MuiIconButton-root:hover {
+.desk-transport.is-playing .desk-transport__button--primary.MuiIconButton-root:hover {
+  border-color: var(--q-accent-strong);
   background: var(--q-accent-strong);
   color: var(--q-accent-ink);
 }

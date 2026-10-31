@@ -137,7 +137,7 @@ function MusicWorkspace({
   return (
     <section
       ref={consoleRef}
-      className={`desk-music ${isLibraryOpen ? "is-queue-open" : "is-queue-collapsed"}`}
+      className={`desk-music ${isLibraryOpen ? "is-queue-open" : "is-queue-collapsed"}${isPlaying ? " is-playing" : ""}`}
     >
       <div className="desk-music__main">
         <header className="desk-music__hero">

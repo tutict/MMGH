@@ -260,6 +260,8 @@ function createAppTheme(mode: AppThemeMode) {
       MuiSlider: {
         styleOverrides: {
           root: {
+            boxSizing: "border-box",
+            minHeight: "1.75rem",
             color: "var(--q-control)",
           },
           rail: {

@@ -64,7 +64,7 @@ export default function MobileMusicView({
 
   return (
     <MobilePage view="music">
-      <section className="mobile-player">
+      <section className={isPlaying ? "mobile-player is-playing" : "mobile-player"}>
         <div className="mobile-player__art">
           {selectedTrack?.cover ? (
             <img src={selectedTrack.cover} alt={selectedTrack.title || t?.("app.music.trackCover") || ""} />

@@ -159,10 +159,20 @@
 .audio-console__icon-button.audio-is-primary {
   width: 2.5rem;
   height: 2.5rem;
+  border: 1px solid var(--q-control);
+  color: var(--q-text);
+}
+.audio-console__icon-button.audio-is-primary:hover {
+  background: var(--q-sunken);
+  color: var(--q-text);
+}
+.desk-music.is-playing .audio-console__icon-button.audio-is-primary {
+  border-color: var(--q-accent);
   background: var(--q-accent);
   color: var(--q-accent-ink);
 }
-.audio-console__icon-button.audio-is-primary:hover {
+.desk-music.is-playing .audio-console__icon-button.audio-is-primary:hover {
+  border-color: var(--q-accent-strong);
   background: var(--q-accent-strong);
   color: var(--q-accent-ink);
 }

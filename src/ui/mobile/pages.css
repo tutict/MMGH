@@ -580,7 +580,7 @@
 }
 
 .mobile-agent-bar__actions .MuiButton-root {
-  min-height: 2.25rem;
+  min-height: var(--q-touch);
   padding: 0 var(--q-space-2);
   color: var(--q-text-muted);
   font-size: var(--q-text-sm);
@@ -599,22 +599,18 @@
 
 .mobile-agent-timeline {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  gap: var(--q-space-3);
+  gap: var(--q-space-6);
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .mobile-message {
   display: flex;
   flex-direction: column;
   gap: var(--q-space-2);
-  padding: var(--q-space-3);
-  border: 1px solid var(--q-border);
-  border-radius: var(--q-radius-md);
-  background: var(--q-surface);
-}
-
-.mobile-message--user {
-  background: var(--q-sunken);
 }
 
 .mobile-message__head {
@@ -630,6 +626,12 @@
   font-weight: var(--q-weight-strong);
 }
 
+.mobile-message__head time {
+  color: var(--q-text-faint);
+  font-size: var(--q-text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
 .mobile-message__body {
   font-size: var(--q-text-base);
   line-height: var(--q-leading-prose);
@@ -642,10 +644,7 @@
   flex-wrap: wrap;
   gap: var(--q-space-2);
   align-items: baseline;
-  padding: 0 var(--q-space-1);
-  border: 0;
-  background: none;
-  color: var(--q-text-faint);
+  color: var(--q-text-muted);
   font-size: var(--q-text-xs);
 }
 
@@ -655,21 +654,26 @@
 }
 
 .mobile-message--activity > span:first-child {
-  color: var(--q-text-muted);
+  color: var(--q-text);
   font-weight: var(--q-weight-strong);
 }
 
+/* The agent page pins the composer: only the timeline scrolls. */
+.mobile-page:has(.mobile-agent-composer) {
+  min-height: 0;
+}
+
 .mobile-agent-composer {
-  position: sticky;
-  bottom: 0;
-  z-index: 5;
   display: flex;
+  flex: none;
   gap: var(--q-space-2);
   align-items: flex-end;
-  margin-top: auto;
-  padding: var(--q-space-2) 0;
+  padding-top: var(--q-space-2);
   border-top: 1px solid var(--q-border);
-  background: var(--q-bg);
+}
+
+.mobile-agent-composer .MuiInputBase-root {
+  min-height: var(--q-touch);
 }
 
 .mobile-agent-composer__field {

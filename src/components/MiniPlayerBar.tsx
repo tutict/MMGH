@@ -43,7 +43,7 @@ function MiniPlayerBar({
 
   if (placement === "phone") {
     return (
-      <div className="mobile-transport" aria-label={t("app.music.miniPlayer.label")}>
+      <div className={`mobile-transport${isPlaying ? " is-playing" : ""}`} aria-label={t("app.music.miniPlayer.label")}>
         <button type="button" className="mobile-transport__meta" onClick={handleOpenMusicWorkspace}>
           {selectedTrack?.cover ? (
             <img className="mobile-transport__cover" src={selectedTrack.cover} alt="" />
@@ -65,7 +65,7 @@ function MiniPlayerBar({
   }
 
   return (
-    <div className="desk-transport" aria-label={t("app.music.miniPlayer.label")}>
+    <div className={`desk-transport${isPlaying ? " is-playing" : ""}`} aria-label={t("app.music.miniPlayer.label")}>
       <button type="button" className="desk-transport__meta" onClick={handleOpenMusicWorkspace}>
         {selectedTrack?.cover ? (
           <img className="desk-transport__cover" src={selectedTrack.cover} alt="" />
