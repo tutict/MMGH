@@ -129,7 +129,7 @@
 
 ### 环境准备
 
-- Node.js 18+
+- Node.js 22.22.2+, 24.15+, or 26+
 - npm 9+
 - Rust stable
 - Tauri 2 对应平台构建依赖

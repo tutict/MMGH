@@ -3,6 +3,9 @@
   "version": "0.1.1",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+  },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
@@ -14,17 +17,17 @@
   },
   "scripts": {
     "lint": "eslint src vite.config.ts --report-unused-disable-directives --max-warnings 0",
-    "test:unit": "vitest run --configLoader runner",
+    "test:unit": "vitest run --configLoader native",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml -- --test-threads=1",
     "test": "npm run lint && npm run typecheck && npm run test:unit && npm run build && npm run test:rust",
-    "dev": "vite --host 127.0.0.1 --port 5173",
-    "dev:web": "vite",
+    "dev": "vite --configLoader native --host 127.0.0.1 --port 5173",
+    "dev:web": "vite --configLoader native",
     "dev:tauri": "tauri dev",
-    "build": "vite build --configLoader runner",
+    "build": "vite build --configLoader native",
     "build:desktop": "tauri build",
     "build:desktop:debug": "tauri build --debug",
     "release:check": "npm test",
-    "serve": "vite preview",
+    "serve": "vite preview --configLoader native",
     "typecheck": "tsc --noEmit"
   },
   "browserslist": {
