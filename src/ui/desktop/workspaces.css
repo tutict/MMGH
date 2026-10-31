@@ -269,8 +269,8 @@
   width: 0.375rem;
   height: 0.375rem;
   margin-left: auto;
-  border-right: 1.5px solid var(--q-text-faint);
-  border-bottom: 1.5px solid var(--q-text-faint);
+  border-right: 1px solid var(--q-text-faint);
+  border-bottom: 1px solid var(--q-text-faint);
   transform: rotate(45deg);
   transition: transform var(--q-dur-fast) var(--q-ease);
 }
@@ -485,7 +485,7 @@
 
 .runtime-activity-item {
   padding-left: var(--q-space-3);
-  border-left: 2px solid var(--q-border);
+  border-left: 1px solid var(--q-border);
 }
 
 .runtime-activity-item__head {
@@ -1038,12 +1038,11 @@
 }
 
 .skills-switch.is-on {
-  background: var(--q-accent);
+  background: var(--q-text-muted);
 }
 
 .skills-switch.is-on > span {
   transform: translateX(1rem);
-  background: var(--q-accent-ink);
 }
 
 .skills-switch:disabled {

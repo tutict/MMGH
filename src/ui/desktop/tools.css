@@ -42,11 +42,9 @@
   min-width: 0;
 }
 .desk-music__eyebrow {
-  color: var(--q-text-faint);
-  font-size: var(--q-text-2xs);
+  color: var(--q-text-muted);
+  font-size: var(--q-text-xs);
   font-weight: var(--q-weight-strong);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 .desk-music__track h2 {
   font-size: var(--q-text-2xl);
@@ -104,7 +102,7 @@
   transition: transform var(--q-dur-fast) var(--q-ease);
 }
 .audio-switch.audio-is-on {
-  background: var(--q-accent);
+  background: var(--q-text-muted);
 }
 .audio-switch.audio-is-on > span {
   transform: translateX(0.875rem);
@@ -183,9 +181,8 @@
   background: var(--q-sunken);
 }
 .audio-console__mode-button > span {
-  font-size: var(--q-text-2xs);
+  font-size: var(--q-text-xs);
   font-weight: var(--q-weight-strong);
-  letter-spacing: 0.04em;
 }
 .desk-music__volume {
   display: flex;
@@ -242,7 +239,7 @@
   flex-direction: column;
   justify-content: center;
   gap: 2px;
-  height: 3.5rem;
+  height: var(--q-row-h);
   opacity: 0.45;
   transition: opacity var(--q-dur-base) var(--q-ease);
 }
@@ -582,13 +579,11 @@
   justify-content: space-between;
   gap: var(--q-space-2);
   padding: var(--q-space-1) var(--q-space-2);
-  color: var(--q-text-faint);
-  font-size: var(--q-text-2xs);
+  color: var(--q-text-muted);
+  font-size: var(--q-text-xs);
 }
 .weather-search-section__head strong {
   font-weight: var(--q-weight-strong);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 .weather-search-row.MuiButtonBase-root {
   display: flex;
@@ -888,7 +883,6 @@
 }
 .gallery-viewer__card {
   position: relative;
-  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: var(--q-space-3);
@@ -952,7 +946,6 @@
 }
 .completion-dialog__panel {
   position: relative;
-  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: var(--q-space-4);

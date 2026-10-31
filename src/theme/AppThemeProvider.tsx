@@ -86,7 +86,7 @@ function createAppTheme(mode: AppThemeMode) {
     typography: {
       fontFamily,
       fontSize: 14,
-      h1: { fontSize: "1.25rem", fontWeight: 600, lineHeight: 1.3 },
+      h1: { fontSize: "1.5rem", fontWeight: 600, lineHeight: 1.3 },
       h2: { fontSize: "1.125rem", fontWeight: 600, lineHeight: 1.3 },
       h3: { fontSize: "1rem", fontWeight: 600, lineHeight: 1.3 },
       h4: { fontSize: "0.875rem", fontWeight: 600, lineHeight: 1.3 },
@@ -260,17 +260,13 @@ function createAppTheme(mode: AppThemeMode) {
       MuiSlider: {
         styleOverrides: {
           root: {
-            color: "var(--q-accent)",
+            color: "var(--q-control)",
           },
           rail: {
             backgroundColor: "var(--q-border)",
             opacity: 1,
           },
           thumb: {
-            boxShadow: "none",
-            "&:hover": {
-              boxShadow: "0 0 0 6px var(--q-accent-soft)",
-            },
             "&.Mui-focusVisible": {
               outline: "2px solid var(--q-focus)",
               outlineOffset: "2px",
@@ -285,6 +281,19 @@ function createAppTheme(mode: AppThemeMode) {
           },
           thumb: {
             backgroundColor: "var(--q-surface)",
+          },
+          track: {
+            backgroundColor: "var(--q-control)",
+            opacity: 0.5,
+          },
+          switchBase: {
+            "&.Mui-checked": {
+              color: "var(--q-text)",
+            },
+            "&.Mui-checked + .MuiSwitch-track": {
+              backgroundColor: "var(--q-text-muted)",
+              opacity: 1,
+            },
           },
         },
       },

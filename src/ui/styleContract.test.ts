@@ -61,6 +61,7 @@ const FORBIDDEN_CSS_PATTERNS = [
   { pattern: /#[0-9a-f]{3,8}\b/i, label: "bare hex colour" },
   { pattern: /\brgba?\(/, label: "raw rgb colour" },
   { pattern: /\bhsla?\(/, label: "raw hsl colour" },
+  { pattern: /text-transform:\s*uppercase/, label: "uppercase text" },
 ];
 
 const DECORATIVE_CLASSES = [

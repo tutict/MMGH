@@ -76,8 +76,8 @@
 }
 
 .mobile-player__play.MuiIconButton-root {
-  width: 3.5rem;
-  height: 3.5rem;
+  width: var(--q-row-h);
+  height: var(--q-row-h);
   background: var(--q-accent);
   color: var(--q-accent-ink);
 }
