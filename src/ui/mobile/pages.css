@@ -162,6 +162,27 @@
   color: var(--q-text);
 }
 
+.mobile-agent-skill-toggle.MuiChip-root {
+  flex: none;
+  min-height: var(--q-touch);
+  border: 1px solid var(--q-border);
+  border-radius: var(--q-radius-pill);
+  color: var(--q-text-muted);
+  font-size: var(--q-text-xs);
+  font-weight: var(--q-weight-strong);
+}
+
+.mobile-agent-skill-toggle.MuiChip-root:hover {
+  background: var(--q-sunken);
+  color: var(--q-text);
+}
+
+.mobile-agent-skill-toggle.MuiChip-root.is-mounted {
+  border-color: transparent;
+  background: var(--q-selected);
+  color: var(--q-text);
+}
+
 .mobile-row__icon {
   display: flex;
   flex: none;

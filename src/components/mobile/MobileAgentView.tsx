@@ -200,10 +200,15 @@ function MobileAgentView({
                 </MobileRowBody>
                 <Chip
                   clickable
-                  color={isMounted ? "primary" : "default"}
-                  variant={isMounted ? "filled" : "outlined"}
+                  variant="outlined"
+                  className={
+                    isMounted
+                      ? "mobile-agent-skill-toggle is-mounted"
+                      : "mobile-agent-skill-toggle"
+                  }
                   label={isMounted ? mobileText(lang, "skillMounted") : mobileText(lang, "skillAdd")}
                   aria-label={`${isMounted ? mobileText(lang, "skillMounted") : mobileText(lang, "skillAdd")} ${skill.name}`}
+                  aria-pressed={isMounted}
                   onClick={() => handleToggleSkillMounted(skill.id)}
                   disabled={busy !== ""}
                 />
