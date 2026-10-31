@@ -72,6 +72,7 @@ The format follows a lightweight `Keep a Changelog` style:
 - Documented the dependency refresh (MUI 9.5, `globals` 17, `rig` 0.45, `rusqlite` 0.41, both lockfile refreshes, the vendored-crate removal) and its four-axis review in `docs/reviews/2026-10-30-dependency-refresh/`.
 - Documented the Quiet Ledger redesign and its four-axis review in `docs/reviews/2026-10-30-quiet-ledger-redesign/`, including the remediation ledger and the re-measured evidence.
 - Documented the capability assessment in `eval/ragas/README.md`: the definition and denominator of every metric, the tier layout, how to record a new baseline, and what the assessment is not — a regression gate over a synthetic dataset, not a statistically powered benchmark.
+- Documented the frontend refinement (mobile 390px + desktop 1280px Quiet Ledger polish) and the capability assessment, and their four-axis review, in `docs/reviews/2026-10-31-frontend-refinement-and-eval/`, including the remediation ledger.
 
 ### Notes
 
