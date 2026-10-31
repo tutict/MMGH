@@ -103,7 +103,9 @@ function MobileKnowledgeView({
             <MobileSection>
               <MobileList>
                 {filteredNotes.map((note) => {
-                  const preview = notePreview(note);
+                  const line = [notePreview(note), (note.tags || []).join(" · ")]
+                    .filter(Boolean)
+                    .join(" · ");
                   return (
                     <MobileRowButton
                       key={note.id}
@@ -112,11 +114,9 @@ function MobileKnowledgeView({
                     >
                       <MobileRowBody>
                         <strong>{note.title}</strong>
-                        {preview ? <span className="mobile-note-card__preview">{preview}</span> : null}
-                        {note.updatedAt ? (
-                          <span className="mobile-row__meta">{formatTime(note.updatedAt, lang)}</span>
-                        ) : null}
+                        {line ? <span>{line}</span> : null}
                       </MobileRowBody>
+                      {note.updatedAt ? <time>{formatTime(note.updatedAt, lang)}</time> : null}
                     </MobileRowButton>
                   );
                 })}

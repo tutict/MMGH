@@ -147,7 +147,6 @@ function MobileRemindersView({
                     handleToggleTodayReminderStatus={handleToggleTodayReminderStatus}
                     item={item}
                     loading={loading}
-                    noteList={noteList}
                     onOpen={() => void openReminderEditor(item)}
                     selected={item.id === selectedReminderId}
                     t={t}
@@ -311,15 +310,13 @@ function ReminderRow({
   handleToggleTodayReminderStatus,
   item,
   loading,
-  noteList,
   onOpen,
   selected,
   t,
 }) {
-  const linkedNote = noteList.find((note) => note.id === item.linkedNoteId) || null;
   const dueLabel = item.dueAt ? formatReminderDue(item.dueAt, dateFormatter) : t("app.reminders.noDueDate");
   const statusKey = item.status === "done" ? "done" : "open";
-  const meta = [dueLabel, t(`app.reminders.severity.${item.severity || "medium"}`), linkedNote?.title]
+  const meta = [dueLabel, t(`app.reminders.severity.${item.severity || "medium"}`)]
     .filter(Boolean)
     .join(" · ");
 

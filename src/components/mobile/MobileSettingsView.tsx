@@ -61,7 +61,7 @@ function MobileSettingsView({
           <MobileSectionHead line>
             <h2>{t("app.hero.appearance")}</h2>
           </MobileSectionHead>
-          <MobileList variant="inset">
+          <MobileList>
             {setLang ? (
               <MobileRow>
                 <MobileRowBody>
@@ -133,7 +133,7 @@ function MobileSettingsView({
             <EditRoundedIcon fontSize="small" aria-hidden="true" />
           </AppIconButton>
         </MobileSectionHead>
-        <MobileList variant="inset">
+        <MobileList>
           <SummaryRow label={t("app.settings.providerName")} value={settingsForm.providerName} />
           <SummaryRow label={t("app.settings.model")} value={settingsForm.model} />
           <SummaryRow label={t("app.settings.baseUrl")} value={settingsForm.baseUrl} />
@@ -142,9 +142,7 @@ function MobileSettingsView({
 
       <MobileSection>
         <MobileSectionHead line>
-          <div>
-            <h2>{t("app.settings.cache.title")}</h2>
-          </div>
+          <h2>{t("app.settings.cache.title")}</h2>
           <span className="mobile-section__count">{cacheCount}</span>
         </MobileSectionHead>
         <MobileMuted>{t("app.settings.cache.description")}</MobileMuted>
@@ -164,7 +162,6 @@ function MobileSettingsView({
             </MobileRowButton>
           ))}
         </MobileList>
-        <MobileMuted>{t("app.settings.cache.safeNote")}</MobileMuted>
       </MobileSection>
 
       <MobileSheet

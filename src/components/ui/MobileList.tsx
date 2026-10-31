@@ -1,13 +1,11 @@
 import React from "react";
 import { joinClassNames } from "./classNames";
 
-type MobileListProps = React.HTMLAttributes<HTMLDivElement> & {
-  variant?: "inset";
-};
+type MobileListProps = React.HTMLAttributes<HTMLDivElement>;
 
-function MobileList({ children, className, variant, ...props }: MobileListProps) {
+function MobileList({ children, className, ...props }: MobileListProps) {
   return (
-    <div className={joinClassNames("mobile-list", variant ? `mobile-list--${variant}` : null, className)} {...props}>
+    <div className={joinClassNames("mobile-list", className)} {...props}>
       {children}
     </div>
   );

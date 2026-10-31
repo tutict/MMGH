@@ -1,5 +1,5 @@
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
-import React from "react";
+import React, { useMemo } from "react";
 import { getMobileDaypart, mobileText } from "./mobileText";
 import {
   MobileButton,
@@ -34,12 +34,17 @@ function MobileTodayView({
   const openCount = Number(openReminderCount) || 0;
   const sessions = continueSessionItems.slice(0, 3);
   const doneItems = completedTodayItems.slice(0, 5);
-  const hasAgenda = todayReminderItems.length > 0 || sessions.length > 0 || doneItems.length > 0;
   const primaryOpensReminders = dueCount > 0 || openCount > 0;
+  const dateFormatter = useMemo(
+    () => new Intl.DateTimeFormat(lang, { month: "long", day: "numeric", weekday: "short" }),
+    [lang]
+  );
+  const dateLabel = dateFormatter.format(new Date(clockNow));
 
   return (
     <MobilePage view="today">
       <section className="mobile-today__hero">
+        <p className="mobile-today__date">{dateLabel}</p>
         <p className="mobile-today__greeting">{getMobileDaypart(clockNow, lang)}</p>
         <p className="mobile-today__meta">
           {sessionTitle || mobileText(lang, "emptyTodayHint")}
@@ -52,13 +57,6 @@ function MobileTodayView({
           {primaryOpensReminders ? mobileText(lang, "openReminders") : mobileText(lang, "continueAgent")}
         </MobileButton>
       </section>
-
-      {!hasAgenda ? (
-        <section className="mobile-empty-hero mobile-empty-hero--compact">
-          <strong>{mobileText(lang, "emptyToday")}</strong>
-          <p>{mobileText(lang, "emptyTodayHint")}</p>
-        </section>
-      ) : null}
 
       {todayReminderItems.length > 0 ? (
         <MobileSection>
