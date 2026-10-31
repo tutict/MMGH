@@ -338,7 +338,7 @@
   flex: none;
   width: 1.25rem;
   color: var(--q-text-faint);
-  font-size: var(--q-text-2xs);
+  font-size: var(--q-text-xs);
   font-variant-numeric: tabular-nums;
 }
 .audio-console__track-cover {

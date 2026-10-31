@@ -111,7 +111,7 @@
 .mobile-segmented .MuiButton-root,
 .segmented-filter__button.MuiButtonBase-root,
 .settings-segment {
-  min-height: 1.5rem;
+  min-height: var(--q-control-h);
   padding: 0 var(--q-space-3);
   border: 1px solid transparent;
   border-radius: var(--q-radius-sm);

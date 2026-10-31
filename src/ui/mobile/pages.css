@@ -425,7 +425,7 @@
 }
 
 .mobile-linked-note-row .MuiButton-root {
-  min-height: 2.25rem;
+  min-height: var(--q-touch);
 }
 
 .mobile-search-row {
@@ -608,9 +608,19 @@
 
 .mobile-agent-bar__status {
   display: flex;
-  flex: none;
+  flex: 0 1 auto;
   align-items: center;
+  gap: var(--q-space-2);
+  min-width: 0;
   padding-right: var(--q-space-1);
+  color: var(--q-text-muted);
+  font-size: var(--q-text-xs);
+}
+
+.mobile-agent-bar__status-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mobile-agent-timeline {

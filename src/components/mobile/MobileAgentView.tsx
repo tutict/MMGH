@@ -101,7 +101,7 @@ function MobileAgentView({
         </div>
         <span className="mobile-agent-bar__status">
           <MobileStatusDot tone={providerConfigured ? "ready" : "pending"} />
-          <span className="sr-only">{providerLabel}</span>
+          <span className="mobile-agent-bar__status-text">{providerLabel}</span>
         </span>
       </div>
 

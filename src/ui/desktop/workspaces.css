@@ -879,7 +879,7 @@
 }
 
 .skills-filter {
-  min-height: 1.75rem;
+  min-height: var(--q-control-h);
   padding: 0 var(--q-space-2);
   border-radius: var(--q-radius-sm);
   color: var(--q-text-muted);
