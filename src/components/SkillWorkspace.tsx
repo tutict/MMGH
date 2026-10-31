@@ -151,7 +151,7 @@ function SkillWorkspace({
               {t("app.skills.import.button")}
             </AppButton>
             <AppButton
-              className="solid-button"
+              className="ghost-button"
               onClick={handleCreateSkill}
               disabled={busy !== "" || loading}
             >
@@ -425,7 +425,7 @@ function SkillWorkspace({
                         <div className="skills-action-row">
                           <span className="skills-badge">{meta.categoryLabel}</span>
                           <AppButton
-                            className="solid-button"
+                            className="ghost-button"
                             disabled={mountedSkillSet.has(skill.id) || busy !== "" || loading}
                             onClick={() => handleToggleSkillMounted(skill.id)}
                           >
@@ -496,7 +496,7 @@ function SkillWorkspace({
             />
             <div className="skills-action-row">
               <AppButton
-                className="solid-button"
+                className="ghost-button"
                 disabled={!forgePrompt.trim() || busy !== "" || loading}
                 onClick={() => handleForgeSkill({ prompt: forgePrompt, mode: "new" })}
               >
@@ -565,7 +565,7 @@ function SkillWorkspace({
                         {t("app.skills.history.loadDraft")}
                       </AppButton>
                       <AppButton
-                        className="solid-button"
+                        className="ghost-button"
                         onClick={() => handleRestoreSkillVersion(version)}
                         disabled={busy !== "" || loading}
                       >
@@ -639,7 +639,7 @@ function SkillWorkspace({
                           })}
                         </span>
                         <AppButton
-                          className={installedSkill ? "ghost-button" : "solid-button"}
+                          className="ghost-button"
                           disabled={busy !== "" || loading}
                           onClick={() =>
                             installedSkill

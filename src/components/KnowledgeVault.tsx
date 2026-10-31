@@ -31,7 +31,7 @@ function KnowledgeVault({
               {t("app.stats.notes")} {filteredNotes.length}
             </span>
             <AppButton
-              className="solid-button"
+              className={activeNote ? "ghost-button" : "solid-button"}
               onClick={handleCreateNote}
               disabled={busy !== "" || loading}
             >

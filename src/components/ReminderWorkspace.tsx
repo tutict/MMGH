@@ -63,12 +63,16 @@ function ReminderWorkspace({
   const visibleGroups = groups.filter((group) => group.items.length > 0);
 
   return (
-    <section className="desk-reminders reminder-panel">
+    <section
+      className={`desk-reminders reminder-panel ${
+        reminders.length === 0 && !reminderDraft.id ? "is-empty" : ""
+      }`}
+    >
       <aside className="reminder-sidebar">
         <div className="reminder-sidebar__head">
           <h2>{t("app.reminders.title")}</h2>
           <AppButton
-            className="solid-button"
+            className={reminderDraft.id ? "ghost-button" : "solid-button"}
             onClick={handleCreateReminder}
             disabled={busy !== "" || loading}
           >
@@ -154,11 +158,16 @@ function ReminderWorkspace({
           ))
         ) : reminders.length > 0 ? (
           <p className="desk-empty">{t("app.reminders.emptyBucket")}</p>
-        ) : null}
+        ) : (
+          <div className="desk-empty reminder-empty-state">
+            <strong>{t("app.reminders.emptyState.title")}</strong>
+            <p>{t("app.reminders.emptyState.description")}</p>
+          </div>
+        )}
       </div>
 
-      <div className="reminder-editor">
-        {reminderDraft.id ? (
+      {reminderDraft.id ? (
+        <div className="reminder-editor">
           <>
             <div className="reminder-editor__toolbar">
               <span className="section-note">
@@ -336,18 +345,12 @@ function ReminderWorkspace({
               ) : null}
             </div>
           </>
-        ) : (
-          <div className="desk-empty reminder-empty-state">
-            <p>
-              {t(
-                reminders.length > 0
-                  ? "app.reminders.emptyState.title"
-                  : "app.reminders.emptyState.description"
-              )}
-            </p>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : reminders.length > 0 ? (
+        <div className="reminder-editor">
+          <p className="desk-empty">{t("app.reminders.emptyState.title")}</p>
+        </div>
+      ) : null}
     </section>
   );
 }

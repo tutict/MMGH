@@ -141,8 +141,14 @@
 .desk-empty {
   padding: var(--q-space-3) 0;
   color: var(--q-text-muted);
-  font-size: var(--q-text-base);
+  font-size: var(--q-text-sm);
   line-height: var(--q-leading-body);
+}
+
+.desk-empty > strong {
+  display: block;
+  color: var(--q-text);
+  font-weight: var(--q-weight-strong);
 }
 
 .danger-copy {
@@ -517,7 +523,7 @@
 /* Knowledge */
 .notes-workbench__layout {
   display: grid;
-  grid-template-columns: 18.75rem minmax(0, 1fr);
+  grid-template-columns: minmax(14rem, 18.75rem) minmax(0, 1fr);
   gap: var(--q-space-8);
   align-items: start;
 }
@@ -562,6 +568,10 @@
 
 .notes-entry.is-selected {
   background: var(--q-selected);
+}
+
+.notes-entry.is-selected .notes-entry__head strong {
+  font-weight: var(--q-weight-strong);
 }
 
 .notes-entry__head {
@@ -667,9 +677,13 @@
 /* Reminders */
 .reminder-panel {
   display: grid;
-  grid-template-columns: 15rem minmax(0, 1fr) 21rem;
+  grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr) minmax(16rem, 21rem);
   gap: var(--q-space-6);
   align-items: start;
+}
+
+.reminder-panel.is-empty {
+  grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
 }
 
 .reminder-sidebar {
@@ -814,7 +828,7 @@
 /* Skills */
 .skills-workbench__layout {
   display: grid;
-  grid-template-columns: 18.75rem minmax(0, 1fr) 20rem;
+  grid-template-columns: minmax(15rem, 18.75rem) minmax(0, 1fr) minmax(17rem, 20rem);
   gap: var(--q-space-6);
   align-items: start;
 }
@@ -865,8 +879,8 @@
 }
 
 .skills-filter {
-  min-height: 1.5rem;
-  padding: 0 var(--q-space-1);
+  min-height: 1.75rem;
+  padding: 0 var(--q-space-2);
   border-radius: var(--q-radius-sm);
   color: var(--q-text-muted);
   font-size: var(--q-text-xs);
@@ -877,7 +891,8 @@
 }
 
 .skills-filter.is-selected {
-  color: var(--q-accent);
+  background: var(--q-selected);
+  color: var(--q-text);
   font-weight: var(--q-weight-strong);
 }
 
@@ -906,6 +921,10 @@
 
 .skills-entry.is-selected {
   background: var(--q-selected);
+}
+
+.skills-entry.is-selected .skills-entry__header strong {
+  font-weight: var(--q-weight-strong);
 }
 
 .skills-entry__header {
@@ -1095,8 +1114,8 @@
 }
 
 .skills-toolbox__tab.is-selected {
+  background: var(--q-selected);
   color: var(--q-text);
-  box-shadow: inset 0 -2px 0 var(--q-accent);
   font-weight: var(--q-weight-strong);
 }
 
@@ -1202,6 +1221,10 @@
 
 .skills-mounted-entry.is-selected {
   background: var(--q-selected);
+}
+
+.skills-mounted-entry.is-selected strong {
+  font-weight: var(--q-weight-strong);
 }
 
 .skills-mounted-entry strong {
@@ -1361,7 +1384,7 @@
 
 @media (max-width: 1280px) {
   .reminder-panel {
-    grid-template-columns: 14rem minmax(0, 1fr);
+    grid-template-columns: minmax(12rem, 14rem) minmax(0, 1fr);
   }
 
   .reminder-editor {
@@ -1379,7 +1402,7 @@
 
 @media (max-width: 1360px) {
   .skills-workbench__layout {
-    grid-template-columns: 17rem minmax(0, 1fr);
+    grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
   }
 
   .skills-toolbox {
@@ -1395,7 +1418,8 @@
   .today-layout,
   .runtime-workspace,
   .notes-workbench__layout,
-  .reminder-panel {
+  .reminder-panel,
+  .reminder-panel.is-empty {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1413,6 +1437,17 @@
   }
 
   .runtime-thread {
+    max-height: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .skills-workbench__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .skills-registry {
+    position: static;
     max-height: none;
   }
 }

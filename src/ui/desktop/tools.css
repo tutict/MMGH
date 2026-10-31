@@ -846,8 +846,6 @@
   align-items: center;
   gap: var(--q-space-1);
   padding: var(--q-space-10) var(--q-space-6);
-  border: 1px dashed var(--q-border);
-  border-radius: var(--q-radius-md);
   text-align: center;
 }
 .gallery-empty h3 {
