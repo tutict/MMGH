@@ -7,9 +7,9 @@
 ## 1. 原则
 
 1. **平面优先。** 层级只来自底色差（`bg` / `surface` / `sunken`）、1px 分隔线与间距。不使用玻璃拟态、渐变、阴影堆叠或装饰场景。
-2. **强调色是信号，不是气氛。** `--q-accent` 只用于主操作、当前选中、焦点环和进行中状态。其余界面保持石墨灰。
-3. **一屏一件事。** 每个区块一个标题加一句说明；行内正文最多两行；移动端行高 ≥ 56px、触控目标 ≥ 44px；桌面控件 32px、导航与行 36px。
-4. **文字层级只有两档字重。** 400 与 600。正文 0.875rem/1.55；阅读区 1rem/1.7 且不超过 68ch；标题行高 1.3。数字使用 `font-variant-numeric: tabular-nums`。
+2. **强调色是信号，不是气氛。** `--q-accent` 只用于每屏唯一的主操作、焦点环、播放中的播放键和手机 Dock 当前项。列表选中不使用色相，靠 `--q-selected` 底色与 600 字重；其余界面保持石墨灰。
+3. **一屏一件事。** 每个区块一个标题加一句说明；行内正文最多两行；移动端行高 ≥ 56px、触控目标 ≥ 44px；桌面控件 32px、导航 36px、列表行 44–56px。
+4. **文字层级只有两档字重。** 400 与 600。行标题 0.875rem/600，元信息 0.75rem/400（低于 0.75rem 只允许 Dock 标签与数字角标）；区块标题 0.75rem/600 muted；桌面 h1 1.5rem、手机 h1 1.125rem。正文 0.875rem/1.55；阅读区 1rem/1.7 且不超过 68ch；标题行高 1.3。数字使用 `font-variant-numeric: tabular-nums`。
 5. **动效只解释状态变化。** 时长 ≤ 160ms，只做透明度、底色和 ≤ 4px 位移；`prefers-reduced-motion` 下全部关闭。
 6. **不复活旧样式。** 旧版本的 45,000 行 CSS 已删除。新样式必须落在 `src/ui/` 的既有分层中，并按令牌书写。
 
@@ -46,29 +46,32 @@
 
 | Token | 值 | 用途 |
 | --- | --- | --- |
-| `--q-text-2xs` | 0.6875rem | Dock 标签、角标 |
-| `--q-text-xs` | 0.75rem | 元信息 |
+| `--q-text-2xs` | 0.6875rem | Dock 标签、数字角标（唯一允许低于 0.75rem 的场景） |
+| `--q-text-xs` | 0.75rem | 元信息、区块标题 |
 | `--q-text-sm` | 0.8125rem | 密集控件与说明 |
-| `--q-text-base` | 0.875rem | 默认正文 |
-| `--q-text-md` | 1rem | 阅读正文、页面标题 |
-| `--q-text-lg` … `--q-text-2xl` | 1.125 → 1.5rem | 区块标题 |
+| `--q-text-base` | 0.875rem | 默认正文、行标题 |
+| `--q-text-md` | 1rem | 阅读正文 |
+| `--q-text-lg` | 1.125rem | 手机页标题 |
+| `--q-text-xl` | 1.25rem | 今日问候 |
+| `--q-text-2xl` | 1.5rem | 桌面页标题 |
 | `--q-text-display` | 2rem | 移动端时段大字 |
 | `--q-leading-tight` / `-title` / `-body` / `-prose` | 1.2 / 1.3 / 1.55 / 1.7 | 行高 |
 
-字体栈固定为 Segoe UI Variable Text → Segoe UI → 微软雅黑 → 苹方 → system-ui。不加载网络字体。
+行标题 0.875rem/600，元信息 0.75rem/400 muted，区块标题 0.75rem/600 muted；桌面页标题 1.5rem，手机页标题 1.125rem。字体栈固定为 Segoe UI Variable Text → Segoe UI → 微软雅黑 → 苹方 → system-ui。不加载网络字体。
 
 ### 间距、圆角与尺寸
 
-- 间距只有 `--q-space-1` … `--q-space-10`（0.25rem 步进，含 7 / 8 / 10 / 12 档），不写裸间距。
+- 间距只有 `--q-space-1` … `--q-space-6` 与 `--q-space-8`、`--q-space-10`（0.25rem 步进到 2.5rem），不写裸间距。
 - 圆角：`--q-radius-sm` 4px、`--q-radius-md` 8px、`--q-radius-pill` 999px。
-- 控件：`--q-control-h` 2rem；触控：`--q-touch` 2.75rem；行：`--q-row-h` 3.5rem。
+- 控件：`--q-control-h` 2rem；触控：`--q-touch` 2.75rem；行：`--q-row-h` 3.5rem（手机行）；桌面列表行最低 2.75rem。
 
 ### 布局与层级
 
 | Token | 值 | 说明 |
 | --- | --- | --- |
-| `--q-nav-w` | 15rem | 桌面导航 |
+| `--q-nav-w` | 15rem | 桌面导航（≤900px 收窄到 12.5rem） |
 | `--q-header-h` | 4rem | 桌面顶栏 |
+| `--q-desk-transport` | 3.5rem | 桌面吸顶播放条 |
 | `--q-content-max` | 75rem | 桌面内容最大宽度 |
 | `--q-mobile-max` | 42rem | 移动内容最大宽度 |
 | `--q-mobile-topbar` | 3rem | 手机顶栏 |
@@ -77,7 +80,7 @@
 | `--q-mobile-gutter` | 1rem | 手机左右边距 |
 | `--q-mobile-gap` | 1.75rem | 手机区块间距 |
 
-层级：nav 20、header 30、dock 40、transport 45、sheet 60、sheet-host 61、toast 70。弹层打开时 Dock 与播放条隐藏（`:has(.mobile-sheet-host)`，并保留 `.mobile-app.is-sheet-open` 兜底）。
+层级：nav 20、header 30、dock 40、transport 45、sheet 60。弹层打开时 Dock 与播放条隐藏（`:has(.mobile-sheet-host)`，并保留 `.mobile-app.is-sheet-open` 兜底）。
 
 ## 3. 样式架构
 
@@ -99,38 +102,40 @@
 - `primitives.css`：`.solid-button` / `.ghost-button` / `.danger-button`、`.panel-surface`、`.section-head` / `.section-note`、`.status-chip` 及其状态色、`.field-label` / `.field-hint`、`.scroll-area`、`.panel-icon`、`.upload-input`。
 - `desktop/`：外壳与会话栏、九个工作区、音乐 / 天气 / 图库 / 技能与完成对话框。
 - `mobile/`：外壳与 Sheet、九个页面、工具页。
-- 样式总预算 5,200 非空行，当前 4,531 行。这个上限是实施后修正过的：计划书里写的 2,600 行是动工前的估算，实际交付 4,491 行，超出估算 73%。估算本身被判定为错误而不是实现有偏差，因此上限按实际交付值重新记录为 5,200 并继续由 `styleContract.test.ts` 锁定，留出 669 行余量，同时挡住样式重新长回被删除的 45,000 行。
+- 样式总预算 5,200 非空行，当前 4,632 行，余量 568 行。这个上限是实施后修正过的：计划书里写的 2,600 行是动工前的估算，实际交付 4,491 行，超出估算 73%。估算本身被判定为错误而不是实现有偏差，因此上限按实际交付值重新记录为 5,200 并继续由 `styleContract.test.ts` 锁定，同时挡住样式重新长回被删除的 45,000 行。2026-10-31 的语法收敛与去框最终把总量从 4,491 行推到 4,632 行（净增 141 行），没有达到计划书写的 4,300–4,500 净减目标，但仍低于 4,650 的复核阈值；对未使用类名与重复选择器做过扫描，剩余重复全部是断点覆写，没有可以安全删除的整块规则。
 
 ## 4. 布局
 
 ### 桌面
 
-- 左侧 240px 导航：品牌、主任务、工具、设置固定在底部；导航行 36px，当前行使用 `--q-selected`，主题与语言各一个图标按钮。
-- 顶栏 64px：唯一 `<h1>`（`#desk-page-title`，切换页面后聚焦）、右侧状态与操作。
-- 内容 stage 最大 1200px；Agent 视图左侧 280px 会话栏，折叠时只保留标题与数量；1180px 以下单列。
+- 左侧 240px（15rem）导航：品牌、主任务、工具、设置固定在底部；导航行 36px，当前行使用 `--q-selected` 底 + 600 字重；≤900px 收窄到 200px（12.5rem）。主题与语言各一个图标按钮。
+- 顶栏 64px：唯一 `<h1>`（`#desk-page-title`，1.5rem，切换页面后聚焦）、右侧状态与操作。
+- 内容 stage 最大 1200px；Agent 视图改用 84rem（1344px）内容宽，左侧 240px 会话栏，1180px 以下会话栏转为顶部整宽；Agent 内层详情栏在 1599px 以下折到线程下方，聊天列拿满整行。线程只保留 `.runtime-main-column` 一层面板，消息本身不再套边框。
 - 今日页右栏依次是「今日回顾」（三条计数信号）与「建议动作」：每条建议一行，标题 + 状态 chip + 一行元信息 + 一行原因，右侧一个动作按钮（挂载 / 打开规则 / 立即卸载）。手机端不显示这一块。
-- 底部 `desk-transport` 56px：曲目、上一首 / 播放 / 下一首、进度，不浮动、不发光。
+- 底部 `desk-transport` 56px（`--q-desk-transport`）：曲目、上一首 / 播放 / 下一首、进度，sticky 贴底、不浮动、不发光；存在播放条时舞台底部补同等高度的内边距，任何滚动位置都不遮挡最后一行。
 - 图库为等宽规则网格（`minmax(13rem, 1fr)`），按拍摄时间倒序排列，日期写在图块说明行，不再按日期分组。
-- 桌面断点：1180px 收起多栏，900px 进一步压缩侧栏，720px 为最小可用宽度。
+- 桌面断点：1599px 收起 Agent 详情栏，1360px / 1280px 逐级压缩工具与工作区，1180px 收起多栏（会话栏转为顶部整宽），900px 侧栏收窄到 200px；760px 以下切换到手机外壳。720px 不再是断点。
 
 ### 手机
 
-- `.mobile-app`：`100dvh` 纵向 flex；顶栏 48px + safe-area，主视图显示菜单、工具页显示返回；唯一 `<h1 id="mobile-page-title">`。
-- `.mobile-main`：唯一滚动容器；底部内边距为 Dock + 播放器 + safe-area。
-- Dock 4 列：今日、对话、知识、提醒；20px 图标、11px 标签；当前项用强调色，不用背景块。
+- `.mobile-app`：`100dvh` 纵向 flex；顶栏 48px + safe-area，主视图显示菜单、工具页显示返回；唯一 `<h1 id="mobile-page-title">`，1.125rem。
+- `.mobile-main`：唯一滚动容器；底部内边距为 Dock + 播放器 + safe-area，含 Agent 输入区时再补输入区高度。输入区随内容流停在 Dock 之上，任何滚动位置都不被 Dock 遮挡。
+- 列表直接落在页面底上：`.mobile-list` 透明、无圆角，行间 1px 发丝线；`.mobile-row` 至少 56px，标题 0.875rem/600，元信息单行 0.75rem。
+- Dock 4 列：今日、对话、知识、提醒；20px 图标、11px 标签；当前项用强调色文字 + 600，不用背景块。
 - 菜单 Sheet 收纳技能、图库、音乐、天气、设置。
-- `.mobile-transport` 56px 位于 Dock 之上：标题单行截断 + 播放/暂停。
+- `.mobile-transport` 56px 位于 Dock 之上：标题单行截断 + 播放/暂停，次级文案不低于 0.75rem。
 - Sheet 底部贴合，最大 88dvh；编辑器使用 `variant="full"` 占满 100dvh；头部固定、主体独立滚动、动作区固定在底部，关闭按钮 44px。
 
 ## 5. 组件模式
 
-- **按钮**：主操作用 `.solid-button`（实底强调色）；次操作用 `.ghost-button`（透明底 + 1px 控制边框）；破坏性操作使用 `.danger-button`（透明底 + 危险色文字）。不使用阴影和大写字母。
-- **面板**：`.panel-surface` 是唯一的卡片外观：`surface` 底、1px `border`、8px 圆角，不加阴影。列表行之间只用 1px 分隔线。
-- **行**：`.desk-row` / `.mobile-row`；整行可点击时使用 `.desk-row--button` 或 `MobileRowButton`，当前项 `.is-active` 使用 `--q-selected`。元信息放第二行，最多两行文字。
-- **状态**：`AppStatusChip` 输出 `.status-chip.status-*`；状态点使用 `.desk-status-dot` 与 `severity-*` / `urgency-*`。颜色永远配文字。
+- **按钮**：主操作用 `.solid-button`（实底强调色）；次操作用 `.ghost-button`（透明底 + 1px 控制边框）；破坏性操作使用 `.danger-button`（透明底 + 危险色文字）。每屏最多一个实心主按钮（导航选中不计）；不使用阴影和大写字母。
+- **面板**：`.panel-surface` 是唯一的卡片外观：`surface` 底、1px `border`、8px 圆角，不加阴影。列表不套卡片，直接落在页面底上，行之间只用 1px 分隔线；卡片只保留给 Sheet、对话框、今日回顾与 Agent 线程这类需要成组语义的地方。
+- **行**：`.desk-row` / `.mobile-row`；整行可点击时使用 `.desk-row--button` 或 `MobileRowButton`，当前项 `.is-active` 使用 `--q-selected` 底 + 600 字重。标题一行，元信息一行，最多两行文字。
+- **选中**：只有一种写法——`--q-selected` 底色 + 600 字重；不使用左边色条、内嵌描边环、纯色文字或下划线。唯一例外是分段控件：下沉轨道 + 表面色段，靠位置而不是色相区分。
+- **状态**：`AppStatusChip` 输出 `.status-chip.status-*`；默认是中性描边，只有真实状态（成功 / 待处理 / 失败）才使用状态软底；状态点使用 `.desk-status-dot` 与 `severity-*` / `urgency-*`。颜色永远配文字。
 - **表单**：标签用 `.field-label`，提示用 `.field-hint`；输入统一走 MUI `OutlinedInput` 覆写，背景 `--q-surface`，聚焦边框 `--q-accent`。
 - **Sheet / 对话框**：手机 `MobileSheet` 使用 MUI Modal，`aria-modal`、Esc、遮罩关闭和焦点返回由 Modal 保证；桌面 `ReminderCompletionDialog` 使用细边框、8px 圆角、右对齐动作区。
-- **空态**：一句说明 + 一个主操作，使用 `.desk-empty` 或 `.mobile-empty-hero`，不放大插画。
+- **空态**：一句说明 + 一个主操作，使用 `.desk-empty` 或 `.mobile-empty-hero`，不放大插画，不加虚线框。
 - **装饰**：无。音乐不使用转盘 / 黑胶 / 粒子，天气不使用光斑 / 玻璃球 / 倾斜卡，图库悬停只改边框和底色。
 
 ### 类名与样式契约
@@ -168,4 +173,4 @@ npm run build
 - `src/ui/styleContract.test.ts`：类名覆盖、禁用项、令牌完整性、CSS 预算。
 - `src/theme/themeTokenParity.test.ts`：MUI 与 CSS 令牌一致。
 
-人工验证覆盖 320×568、390×844、768×1024、1280×800、1440×900，浅色 / 深色以及中文 / 英文；重点是横向滚动、唯一 h1、安全区、200% 缩放、Sheet 焦点返回、键盘顺序与 2px 焦点环。
+人工验证覆盖 320×568、390×844、761×800（桌面外壳下限）、768×1024、1280×800、1440×900，浅色 / 深色以及中文 / 英文；重点是横向滚动、唯一 h1、移动端触控目标 ≥44px、安全区、200% 缩放、Sheet 焦点返回、键盘顺序、2px 焦点环与 `prefers-reduced-motion` 下无过渡。

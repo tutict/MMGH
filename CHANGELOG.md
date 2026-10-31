@@ -22,6 +22,9 @@ The format follows a lightweight `Keep a Changelog` style:
 
 ### Changed
 
+- Refined both shells of the Quiet Ledger UI on one shared grammar without touching the information architecture, copy, or behaviour. Rows now use a 0.875rem/600 title and a single 0.75rem meta line; lists sit on the page with hairline separators instead of nested cards; selection is always `--q-selected` plus 600 weight (the mobile dock keeps accent text); and each screen carries at most one solid accent button. Metadata bottoms out at 0.75rem, the desktop page title is 1.5rem and the mobile page title 1.125rem, and sliders and switches are neutral.
+- Re-laid the mobile Today, reminders, knowledge, settings, weather, music, gallery and skills pages on that grammar: all touch targets reach 44px, the Agent composer sits above the Dock at any scroll position, the weather hour strip scroll-snaps, and the desktop Agent stage widens to 84rem with its detail rail folding below the thread under 1600px. The weather city rail sticks below the header, sticky rails and stage padding subtract the desktop transport, the reminder empty state renders its existing copy, and music play modes use the locale labels instead of `LOOP`/`ONE`/`SHUF`. Two unreachable 720px media queries were removed.
+- Declared the Node engine floor in `package.json` (mirrored in the README) and switched the Vite scripts to `--configLoader native`.
 - Rebuilt the whole product UI as **Quiet Ledger**, replacing the earlier Fluent/WinUI restyle. Every structural class name used in a TSX file now has a rule, the decorative layers are gone (music turntable and vinyl, weather orb and tilt cards, particle rings), colours come from one OKLCH token layer, and the desktop and mobile shells share a single spacing, type and layout scale.
 - Rewrote the desktop shell, the nine desktop workspaces and the nine mobile views against that system, and cut the mobile information density: the mobile Today keeps only a daypart hero, one primary action, the todo list and the active sessions; Settings lost its summary grid; Reminders lost its status selector.
 - Added `src/theme/palette.ts`, which holds OKLCH literals that mirror the token layer one to one instead of `var()` references, and rewrote `src/theme/AppThemeProvider.tsx` to build the theme from that palette and inject it ahead of the stylesheets so `base.css` can override MUI's defaults.
@@ -40,6 +43,7 @@ The format follows a lightweight `Keep a Changelog` style:
 
 ### Fixed
 
+- The reminder severity, status and linked-note selects had no accessible names, and the completion dialog's scrim and icon button shared one close label; each select now names itself, the scrim uses its own label, and the mobile music page keeps the page title as its `<h1>` with the track as an `<h2>`.
 - A reminder created — or back-dated — during a session never alarmed: the start-up seeding pass marked every currently-overdue reminder as already triggered. Seeding is now anchored to a fixed `workspaceReadyAt` and judged per reminder, so a reminder that falls overdue later in the session still fires.
 - Switching providers overwrote an unsaved settings draft. The settings form is hydrated once from the workspace, and a form the user has already touched is never overwritten by a later snapshot.
 - The mobile sheet's scroll lock was applied to an element that was already locked, so the page behind an open sheet still scrolled under keyboard control.
@@ -48,6 +52,7 @@ The format follows a lightweight `Keep a Changelog` style:
 - The desktop page title was focused on every view change with its focus ring suppressed by an unconditional `outline: none`, so keyboard users were moved without seeing where they were.
 - The desktop reminder row carried its severity on a coloured dot alone; the severity is now spelled out in the row's meta line.
 - The mobile menu did not mark the current view, so "open Settings, reopen the menu" landed on a list with nothing marked; the menu rows now carry the same `aria-current` marker as the dock.
+- The music editor sheet's "open note" action was 37px tall, and the mobile Agent bar showed its provider state as a colour-only dot. The action now meets the 44px touch floor, and the bar prints the localized provider status as 12px muted text instead of relying on the dot.
 - The Agent skills sheet labelled its toggles "On" and "Add" in hardcoded English, and the weather city sheet labelled every chip "Remove"; the labels now name the item they act on and live in the locale files.
 - Two i18n keys used by the mobile skills view existed in neither locale.
 - A missing translation key returned the key string silently; the helpers now report the miss.
@@ -57,6 +62,7 @@ The format follows a lightweight `Keep a Changelog` style:
 
 - Added `run_agent` and `forge_skill` orchestration tests that run end-to-end against a loopback provider stub, covering the remote-reply and local-fallback paths.
 - Added a regression test asserting the API key never reaches a provider error or the persisted workspace snapshot.
+- Raised the Vitest per-test watchdog to 15s. The two App integration tests contain their own 5s waits and can exceed the default 5s while 27 jsdom environments start in parallel, so they timed out under a full-suite run before their assertions; no assertion changed.
 
 ### Docs
 
