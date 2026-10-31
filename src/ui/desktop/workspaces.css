@@ -1370,6 +1370,24 @@
   margin-top: var(--q-space-3);
 }
 
+@media (min-width: 901px) {
+  .desk:has(.desk-transport) .skills-registry {
+    max-height: calc(100vh - var(--q-header-h) - var(--q-space-8) - var(--q-desk-transport));
+  }
+}
+
+@media (min-width: 1181px) {
+  .desk:has(.desk-transport) .notes-index {
+    max-height: calc(100vh - var(--q-header-h) - var(--q-space-8) - var(--q-desk-transport));
+  }
+}
+
+@media (min-width: 1361px) {
+  .desk:has(.desk-transport) .skills-toolbox {
+    max-height: calc(100vh - var(--q-header-h) - var(--q-space-8) - var(--q-desk-transport));
+  }
+}
+
 @media (max-width: 1599px) {
   .runtime-workspace {
     grid-template-columns: minmax(0, 1fr);
@@ -1449,15 +1467,5 @@
   .skills-registry {
     position: static;
     max-height: none;
-  }
-}
-
-@media (max-width: 720px) {
-  .settings-form__grid {
-    grid-template-columns: 1fr;
-  }
-
-  .settings-field--wide {
-    grid-column: auto;
   }
 }

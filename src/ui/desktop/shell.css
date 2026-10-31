@@ -220,6 +220,10 @@
   padding: var(--q-space-6) 0 var(--q-space-10);
 }
 
+.desk:has(.desk-transport) .desk-stage__content {
+  padding-bottom: calc(var(--q-desk-transport) + var(--q-space-6));
+}
+
 .desk .MuiOutlinedInput-root {
   min-height: var(--q-control-h);
 }
@@ -641,6 +645,12 @@
 
 .desk-transport__slider.MuiSlider-root {
   flex: 1;
+}
+
+@media (min-width: 1181px) {
+  .desk:has(.desk-transport) .desk-sessions {
+    max-height: calc(100vh - var(--q-header-h) - var(--q-desk-transport));
+  }
 }
 
 @media (max-width: 1180px) {

@@ -108,8 +108,8 @@
   transform: translateX(0.875rem);
 }
 .audio-console__library-toggle.audio-is-open {
-  border-color: var(--q-accent);
-  color: var(--q-accent);
+  background: var(--q-selected);
+  color: var(--q-text);
 }
 .desk-music svg,
 .audio-console__track svg {
@@ -147,8 +147,8 @@
   gap: var(--q-space-1);
 }
 .audio-console__icon-button.MuiIconButton-root {
-  width: 2rem;
-  height: 2rem;
+  width: var(--q-control-h);
+  height: var(--q-control-h);
   color: var(--q-text-muted);
   border-radius: var(--q-radius-sm);
 }
@@ -157,8 +157,8 @@
   background: var(--q-sunken);
 }
 .audio-console__icon-button.audio-is-primary {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: calc(var(--q-control-h) + var(--q-space-2));
+  height: calc(var(--q-control-h) + var(--q-space-2));
   border: 1px solid var(--q-control);
   color: var(--q-text);
 }
@@ -179,9 +179,9 @@
 .audio-console__mode-button.MuiIconButton-root {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: var(--q-space-1);
   width: auto;
-  height: 2rem;
+  height: var(--q-control-h);
   padding: 0 var(--q-space-2);
   border-radius: var(--q-radius-sm);
   color: var(--q-text-muted);
@@ -330,6 +330,9 @@
 }
 .audio-console__track.audio-is-active {
   background: var(--q-selected);
+}
+.audio-console__track.audio-is-active .audio-console__track-copy strong {
+  font-weight: var(--q-weight-strong);
 }
 .audio-console__track-index {
   flex: none;
@@ -564,13 +567,15 @@
 }
 .weather-cities {
   position: sticky;
-  top: var(--q-space-2);
+  top: calc(var(--q-header-h) + var(--q-space-4));
   display: flex;
   flex-direction: column;
   gap: var(--q-space-3);
   min-width: 0;
+  max-height: calc(100vh - var(--q-header-h) - var(--q-space-4));
   padding-left: var(--q-space-5);
   border-left: 1px solid var(--q-border);
+  overflow-y: auto;
 }
 .weather-search-results {
   display: flex;
@@ -939,7 +944,7 @@
   flex-direction: column;
   gap: var(--q-space-4);
   width: min(36rem, 100%);
-  max-height: calc(100dvh - 3rem);
+  max-height: calc(100dvh - var(--q-space-6) * 2);
   padding: var(--q-space-5);
   overflow: auto;
 }
@@ -953,7 +958,7 @@
   font-size: var(--q-text-lg);
 }
 .completion-dialog__copy p {
-  margin-top: 2px;
+  margin-top: var(--q-space-1);
   color: var(--q-text-muted);
   font-size: var(--q-text-sm);
 }
@@ -977,7 +982,7 @@
 }
 .completion-dialog__grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--q-space-3);
 }
 .completion-dialog__toggles {
@@ -1034,35 +1039,23 @@
   }
   .weather-cities {
     position: static;
+    max-height: none;
     padding-top: var(--q-space-4);
     padding-left: 0;
     border-top: 1px solid var(--q-border);
     border-left: 0;
+    overflow: visible;
+  }
+}
+
+@media (min-width: 1181px) {
+  .desk:has(.desk-transport) .weather-cities {
+    max-height: calc(100vh - var(--q-header-h) - var(--q-space-4) - var(--q-desk-transport));
   }
 }
 
 @media (max-width: 900px) {
   .weather-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 720px) {
-  .desk-music__hero {
-    flex-direction: column;
-    gap: var(--q-space-4);
-  }
-  .desk-music__cover {
-    width: 10rem;
-    height: 10rem;
-  }
-  .desk-music__controls {
-    justify-content: flex-start;
-  }
-  .desk-music__volume {
-    width: 100%;
-  }
-  .completion-dialog__grid {
-    grid-template-columns: 1fr;
   }
 }

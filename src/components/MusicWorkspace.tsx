@@ -6,18 +6,9 @@ import { AppButton, AppFileInput, AppIconButton, AppSlider } from "./ui";
 const LYRIC_LINE_HEIGHT = 56;
 
 const PLAY_MODE_META = {
-  loop: {
-    labelKey: "app.music.mode.loop",
-    shortLabel: "LOOP",
-  },
-  single: {
-    labelKey: "app.music.mode.single",
-    shortLabel: "ONE",
-  },
-  shuffle: {
-    labelKey: "app.music.mode.shuffle",
-    shortLabel: "SHUF",
-  },
+  loop: { labelKey: "app.music.mode.loop" },
+  single: { labelKey: "app.music.mode.single" },
+  shuffle: { labelKey: "app.music.mode.shuffle" },
 };
 
 const TRACK_LYRICS = {
@@ -237,7 +228,7 @@ function MusicWorkspace({
                 size="small"
               >
                 <ModeIcon mode={playMode} />
-                <span>{playModeMeta.shortLabel}</span>
+                <span>{t(playModeMeta.labelKey)}</span>
               </AppIconButton>
               <AppIconButton
                 className="audio-console__icon-button"
